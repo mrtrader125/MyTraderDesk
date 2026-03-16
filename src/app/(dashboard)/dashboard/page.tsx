@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, LineChart, Bookmark, Lock, Activity, ChevronRight, Zap } from 'lucide-react'
+import { Search, Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 export default function OperatorTerminal() {
@@ -67,6 +67,42 @@ export default function OperatorTerminal() {
     return marketMatch === activeFilter.toLowerCase()
   })
 
+  // --- DYNAMIC METRIC CALCULATORS ---
+
+  // 1. Calculate Active Trading Session
+  const getActiveSession = () => {
+    const hour = new Date().getUTCHours()
+    if (hour >= 13 && hour < 17) return 'NY / London Overlap'
+    if (hour >= 13 && hour < 22) return 'New York Session'
+    if (hour >= 8 && hour < 17) return 'London Session'
+    if (hour >= 23 || hour < 8) return 'Tokyo / Sydney'
+    return 'Inter-Bank Transition'
+  }
+
+  // 2. Calculate Today vs Yesterday Deployments
+  let deployCount = 0
+  let deployLabel = 'Recent Deployments'
+
+  if (setups.length > 0) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    const todayCount = setups.filter(s => new Date(s.created_at) >= today).length
+    
+    if (todayCount > 0) {
+      deployCount = todayCount
+      deployLabel = "Deployed Today"
+    } else {
+      const yesterdayCount = setups.filter(s => new Date(s.created_at) >= yesterday && new Date(s.created_at) < today).length
+      if (yesterdayCount > 0) {
+        deployCount = yesterdayCount
+        deployLabel = "Deployed Yesterday"
+      }
+    }
+  }
+
   if (loading) {
     return (
       <div className="w-full min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
@@ -77,30 +113,51 @@ export default function OperatorTerminal() {
   }
 
   return (
-    // FORCED DARK BACKGROUND HERE TO PREVENT WHITE SCREENS
-    <div className="w-full min-h-screen bg-[#050505] text-white p-6 space-y-8 font-sans">
+    <div className="w-full min-h-screen bg-[#050505] text-white p-6 md:p-8 space-y-8 font-sans">
       
+      {/* BROADCAST TICKER */}
       <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 flex items-center px-4 text-blue-400 text-sm font-bold">
         <Activity size={16} className="mr-3 animate-pulse shrink-0" />
         <span className="uppercase tracking-widest text-[10px] mr-3 bg-blue-500/20 px-2 py-1 rounded shrink-0">System Broadcast</span>
         <span className="truncate">Live data feed connected. Welcome to the terminal.</span>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <MetricCard label="Intelligence Deployed" value={setups.length.toString()} subtext="Total active setups" icon={Zap} />
+      {/* TOP METRICS ROW (Asymmetrical Grid) */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
         
-        <div className="bg-[#0a0a0a] border border-neutral-800 p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
-          <div className="relative z-10">
-            <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-2">Active Clearance</div>
-            <div className={`text-2xl font-black uppercase tracking-tighter ${userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
-              {userPlan} Tier
-            </div>
+        {/* Intelligence Card (Medium) */}
+        <div className="md:col-span-4 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
+          <div>
+            <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{deployLabel}</div>
+            <div className="text-3xl font-black text-white tracking-tighter">{deployCount}</div>
+          </div>
+          <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors">
+            <Zap size={20} />
           </div>
         </div>
 
-        <MetricCard label="Market Status" value="Online" subtext="Terminal synchronized" icon={LineChart} />
+        {/* Market Session Card (Large) */}
+        <div className="md:col-span-5 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
+          <div>
+            <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Active Market Session</div>
+            <div className="text-2xl font-black text-white tracking-tighter uppercase italic">{getActiveSession()}</div>
+          </div>
+          <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors animate-pulse">
+            <Globe size={20} />
+          </div>
+        </div>
+        
+        {/* Active Plan Card (Small & Right Aligned) */}
+        <div className="md:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
+          <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Active Plan</div>
+          <div className={`text-lg font-black uppercase tracking-widest ${userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
+            {userPlan}
+          </div>
+        </div>
+
       </div>
 
+      {/* FEED FILTERS & SEARCH */}
       <div className="border-b border-neutral-800 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full md:w-auto">
           {FILTERS.map(f => {
@@ -129,68 +186,40 @@ export default function OperatorTerminal() {
         </div>
       </div>
 
+      {/* ULTRA-MINIMAL INTELLIGENCE GRID */}
       <div>
-        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4">Latest Deployments</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <h3 className="text-sm font-black text-neutral-400 uppercase tracking-widest mb-4">Intelligence Feed</h3>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
           
-          {filteredSetups.map(setup => (
-            <div key={setup.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-4 hover:border-neutral-600 transition-colors cursor-pointer group flex flex-col">
-              
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h4 className="text-lg font-black text-white tracking-tight">{setup.asset_symbol || 'UNKNOWN'}</h4>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">{setup.category || 'FOREX'}</span>
-                </div>
-                <Bookmark size={16} className="text-neutral-600 hover:text-white transition-colors" />
-              </div>
+          {filteredSetups.map(setup => {
+            const isBull = setup.bias?.toUpperCase() === 'BULLISH'
+            const isBear = setup.bias?.toUpperCase() === 'BEARISH'
 
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <div className="text-[9px] text-neutral-600 font-bold uppercase tracking-widest mb-0.5">Timeframe</div>
-                  <div className="text-xs font-bold text-neutral-300">{setup.timeframe || '-'}</div>
+            return (
+              <div 
+                key={setup.id} 
+                className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-3 cursor-pointer group flex items-center justify-between shadow-sm"
+              >
+                <div className="flex flex-col">
+                  <span className="text-sm font-black text-white tracking-tight">{setup.asset_symbol || 'UNKNOWN'}</span>
+                  <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">{setup.timeframe || '-'}</span>
                 </div>
-                <div>
-                  <div className="text-[9px] text-neutral-600 font-bold uppercase tracking-widest mb-0.5">Bias</div>
-                  <div className={`text-xs font-bold ${setup.bias?.toLowerCase() === 'bullish' ? 'text-emerald-500' : setup.bias?.toLowerCase() === 'bearish' ? 'text-red-500' : 'text-neutral-400'}`}>
-                    {setup.bias || '-'}
-                  </div>
+                
+                <div className={`p-1.5 rounded-lg shrink-0 ${isBull ? 'bg-emerald-500/10 text-emerald-500' : isBear ? 'bg-red-500/10 text-red-500' : 'bg-neutral-800 text-neutral-400'}`}>
+                  {isBull ? <TrendingUp size={16} /> : isBear ? <TrendingDown size={16} /> : <Minus size={16} />}
                 </div>
               </div>
-
-              <div className="mt-auto pt-3 border-t border-neutral-800 flex items-center justify-between text-[10px] font-bold">
-                <span className="flex items-center text-green-500 uppercase tracking-widest">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 shadow-[0_0_5px_rgba(34,197,94,0.8)]"></span>
-                  {setup.status || 'LIVE'}
-                </span>
-                <span className="text-neutral-500 group-hover:text-white transition-colors flex items-center">
-                  View <ChevronRight size={12} className="ml-0.5" />
-                </span>
-              </div>
-            </div>
-          ))}
+            )
+          })}
 
           {filteredSetups.length === 0 && (
-            <div className="col-span-full py-12 text-center text-neutral-500 italic border border-dashed border-neutral-800 rounded-xl">
+            <div className="col-span-full py-12 text-center text-neutral-500 italic border border-dashed border-neutral-800 rounded-xl text-sm">
               No active intelligence deployments found.
             </div>
           )}
 
         </div>
-      </div>
-    </div>
-  )
-}
-
-function MetricCard({ label, value, subtext, icon: Icon }: any) {
-  return (
-    <div className="bg-[#0a0a0a] border border-neutral-800 p-6 rounded-2xl flex flex-col justify-between group hover:border-neutral-700 transition-colors">
-      <div className="flex justify-between items-start mb-4">
-        <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em]">{label}</div>
-        <Icon size={16} className="text-neutral-600 group-hover:text-white transition-colors" />
-      </div>
-      <div>
-        <div className="text-3xl font-black text-white tracking-tighter mb-1">{value}</div>
-        <div className="text-xs text-neutral-500 font-medium">{subtext}</div>
       </div>
     </div>
   )
