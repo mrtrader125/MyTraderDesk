@@ -140,7 +140,7 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <h4 className={`text-2xl font-black tracking-tight uppercase ${isPro ? 'text-brand-primary' : isEssential ? 'text-blue-400' : 'text-white'}`}>
-                    Trader {plan}
+                     {plan}
                   </h4>
                   <p className="text-xs font-medium text-neutral-400 mt-2 leading-relaxed">
                     {isPro ? 'Maximum clearance. All intelligence modules are unlocked and live.' :
