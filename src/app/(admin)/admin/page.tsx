@@ -18,7 +18,7 @@ export default function AdminDashboard() {
       setUsers(data)
       setStats({
         total: data.length,
-        free: data.filter(u => u.plan === 'free' || !u.plan_type).length,
+        free: data.filter(u => u.plan === 'FREE' || !u.plan_type).length,
         essential: data.filter(u => u.plan === 'essential').length,
         pro: data.filter(u => u.plan === 'pro').length,
         loading: false
@@ -46,8 +46,8 @@ export default function AdminDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <StatCard label="Total" value={stats.total} icon={Users} color="text-white" />
         <StatCard label="Free" value={stats.free} icon={Zap} color="text-neutral-500" />
-        <StatCard label="Pro" value={stats.pro} icon={Zap} color="text-blue-500" />
-        <StatCard label="Premium" value={stats.premium} icon={Star} color="text-red-500" />
+        <StatCard label="Essential" value={stats.essential} icon={Zap} color="text-blue-500" />
+        <StatCard label="Pro" value={stats.pro} icon={Star} color="text-red-500" />
       </div>
 
       {/* 2. THE LIST */}
