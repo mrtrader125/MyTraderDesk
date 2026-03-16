@@ -1,21 +1,28 @@
 'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { LayoutDashboard, LineChart, Settings, LogOut, UserCircle, ShieldCheck, Users, Megaphone, PlusCircle, ArrowLeft } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { 
+  LayoutDashboard, LineChart, Bookmark, 
+  Award, Settings, LogOut, Menu 
+} from 'lucide-react'
 
 export default function SideNav() {
+  const [isOpen, setIsOpen] = useState(true)
   const pathname = usePathname()
-  const [mounted, setMounted] = useState(false) // HYDRATION SAFETY
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
-  const isAdminPath = pathname?.startsWith('/admin')
-
+  // Do not render sidebar on full-screen chart pages
   if (pathname?.includes('/viewport')) return null;
+
+  const navItems = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Markets', href: '/analysis', icon: LineChart },
+    { name: 'The Vault', href: '/dashboard/vault', icon: Bookmark },
+    { name: 'Performance', href: '/dashboard/performance', icon: Award },
+    { name: 'Account', href: '/settings', icon: Settings },
+  ]
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -23,84 +30,52 @@ export default function SideNav() {
   }
 
   return (
-    <div className="w-20 md:w-64 border-r border-card-border bg-card-bg flex flex-col h-full relative z-20 transition-colors duration-700">
-
-      {/* ADAPTIVE BRANDING */}
-      <div className="h-24 flex items-center justify-center md:justify-start md:px-8 border-b border-card-border transition-colors duration-700">
-        <Link href="/dashboard" className="flex flex-col group">
-          <div className="flex items-center gap-2">
-            <div className={`text-[30px] font-black leading-none tracking-tighter transition-colors duration-500 ${isAdminPath ? 'text-white' : 'text-brand-primary drop-shadow-brand-glow'}`}>
-              MY
-            </div>
-            <div className="hidden md:flex flex-col justify-center leading-none">
-              <span className="text-[12px] font-black text-white tracking-widest mb-0.5">TRADER</span>
-              <span className={`text-[12px] font-black tracking-widest transition-colors ${isAdminPath ? 'text-red-600' : 'text-neutral-500'}`}>
-                {isAdminPath ? 'ADMIN' : 'DESK'}
-              </span>
-            </div>
-          </div>
-        </Link>
-      </div>
-
-      <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto">
-
-        {/* SECTION: MAIN TERMINAL */}
-        <div className="space-y-1">
-          <p className="hidden md:block text-[9px] font-black text-neutral-600 px-4 mb-3 tracking-[0.3em]">
-            {isAdminPath ? 'SYSTEM NAVIGATION' : 'MAIN TERMINAL'}
-          </p>
-
-          <NavLink href="/dashboard" icon={LayoutDashboard} label="Dashboard" active={mounted && pathname === '/dashboard'} />
-          <NavLink href="/analysis" icon={LineChart} label="Analysis" active={mounted && pathname?.startsWith('/analysis')} />
-          <NavLink href="/settings" icon={Settings} label="Settings" active={mounted && pathname?.startsWith('/settings')} />
-        </div>
-
-        {/* SECTION: ADMIN CONTROL */}
-        {mounted && isAdminPath && (
-          <div className="space-y-1 animate-in fade-in slide-in-from-left-2 duration-300">
-            <p className="hidden md:block text-[9px] font-black text-red-500/60 px-4 mb-3 tracking-[0.3em]">COMMAND CENTER</p>
-
-            <NavLink href="/admin" icon={ShieldCheck} label="Overview" active={pathname === '/admin'} isSystemAdmin />
-            <NavLink href="/admin/users" icon={Users} label="Users" active={pathname === '/admin/users'} isSystemAdmin />
-            <NavLink href="/admin/notifications" icon={Megaphone} label="Broadcasts" active={pathname === '/admin/notifications'} isSystemAdmin />
-            <NavLink href="/admin/analysis/new" icon={PlusCircle} label="Add Signal" active={pathname === '/admin/analysis/new'} isSystemAdmin />
-          </div>
+    <aside className={`${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-screen shrink-0 z-50`}>
+      
+      {/* BRANDING & TOGGLE */}
+      <div className="h-16 flex items-center px-4 border-b border-neutral-800 justify-between">
+        {isOpen && (
+          <span className="font-black tracking-tight text-lg uppercase flex items-center">
+            <span className="text-blue-500 mr-1">MY</span> TRADER DESK
+          </span>
         )}
-      </nav>
-
-      {/* FOOTER */}
-      <div className="p-4 mt-auto border-t border-card-border space-y-1 bg-black/20 transition-colors duration-700">
-        {mounted && isAdminPath && (
-          <Link href="/dashboard" className="flex items-center space-x-4 px-4 py-3 text-brand-primary hover:bg-brand-primary/5 rounded-xl transition-all group mb-2">
-            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-            <span className="hidden md:block font-bold text-[10px] uppercase tracking-widest italic">Exit to Desk</span>
-          </Link>
-        )}
-
-        <NavLink href="/profile" icon={UserCircle} label="Profile" active={mounted && pathname === '/profile'} />
-
-        <button onClick={handleSignOut} className="w-full flex items-center space-x-4 px-4 py-3.5 rounded-xl text-neutral-500 hover:text-red-500 hover:bg-red-500/5 transition-all group">
-          <LogOut size={18} />
-          <span className="hidden md:block font-bold text-[10px] uppercase tracking-widest italic">Disconnect</span>
+        <button 
+          onClick={() => setIsOpen(!isOpen)} 
+          className="p-2 hover:bg-neutral-800 rounded-lg text-neutral-400 transition-colors mx-auto"
+        >
+          <Menu size={20} />
         </button>
       </div>
-    </div>
-  )
-}
 
-function NavLink({ href, icon: Icon, label, active, isSystemAdmin = false }: any) {
-  const activeStyles = isSystemAdmin
-    ? 'bg-red-600/10 text-red-500 border-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
-    : 'bg-brand-primary/10 text-brand-primary border-brand-primary/20 shadow-brand-glow';
+      {/* NAVIGATION LINKS */}
+      <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto scrollbar-hide">
+        {navItems.map((item) => {
+          // Check if active (handles sub-paths too)
+          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href))
+          
+          return (
+            <Link key={item.name} href={item.href}>
+              <div className={`flex items-center w-full p-3 rounded-xl transition-colors mb-2
+                ${isActive ? 'bg-white/10 text-white' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}>
+                <item.icon size={20} className="shrink-0" />
+                {isOpen && <span className="ml-3 font-bold text-sm uppercase tracking-widest truncate">{item.name}</span>}
+              </div>
+            </Link>
+          )
+        })}
+      </nav>
 
-  return (
-    <Link href={href} className={`flex items-center space-x-4 px-4 py-3.5 rounded-xl border border-transparent transition-all duration-500 group ${
-      active ? activeStyles : 'text-neutral-500 hover:text-neutral-200 hover:bg-white/[0.03]'
-    }`}>
-      <Icon size={18} className={active ? '' : 'group-hover:scale-110 transition-transform'} />
-      <span className="hidden md:block font-bold text-[10px] uppercase tracking-[0.2em] italic">
-        {label}
-      </span>
-    </Link>
+      {/* DISCONNECT / LOGOUT */}
+      <div className="p-4 border-t border-neutral-800">
+        <button 
+          onClick={handleSignOut}
+          className="flex items-center w-full p-3 rounded-xl text-neutral-400 hover:bg-red-500/10 hover:text-red-500 transition-colors"
+        >
+          <LogOut size={20} className="shrink-0" />
+          {isOpen && <span className="ml-3 font-bold text-sm uppercase tracking-widest">Disconnect</span>}
+        </button>
+      </div>
+      
+    </aside>
   )
 }
