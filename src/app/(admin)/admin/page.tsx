@@ -18,9 +18,9 @@ export default function AdminDashboard() {
       setUsers(data)
       setStats({
         total: data.length,
-        free: data.filter(u => u.plan === 'FREE' || !u.plan_type).length,
-        essential: data.filter(u => u.plan === 'essential').length,
-        pro: data.filter(u => u.plan === 'pro').length,
+        free: data.filter(u => u.plan === 'FREE' || !u.plan).length,
+        essential: data.filter(u => u.plan === 'ESSENTIAL').length,
+        pro: data.filter(u => u.plan === 'PRO').length,
         loading: false
       })
     }
@@ -64,7 +64,7 @@ export default function AdminDashboard() {
             {users.map(u => (
               <tr key={u.id} className="text-sm">
                 <td className="p-4 font-bold">{u.email}</td>
-                <td className="p-4 uppercase text-[10px] font-black">{u.plan_type || 'free'}</td>
+                <td className="p-4 uppercase text-[10px] font-black">{u.plan || 'free'}</td>
                 <td className="p-4 text-right text-neutral-500">{new Date(u.created_at).toLocaleDateString()}</td>
               </tr>
             ))}
