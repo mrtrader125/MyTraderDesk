@@ -59,8 +59,8 @@ export default function AdminUsersPage() {
         <div className="bg-app-bg transition-colors duration-700 border border-card-border transition-colors duration-700 rounded-3xl p-6 flex items-center space-x-6">
           <div className="p-4 bg-purple-600/10 rounded-2xl border border-purple-500/20 text-purple-500"><ShieldCheck size={24} /></div>
           <div>
-            <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">Pro Subscribers</p>
-            <p className="text-3xl font-black text-white italic mt-1">{users.filter(u => u.plan === 'PRO').length}</p>
+            <p className="text-[10px] font-black text-neutral-600 uppercase tracking-widest">Essential Subscribers</p>
+            <p className="text-3xl font-black text-white italic mt-1">{users.filter(u => u.plan === 'ESSENTIAL').length}</p>
           </div>
         </div>
         <div className="bg-app-bg transition-colors duration-700 border border-card-border transition-colors duration-700 rounded-3xl p-6 flex items-center space-x-6">
@@ -78,7 +78,7 @@ export default function AdminUsersPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white/[0.02] border-b border-white/10">
-                <th className="p-6 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Operator Identity</th>
+                <th className="p-6 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Users</th>
                 <th className="p-6 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Access Tier</th>
                 <th className="p-6 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Status</th>
                 <th className="p-6 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Renewal Date</th>
@@ -107,7 +107,7 @@ export default function AdminUsersPage() {
                   </td>
                   <td className="p-6">
                     <span className={`inline-flex items-center text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-lg border ${
-                      plan === 'PRO' ? 'bg-blue-600/10 text-blue-500 border-blue-500/20' : 'bg-neutral-800 text-neutral-400 border-white/10'
+                      plan === 'ESSENTIAL' ? 'bg-blue-600/10 text-blue-500 border-blue-500/20' : 'bg-neutral-800 text-neutral-400 border-white/10'
                     }`}>
                       {plan}
                     </span>
