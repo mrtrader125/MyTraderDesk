@@ -136,7 +136,7 @@ export default function DashboardPage() {
              )}
           </div>
           <h2 className="text-2xl font-semibold tracking-tight truncate mt-3 relative z-10 text-brand-primary transition-colors duration-700">
-            Trader {userPlan}
+             {userPlan}
           </h2>
         </div>
       </div>
