@@ -1,14 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Search, Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, Bookmark, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 export default function OperatorTerminal() {
+  const router = useRouter()
   const [activeFilter, setActiveFilter] = useState('All')
   const [userPlan, setUserPlan] = useState('free') 
   const [setups, setSetups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Watchlist State
+  const [watchlist, setWatchlist] = useState<string[]>([])
 
   const FILTERS = [
     { name: 'All', req: 'free' },
@@ -20,6 +25,10 @@ export default function OperatorTerminal() {
   ]
 
   useEffect(() => {
+    // Load Watchlist from LocalStorage
+    const saved = localStorage.getItem('analysis_watchlist')
+    if (saved) setWatchlist(JSON.parse(saved))
+
     async function fetchLiveTerminalData() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
@@ -31,18 +40,14 @@ export default function OperatorTerminal() {
             .eq('id', user.id)
             .single()
             
-          if (profile?.plan) {
-            setUserPlan(profile.plan.toLowerCase())
-          }
+          if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
 
           const { data: analyses, error } = await supabase
             .from('analyses')
             .select('*')
             .order('created_at', { ascending: false })
 
-          if (!error && analyses) {
-            setSetups(analyses)
-          }
+          if (!error && analyses) setSetups(analyses)
         }
       } catch (err) {
         console.error("Dashboard Sync Error:", err)
@@ -53,6 +58,19 @@ export default function OperatorTerminal() {
 
     fetchLiveTerminalData()
   }, [])
+
+  // Toggle Bookmark Function
+  const toggleBookmark = (e: React.MouseEvent, symbol: string) => {
+    e.stopPropagation() // Prevents clicking the card background
+    let updated = [...watchlist]
+    if (updated.includes(symbol)) {
+      updated = updated.filter(s => s !== symbol)
+    } else {
+      updated.unshift(symbol) // Add to top of list
+    }
+    setWatchlist(updated)
+    localStorage.setItem('analysis_watchlist', JSON.stringify(updated))
+  }
 
   const isLocked = (reqTier: string) => {
     if (userPlan === 'pro') return false
@@ -81,21 +99,17 @@ export default function OperatorTerminal() {
   let deployLabel = 'Recent Deployments'
 
   if (setups.length > 0) {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
+    const today = new Date(); today.setHours(0, 0, 0, 0)
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
 
     const todayCount = setups.filter(s => new Date(s.created_at) >= today).length
     
     if (todayCount > 0) {
-      deployCount = todayCount
-      deployLabel = "Deployed Today"
+      deployCount = todayCount; deployLabel = "Deployed Today"
     } else {
       const yesterdayCount = setups.filter(s => new Date(s.created_at) >= yesterday && new Date(s.created_at) < today).length
       if (yesterdayCount > 0) {
-        deployCount = yesterdayCount
-        deployLabel = "Deployed Yesterday"
+        deployCount = yesterdayCount; deployLabel = "Deployed Yesterday"
       }
     }
   }
@@ -110,49 +124,47 @@ export default function OperatorTerminal() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] text-white p-6 md:p-8 space-y-8 font-sans">
+    <div className="w-full min-h-screen bg-[#050505] text-white p-6 md:p-8 font-sans">
       
-      {/* TOP METRICS ROW */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-        
-        {/* Intelligence Card */}
-        <div className="md:col-span-4 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
-          <div>
-            <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{deployLabel}</div>
-            <div className="text-3xl font-black text-white tracking-tighter">{deployCount}</div>
-          </div>
-          <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors">
-            <Zap size={20} />
-          </div>
-        </div>
-
-        {/* Market Session Card */}
-        <div className="md:col-span-5 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
-          <div>
-            <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Active Market Session</div>
-            <div className="text-2xl font-black text-white tracking-tighter uppercase italic">{getActiveSession()}</div>
-          </div>
-          <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors animate-pulse">
-            <Globe size={20} />
-          </div>
-        </div>
-        
-        {/* Active Plan Card */}
-        <div className="md:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
-          <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Active Plan</div>
-          <div className={`text-lg font-black uppercase tracking-widest ${userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
-            {userPlan}
-          </div>
-        </div>
-
-      </div>
-
-      {/* --- SPLIT LAYOUT: FEED (Left) & BROADCAST (Right) --- */}
+      {/* MAIN SPLIT LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
-        {/* LEFT COLUMN: Intelligence Feed */}
-        <div className="lg:col-span-8 xl:col-span-9 space-y-6">
+        {/* ================= LEFT COLUMN: Metrics & Feed ================= */}
+        <div className="lg:col-span-8 xl:col-span-9 space-y-8">
           
+          {/* TOP METRICS ROW (Now inside the feed margin) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Intelligence Card */}
+            <div className="bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
+              <div>
+                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{deployLabel}</div>
+                <div className="text-3xl font-black text-white tracking-tighter">{deployCount}</div>
+              </div>
+              <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors">
+                <Zap size={20} />
+              </div>
+            </div>
+
+            {/* Market Session Card */}
+            <div className="bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
+              <div>
+                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Market Session</div>
+                <div className="text-xl font-black text-white tracking-tight uppercase italic">{getActiveSession()}</div>
+              </div>
+              <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors animate-pulse">
+                <Globe size={20} />
+              </div>
+            </div>
+            
+            {/* Active Plan Card */}
+            <div className="bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
+              <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Active Plan</div>
+              <div className={`text-xl font-black uppercase tracking-widest ${userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
+                {userPlan} Tier
+              </div>
+            </div>
+          </div>
+
           {/* Filters & Search */}
           <div className="border-b border-neutral-800 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center space-x-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full md:w-auto">
@@ -190,10 +202,12 @@ export default function OperatorTerminal() {
               {filteredSetups.map(setup => {
                 const isBull = setup.bias?.toUpperCase() === 'BULLISH'
                 const isBear = setup.bias?.toUpperCase() === 'BEARISH'
+                const isBookmarked = watchlist.includes(setup.asset_symbol)
 
                 return (
                   <div 
                     key={setup.id} 
+                    onClick={() => router.push(`/analysis/viewport?asset=${setup.asset_symbol}`)}
                     className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-3 cursor-pointer group flex items-center justify-between shadow-sm"
                   >
                     <div className="flex flex-col">
@@ -201,8 +215,19 @@ export default function OperatorTerminal() {
                       <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">{setup.timeframe || '-'}</span>
                     </div>
                     
-                    <div className={`p-1.5 rounded-lg shrink-0 ${isBull ? 'bg-emerald-500/10 text-emerald-500' : isBear ? 'bg-red-500/10 text-red-500' : 'bg-neutral-800 text-neutral-400'}`}>
-                      {isBull ? <TrendingUp size={16} /> : isBear ? <TrendingDown size={16} /> : <Minus size={16} />}
+                    <div className="flex items-center space-x-2">
+                      {/* Bookmark Button */}
+                      <button 
+                        onClick={(e) => toggleBookmark(e, setup.asset_symbol)}
+                        className="text-neutral-600 hover:text-white transition-colors"
+                      >
+                        <Bookmark size={14} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
+                      </button>
+
+                      {/* Direction Bias Icon */}
+                      <div className={`p-1.5 rounded-lg shrink-0 ${isBull ? 'bg-emerald-500/10 text-emerald-500' : isBear ? 'bg-red-500/10 text-red-500' : 'bg-neutral-800 text-neutral-400'}`}>
+                        {isBull ? <TrendingUp size={14} /> : isBear ? <TrendingDown size={14} /> : <Minus size={14} />}
+                      </div>
                     </div>
                   </div>
                 )
@@ -219,11 +244,12 @@ export default function OperatorTerminal() {
 
         </div>
 
-        {/* RIGHT COLUMN: System Broadcast Panel */}
-        <div className="lg:col-span-4 xl:col-span-3">
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 sticky top-24">
-            
-            <div className="flex items-center justify-between mb-6 pb-4 border-b border-neutral-800">
+        {/* ================= RIGHT COLUMN: Broadcast & Watchlist ================= */}
+        <div className="lg:col-span-4 xl:col-span-3 space-y-6 sticky top-6">
+          
+          {/* Live Pulse Card (Top) */}
+          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
               <div className="flex items-center">
                 <Activity size={16} className="text-blue-500 mr-2 animate-pulse" />
                 <h3 className="text-sm font-black text-white uppercase tracking-widest">Live Pulse</h3>
@@ -232,27 +258,59 @@ export default function OperatorTerminal() {
             </div>
             
             <div className="space-y-4">
-              
-              {/* Primary Active Alert */}
               <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/20 blur-xl rounded-full"></div>
                 <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest block mb-1.5 relative z-10">System Broadcast</span>
                 <p className="text-xs text-blue-100 leading-relaxed font-medium relative z-10">
-                  Live data feed connected. Welcome to the terminal. Expect high volatility during upcoming news overlap.
+                  Terminal synced. Monitor setups closely during upcoming high-impact overlap sessions.
                 </p>
               </div>
-
-              {/* Secondary Status Box */}
-              <div className="p-4 bg-white/[0.02] border border-white/5 rounded-xl">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Network Status</span>
-                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_5px_rgba(16,185,129,0.8)]"></div>
-                </div>
-                <p className="text-xs text-neutral-400 font-medium">All Sentinel Vortex modules are fully operational.</p>
+              <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between">
+                <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Network</span>
+                <span className="text-[10px] font-bold text-emerald-500 flex items-center"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></div> Operational</span>
               </div>
-
             </div>
           </div>
+
+          {/* The Vault / Watchlist Card (Bottom) */}
+          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
+              <div className="flex items-center">
+                <Bookmark size={16} className="text-amber-500 mr-2" />
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">The Vault</h3>
+              </div>
+              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Pinned</span>
+            </div>
+
+            <div className="space-y-2">
+              {watchlist.length > 0 ? (
+                watchlist.slice(0, 6).map((symbol) => (
+                  <div 
+                    key={symbol}
+                    onClick={() => router.push(`/analysis/viewport?asset=${symbol}`)}
+                    className="flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl cursor-pointer transition-colors group"
+                  >
+                    <span className="text-xs font-bold text-white tracking-widest">{symbol}</span>
+                    <ChevronRight size={14} className="text-neutral-600 group-hover:text-white transition-colors" />
+                  </div>
+                ))
+              ) : (
+                <div className="py-6 text-center text-neutral-600 text-xs italic font-medium">
+                  No setups pinned to vault.
+                </div>
+              )}
+            </div>
+            
+            {watchlist.length > 6 && (
+              <button 
+                onClick={() => router.push('/dashboard/vault')}
+                className="w-full mt-3 py-2 text-[10px] font-bold text-neutral-500 hover:text-white uppercase tracking-widest transition-colors"
+              >
+                View All {watchlist.length} Targets
+              </button>
+            )}
+          </div>
+
         </div>
 
       </div>
