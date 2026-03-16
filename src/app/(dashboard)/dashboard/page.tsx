@@ -26,7 +26,7 @@ export default function OperatorTerminal() {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {
-        // 2. Get their exact plan from the database
+        // 2. Get their exact plan from the profiles table
         const { data: profile } = await supabase
           .from('profiles')
           .select('plan')
@@ -35,9 +35,9 @@ export default function OperatorTerminal() {
           
         if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
 
-        // 3. Get the real live setups from the database
+        // 3. Get the real live setups from the analyses table
         const { data: analyses } = await supabase
-          .from('analyses') // Adjust if your table name is different (e.g., 'analysis')
+          .from('analyses')
           .select('*')
           .order('created_at', { ascending: false })
 
@@ -57,11 +57,11 @@ export default function OperatorTerminal() {
     return false
   }
 
-  // THIS IS THE FILTERING LOGIC
+  // Live Filtering Logic
   const filteredSetups = setups.filter(setup => {
     if (activeFilter === 'All') return true
-    // Matches the active filter against your database's category or market column
-    const marketMatch = (setup.market || setup.category || '').toLowerCase()
+    // Defaults to 'Forex' if the category column is empty so your old setups don't break
+    const marketMatch = (setup.category || 'Forex').toLowerCase()
     return marketMatch === activeFilter.toLowerCase()
   })
 
@@ -133,7 +133,7 @@ export default function OperatorTerminal() {
         {/* Search Bar */}
         <div className="flex items-center bg-[#0a0a0a] border border-neutral-800 rounded-full px-4 py-2 w-full md:w-64 focus-within:border-neutral-600 transition-colors shrink-0">
           <Search size={14} className="text-neutral-500 mr-2" />
-          <input type="text" placeholder="Search setups..." className="bg-transparent border-none outline-none text-xs w-full text-white placeholder-neutral-500" />
+          <input type="text" placeholder="Search symbols..." className="bg-transparent border-none outline-none text-xs w-full text-white placeholder-neutral-500" />
         </div>
 
       </div>
@@ -142,18 +142,15 @@ export default function OperatorTerminal() {
       <div>
         <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4">Latest Deployments</h3>
         
-        {/* Changed grid layout here for smaller, tighter cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           
           {filteredSetups.map(setup => (
-            // Reduced padding from p-5 to p-4, tighter rounded corners
             <div key={setup.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-4 hover:border-neutral-600 transition-colors cursor-pointer group flex flex-col">
               
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  {/* Smaller Title Text */}
-                  <h4 className="text-lg font-black text-white tracking-tight">{setup.asset_pair || setup.asset || 'UNKNOWN'}</h4>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">{setup.market || setup.category || 'MARKET'}</span>
+                  <h4 className="text-lg font-black text-white tracking-tight">{setup.asset_symbol || 'UNKNOWN'}</h4>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">{setup.category || 'FOREX'}</span>
                 </div>
                 <button className="text-neutral-600 hover:text-white transition-colors">
                   <Bookmark size={16} />
@@ -176,7 +173,7 @@ export default function OperatorTerminal() {
               <div className="mt-auto pt-3 border-t border-neutral-800 flex items-center justify-between text-[10px] font-bold">
                 <span className="flex items-center text-green-500 uppercase tracking-widest">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 shadow-[0_0_5px_rgba(34,197,94,0.8)]"></span>
-                  {setup.status || 'ACTIVE'}
+                  {setup.status || 'LIVE'}
                 </span>
                 <span className="text-neutral-500 group-hover:text-white transition-colors flex items-center">
                   View <ChevronRight size={12} className="ml-0.5" />
