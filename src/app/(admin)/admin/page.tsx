@@ -4,17 +4,16 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Users, DollarSign, Activity, TrendingUp, Loader2, BarChart2, CheckCircle2 } from 'lucide-react'
 
-// Accurate Sentinel Vortex Pricing
+// Accurate Sentinel Vortex Pricing (Split by cycle)
 const PRICING = {
-  free: 0,
-  essential: 4.99, 
-  pro: 9.99
+  essential: { monthly: 4.99, yearly: 49.99 },
+  pro: { monthly: 9.99, yearly: 99.99 }
 }
 
 export default function AdminDashboard() {
   const [data, setData] = useState<any>({
     loading: true,
-    mrr: 0,
+    revenue: { monthly: 0, yearly: 0 },
     paidUsers: 0,
     signups: { today: 0, yesterday: 0, week: 0 },
     setups: { today: 0, yesterday: 0, week: 0, older: 0 },
@@ -30,8 +29,8 @@ export default function AdminDashboard() {
       const startOfWeek = new Date(startOfToday); startOfWeek.setDate(startOfWeek.getDate() - 7)
       const startOfMonth = new Date(startOfToday); startOfMonth.setDate(startOfMonth.getDate() - 30)
 
-      // 2. Fetch Profiles (Users) - Looking specifically at 'plan' now
-      const { data: profiles } = await supabase.from('profiles').select('created_at, plan')
+      // 2. Fetch Profiles (Users) - Must include billing_cycle
+      const { data: profiles } = await supabase.from('profiles').select('created_at, plan, billing_cycle')
       
       // 3. Fetch Analyses (Setups) from ONLY the last 30 days
       const { data: analyses } = await supabase
@@ -41,7 +40,8 @@ export default function AdminDashboard() {
 
       if (profiles && analyses) {
         // --- PROCESS USERS & REVENUE ---
-        let mrr = 0
+        let monthlyRev = 0
+        let yearlyRev = 0
         let paidUsers = 0
         const signups = { today: 0, yesterday: 0, week: 0 }
         const plans = { free: 0, essential: 0, pro: 0 }
@@ -49,6 +49,7 @@ export default function AdminDashboard() {
         profiles.forEach(p => {
           const joinedAt = new Date(p.created_at).getTime()
           const plan = (p.plan || 'free').toLowerCase()
+          const cycle = (p.billing_cycle || 'monthly').toLowerCase()
           
           // Growth Metrics
           if (joinedAt >= startOfToday.getTime()) signups.today++
@@ -56,9 +57,21 @@ export default function AdminDashboard() {
           if (joinedAt >= startOfWeek.getTime()) signups.week++
 
           // Revenue & Plan Metrics
-          if (plan === 'essential') { plans.essential++; paidUsers++; mrr += PRICING.essential }
-          else if (plan === 'pro') { plans.pro++; paidUsers++; mrr += PRICING.pro }
-          else { plans.free++ }
+          if (plan === 'essential') { 
+            plans.essential++
+            paidUsers++
+            if (cycle === 'yearly') yearlyRev += PRICING.essential.yearly
+            else monthlyRev += PRICING.essential.monthly
+          }
+          else if (plan === 'pro') { 
+            plans.pro++
+            paidUsers++
+            if (cycle === 'yearly') yearlyRev += PRICING.pro.yearly
+            else monthlyRev += PRICING.pro.monthly
+          }
+          else { 
+            plans.free++ 
+          }
         })
 
         // --- PROCESS SETUPS (Content Health) ---
@@ -72,7 +85,11 @@ export default function AdminDashboard() {
           else setups.older++
         })
 
-        setData({ loading: false, mrr, paidUsers, signups, setups, plans })
+        setData({ 
+          loading: false, 
+          revenue: { monthly: monthlyRev, yearly: yearlyRev }, 
+          paidUsers, signups, setups, plans 
+        })
       }
     }
 
@@ -99,9 +116,9 @@ export default function AdminDashboard() {
         <p className="text-neutral-500 mt-2 font-medium italic">High-Level Financials & Output Metrics</p>
       </div>
 
-      {/* TOP ROW: MRR & GROWTH KPI'S */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        <StatCard label="Est. Monthly Revenue" value={`$${data.mrr.toFixed(2)}`} icon={DollarSign} color="text-emerald-500" />
+      {/* TOP ROW: REVENUE & GROWTH KPI'S */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-stretch">
+        <RevenueCard monthly={data.revenue.monthly} yearly={data.revenue.yearly} />
         <StatCard label="Active Paid Users" value={data.paidUsers} icon={Users} color="text-brand-primary" />
         <StatCard label="Signups Today" value={data.signups.today} icon={TrendingUp} color="text-white" />
         <StatCard label="Signups This Week" value={data.signups.week} icon={Activity} color="text-neutral-400" />
@@ -131,9 +148,9 @@ export default function AdminDashboard() {
           </h3>
           
           <div className="space-y-4">
-            <PlanRow label="Pro Tier" count={data.plans.pro} price={PRICING.pro} color="text-brand-primary" />
-            <PlanRow label="Essential Tier" count={data.plans.essential} price={PRICING.essential} color="text-blue-500" />
-            <PlanRow label="Free Tier" count={data.plans.free} price={0} color="text-neutral-500" />
+            <PlanRow label="Pro Tier" count={data.plans.pro} color="text-brand-primary" />
+            <PlanRow label="Essential Tier" count={data.plans.essential} color="text-blue-500" />
+            <PlanRow label="Free Tier" count={data.plans.free} color="text-neutral-500" />
           </div>
 
           <div className="mt-8 pt-6 border-t border-card-border flex items-center justify-between">
@@ -149,12 +166,37 @@ export default function AdminDashboard() {
 
 // --- HELPER COMPONENTS ---
 
+function RevenueCard({ monthly, yearly }: { monthly: number, yearly: number }) {
+  return (
+    <div className="bg-app-bg border border-card-border p-8 rounded-[32px] shadow-2xl relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 flex flex-col justify-between">
+      <div className="relative z-10">
+        <DollarSign size={24} className="text-emerald-500 mb-5" />
+        
+        <div className="mb-5">
+          <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Monthly Subs</div>
+          <div className="text-3xl font-black text-white tracking-tighter">
+            ${monthly.toFixed(2)}<span className="text-sm text-neutral-600 font-bold tracking-normal">/mo</span>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-card-border">
+          <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Yearly Subs</div>
+          <div className="text-xl font-black text-emerald-400 tracking-tighter">
+            ${yearly.toFixed(2)}<span className="text-xs text-emerald-500/50 font-bold tracking-normal">/yr</span>
+          </div>
+        </div>
+      </div>
+      <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-600/5 rounded-full blur-3xl group-hover:bg-emerald-600/10 transition-all"></div>
+    </div>
+  )
+}
+
 function StatCard({ label, value, color, icon: Icon }: any) {
   return (
-    <div className="bg-app-bg border border-card-border p-8 rounded-[32px] shadow-2xl relative overflow-hidden group hover:border-white/10 transition-all duration-500">
+    <div className="bg-app-bg border border-card-border p-8 rounded-[32px] shadow-2xl relative overflow-hidden group hover:border-white/10 transition-all duration-500 flex flex-col">
       <div className="relative z-10">
-        <Icon size={24} className={`${color} mb-4`} />
-        <div className="text-neutral-600 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{label}</div>
+        <Icon size={24} className={`${color} mb-5`} />
+        <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{label}</div>
         <div className="text-4xl font-black text-white tracking-tighter">{value}</div>
       </div>
     </div>
@@ -170,18 +212,14 @@ function TimeRow({ label, count, highlight = false, dim = false }: any) {
   )
 }
 
-function PlanRow({ label, count, price, color }: any) {
-  const revenue = (count * price).toFixed(2)
+function PlanRow({ label, count, color }: any) {
   return (
     <div className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/5">
       <div className="flex items-center space-x-3">
         <CheckCircle2 size={16} className={color} />
         <span className="text-xs font-bold uppercase tracking-widest text-white">{label}</span>
       </div>
-      <div className="flex flex-col items-end">
-        <span className="text-sm font-black text-white">{count} Users</span>
-        {price > 0 && <span className="text-[10px] font-bold text-neutral-500 tracking-wider">${revenue}/mo</span>}
-      </div>
+      <span className="text-sm font-black text-white">{count} Users</span>
     </div>
   )
 }
