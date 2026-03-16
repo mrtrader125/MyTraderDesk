@@ -7,12 +7,13 @@ import { supabase } from '@/lib/supabase'
 
 export default function OperatorTerminal() {
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
   const [userPlan, setUserPlan] = useState('free') 
   const [setups, setSetups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   
-  // Watchlist State (Now stores precise setup objects)
+  // Watchlist State
   const [watchlist, setWatchlist] = useState<any[]>([])
 
   const FILTERS = [
@@ -25,16 +26,26 @@ export default function OperatorTerminal() {
   ]
 
   useEffect(() => {
-    // Load Watchlist and normalize legacy strings into objects
+    setMounted(true)
+
+    // RUTHLESS LOCAL STORAGE WIPE
+    // This destroys any old ghost data from previous builds
     const saved = localStorage.getItem('analysis_watchlist')
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        const normalized = parsed.map((item: any) => 
-          typeof item === 'string' ? { id: item, symbol: item, timeframe: '' } : item
-        )
-        setWatchlist(normalized)
-      } catch (e) {}
+        // Strictly only keep items that are objects AND have a valid UUID
+        const validItems = parsed.filter((item: any) => typeof item === 'object' && item.id && item.id.length > 20)
+        
+        setWatchlist(validItems)
+        
+        // If it found ghost data, overwrite local storage with the cleaned list
+        if (parsed.length !== validItems.length) {
+          localStorage.setItem('analysis_watchlist', JSON.stringify(validItems))
+        }
+      } catch (e) {
+        localStorage.removeItem('analysis_watchlist')
+      }
     }
 
     async function fetchLiveTerminalData() {
@@ -67,15 +78,17 @@ export default function OperatorTerminal() {
     fetchLiveTerminalData()
   }, [])
 
-  // Toggle Bookmark Function (Now uses setup ID for precision)
+  // Precision Bookmark Toggle
   const toggleBookmark = (e: React.MouseEvent, setup: any) => {
     e.stopPropagation() 
     let updated = [...watchlist]
     const exists = updated.find(item => item.id === setup.id)
     
     if (exists) {
+      // Remove it
       updated = updated.filter(item => item.id !== setup.id)
     } else {
+      // Add it precisely
       updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe }) 
     }
     
@@ -96,7 +109,6 @@ export default function OperatorTerminal() {
     return marketMatch === activeFilter.toLowerCase()
   })
 
-  // --- DYNAMIC METRIC CALCULATORS ---
   const getActiveSession = () => {
     const hour = new Date().getUTCHours()
     if (hour >= 13 && hour < 17) return 'NY / London'
@@ -125,9 +137,9 @@ export default function OperatorTerminal() {
     }
   }
 
-  if (loading) {
+  if (!mounted || loading) {
     return (
-      <div className="w-full min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
+      <div className="w-full min-h-[80vh] bg-transparent flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-blue-500" size={40} />
         <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Syncing Terminal...</span>
       </div>
@@ -135,43 +147,42 @@ export default function OperatorTerminal() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] text-white p-6 md:p-8 font-sans">
+    <div className="w-full min-h-screen text-white p-6 md:p-8 font-sans">
       
-      {/* MAIN SPLIT LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         
         {/* ================= LEFT COLUMN: Metrics & Feed ================= */}
         <div className="lg:col-span-8 xl:col-span-9 space-y-8">
           
-          {/* TOP METRICS ROW */}
+          {/* TOP METRICS ROW (RE-PROPORTIONED) */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             
             {/* Intelligence Card */}
-            <div className="md:col-span-4 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
-              <div>
-                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{deployLabel}</div>
-                <div className="text-3xl font-black text-white tracking-tighter">{deployCount}</div>
+            <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
+              <div className="min-w-0 pr-2">
+                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">{deployLabel}</div>
+                <div className="text-3xl font-black text-white tracking-tighter truncate">{deployCount}</div>
               </div>
-              <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors">
+              <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors shrink-0">
                 <Zap size={20} />
               </div>
             </div>
 
-            {/* Market Session Card (Expanded Width) */}
-            <div className="md:col-span-6 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
-              <div>
-                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Market Session</div>
-                <div className="text-xl font-black text-white tracking-tight uppercase italic">{getActiveSession()}</div>
+            {/* Market Session Card */}
+            <div className="md:col-span-4 xl:col-span-6 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
+              <div className="min-w-0 pr-2">
+                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">Market Session</div>
+                <div className="text-2xl font-black text-white tracking-tight uppercase italic truncate">{getActiveSession()}</div>
               </div>
-              <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors animate-pulse">
+              <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors animate-pulse shrink-0">
                 <Globe size={20} />
               </div>
             </div>
             
-            {/* Active Plan Card (Shrunk Width & Text) */}
-            <div className="md:col-span-2 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
-              <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Active Plan</div>
-              <div className={`text-xl font-black uppercase tracking-widest ${userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
+            {/* Active Plan Card (Given more room so ESSENTIAL fits perfectly) */}
+            <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
+              <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate">Active Plan</div>
+              <div className={`text-xl font-black uppercase tracking-widest truncate ${userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
                 {userPlan}
               </div>
             </div>
@@ -220,17 +231,17 @@ export default function OperatorTerminal() {
                   <div 
                     key={setup.id} 
                     onClick={() => router.push(`/analysis/viewport?asset=${setup.asset_symbol}`)}
-                    className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-3 cursor-pointer group flex items-center justify-between shadow-sm"
+                    className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
                   >
-                    <div className="flex flex-col">
-                      <span className="text-sm font-black text-white tracking-tight">{setup.asset_symbol || 'UNKNOWN'}</span>
-                      <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">{setup.timeframe || '-'}</span>
+                    <div className="flex flex-col min-w-0 pr-2">
+                      <span className="text-sm font-black text-white tracking-tight truncate">{setup.asset_symbol || 'UNKNOWN'}</span>
+                      <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5 truncate">{setup.timeframe || '-'}</span>
                     </div>
                     
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1.5 shrink-0">
                       <button 
                         onClick={(e) => toggleBookmark(e, setup)}
-                        className="text-neutral-600 hover:text-white transition-colors"
+                        className="text-neutral-600 hover:text-white transition-colors p-1"
                       >
                         <Bookmark size={14} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
                       </button>
@@ -257,7 +268,6 @@ export default function OperatorTerminal() {
         {/* ================= RIGHT COLUMN: Broadcast & Watchlist ================= */}
         <div className="lg:col-span-4 xl:col-span-3 space-y-6 sticky top-6">
           
-          {/* Live Pulse Card (Top) */}
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
               <div className="flex items-center">
@@ -282,7 +292,6 @@ export default function OperatorTerminal() {
             </div>
           </div>
 
-          {/* The Vault / Watchlist Card (Bottom) */}
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
               <div className="flex items-center">
@@ -300,11 +309,11 @@ export default function OperatorTerminal() {
                     onClick={() => router.push(`/analysis/viewport?asset=${item.symbol}`)}
                     className="flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl cursor-pointer transition-colors group"
                   >
-                    <div>
-                      <span className="text-xs font-bold text-white tracking-widest">{item.symbol}</span>
-                      {item.timeframe && <span className="text-[9px] font-bold text-neutral-500 ml-2 uppercase">{item.timeframe}</span>}
+                    <div className="flex items-center">
+                      <span className="text-xs font-bold text-white tracking-widest truncate max-w-[100px]">{item.symbol}</span>
+                      {item.timeframe && <span className="text-[9px] font-bold text-neutral-500 ml-2 uppercase truncate">{item.timeframe}</span>}
                     </div>
-                    <ChevronRight size={14} className="text-neutral-600 group-hover:text-white transition-colors" />
+                    <ChevronRight size={14} className="text-neutral-600 group-hover:text-white transition-colors shrink-0" />
                   </div>
                 ))
               ) : (
