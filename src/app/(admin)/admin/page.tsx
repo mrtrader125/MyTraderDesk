@@ -27,11 +27,6 @@ export default function AdminDashboard() {
     }
   }
 
-  // ... inside your table rows (tbody) ...
-  <td className="p-4 uppercase text-[10px] font-black">
-    {u.plan || 'free'} 
-  </td>
-
   useEffect(() => {
     getRealData()
 
