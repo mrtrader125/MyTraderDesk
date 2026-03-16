@@ -10,7 +10,7 @@ export default function AdminDashboard() {
 
   const getRealData = async () => {
     const { data } = await supabase
-      .from('profiles')
+      .from('profiles') // Make sure your table name matches exactly
       .select('*')
       .order('created_at', { ascending: false })
 
@@ -18,10 +18,9 @@ export default function AdminDashboard() {
       setUsers(data)
       setStats({
         total: data.length,
-        // Change u.plan_type to u.plan below:
-        free: data.filter(u => u.plan === 'free' || !u.plan).length,
+        free: data.filter(u => u.plan === 'free' || !u.plan_type).length,
+        essential: data.filter(u => u.plan === 'essential').length,
         pro: data.filter(u => u.plan === 'pro').length,
-        premium: data.filter(u => u.plan === 'premium').length,
         loading: false
       })
     }
