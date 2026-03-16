@@ -1,20 +1,14 @@
 'use client'
 
-import { useState } from 'react'
-import { Search, LineChart, Bookmark, Lock, Activity, ChevronRight, Zap } from 'lucide-react'
-
-// --- DUMMY DATA FOR UI TESTING ---
-const MOCK_SETUPS = [
-  { id: 1, asset: 'XAUUSD', market: 'Gold', timeframe: 'H4', bias: 'Bullish', status: 'Active' },
-  { id: 2, asset: 'EURUSD', market: 'Forex', timeframe: 'H1', bias: 'Bearish', status: 'Active' },
-  { id: 3, asset: 'GBPUSD', market: 'Forex', timeframe: '15m', bias: 'Neutral', status: 'Pending' },
-]
+import { useState, useEffect } from 'react'
+import { Search, LineChart, Bookmark, Lock, Activity, ChevronRight, Zap, Loader2 } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 export default function OperatorTerminal() {
   const [activeFilter, setActiveFilter] = useState('All')
-  
-  // Simulated user plan (Change this to 'free', 'essential', or 'pro' to test the UI locks)
-  const [userPlan, setUserPlan] = useState('essential') 
+  const [userPlan, setUserPlan] = useState('free') 
+  const [setups, setSetups] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   // Filter definitions with tier requirements
   const FILTERS = [
@@ -26,12 +20,58 @@ export default function OperatorTerminal() {
     { name: 'Stocks', req: 'pro' }
   ]
 
+  useEffect(() => {
+    async function fetchLiveTerminalData() {
+      // 1. Get logged in user
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // 2. Get their exact plan from the database
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('plan')
+          .eq('id', user.id)
+          .single()
+          
+        if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
+
+        // 3. Get the real live setups from the database
+        const { data: analyses } = await supabase
+          .from('analyses') // Adjust if your table name is different (e.g., 'analysis')
+          .select('*')
+          .order('created_at', { ascending: false })
+
+        if (analyses) setSetups(analyses)
+      }
+      setLoading(false)
+    }
+
+    fetchLiveTerminalData()
+  }, [])
+
   // Helper to check if a filter is locked for the current user
   const isLocked = (reqTier: string) => {
     if (userPlan === 'pro') return false
     if (userPlan === 'essential' && reqTier === 'pro') return true
     if (userPlan === 'free' && reqTier !== 'free') return true
     return false
+  }
+
+  // THIS IS THE FILTERING LOGIC
+  const filteredSetups = setups.filter(setup => {
+    if (activeFilter === 'All') return true
+    // Matches the active filter against your database's category or market column
+    const marketMatch = (setup.market || setup.category || '').toLowerCase()
+    return marketMatch === activeFilter.toLowerCase()
+  })
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
+        <Loader2 className="animate-spin text-blue-500" size={40} />
+        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Syncing Terminal...</span>
+      </div>
+    )
   }
 
   return (
@@ -41,12 +81,12 @@ export default function OperatorTerminal() {
       <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-3 flex items-center px-4 text-blue-400 text-sm font-bold">
         <Activity size={16} className="mr-3 animate-pulse shrink-0" />
         <span className="uppercase tracking-widest text-[10px] mr-3 bg-blue-500/20 px-2 py-1 rounded shrink-0">System Broadcast</span>
-        <span className="truncate">High impact news (NFP) incoming. Adjust stops to break-even on active USD pairs.</span>
+        <span className="truncate">Live data feed connected. Welcome to the terminal.</span>
       </div>
 
       {/* TOP METRICS ROW */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <MetricCard label="Intelligence Deployed" value="12" subtext="In the last 24 hours" icon={Zap} />
+        <MetricCard label="Intelligence Deployed" value={setups.length.toString()} subtext="Total active setups" icon={Zap} />
         
         <div className="bg-[#0a0a0a] border border-neutral-800 p-6 rounded-2xl flex flex-col justify-between relative overflow-hidden">
           <div className="relative z-10">
@@ -62,7 +102,7 @@ export default function OperatorTerminal() {
           </div>
         </div>
 
-        <MetricCard label="Market Status" value="NY Session" subtext="High Volatility Expected" icon={LineChart} />
+        <MetricCard label="Market Status" value="Online" subtext="Terminal synchronized" icon={LineChart} />
       </div>
 
       {/* FEED FILTERS & SEARCH */}
@@ -90,7 +130,7 @@ export default function OperatorTerminal() {
           })}
         </div>
 
-        {/* Search Bar (Moved here since we removed the top nav) */}
+        {/* Search Bar */}
         <div className="flex items-center bg-[#0a0a0a] border border-neutral-800 rounded-full px-4 py-2 w-full md:w-64 focus-within:border-neutral-600 transition-colors shrink-0">
           <Search size={14} className="text-neutral-500 mr-2" />
           <input type="text" placeholder="Search setups..." className="bg-transparent border-none outline-none text-xs w-full text-white placeholder-neutral-500" />
@@ -98,47 +138,59 @@ export default function OperatorTerminal() {
 
       </div>
 
-      {/* INTELLIGENCE GRID */}
+      {/* COMPACT INTELLIGENCE GRID */}
       <div>
         <h3 className="text-sm font-black text-white uppercase tracking-widest mb-4">Latest Deployments</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {MOCK_SETUPS.map(setup => (
-            <div key={setup.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-neutral-600 transition-colors cursor-pointer group flex flex-col">
+        
+        {/* Changed grid layout here for smaller, tighter cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          
+          {filteredSetups.map(setup => (
+            // Reduced padding from p-5 to p-4, tighter rounded corners
+            <div key={setup.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl p-4 hover:border-neutral-600 transition-colors cursor-pointer group flex flex-col">
               
-              <div className="flex justify-between items-start mb-6">
+              <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h4 className="text-2xl font-black text-white tracking-tighter">{setup.asset}</h4>
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">{setup.market}</span>
+                  {/* Smaller Title Text */}
+                  <h4 className="text-lg font-black text-white tracking-tight">{setup.asset_pair || setup.asset || 'UNKNOWN'}</h4>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">{setup.market || setup.category || 'MARKET'}</span>
                 </div>
                 <button className="text-neutral-600 hover:text-white transition-colors">
-                  <Bookmark size={18} />
+                  <Bookmark size={16} />
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
-                  <div className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest mb-1">Timeframe</div>
-                  <div className="text-sm font-bold text-neutral-300">{setup.timeframe}</div>
+                  <div className="text-[9px] text-neutral-600 font-bold uppercase tracking-widest mb-0.5">Timeframe</div>
+                  <div className="text-xs font-bold text-neutral-300">{setup.timeframe || '-'}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest mb-1">Bias</div>
-                  <div className={`text-sm font-bold ${setup.bias === 'Bullish' ? 'text-emerald-500' : setup.bias === 'Bearish' ? 'text-red-500' : 'text-neutral-400'}`}>
-                    {setup.bias}
+                  <div className="text-[9px] text-neutral-600 font-bold uppercase tracking-widest mb-0.5">Bias</div>
+                  <div className={`text-xs font-bold ${setup.bias?.toLowerCase() === 'bullish' ? 'text-emerald-500' : setup.bias?.toLowerCase() === 'bearish' ? 'text-red-500' : 'text-neutral-400'}`}>
+                    {setup.bias || '-'}
                   </div>
                 </div>
               </div>
 
-              <div className="mt-auto pt-4 border-t border-neutral-800 flex items-center justify-between text-xs font-bold">
-                <span className="flex items-center text-green-500 uppercase tracking-widest text-[10px]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-2 shadow-[0_0_5px_rgba(34,197,94,0.8)]"></span>
-                  {setup.status}
+              <div className="mt-auto pt-3 border-t border-neutral-800 flex items-center justify-between text-[10px] font-bold">
+                <span className="flex items-center text-green-500 uppercase tracking-widest">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5 shadow-[0_0_5px_rgba(34,197,94,0.8)]"></span>
+                  {setup.status || 'ACTIVE'}
                 </span>
                 <span className="text-neutral-500 group-hover:text-white transition-colors flex items-center">
-                  View Data <ChevronRight size={14} className="ml-1" />
+                  View <ChevronRight size={12} className="ml-0.5" />
                 </span>
               </div>
             </div>
           ))}
+
+          {filteredSetups.length === 0 && (
+            <div className="col-span-full py-12 text-center text-neutral-500 italic border border-dashed border-neutral-800 rounded-xl">
+              No active intelligence deployments found for this filter.
+            </div>
+          )}
+
         </div>
       </div>
 
