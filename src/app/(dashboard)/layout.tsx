@@ -1,67 +1,64 @@
-'use client'
+import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { createServerClient } from '@supabase/ssr'
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { 
-  LayoutDashboard, LineChart, Bookmark, 
-  Award, Settings, LogOut, Menu 
-} from 'lucide-react'
+import SideNav from '@/components/dashboard/SideNav'
+import TopNav from '@/components/dashboard/TopNav'
+import ThemeWrapper from '@/components/dashboard/ThemeWrapper'
 
-export default function SideNav() {
-  const [isOpen, setIsOpen] = useState(true)
-  const pathname = usePathname()
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // 1. AWAIT the cookies (Next.js 15+ strict requirement)
+  const cookieStore = await cookies()
 
-  const navItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Markets', href: '/dashboard/markets', icon: LineChart },
-    { name: 'The Vault', href: '/dashboard/vault', icon: Bookmark },
-    { name: 'Performance', href: '/dashboard/performance', icon: Award },
-    { name: 'Account', href: '/dashboard/account', icon: Settings },
-  ]
+  // 2. Create a secure server-side Supabase client
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          } catch (error) {}
+        },
+      },
+    }
+  )
 
+  // 3. THE VAULT DOOR: Check for a valid user cryptographically
+  const { data: { user } } = await supabase.auth.getUser()
+
+  // 4. If they have no valid key, abort the render and kick them out
+  if (!user) {
+    redirect('/login?error=Unauthorized')
+  }
+
+  // 5. If they pass, render the premium terminal UI
   return (
-    <aside className={`${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-screen shrink-0 z-50`}>
-      
-      {/* BRANDING & TOGGLE */}
-      <div className="h-16 flex items-center px-4 border-b border-neutral-800 justify-between">
-        {isOpen && (
-          <span className="font-black tracking-tight text-lg uppercase flex items-center">
-            <span className="text-blue-500 mr-1">MY</span> TRADER DESK
-          </span>
-        )}
-        <button 
-          onClick={() => setIsOpen(!isOpen)} 
-          className="p-2 hover:bg-neutral-800 rounded-lg text-neutral-400 transition-colors mx-auto"
-        >
-          <Menu size={20} />
-        </button>
+    <ThemeWrapper>
+      {/* Background Depth Blooms */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-brand-primary/5 blur-[120px] rounded-full transition-colors duration-1000" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-brand-primary/5 blur-[120px] rounded-full transition-colors duration-1000" />
       </div>
 
-      {/* NAVIGATION LINKS */}
-      <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto scrollbar-hide">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href
-          return (
-            <Link key={item.name} href={item.href}>
-              <div className={`flex items-center w-full p-3 rounded-xl transition-colors mb-2
-                ${isActive ? 'bg-white/10 text-white' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}>
-                <item.icon size={20} className="shrink-0" />
-                {isOpen && <span className="ml-3 font-bold text-sm uppercase tracking-widest truncate">{item.name}</span>}
-              </div>
-            </Link>
-          )
-        })}
-      </nav>
+      <div className="flex h-screen w-full relative z-10">
+        {/* SIDEBAR */}
+        <SideNav />
 
-      {/* DISCONNECT / LOGOUT */}
-      <div className="p-4 border-t border-neutral-800">
-        <button className="flex items-center w-full p-3 rounded-xl text-neutral-400 hover:bg-red-500/10 hover:text-red-500 transition-colors">
-          <LogOut size={20} className="shrink-0" />
-          {isOpen && <span className="ml-3 font-bold text-sm uppercase tracking-widest">Disconnect</span>}
-        </button>
+        {/* MAIN CONTENT WRAPPER */}
+        <div className="flex-1 flex flex-col relative overflow-hidden bg-[#050505]">
+          <TopNav />
+          <main className="flex-1 overflow-y-auto">
+            {children}
+          </main>
+        </div>
       </div>
-      
-    </aside>
+    </ThemeWrapper>
   )
 }
