@@ -12,8 +12,8 @@ export default function OperatorTerminal() {
   const [setups, setSetups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   
-  // Watchlist State
-  const [watchlist, setWatchlist] = useState<string[]>([])
+  // Watchlist State (Now stores precise setup objects)
+  const [watchlist, setWatchlist] = useState<any[]>([])
 
   const FILTERS = [
     { name: 'All', req: 'free' },
@@ -25,9 +25,17 @@ export default function OperatorTerminal() {
   ]
 
   useEffect(() => {
-    // Load Watchlist from LocalStorage
+    // Load Watchlist and normalize legacy strings into objects
     const saved = localStorage.getItem('analysis_watchlist')
-    if (saved) setWatchlist(JSON.parse(saved))
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        const normalized = parsed.map((item: any) => 
+          typeof item === 'string' ? { id: item, symbol: item, timeframe: '' } : item
+        )
+        setWatchlist(normalized)
+      } catch (e) {}
+    }
 
     async function fetchLiveTerminalData() {
       try {
@@ -59,15 +67,18 @@ export default function OperatorTerminal() {
     fetchLiveTerminalData()
   }, [])
 
-  // Toggle Bookmark Function
-  const toggleBookmark = (e: React.MouseEvent, symbol: string) => {
-    e.stopPropagation() // Prevents clicking the card background
+  // Toggle Bookmark Function (Now uses setup ID for precision)
+  const toggleBookmark = (e: React.MouseEvent, setup: any) => {
+    e.stopPropagation() 
     let updated = [...watchlist]
-    if (updated.includes(symbol)) {
-      updated = updated.filter(s => s !== symbol)
+    const exists = updated.find(item => item.id === setup.id)
+    
+    if (exists) {
+      updated = updated.filter(item => item.id !== setup.id)
     } else {
-      updated.unshift(symbol) // Add to top of list
+      updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe }) 
     }
+    
     setWatchlist(updated)
     localStorage.setItem('analysis_watchlist', JSON.stringify(updated))
   }
@@ -88,11 +99,11 @@ export default function OperatorTerminal() {
   // --- DYNAMIC METRIC CALCULATORS ---
   const getActiveSession = () => {
     const hour = new Date().getUTCHours()
-    if (hour >= 13 && hour < 17) return 'NY / London Overlap'
-    if (hour >= 13 && hour < 22) return 'New York Session'
-    if (hour >= 8 && hour < 17) return 'London Session'
-    if (hour >= 23 || hour < 8) return 'Tokyo / Sydney'
-    return 'Inter-Bank Transition'
+    if (hour >= 13 && hour < 17) return 'NY / London'
+    if (hour >= 13 && hour < 22) return 'New York'
+    if (hour >= 8 && hour < 17) return 'London'
+    if (hour >= 23 || hour < 8) return 'Asian'
+    return 'Inter-Bank'
   }
 
   let deployCount = 0
@@ -132,10 +143,11 @@ export default function OperatorTerminal() {
         {/* ================= LEFT COLUMN: Metrics & Feed ================= */}
         <div className="lg:col-span-8 xl:col-span-9 space-y-8">
           
-          {/* TOP METRICS ROW (Now inside the feed margin) */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* TOP METRICS ROW */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            
             {/* Intelligence Card */}
-            <div className="bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
+            <div className="md:col-span-4 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
               <div>
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">{deployLabel}</div>
                 <div className="text-3xl font-black text-white tracking-tighter">{deployCount}</div>
@@ -145,8 +157,8 @@ export default function OperatorTerminal() {
               </div>
             </div>
 
-            {/* Market Session Card */}
-            <div className="bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
+            {/* Market Session Card (Expanded Width) */}
+            <div className="md:col-span-6 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors">
               <div>
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Market Session</div>
                 <div className="text-xl font-black text-white tracking-tight uppercase italic">{getActiveSession()}</div>
@@ -156,11 +168,11 @@ export default function OperatorTerminal() {
               </div>
             </div>
             
-            {/* Active Plan Card */}
-            <div className="bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
+            {/* Active Plan Card (Shrunk Width & Text) */}
+            <div className="md:col-span-2 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
               <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Active Plan</div>
               <div className={`text-xl font-black uppercase tracking-widest ${userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
-                {userPlan} Tier
+                {userPlan}
               </div>
             </div>
           </div>
@@ -202,7 +214,7 @@ export default function OperatorTerminal() {
               {filteredSetups.map(setup => {
                 const isBull = setup.bias?.toUpperCase() === 'BULLISH'
                 const isBear = setup.bias?.toUpperCase() === 'BEARISH'
-                const isBookmarked = watchlist.includes(setup.asset_symbol)
+                const isBookmarked = watchlist.some(item => item.id === setup.id)
 
                 return (
                   <div 
@@ -216,15 +228,13 @@ export default function OperatorTerminal() {
                     </div>
                     
                     <div className="flex items-center space-x-2">
-                      {/* Bookmark Button */}
                       <button 
-                        onClick={(e) => toggleBookmark(e, setup.asset_symbol)}
+                        onClick={(e) => toggleBookmark(e, setup)}
                         className="text-neutral-600 hover:text-white transition-colors"
                       >
                         <Bookmark size={14} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
                       </button>
 
-                      {/* Direction Bias Icon */}
                       <div className={`p-1.5 rounded-lg shrink-0 ${isBull ? 'bg-emerald-500/10 text-emerald-500' : isBear ? 'bg-red-500/10 text-red-500' : 'bg-neutral-800 text-neutral-400'}`}>
                         {isBull ? <TrendingUp size={14} /> : isBear ? <TrendingDown size={14} /> : <Minus size={14} />}
                       </div>
@@ -279,18 +289,21 @@ export default function OperatorTerminal() {
                 <Bookmark size={16} className="text-amber-500 mr-2" />
                 <h3 className="text-sm font-black text-white uppercase tracking-widest">The Vault</h3>
               </div>
-              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Pinned</span>
+              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Pinned Targets</span>
             </div>
 
             <div className="space-y-2">
               {watchlist.length > 0 ? (
-                watchlist.slice(0, 6).map((symbol) => (
+                watchlist.slice(0, 6).map((item) => (
                   <div 
-                    key={symbol}
-                    onClick={() => router.push(`/analysis/viewport?asset=${symbol}`)}
+                    key={item.id}
+                    onClick={() => router.push(`/analysis/viewport?asset=${item.symbol}`)}
                     className="flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl cursor-pointer transition-colors group"
                   >
-                    <span className="text-xs font-bold text-white tracking-widest">{symbol}</span>
+                    <div>
+                      <span className="text-xs font-bold text-white tracking-widest">{item.symbol}</span>
+                      {item.timeframe && <span className="text-[9px] font-bold text-neutral-500 ml-2 uppercase">{item.timeframe}</span>}
+                    </div>
                     <ChevronRight size={14} className="text-neutral-600 group-hover:text-white transition-colors" />
                   </div>
                 ))
