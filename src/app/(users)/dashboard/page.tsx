@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, Bookmark, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-export default function OperatorTerminal() {
+function OperatorTerminal() {
   const router = useRouter()
   const searchParams = useSearchParams() 
   
@@ -317,5 +317,19 @@ export default function OperatorTerminal() {
         </div>
       </div>
     </div>
+  )
+}
+
+// Next.js 15 Suspense Wrapper
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="w-full min-h-[80vh] bg-[#050505] flex flex-col items-center justify-center space-y-4">
+        <Activity className="animate-pulse text-blue-500" size={40} />
+        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Loading Terminal...</span>
+      </div>
+    }>
+      <OperatorTerminal />
+    </Suspense>
   )
 }
