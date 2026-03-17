@@ -46,10 +46,22 @@ export default function ViewportPage() {
   useEffect(() => {
     if (!asset) return router.push('/markets')
 
-    // Inside viewport/page.tsx -> useEffect()
-
     async function loadData() {
-      // ... (keep your existing user fetch and vault fetch code here) ...
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+        if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
+
+        const { data: vaultData } = await supabase
+          .from('user_vault')
+          .select('analysis_id')
+          .eq('user_id', user.id)
+
+        if (vaultData) {
+          const liveWatchlist = vaultData.map((v: any) => ({ id: v.analysis_id }))
+          setWatchlist(liveWatchlist)
+        }
+      }
 
       const { data } = await supabase
         .from('analyses')
@@ -59,45 +71,39 @@ export default function ViewportPage() {
         
       if (data && data.length > 0) {
         setAllHistory(data)
-        const requestedTfExists = tfParam && data.some(d => d. === tfParam)
+        const requestedTfExists = tfParam && data.some(d => d.timeframe === tfParam)
         
-        let targetTf = data[0].
+        let targetTf = data[0].timeframe
         if (requestedTfExists) {
           targetTf = tfParam!
         }
         setSelectedTf(targetTf)
 
-        // --- NEW: LOG THE PAYWALL BUMP ---
-        // We only log this if the user is authenticated (to avoid errors)
-        const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-           // We have to evaluate access right here based on the data we just fetched
-           const targetSetup = data.find(d => d. === targetTf)
+           const targetSetup = data.find(d => d.timeframe === targetTf)
            const accessCheck = getSetupAccess(targetSetup)
            
            if (!accessCheck.hasAccess) {
-             // Silently fire the log without awaiting it so it doesn't slow down the UI
              supabase.from('activity_logs').insert([{
                user_id: user.id,
                action: 'PAYWALL_BUMP',
                asset_symbol: asset,
-               : targetTf
-             }]).then() // .then() ensures it executes silently in the background
+               timeframe: targetTf
+             }]).then()
            }
         }
-        // ---------------------------------
       }
       setLoading(false)
     }
     loadData()
   }, [asset, tfParam, router])
 
-  const s = useMemo(() => {
-    const uniqueTfs = Array.from(new Set(allHistory.map(a => a.)))
+  const timeframes = useMemo(() => {
+    const uniqueTfs = Array.from(new Set(allHistory.map(a => a.timeframe)))
     return uniqueTfs.sort((a, b) => getTfWeight(a) - getTfWeight(b))
   }, [allHistory])
   
-  const filteredHistory = useMemo(() => allHistory.filter(a => a. === selectedTf), [allHistory, selectedTf])
+  const filteredHistory = useMemo(() => allHistory.filter(a => a.timeframe === selectedTf), [allHistory, selectedTf])
   const currentSetup = filteredHistory[activeIndex]
 
   const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
@@ -109,17 +115,14 @@ export default function ViewportPage() {
 
     const exists = watchlist.find(item => item.id === setup.id)
     
-    // Optimistic UI Update (feels instant)
     let updated = [...watchlist]
     if (exists) {
       updated = updated.filter(item => item.id !== setup.id)
       setWatchlist(updated)
-      // Remove from live database
       await supabase.from('user_vault').delete().match({ user_id: user.id, analysis_id: setup.id })
     } else {
-      updated.unshift({ id: setup.id, symbol: setup.asset_symbol, : setup. }) 
+      updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe }) 
       setWatchlist(updated)
-      // Insert into live database
       await supabase.from('user_vault').insert([{ user_id: user.id, analysis_id: setup.id }])
     }
   }
@@ -135,7 +138,7 @@ export default function ViewportPage() {
   const getSetupAccess = (setup: any) => {
     if (!setup) return { hasAccess: false, requiredTier: 'PRO', hoursLeft: 0, countdownText: '' }
     const isCore = CORE_ASSETS.includes(asset || '')
-    const lowerTf = (setup. || '').toLowerCase().replace(/\s+/g, '') 
+    const lowerTf = (setup.timeframe || '').toLowerCase().replace(/\s+/g, '') 
     const isScalp = lowerTf.includes('5m') || lowerTf.includes('15m')
     const isFastDelay = isScalp || lowerTf.includes('1h') || lowerTf.includes('h1')
 
@@ -203,7 +206,7 @@ export default function ViewportPage() {
              </div>
              <h2 className="text-lg font-black text-white tracking-tight uppercase mb-2 relative z-10">Clearance Required</h2>
              <p className="text-[11px] font-medium text-neutral-400 mb-6 relative z-10 leading-relaxed">
-               The <span className="text-white font-bold">{currentSetup.}</span> setup for <span className="text-white font-bold">{asset}</span> is restricted. It will unlock for your tier in:
+               The <span className="text-white font-bold">{currentSetup.timeframe}</span> setup for <span className="text-white font-bold">{asset}</span> is restricted. It will unlock for your tier in:
              </p>
              <div className="flex items-center justify-center space-x-2 bg-black border border-neutral-800 rounded-xl py-3 mb-6 relative z-10">
                <Clock size={14} className="text-neutral-500" />
@@ -249,32 +252,27 @@ export default function ViewportPage() {
            )}
          </div>
 
-// Inside viewport/page.tsx -> The  Button Mapping
-
          <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-[#0a0a0a] border border-neutral-800 p-1.5 rounded-xl shadow-lg pointer-events-auto z-50 flex items-center space-x-1">
-            {s.map(t => {
+            {timeframes.map(t => {
               const isSelected = selectedTf === t
               return (
                 <button 
                   key={t}
                   onClick={async () => { 
-                    // 1. Existing UI Logic
                     setSelectedTf(t); 
                     setActiveIndex(0); 
                     setScale(1); 
                     setPos({x:0, y:0});
 
-                    // --- NEW: LOG THE VIEW ---
                     const { data: { user } } = await supabase.auth.getUser()
                     if (user) {
                       supabase.from('activity_logs').insert([{
                         user_id: user.id,
                         action: 'VIEW_CHART',
                         asset_symbol: asset,
-                        : t
+                        timeframe: t
                       }]).then() 
                     }
-                    // -------------------------
                   }}
                   className={`flex items-center px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors
                     ${isSelected ? 'bg-white text-black' : 'text-neutral-500 hover:text-white hover:bg-white/5'}`}
