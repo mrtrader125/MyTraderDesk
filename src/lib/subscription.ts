@@ -5,7 +5,7 @@ export async function activatePremium(userId: string){
 await supabase
 .from('profiles')
 .update({
-plan:'premium',
+plan:'pro',
 forex_access:true,
 gold_access:true
 })
