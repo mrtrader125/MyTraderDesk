@@ -18,28 +18,29 @@ export default function TopNav() {
   // Initialize search input from URL
   const [searchTerm, setSearchTerm] = useState('')
 
+  // Add this inside your TopNav component
+
   useEffect(() => {
-    setMounted(true)
-    async function getUser() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        setUser(user)
-      } catch (err) {
-        console.error("Auth fetch failed in TopNav")
+    // Don't log empty searches
+    if (!searchTerm || searchTerm.trim() === '') return
+
+    // Create a timer that waits 1.5 seconds after the user stops typing
+    const delayDebounceFn = setTimeout(async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      
+      if (user) {
+        // Silently push the search query to your activity_logs table
+        supabase.from('activity_logs').insert([{
+          user_id: user.id,
+          action: 'SEARCH',
+          search_query: searchTerm.trim()
+        }]).then()
       }
-    }
-    getUser()
-  }, [])
+    }, 1500)
 
-  // Sync state if URL changes from outside
-  useEffect(() => {
-    setSearchTerm(searchParams?.get('search') || '')
-  }, [searchParams])
-
-  // Contextual URL Search logic
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setSearchTerm(val)
+    // If the user starts typing again before 1.5s is up, cancel the previous timer
+    return () => clearTimeout(delayDebounceFn)
+  }, [searchTerm]) // <-- This effect runs every time 'searchTerm' changes
     
     // Build the new URL with the search query
     const params = new URLSearchParams(searchParams?.toString() || '')
