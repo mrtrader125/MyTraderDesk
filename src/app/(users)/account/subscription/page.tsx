@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Shield, Crown, Zap, AlertTriangle, Activity, Bookmark } from 'lucide-react'
 import PricingCards from '@/components/pricing/PricingCards'
@@ -10,6 +10,9 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true)
   const [savedCount, setSavedCount] = useState(0)
   const [showPricing, setShowPricing] = useState(false)
+  
+  // NEW: Ref to handle smooth scrolling
+  const pricingRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     async function loadData() {
@@ -31,6 +34,15 @@ export default function SubscriptionPage() {
     }
     loadData()
   }, [])
+
+  // NEW: Auto-scroll smoothly when the pricing opens
+  useEffect(() => {
+    if (showPricing && pricingRef.current) {
+      setTimeout(() => {
+        pricingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }, [showPricing])
 
   if (loading) return <div className="animate-pulse flex space-x-4 p-8"><Activity className="text-brand-primary" /></div>
 
@@ -60,13 +72,24 @@ export default function SubscriptionPage() {
           {userPlan !== 'pro' && (
             <button 
               onClick={() => setShowPricing(!showPricing)}
-              className="px-8 py-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.2)] whitespace-nowrap"
+              className="px-8 py-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.2)] whitespace-nowrap shrink-0"
             >
               {showPricing ? 'Hide Plans' : 'Upgrade to Pro'}
             </button>
           )}
         </div>
       </div>
+
+      {/* 👇 FIX: PRICING REVEAL MOVED IMMEDIATELY BELOW THE BUTTON */}
+      {showPricing && userPlan !== 'pro' && (
+        <div ref={pricingRef} className="pt-4 pb-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">Select <span className="text-brand-primary">Clearance</span></h2>
+            <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mt-2">Unlock global intelligence and bypass time delays.</p>
+          </div>
+          <PricingCards userPlan={userPlan} />
+        </div>
+      )}
 
       {/* USAGE STATS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -99,17 +122,6 @@ export default function SubscriptionPage() {
         </button>
       </div>
 
-      {/* PRICING REVEAL */}
-      {showPricing && userPlan !== 'pro' && (
-        <div className="mt-12 pt-12 border-t border-neutral-800 animate-in fade-in slide-in-from-bottom-8">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">Select <span className="text-brand-primary">Clearance</span></h2>
-            <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mt-2">Unlock global intelligence and bypass time delays.</p>
-          </div>
-          {/* 👇 NEW: Pass userPlan to PricingCards */}
-          <PricingCards userPlan={userPlan} />
-        </div>
-      )}
     </div>
   )
 }
