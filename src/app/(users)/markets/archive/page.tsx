@@ -4,11 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Lock, Clock, Shield, Crown, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-
-// System Configuration
-const CORE_ASSETS = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'AUDUSD', 'NZDUSD', 'USDCHF', 'XAUUSD', 'GBPCAD', 'CADJPY', 'EURJPY', 'EURAUD', 'GBPAUD']
-const SCALP_TIMEFRAMES = ['5m', '5M', '15m', '15M']
-const FAST_TIMEFRAMES = [...SCALP_TIMEFRAMES, '1h', '1H', 'H1']
+import { getSetupAccess } from '@/lib/access' // <-- NEW: Centralized access engine
 
 function ArchiveContent() {
   const searchParams = useSearchParams()
@@ -16,7 +12,7 @@ function ArchiveContent() {
   const asset = searchParams.get('asset')
   
   const [history, setHistory] = useState<any[]>([])
-  const [userPlan, setUserPlan] = useState<string>('FREE')
+  const [userPlan, setUserPlan] = useState<string>('free')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -26,7 +22,7 @@ function ArchiveContent() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
-        if (profile?.plan) setUserPlan(profile.plan.toUpperCase())
+        if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
       }
 
       const { data } = await supabase.from('analyses').select('*').eq('asset_symbol', asset).order('created_at', { ascending: false })
@@ -66,21 +62,8 @@ function ArchiveContent() {
     const isBull = setup.bias?.toUpperCase() === 'BULLISH'
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
     
-    // Authorization Check Engine
-    const isCore = CORE_ASSETS.includes(asset || '')
-    const tf = setup.timeframe || ''
-    const isScalp = SCALP_TIMEFRAMES.includes(tf)
-    const isFastDelay = FAST_TIMEFRAMES.includes(tf)
-
-    const ageInHours = (new Date().getTime() - dateObj.getTime()) / (1000 * 60 * 60)
-    const requiredDelayHours = isFastDelay ? 24 : 168
-    const isTimeUnlocked = ageInHours >= requiredDelayHours
-    const requiredTier = (!isCore || isScalp) ? 'PRO' : 'ESSENTIAL'
-
-    let hasAccess = false
-    if (userPlan === 'PRO') hasAccess = true
-    else if (userPlan === 'ESSENTIAL' && requiredTier === 'ESSENTIAL') hasAccess = true
-    else if (isTimeUnlocked) hasAccess = true
+    // --- NEW: Using the centralized access logic ---
+    const { hasAccess, requiredTier } = getSetupAccess(setup, userPlan)
 
     return (
       <div 
@@ -98,7 +81,7 @@ function ArchiveContent() {
           {/* Lock Overlay */}
           {!hasAccess && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
-              <Lock size={16} className={requiredTier === 'PRO' ? 'text-brand-primary mb-1.5' : 'text-blue-500 mb-1.5'} />
+              <Lock size={16} className={requiredTier === 'pro' ? 'text-brand-primary mb-1.5' : 'text-blue-500 mb-1.5'} />
               <span className="text-[9px] font-black text-white uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded border border-white/10">
                 {requiredTier} TIER
               </span>
