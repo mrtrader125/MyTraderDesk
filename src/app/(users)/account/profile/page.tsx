@@ -49,6 +49,11 @@ export default function ProfilePage() {
           .update({ full_name: fullName })
           .eq('id', user.id)
 
+        // NEW FIX: Also update their Auth Metadata so the TopNav Avatar updates instantly
+        await supabase.auth.updateUser({
+          data: { full_name: fullName }
+        })
+
         if (error) throw error
         // Optionally add a toast notification here later
       }
