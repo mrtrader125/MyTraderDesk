@@ -26,7 +26,7 @@ export default function ViewportPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const asset = searchParams.get('asset')
-  const tfParam = searchParams.get('tf') // <-- NEW: Grabbing the timeframe from URL
+  const tfParam = searchParams.get('tf')
   
   const [allHistory, setAllHistory] = useState<any[]>([])
   const [userPlan, setUserPlan] = useState('free')
@@ -71,7 +71,6 @@ export default function ViewportPage() {
       if (data && data.length > 0) {
         setAllHistory(data)
         
-        // NEW LOGIC: Check if URL requested a specific timeframe, otherwise default to newest
         const requestedTfExists = tfParam && data.some(d => d.timeframe === tfParam)
         if (requestedTfExists) {
           setSelectedTf(tfParam!)
@@ -193,7 +192,7 @@ export default function ViewportPage() {
              </div>
              <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-6 relative z-10">(You can still view older history via the right sidebar)</p>
              <div className="relative z-10 pt-5 border-t border-neutral-800">
-               <button onClick={() => router.push('/settings/billing')} className={`w-full py-3 text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center space-x-2 transition-colors ${access.requiredTier === 'PRO' ? 'bg-brand-primary text-white hover:bg-brand-primary/90' : 'bg-blue-600 text-white hover:bg-blue-500'}`}>
+               <button onClick={() => router.push('/account/subscription')} className={`w-full py-3 text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center space-x-2 transition-colors ${access.requiredTier === 'PRO' ? 'bg-brand-primary text-white hover:bg-brand-primary/90' : 'bg-blue-600 text-white hover:bg-blue-500'}`}>
                  {access.requiredTier === 'PRO' ? <Crown size={14} /> : <Shield size={14} />}
                  <span>Upgrade to {access.requiredTier}</span>
                </button>
@@ -262,34 +261,4 @@ export default function ViewportPage() {
              {filteredHistory.map((item, idx) => {
                const historyAccess = getSetupAccess(item)
                const isActive = activeIndex === idx
-               const isItemBookmarked = watchlist.some(w => w.id === item.id)
-
-               return (
-                 <button 
-                   key={item.id}
-                   onClick={() => { if(historyAccess.hasAccess) { setActiveIndex(idx); setScale(1); setPos({x:0, y:0}) } }}
-                   className={`w-full flex items-center h-10 rounded-lg transition-all relative ${isSidebarPinned ? 'justify-start px-3' : 'justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3'} ${isActive ? 'bg-white/10' : 'hover:bg-white/5'} ${!historyAccess.hasAccess ? 'cursor-not-allowed opacity-60' : ''}`}
-                 >
-                   <div className={`${isSidebarPinned ? 'hidden' : 'block group-hover/sidebar:hidden shrink-0'}`}>
-                     <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white shadow-[0_0_5px_#fff]' : 'bg-neutral-700'}`} />
-                   </div>
-                   <div className={`items-center justify-between w-full min-w-0 ${isSidebarPinned ? 'flex' : 'hidden group-hover/sidebar:flex'}`}>
-                     <div className="flex flex-col items-start min-w-0 pr-2">
-                       <span className={`text-[10px] font-bold uppercase tracking-wider truncate ${isActive ? 'text-white' : 'text-neutral-400'}`}>{new Date(item.created_at).toLocaleDateString()}</span>
-                       <span className="text-[8px] font-bold text-neutral-600">{new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                     </div>
-                     <div className="flex items-center space-x-1.5 shrink-0">
-                       {isItemBookmarked && <Bookmark size={10} className="fill-amber-500 text-amber-500" />}
-                       {!historyAccess.hasAccess && <Lock size={10} className="text-neutral-500" />}
-                     </div>
-                   </div>
-                 </button>
-               )
-             })}
-           </div>
-         </div>
-
-       </div>
-    </div>
-  )
-}
+               const isItemBookmarked = watchlist.some(
