@@ -14,22 +14,30 @@ export default function TopNav() {
   const [mounted, setMounted] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [showDropdown, setShowDropdown] = useState(false)
-  
-  // Initialize search input from URL
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Add this inside your TopNav component
-
+  // 1. Initial Load: Set mounted, fetch user, and grab initial search from URL
   useEffect(() => {
-    // Don't log empty searches
+    setMounted(true)
+    
+    // Grab user for the profile dropdown
+    async function loadUser() {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+    loadUser()
+
+    // Sync search bar with URL if they refresh the page
+    const initialSearch = searchParams.get('search') || ''
+    setSearchTerm(initialSearch)
+  }, [searchParams])
+
+  // 2. The Tracking Tracker: Silently logs searches after a 1.5s pause
+  useEffect(() => {
     if (!searchTerm || searchTerm.trim() === '') return
 
-    // Create a timer that waits 1.5 seconds after the user stops typing
     const delayDebounceFn = setTimeout(async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      
       if (user) {
-        // Silently push the search query to your activity_logs table
         supabase.from('activity_logs').insert([{
           user_id: user.id,
           action: 'SEARCH',
@@ -38,19 +46,20 @@ export default function TopNav() {
       }
     }, 1500)
 
-    // If the user starts typing again before 1.5s is up, cancel the previous timer
     return () => clearTimeout(delayDebounceFn)
-  }, [searchTerm]) // <-- This effect runs every time 'searchTerm' changes
+  }, [searchTerm, user])
     
-    // Build the new URL with the search query
+  // 3. UI Handler: Updates the input box and the URL instantly
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setSearchTerm(val)
+
     const params = new URLSearchParams(searchParams?.toString() || '')
     if (val) {
       params.set('search', val)
     } else {
       params.delete('search')
     }
-    
-    // Replace current URL to trigger page updates without reloading
     router.replace(`${pathname}?${params.toString()}`)
   }
 
@@ -61,7 +70,7 @@ export default function TopNav() {
 
   if (pathname?.includes('/viewport')) return null
 
-  // 1. Hide search entirely on any /account pages
+  // Hide search entirely on any /account pages
   const isAccountPage = pathname?.startsWith('/account')
 
   const userInitial = user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'
