@@ -18,10 +18,10 @@ export default function TopNav() {
   // Local state for smooth, lag-free typing
   const [searchTerm, setSearchTerm] = useState('')
   
-  // Ref to track if the current change originated from the URL or the keyboard
+  // Ref to track initial mount
   const isInitialSync = useRef(true)
 
-  // 1. Initial Load: Fetch User and Sync search bar with current URL
+  // 1. Initial Load: Fetch User and set initial search exactly ONCE
   useEffect(() => {
     setMounted(true)
     
@@ -33,47 +33,46 @@ export default function TopNav() {
 
     const initialSearch = searchParams.get('search') || ''
     setSearchTerm(initialSearch)
-  }, []) // Run once on mount
+  }, []) // <-- Empty array guarantees this never loops
 
   // 2. Logic Engine: Debounced URL update and Supabase Logging
   useEffect(() => {
-    // Skip the very first run to prevent logging the current URL as a "new search"
     if (isInitialSync.current) {
       isInitialSync.current = false
       return
     }
 
-    // Handle Empty Search: Clear URL immediately for better UX
-    if (searchTerm.trim() === '') {
-      const params = new URLSearchParams(searchParams?.toString())
-      if (params.has('search')) {
-        params.delete('search')
+    const timer = setTimeout(() => {
+      const currentUrlSearch = searchParams.get('search') || ''
+      const newSearch = searchTerm.trim()
+
+      // CIRCUIT BREAKER: Only update URL and Database if the word actually changed
+      if (newSearch !== currentUrlSearch) {
+        const params = new URLSearchParams(searchParams.toString())
+        
+        if (newSearch === '') {
+          params.delete('search')
+        } else {
+          params.set('search', newSearch)
+        }
+        
         router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-      }
-      return
-    }
 
-    // Debounce: Wait 500ms after user stops typing before updating URL and DB
-    const timer = setTimeout(async () => {
-      // Update the URL (scroll: false prevents the page from jumping)
-      const params = new URLSearchParams(searchParams?.toString())
-      params.set('search', searchTerm.trim())
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-
-      // Silently log the completed search query to Supabase
-      if (user) {
-        supabase.from('activity_logs').insert([{
-          user_id: user.id,
-          action: 'SEARCH',
-          search_query: searchTerm.trim()
-        }]).then()
+        // Silently log to Supabase
+        if (newSearch !== '' && user) {
+          supabase.from('activity_logs').insert([{
+            user_id: user.id,
+            action: 'SEARCH',
+            search_query: newSearch
+          }]).then()
+        }
       }
-    }, 500) 
+    }, 400) // 400ms delay for a snappy but safe feel
 
     return () => clearTimeout(timer)
-  }, [searchTerm, user, pathname, router])
+  }, [searchTerm, user, pathname, router, searchParams])
 
-  // 3. UI Handler: Updates the local state instantly for buttery-smooth typing
+  // 3. UI Handler: Updates local state instantly
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
   }
@@ -83,7 +82,6 @@ export default function TopNav() {
     router.push('/login')
   }
 
-  // Do not show TopNav on full-screen chart viewports
   if (pathname?.includes('/viewport')) return null
   
   const isAccountPage = pathname?.startsWith('/account')
