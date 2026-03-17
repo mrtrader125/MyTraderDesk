@@ -3,11 +3,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Shield, Crown, Zap, AlertTriangle, Activity, Bookmark } from 'lucide-react'
+import PricingCards from '@/components/pricing/PricingCards' // <-- IMPORT ADDED
 
 export default function SubscriptionPage() {
   const [userPlan, setUserPlan] = useState('free')
   const [loading, setLoading] = useState(true)
   const [savedCount, setSavedCount] = useState(0)
+  const [showPricing, setShowPricing] = useState(false) // <-- NEW STATE
 
   useEffect(() => {
     async function loadData() {
@@ -56,8 +58,11 @@ export default function SubscriptionPage() {
             </p>
           </div>
           {userPlan !== 'pro' && (
-            <button className="px-8 py-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.2)] whitespace-nowrap">
-              Upgrade to Pro
+            <button 
+              onClick={() => setShowPricing(!showPricing)}
+              className="px-8 py-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.2)] whitespace-nowrap"
+            >
+              {showPricing ? 'Hide Plans' : 'Upgrade to Pro'}
             </button>
           )}
         </div>
@@ -93,6 +98,17 @@ export default function SubscriptionPage() {
           Cancel Subscription
         </button>
       </div>
+
+      {/* PRICING REVEAL */}
+      {showPricing && userPlan !== 'pro' && (
+        <div className="mt-12 pt-12 border-t border-neutral-800 animate-in fade-in slide-in-from-bottom-8">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">Select <span className="text-brand-primary">Clearance</span></h2>
+            <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mt-2">Unlock global intelligence and bypass time delays.</p>
+          </div>
+          <PricingCards />
+        </div>
+      )}
     </div>
   )
 }
