@@ -22,10 +22,7 @@ export default function VaultPage() {
   const [userPlan, setUserPlan] = useState<string>('free')
   const [loading, setLoading] = useState(true)
   
-  // Category & UI States
   const [activeTab, setActiveTab] = useState('ALL')
-  
-  // Notes Engine States
   const [notes, setNotes] = useState<Record<string, string>>({})
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [tempNote, setTempNote] = useState('')
@@ -39,7 +36,6 @@ export default function VaultPage() {
           if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
         }
 
-        // Load Vault Items
         const savedWatchlist = localStorage.getItem('analysis_watchlist')
         if (savedWatchlist) {
           const parsed = JSON.parse(savedWatchlist)
@@ -54,11 +50,8 @@ export default function VaultPage() {
           }
         }
 
-        // Load Saved Notes
         const savedNotes = localStorage.getItem('vault_notes')
-        if (savedNotes) {
-          setNotes(JSON.parse(savedNotes))
-        }
+        if (savedNotes) setNotes(JSON.parse(savedNotes))
 
       } catch (err) {
         console.error("Vault Load Error:", err)
@@ -82,7 +75,6 @@ export default function VaultPage() {
     }
   }
 
-  // --- NOTES ENGINE ---
   const handleOpenNote = (e: React.MouseEvent, id: string) => {
     e.stopPropagation()
     setTempNote(notes[id] || '')
@@ -92,15 +84,12 @@ export default function VaultPage() {
   const handleSaveNote = () => {
     if (!editingNoteId) return
     const updatedNotes = { ...notes, [editingNoteId]: tempNote }
-    if (tempNote.trim() === '') {
-      delete updatedNotes[editingNoteId] // clean up empty notes
-    }
+    if (tempNote.trim() === '') delete updatedNotes[editingNoteId]
     setNotes(updatedNotes)
     localStorage.setItem('vault_notes', JSON.stringify(updatedNotes))
     setEditingNoteId(null)
   }
 
-  // --- ACCESS ENGINE ---
   const getSetupAccess = (setup: any) => {
     if (!setup) return { hasAccess: false, requiredTier: 'PRO' }
     const isCore = CORE_ASSETS.includes(setup.asset_symbol || '')
@@ -138,10 +127,7 @@ export default function VaultPage() {
     )
   }
 
-  // --- FILTERING & TIME GROUPING ---
-  const filteredItems = vaultItems.filter(item => 
-    activeTab === 'ALL' ? true : (item.category || 'FOREX').toUpperCase() === activeTab
-  )
+  const filteredItems = vaultItems.filter(item => activeTab === 'ALL' ? true : (item.category || 'FOREX').toUpperCase() === activeTab)
 
   const grouped = { today: [] as any[], yesterday: [] as any[], thisWeek: [] as any[], older: [] as any[] }
   const now = new Date()
@@ -190,7 +176,6 @@ export default function VaultPage() {
             </div>
           )}
           
-          {/* Top Right Action Buttons (Appear on Hover) */}
           <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 z-20">
             <button 
               onClick={(e) => handleOpenNote(e, setup.id)}
@@ -219,18 +204,14 @@ export default function VaultPage() {
               <h3 className="text-lg font-black text-white tracking-tight">{setup.asset_symbol}</h3>
               {hasNote && <FileText size={12} className="text-amber-500" />}
             </div>
-            
             {hasNote ? (
-              <p className="text-[10px] font-medium text-amber-500/80 line-clamp-2 leading-snug mt-1.5 italic">
-                "{notes[setup.id]}"
-              </p>
+              <p className="text-[10px] font-medium text-amber-500/80 line-clamp-2 leading-snug mt-1.5 italic">"{notes[setup.id]}"</p>
             ) : (
               <p className={`text-[10px] font-bold line-clamp-1 leading-snug mt-1.5 transition-colors ${hasAccess ? 'text-neutral-500' : 'text-neutral-600'}`}>
                 {hasAccess ? (setup.title || 'No notes added.') : 'Clearance restricted.'}
               </p>
             )}
           </div>
-          
           <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-neutral-600 pt-3 border-t border-neutral-800/80 mt-3">
             <span className="flex items-center"><Clock size={10} className="mr-1" /> {new Date(setup.created_at).toLocaleDateString()}</span>
             <span className="text-amber-500 flex items-center"><Bookmark size={10} className="fill-amber-500 mr-1" /> Vault</span>
@@ -243,9 +224,9 @@ export default function VaultPage() {
   return (
     <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden relative">
       
-      {/* CENTERED COMPACT TABS */}
-      <div className="flex flex-col items-center mb-10 mt-2">
-        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-800">
+      {/* ULTRA-COMPACT CENTERED TABS */}
+      <div className="flex flex-col items-center mb-8 mt-1">
+        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800">
           {CATEGORIES.map((cat) => {
             const locked = isLocked(cat.req)
             const active = activeTab === cat.id
@@ -253,11 +234,11 @@ export default function VaultPage() {
               <button 
                 key={cat.id}
                 onClick={() => !locked && setActiveTab(cat.id)}
-                className={`relative flex items-center px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] transition-all
-                  ${active ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] scale-105' : 
+                className={`relative flex items-center px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all
+                  ${active ? 'bg-white text-black shadow-sm scale-100' : 
                     locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-500 hover:text-white'}`}
               >
-                {locked && <Lock size={10} className="mr-1.5" />}
+                {locked && <Lock size={10} className="mr-1" />}
                 {cat.label}
               </button>
             )
@@ -266,31 +247,25 @@ export default function VaultPage() {
       </div>
 
       {vaultItems.length === 0 ? (
-        <div className="w-full max-w-xl mx-auto mt-10 border border-dashed border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
+        <div className="w-full max-w-xl mx-auto mt-6 border border-dashed border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
           <FolderOpen size={40} className="text-neutral-700 mb-4" />
           <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2">Vault is Empty</h3>
           <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-relaxed mb-6">
             No saved analysis yet, start bookmarking to build your vault.
           </p>
-          <button 
-            onClick={() => router.push('/dashboard')}
-            className="px-6 py-2.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-500 hover:text-black transition-colors"
-          >
+          <button onClick={() => router.push('/dashboard')} className="px-6 py-2.5 bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-500 hover:text-black transition-colors">
             Go to Dashboard
           </button>
         </div>
       ) : filteredItems.length === 0 ? (
-        <div className="py-20 text-center flex flex-col items-center">
+        <div className="py-16 text-center flex flex-col items-center">
           <span className="text-xs font-black text-neutral-600 uppercase tracking-widest">No saved setups in this category.</span>
         </div>
       ) : (
-        <div className="space-y-12">
-          
+        <div className="space-y-10">
           {grouped.today.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">
-                Today <div className="ml-4 h-px flex-1 bg-neutral-800"></div>
-              </h2>
+              <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">Today <div className="ml-4 h-px flex-1 bg-neutral-800"></div></h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                 {grouped.today.map(setup => <VaultCard key={setup.id} setup={setup} />)}
               </div>
@@ -299,9 +274,7 @@ export default function VaultPage() {
 
           {grouped.yesterday.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
-              <h2 className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-4 flex items-center">
-                Yesterday <div className="ml-4 h-px flex-1 bg-neutral-800"></div>
-              </h2>
+              <h2 className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-4 flex items-center">Yesterday <div className="ml-4 h-px flex-1 bg-neutral-800"></div></h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                 {grouped.yesterday.map(setup => <VaultCard key={setup.id} setup={setup} />)}
               </div>
@@ -310,9 +283,7 @@ export default function VaultPage() {
 
           {grouped.thisWeek.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
-              <h2 className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-4 flex items-center">
-                This Week <div className="ml-4 h-px flex-1 bg-neutral-800/50"></div>
-              </h2>
+              <h2 className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-4 flex items-center">This Week <div className="ml-4 h-px flex-1 bg-neutral-800/50"></div></h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
                 {grouped.thisWeek.map(setup => <VaultCard key={setup.id} setup={setup} />)}
               </div>
@@ -321,9 +292,7 @@ export default function VaultPage() {
 
           {grouped.older.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-              <h2 className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 flex items-center">
-                Older Records <div className="ml-4 h-px flex-1 bg-neutral-800/30"></div>
-              </h2>
+              <h2 className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 flex items-center">Older Records <div className="ml-4 h-px flex-1 bg-neutral-800/30"></div></h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 opacity-80 hover:opacity-100 transition-opacity">
                 {grouped.older.map(setup => <VaultCard key={setup.id} setup={setup} />)}
               </div>
@@ -332,43 +301,22 @@ export default function VaultPage() {
         </div>
       )}
 
-      {/* --- NOTES MODAL --- */}
       {editingNoteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
-            <button onClick={() => setEditingNoteId(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors">
-              <X size={20} />
-            </button>
+            <button onClick={() => setEditingNoteId(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors"><X size={20} /></button>
             <div className="flex items-center mb-6">
               <Edit3 size={18} className="text-amber-500 mr-2" />
               <h3 className="text-sm font-black text-white uppercase tracking-widest">Operator Notes</h3>
             </div>
-            
-            <textarea
-              value={tempNote}
-              onChange={(e) => setTempNote(e.target.value)}
-              placeholder="Add your tactical notes, entry triggers, or observations here..."
-              className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors resize-none mb-6 font-medium"
-            />
-            
+            <textarea value={tempNote} onChange={(e) => setTempNote(e.target.value)} placeholder="Add your tactical notes, entry triggers, or observations here..." className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors resize-none mb-6 font-medium" />
             <div className="flex justify-end space-x-3">
-              <button 
-                onClick={() => setEditingNoteId(null)}
-                className="px-5 py-2.5 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={handleSaveNote}
-                className="px-6 py-2.5 bg-amber-500 text-black text-xs font-black uppercase tracking-widest rounded-lg hover:bg-amber-400 transition-colors shadow-[0_0_15px_rgba(245,158,11,0.2)]"
-              >
-                Save Note
-              </button>
+              <button onClick={() => setEditingNoteId(null)} className="px-5 py-2.5 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors">Cancel</button>
+              <button onClick={handleSaveNote} className="px-6 py-2.5 bg-amber-500 text-black text-xs font-black uppercase tracking-widest rounded-lg hover:bg-amber-400 transition-colors shadow-[0_0_15px_rgba(245,158,11,0.2)]">Save Note</button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   )
 }
