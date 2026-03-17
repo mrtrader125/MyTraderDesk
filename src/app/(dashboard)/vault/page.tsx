@@ -16,28 +16,21 @@ export default function VaultPage() {
   useEffect(() => {
     async function loadVaultData() {
       try {
-        // 1. Get User Plan
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
           if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
         }
 
-        // 2. Read Watchlist IDs from LocalStorage
         const saved = localStorage.getItem('analysis_watchlist')
         if (saved) {
           const parsed = JSON.parse(saved)
           const validIds = parsed.map((item: any) => item.id).filter(Boolean)
 
           if (validIds.length > 0) {
-            // 3. Fetch exact setups from database
-            const { data, error } = await supabase
-              .from('analyses')
-              .select('*')
-              .in('id', validIds)
+            const { data, error } = await supabase.from('analyses').select('*').in('id', validIds)
 
             if (!error && data) {
-              // 4. Sort the fetched data so it exactly matches the order of their watchlist (newest saved first)
               const sortedData = validIds.map((id: string) => data.find(d => d.id === id)).filter(Boolean)
               setVaultItems(sortedData)
             }
@@ -49,18 +42,14 @@ export default function VaultPage() {
         setLoading(false)
       }
     }
-
     loadVaultData()
   }, [])
 
   const removeFromVault = (e: React.MouseEvent, idToRemove: string) => {
     e.stopPropagation()
-    
-    // Remove from UI State
     const updatedItems = vaultItems.filter(item => item.id !== idToRemove)
     setVaultItems(updatedItems)
 
-    // Remove from Local Storage
     const saved = localStorage.getItem('analysis_watchlist')
     if (saved) {
       const parsed = JSON.parse(saved)
@@ -69,7 +58,6 @@ export default function VaultPage() {
     }
   }
 
-  // --- ACCESS ENGINE (Reused for consistency) ---
   const getSetupAccess = (setup: any) => {
     if (!setup) return { hasAccess: false, requiredTier: 'PRO' }
 
@@ -103,8 +91,6 @@ export default function VaultPage() {
 
   return (
     <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans">
-      
-      {/* VAULT HEADER */}
       <div className="flex items-center justify-between mb-10 pb-6 border-b border-neutral-800">
         <div className="flex items-center space-x-5">
           <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.15)] shrink-0">
@@ -115,14 +101,12 @@ export default function VaultPage() {
             <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-1">Personalized Intelligence Watchlist</p>
           </div>
         </div>
-        
         <div className="hidden md:flex flex-col items-end">
           <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Saved Targets</span>
           <span className="text-2xl font-black text-white tracking-tighter">{vaultItems.length}</span>
         </div>
       </div>
 
-      {/* VAULT GRID */}
       {vaultItems.length === 0 ? (
         <div className="w-full max-w-2xl mx-auto mt-20 border border-dashed border-neutral-800 rounded-3xl p-16 flex flex-col items-center text-center bg-[#0a0a0a]">
           <FolderOpen size={48} className="text-neutral-700 mb-6" />
@@ -130,10 +114,7 @@ export default function VaultPage() {
           <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest leading-relaxed max-w-sm mb-8">
             You haven't pinned any active setups yet. Bookmark setups from the dashboard or market feed to monitor them here.
           </p>
-          <button 
-            onClick={() => router.push('/dashboard')}
-            className="px-8 py-3.5 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-colors"
-          >
+          <button onClick={() => router.push('/dashboard')} className="px-8 py-3.5 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-colors">
             Return to Dashboard
           </button>
         </div>
@@ -147,18 +128,13 @@ export default function VaultPage() {
             return (
               <div 
                 key={setup.id}
-                onClick={() => router.push(`/analysis/viewport?asset=${setup.asset_symbol}`)}
+                // NEW URL ARGUMENT HERE: &tf=${setup.timeframe}
+                onClick={() => router.push(`/analysis/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`)}
                 className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-amber-500/30 hover:shadow-[0_0_20px_rgba(245,158,11,0.05)] transition-all duration-300 min-h-[240px]"
               >
-                {/* Top Image Section */}
                 <div className="h-36 w-full bg-black relative overflow-hidden border-b border-neutral-800/50">
-                  <img 
-                    src={setup.image_url} 
-                    alt="Setup" 
-                    className={`w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100 group-hover:scale-105' : 'opacity-10 blur-md grayscale'}`}
-                  />
+                  <img src={setup.image_url} alt="Setup" className={`w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100 group-hover:scale-105' : 'opacity-10 blur-md grayscale'}`} />
                   
-                  {/* Lock Overlay */}
                   {!hasAccess && (
                     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
                       <Lock size={20} className={requiredTier === 'PRO' ? 'text-brand-primary mb-2' : 'text-blue-500 mb-2'} />
@@ -168,19 +144,13 @@ export default function VaultPage() {
                     </div>
                   )}
 
-                  {/* Badges */}
                   {hasAccess && (
                     <div className="absolute top-3 left-3 bg-[#0a0a0a]/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-black text-white uppercase tracking-widest border border-white/10 shadow-lg">
                       {setup.timeframe || '-'}
                     </div>
                   )}
                   
-                  {/* Delete Button (Appears on Hover) */}
-                  <button 
-                    onClick={(e) => removeFromVault(e, setup.id)}
-                    className="absolute top-3 right-3 p-2 bg-red-500/80 backdrop-blur-md text-white rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500 transition-all duration-300 shadow-lg transform translate-y-2 group-hover:translate-y-0"
-                    title="Remove from Vault"
-                  >
+                  <button onClick={(e) => removeFromVault(e, setup.id)} className="absolute top-3 right-3 p-2 bg-red-500/80 backdrop-blur-md text-white rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-500 transition-all duration-300 shadow-lg transform translate-y-2 group-hover:translate-y-0" title="Remove from Vault">
                     <Trash2 size={14} />
                   </button>
 
@@ -189,7 +159,6 @@ export default function VaultPage() {
                   </div>
                 </div>
 
-                {/* Bottom Details Section */}
                 <div className="p-4 flex flex-col flex-1 justify-between bg-gradient-to-b from-[#0a0a0a] to-[#050505]">
                   <div className="mb-4">
                     <h3 className="text-xl font-black text-white tracking-tight">{setup.asset_symbol}</h3>
