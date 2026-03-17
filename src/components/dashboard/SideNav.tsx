@@ -20,7 +20,7 @@ export default function SideNav() {
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Markets', href: '/analysis', icon: LineChart },
     { name: 'The Vault', href: '/vault', icon: Bookmark }, // Fixed!
-    { name: 'Account', href: '/account', icon: Settings },
+    { name: 'Account', href: '/account/profile', icon: Settings },
   ]
 
   const handleSignOut = async () => {
