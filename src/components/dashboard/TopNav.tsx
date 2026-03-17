@@ -35,6 +35,12 @@ function TopNavContent() {
     setSearchTerm(initialSearch)
   }, []) // <-- Empty array guarantees this never loops
 
+  // NEW UX FIX: Sync the input box if the URL changes via Sidebar navigation
+  useEffect(() => {
+    const currentUrlSearch = searchParams.get('search') || ''
+    setSearchTerm(currentUrlSearch)
+  }, [searchParams])
+
   // 2. Logic Engine: Debounced URL update and Supabase Logging
   useEffect(() => {
     if (isInitialSync.current) {
