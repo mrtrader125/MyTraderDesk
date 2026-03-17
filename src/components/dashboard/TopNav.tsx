@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { Search, LogOut, User } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import NotificationBell from '@/components/notifications/NotificationBell'
 
-export default function TopNav() {
+function TopNavContent() {
   const pathname = usePathname()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -144,5 +144,14 @@ export default function TopNav() {
         </div>
       </div>
     </header>
+  )
+}
+
+// Next.js 15 Suspense Wrapper
+export default function TopNav() {
+  return (
+    <Suspense fallback={<div className="h-16 w-full border-b border-neutral-800 bg-[#0a0a0a] shrink-0 z-40 sticky top-0"></div>}>
+      <TopNavContent />
+    </Suspense>
   )
 }
