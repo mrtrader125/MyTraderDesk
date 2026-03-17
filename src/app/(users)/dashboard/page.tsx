@@ -30,16 +30,41 @@ export default function OperatorTerminal() {
   useEffect(() => {
     setMounted(true)
 
-    const saved = localStorage.getItem('analysis_watchlist')
-    if (saved) {
+    async function fetchLiveTerminalData() {
       try {
-        const parsed = JSON.parse(saved)
-        const validItems = parsed.filter((item: any) => typeof item === 'object' && item.id && item.id.length > 20)
-        setWatchlist(validItems)
-      } catch (e) {
-        localStorage.removeItem('analysis_watchlist')
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+          if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
+
+          // --- NEW: Fetch Live Watchlist from Supabase ---
+          const { data: vaultData } = await supabase
+            .from('user_vault')
+            .select('analysis_id, analyses(asset_symbol, timeframe)')
+            .eq('user_id', user.id)
+
+          if (vaultData) {
+            const liveWatchlist = vaultData.map((v: any) => ({
+              id: v.analysis_id,
+              symbol: v.analyses?.asset_symbol,
+              timeframe: v.analyses?.timeframe
+            }))
+            setWatchlist(liveWatchlist)
+          }
+          // -----------------------------------------------
+
+          const { data: analyses, error } = await supabase.from('analyses').select('*').order('created_at', { ascending: false })
+          if (!error && analyses) setSetups(analyses)
+        }
+      } catch (err) {
+        console.error("Dashboard Sync Error:", err)
+      } finally {
+        setLoading(false)
       }
     }
+
+    fetchLiveTerminalData()
+  }, [])
 
     async function fetchLiveTerminalData() {
       try {
@@ -61,19 +86,29 @@ export default function OperatorTerminal() {
     fetchLiveTerminalData()
   }, [])
 
-  const toggleBookmark = (e: React.MouseEvent, setup: any) => {
+const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
     e.stopPropagation() 
+    if (!setup) return
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const exists = watchlist.find(item => item.id === setup.id)
+    
+    // Optimistic UI Update (feels instant)
     let updated = [...watchlist]
-    const exists = updated.find(item => item.id === setup.id)
     if (exists) {
       updated = updated.filter(item => item.id !== setup.id)
+      setWatchlist(updated)
+      // Remove from live database
+      await supabase.from('user_vault').delete().match({ user_id: user.id, analysis_id: setup.id })
     } else {
       updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe }) 
+      setWatchlist(updated)
+      // Insert into live database
+      await supabase.from('user_vault').insert([{ user_id: user.id, analysis_id: setup.id }])
     }
-    setWatchlist(updated)
-    localStorage.setItem('analysis_watchlist', JSON.stringify(updated))
   }
-
   const isLocked = (reqTier: string) => {
     if (userPlan === 'pro') return false
     if (userPlan === 'essential' && reqTier === 'pro') return true
