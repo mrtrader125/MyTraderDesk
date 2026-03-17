@@ -1,11 +1,10 @@
 'use client'
-import { getSetupAccess } from '@/lib/access'
+
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Bookmark, Lock, Clock, TrendingUp, TrendingDown, Minus, Trash2, Activity, FolderOpen, Edit3, X, FileText } from 'lucide-react'
-
-const CORE_ASSETS = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'AUDUSD', 'NZDUSD', 'USDCHF', 'XAUUSD', 'GBPCAD', 'CADJPY', 'EURJPY', 'EURAUD', 'GBPAUD']
+import { getSetupAccess } from '@/lib/access' // <-- Centralized access engine
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All', req: 'free' },
@@ -107,27 +106,6 @@ export default function VaultPage() {
     setEditingNoteId(null)
   }
 
-  const getSetupAccess = (setup: any) => {
-    if (!setup) return { hasAccess: false, requiredTier: 'PRO' }
-    const isCore = CORE_ASSETS.includes(setup.asset_symbol || '')
-    const lowerTf = (setup.timeframe || '').toLowerCase().replace(/\s+/g, '') 
-    const isScalp = lowerTf.includes('5m') || lowerTf.includes('15m')
-    const isFastDelay = isScalp || lowerTf.includes('1h') || lowerTf.includes('h1')
-
-    const createdTime = new Date(setup.created_at).getTime()
-    const ageInHours = (new Date().getTime() - createdTime) / (1000 * 60 * 60)
-    const requiredDelayHours = isFastDelay ? 24 : 168
-    const isTimeUnlocked = ageInHours >= requiredDelayHours
-    const requiredTier = (!isCore || isScalp) ? 'PRO' : 'ESSENTIAL'
-
-    let hasAccess = false
-    if (userPlan === 'pro') hasAccess = true
-    else if (userPlan === 'essential' && requiredTier === 'ESSENTIAL') hasAccess = true
-    else if (isTimeUnlocked) hasAccess = true
-
-    return { hasAccess, requiredTier }
-  }
-
   const isLocked = (reqTier: string) => {
     if (userPlan === 'pro') return false
     if (userPlan === 'essential' && reqTier === 'pro') return true
@@ -166,7 +144,9 @@ export default function VaultPage() {
   })
 
   const VaultCard = ({ setup }: { setup: any }) => {
-    const { hasAccess, requiredTier } = getSetupAccess(setup)
+    // --- NEW: Using the centralized access logic ---
+    const { hasAccess, requiredTier } = getSetupAccess(setup, userPlan)
+    
     const isBull = setup.bias?.toUpperCase() === 'BULLISH'
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
     const hasNote = setup.saved_note && setup.saved_note.trim() !== ''
@@ -185,9 +165,9 @@ export default function VaultPage() {
           
           {!hasAccess && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
-              <Lock size={16} className={requiredTier === 'PRO' ? 'text-brand-primary mb-1.5' : 'text-blue-500 mb-1.5'} />
+              <Lock size={16} className={requiredTier === 'pro' ? 'text-brand-primary mb-1.5' : 'text-blue-500 mb-1.5'} />
               <span className="text-[8px] font-black text-white uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded border border-white/10 shadow-lg">
-                {requiredTier}
+                {requiredTier.toUpperCase()}
               </span>
             </div>
           )}
