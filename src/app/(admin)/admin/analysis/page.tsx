@@ -56,7 +56,7 @@ export default function AdminAnalysisManager() {
           <h2 className="text-5xl font-black text-white tracking-tighter uppercase italic">Intelligence <span className="text-red-600">Manager</span></h2>
           <p className="text-neutral-500 mt-2 font-bold uppercase tracking-widest text-[10px]">Registry // {analyses.length} Active Nodes</p>
         </div>
-        <Link href="/admin/analysis/new" className="bg-red-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-red-600/20">
+        <Link href="/admin/markets/new" className="bg-red-600 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-red-600/20">
           + Deploy New
         </Link>
       </div>

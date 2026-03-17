@@ -20,7 +20,7 @@ Dashboard
 Dashboard
 </Link>
 
-<Link href="/analysis" className='flex items-center gap-3 p-3 text-gray-400 hover:text-white'>
+<Link href="/markets" className='flex items-center gap-3 p-3 text-gray-400 hover:text-white'>
 <BarChart3 size={18}/>
 Analysis
 </Link>

@@ -187,7 +187,7 @@ export default function OperatorTerminal() {
                 return (
                   <div 
                     key={setup.id} 
-                    onClick={() => router.push(`/analysis/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`)}
+                    onClick={() => router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`)}
                     className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
                   >
                     <div className="flex flex-col min-w-0 pr-2">
@@ -255,7 +255,7 @@ export default function OperatorTerminal() {
                 watchlist.slice(0, 6).map((item) => (
                   <div 
                     key={item.id}
-                    onClick={() => router.push(`/analysis/viewport?asset=${item.symbol}&tf=${item.timeframe}`)}
+                    onClick={() => router.push(`/markets/viewport?asset=${item.symbol}&tf=${item.timeframe}`)}
                     className="flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl cursor-pointer transition-colors group"
                   >
                     <div className="flex items-center">

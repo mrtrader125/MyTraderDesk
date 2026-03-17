@@ -35,7 +35,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const adminNav = [
     { name: 'Admin Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Admin Analysis', href: '/admin/analysis', icon: BarChart3 },
+    { name: 'Admin Analysis', href: '/admin/markets', icon: BarChart3 },
     { name: 'Admin Users', href: '/admin/users', icon: Users },
     { name: 'Broadcasts', href: '/admin/notifications', icon: Megaphone },
   ]

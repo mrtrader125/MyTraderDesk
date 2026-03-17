@@ -4,7 +4,7 @@ export default function AnalysisCard({ analysis }: any) {
 
 return (
 
-<Link href={`/analysis/${analysis.id}`}>
+<Link href={`/markets/${analysis.id}`}>
 
 <div className="glass-card p-6 cursor-pointer hover:scale-[1.02] transition">
 

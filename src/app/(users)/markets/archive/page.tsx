@@ -84,7 +84,7 @@ function ArchiveContent() {
 
     return (
       <div 
-        onClick={() => router.push(`/analysis/viewport?asset=${asset}`)}
+        onClick={() => router.push(`/markets/viewport?asset=${asset}`)}
         className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-neutral-600 transition-all duration-300 shadow-sm relative min-h-[220px]"
       >
         {/* Top Image Section */}

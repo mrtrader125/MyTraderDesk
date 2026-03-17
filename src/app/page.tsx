@@ -27,7 +27,7 @@ Stay ahead of the market with professional insights.
 Get Started
 </Link>
 
-<Link href="/analysis" className='px-6 py-3 border border-gray-600 rounded-lg'>
+<Link href="/markets" className='px-6 py-3 border border-gray-600 rounded-lg'>
 View Analysis
 </Link>
 

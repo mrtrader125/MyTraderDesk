@@ -27,7 +27,7 @@ export async function middleware(request: NextRequest) {
 
     const isAuthRoute = path === '/login' || path === '/signup'
     const isAdminRoute = path.startsWith('/admin')
-    const isUserRoute = path.startsWith('/dashboard') || path.startsWith('/analysis') || path.startsWith('/settings') || path.startsWith('/profile')
+    const isUserRoute = path.startsWith('/dashboard') || path.startsWith('/markets') || path.startsWith('/settings') || path.startsWith('/profile')
 
     // 1. Not logged in? Redirect to login
     if (!user && (isUserRoute || isAdminRoute)) {
@@ -59,7 +59,7 @@ export const config = {
   matcher: [
     '/admin/:path*', 
     '/dashboard/:path*', 
-    '/analysis/:path*', 
+    '/markets/:path*', 
     '/settings/:path*', 
     '/profile/:path*',
     '/login',

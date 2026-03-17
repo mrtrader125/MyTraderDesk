@@ -149,7 +149,7 @@ export default function MarketsPage() {
             {filteredMarkets.map(market => (
               <div 
                 key={market.symbol}
-                onClick={() => router.push(`/analysis/viewport?asset=${market.symbol}`)}
+                onClick={() => router.push(`/markets/viewport?asset=${market.symbol}`)}
                 className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-neutral-600 transition-all cursor-pointer group flex flex-col min-h-[140px]"
               >
                 <div className="flex justify-between items-start mb-4">
@@ -172,7 +172,7 @@ export default function MarketsPage() {
                     <span className="text-[10px] font-bold text-white bg-white/5 px-2 py-1 rounded">{market.count} Setup{market.count > 1 ? 's' : ''}</span>
                   </div>
                   <button 
-                    onClick={(e) => { e.stopPropagation(); router.push(`/analysis/archive?asset=${market.symbol}`); }}
+                    onClick={(e) => { e.stopPropagation(); router.push(`/markets/archive?asset=${market.symbol}`); }}
                     className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
                   >
                     <ArrowRight size={14} />

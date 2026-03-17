@@ -64,7 +64,7 @@ export default function NewAnalysisPage() {
 
       if (dbError) throw dbError
 
-      router.push('/admin/analysis')
+      router.push('/admin/markets')
       router.refresh()
     } catch (error: any) {
       console.error("Deployment Error:", error)
@@ -76,7 +76,7 @@ export default function NewAnalysisPage() {
 
   return (
     <div className="max-w-6xl mx-auto pb-20">
-      <Link href="/admin/analysis" className="flex items-center text-neutral-500 hover:text-red-500 mb-8 font-black uppercase text-[10px] tracking-[0.3em] transition-colors">
+      <Link href="/admin/markets" className="flex items-center text-neutral-500 hover:text-red-500 mb-8 font-black uppercase text-[10px] tracking-[0.3em] transition-colors">
         <ArrowLeft size={14} className="mr-2" /> Abort Deployment
       </Link>
 
