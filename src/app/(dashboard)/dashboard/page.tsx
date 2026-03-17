@@ -122,7 +122,7 @@ export default function OperatorTerminal() {
   return (
     <div className="w-full min-h-screen text-white p-6 md:p-8 font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        <div className="lg:col-span-8 xl:col-span-9 space-y-8">
+        <div className="lg:col-span-8 xl:col-span-9 space-y-6">
           
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
@@ -153,32 +153,36 @@ export default function OperatorTerminal() {
             </div>
           </div>
 
-          <div className="border-b border-neutral-800 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center space-x-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full md:w-auto">
+          {/* ULTRA-COMPACT FILTERS & SEARCH */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
+            
+            {/* Pill-shaped filter container */}
+            <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full md:w-auto bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800">
               {FILTERS.map(f => {
                 const locked = isLocked(f.req)
                 return (
                   <button 
                     key={f.name}
                     onClick={() => !locked && setActiveFilter(f.name)}
-                    className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap
-                      ${activeFilter === f.name ? 'bg-white text-black' : locked ? 'bg-transparent text-neutral-600 cursor-not-allowed hover:bg-neutral-900 border border-transparent' : 'bg-transparent text-neutral-400 hover:text-white hover:bg-neutral-800 border border-neutral-800'}`}
+                    className={`flex items-center px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap
+                      ${activeFilter === f.name ? 'bg-white text-black shadow-sm' : locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
                   >
-                    {locked && <Lock size={12} className="mr-2 text-yellow-500" />}
+                    {locked && <Lock size={10} className="mr-1.5" />}
                     {f.name}
                   </button>
                 )
               })}
             </div>
 
-            <div className="flex items-center bg-[#0a0a0a] border border-neutral-800 rounded-full px-4 py-2 w-full md:w-64 focus-within:border-neutral-600 transition-colors shrink-0">
-              <Search size={14} className="text-neutral-500 mr-2" />
-              <input type="text" placeholder="Search symbols..." className="bg-transparent border-none outline-none text-xs w-full text-white placeholder-neutral-500" />
+            {/* Compact Search */}
+            <div className="flex items-center bg-[#0a0a0a] border border-neutral-800 rounded-xl px-3 py-1.5 w-full md:w-56 focus-within:border-neutral-600 transition-colors shrink-0">
+              <Search size={12} className="text-neutral-500 mr-2" />
+              <input type="text" placeholder="Search symbols..." className="bg-transparent border-none outline-none text-[10px] w-full text-white placeholder-neutral-500 font-bold uppercase tracking-wider" />
             </div>
           </div>
 
           <div>
-            <h3 className="text-sm font-black text-neutral-400 uppercase tracking-widest mb-4">Intelligence Feed</h3>
+            <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-3">Intelligence Feed</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
               {filteredSetups.map(setup => {
                 const isBull = setup.bias?.toUpperCase() === 'BULLISH'
@@ -188,7 +192,6 @@ export default function OperatorTerminal() {
                 return (
                   <div 
                     key={setup.id} 
-                    // NEW URL ARGUMENT HERE: &tf=${setup.timeframe}
                     onClick={() => router.push(`/analysis/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`)}
                     className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
                   >
@@ -257,7 +260,6 @@ export default function OperatorTerminal() {
                 watchlist.slice(0, 6).map((item) => (
                   <div 
                     key={item.id}
-                    // NEW URL ARGUMENT HERE: &tf=${item.timeframe}
                     onClick={() => router.push(`/analysis/viewport?asset=${item.symbol}&tf=${item.timeframe}`)}
                     className="flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl cursor-pointer transition-colors group"
                   >
