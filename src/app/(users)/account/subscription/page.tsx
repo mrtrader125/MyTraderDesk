@@ -9,19 +9,15 @@ export default function SubscriptionPage() {
   const [userPlan, setUserPlan] = useState('free')
   const [loading, setLoading] = useState(true)
   const [savedCount, setSavedCount] = useState(0)
-  
-  // Controls the new professional popup modal
   const [showPricing, setShowPricing] = useState(false)
 
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        // 1. Get Plan
         const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
         if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
         
-        // 2. LIVE FETCH: Get true Vault count
         const { count } = await supabase
           .from('user_vault')
           .select('*', { count: 'exact', head: true })
@@ -101,27 +97,24 @@ export default function SubscriptionPage() {
         </button>
       </div>
 
-      {/* 👇 NEW: PROFESSIONAL MODAL POPUP */}
+      {/* PERFECTLY SCALED MODAL POPUP */}
       {showPricing && userPlan !== 'pro' && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
-          {/* Modal Container */}
-          <div className="relative w-full max-w-5xl bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 sm:p-10 shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-300">
+          {/* 👇 SHRUNK FROM max-w-5xl down to max-w-[800px] */}
+          <div className="relative w-full max-w-[800px] bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 sm:p-8 shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200">
             
-            {/* Close Button */}
             <button 
               onClick={() => setShowPricing(false)}
-              className="absolute top-4 right-4 p-2 text-neutral-500 hover:text-white bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-full transition-colors z-20"
+              className="absolute top-5 right-5 p-2 text-neutral-500 hover:text-white bg-[#050505] hover:bg-neutral-800 border border-neutral-800 rounded-full transition-colors z-20"
             >
-              <X size={20} />
+              <X size={16} />
             </button>
 
-            {/* Header */}
-            <div className="text-center mb-8 mt-2">
-              <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">Select <span className="text-brand-primary">Clearance</span></h2>
-              <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mt-2">Unlock global intelligence and bypass time delays.</p>
+            <div className="text-center mb-6 mt-2">
+              <h2 className="text-2xl font-black text-white uppercase tracking-tighter italic">Select <span className="text-brand-primary">Clearance</span></h2>
+              <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mt-1.5">Unlock global intelligence and bypass time delays.</p>
             </div>
             
-            {/* Pricing Cards */}
             <PricingCards userPlan={userPlan} />
           </div>
         </div>
