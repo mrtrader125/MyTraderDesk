@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Shield, Crown, Zap, AlertTriangle, Activity, Bookmark } from 'lucide-react'
-import PricingCards from '@/components/pricing/PricingCards' // <-- IMPORT ADDED
+import PricingCards from '@/components/pricing/PricingCards'
 
 export default function SubscriptionPage() {
   const [userPlan, setUserPlan] = useState('free')
   const [loading, setLoading] = useState(true)
   const [savedCount, setSavedCount] = useState(0)
-  const [showPricing, setShowPricing] = useState(false) // <-- NEW STATE
+  const [showPricing, setShowPricing] = useState(false)
 
   useEffect(() => {
     async function loadData() {
@@ -106,7 +106,8 @@ export default function SubscriptionPage() {
             <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">Select <span className="text-brand-primary">Clearance</span></h2>
             <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mt-2">Unlock global intelligence and bypass time delays.</p>
           </div>
-          <PricingCards />
+          {/* 👇 NEW: Pass userPlan to PricingCards */}
+          <PricingCards userPlan={userPlan} />
         </div>
       )}
     </div>
