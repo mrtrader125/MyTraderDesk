@@ -7,6 +7,22 @@ import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin
 
 const CORE_ASSETS = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'AUDUSD', 'NZDUSD', 'USDCHF', 'XAUUSD', 'GBPCAD', 'CADJPY', 'EURJPY', 'EURAUD', 'GBPAUD']
 
+// Helper function to dynamically sort timeframes from Lowest to Highest
+const getTfWeight = (tf: string) => {
+  const cleanTf = tf.trim().toLowerCase();
+  if (cleanTf === '1m' || cleanTf === '1min') return 1;
+  if (cleanTf === '5m' || cleanTf === '5mins' || cleanTf === '5min') return 2;
+  if (cleanTf === '15m' || cleanTf === '15mins' || cleanTf === '15min') return 3;
+  if (cleanTf === '30m' || cleanTf === '30mins' || cleanTf === '30min') return 4;
+  if (cleanTf === '1h' || cleanTf === '1hr' || cleanTf === 'h1') return 5;
+  if (cleanTf === '2h' || cleanTf === '2hr' || cleanTf === 'h2') return 6;
+  if (cleanTf === '4h' || cleanTf === '4hr' || cleanTf === 'h4') return 7;
+  if (cleanTf === 'd' || cleanTf === '1d' || cleanTf === 'daily') return 8;
+  if (cleanTf === 'w' || cleanTf === '1w' || cleanTf === 'weekly') return 9;
+  if (cleanTf === 'm' || cleanTf === '1mo' || cleanTf === 'monthly') return 10;
+  return 99; // Default weight for unknown formats so they go to the end
+}
+
 export default function ViewportPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
@@ -56,6 +72,7 @@ export default function ViewportPage() {
         
       if (data && data.length > 0) {
         setAllHistory(data)
+        // Set the initial timeframe based on the most recent upload, but you could also default to a specific one.
         setSelectedTf(data[0].timeframe)
       }
       setLoading(false)
@@ -63,7 +80,12 @@ export default function ViewportPage() {
     loadData()
   }, [asset, router])
 
-  const timeframes = useMemo(() => Array.from(new Set(allHistory.map(a => a.timeframe))), [allHistory])
+  // Get unique timeframes and SORT them properly using the helper function
+  const timeframes = useMemo(() => {
+    const uniqueTfs = Array.from(new Set(allHistory.map(a => a.timeframe)))
+    return uniqueTfs.sort((a, b) => getTfWeight(a) - getTfWeight(b))
+  }, [allHistory])
+  
   const filteredHistory = useMemo(() => allHistory.filter(a => a.timeframe === selectedTf), [allHistory, selectedTf])
   const currentSetup = filteredHistory[activeIndex]
 
@@ -152,17 +174,25 @@ export default function ViewportPage() {
          onMouseUp={access.hasAccess ? handleMouseUp : undefined}
          onMouseLeave={access.hasAccess ? handleMouseUp : undefined}
        >
-         <img 
-           src={currentSetup.image_url} 
-           alt={asset || "Trading Analysis"}
-           draggable={false}
-           className="max-w-full max-h-full object-contain pointer-events-none origin-left"
-           style={{ 
-             transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, 
-             transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-             filter: access.hasAccess ? 'none' : 'blur(12px) grayscale(60%) opacity(40%)'
-           }} 
-         />
+         {/* DOM SECURITY: If the user doesn't have access, the <img> tag is literally destroyed. 
+             There is no image_url in the browser for them to inspect or steal. */}
+         {access.hasAccess ? (
+           <img 
+             src={currentSetup.image_url} 
+             alt={asset || "Trading Analysis"}
+             draggable={false}
+             className="max-w-full max-h-full object-contain pointer-events-none origin-left"
+             style={{ 
+               transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, 
+               transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+             }} 
+           />
+         ) : (
+           <div 
+             className="w-full max-w-4xl aspect-video bg-[#0a0a0a] border border-neutral-800/50 rounded-[2rem] shadow-2xl"
+             style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})` }}
+           />
+         )}
        </div>
 
        {/* --- LAYER 2: PAYWALL OVERLAY --- */}
@@ -177,13 +207,17 @@ export default function ViewportPage() {
 
              <h2 className="text-lg font-black text-white tracking-tight uppercase mb-2 relative z-10">Clearance Required</h2>
              <p className="text-[11px] font-medium text-neutral-400 mb-6 relative z-10 leading-relaxed">
-               The <span className="text-white font-bold">{currentSetup.timeframe}</span> setup for <span className="text-white font-bold">{asset}</span> is restricted. It will unlock for your tier in:
+               The latest <span className="text-white font-bold">{currentSetup.timeframe}</span> setup for <span className="text-white font-bold">{asset}</span> is restricted. It will unlock for your tier in:
              </p>
 
-             <div className="flex items-center justify-center space-x-2 bg-black border border-neutral-800 rounded-xl py-3 mb-8 relative z-10">
+             <div className="flex items-center justify-center space-x-2 bg-black border border-neutral-800 rounded-xl py-3 mb-6 relative z-10">
                <Clock size={14} className="text-neutral-500" />
                <span className="text-sm font-black text-white tracking-widest">{access.countdownText}</span>
              </div>
+
+             <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-6 relative z-10">
+               (You can still view older history via the right sidebar)
+             </p>
 
              <div className="relative z-10 pt-5 border-t border-neutral-800">
                <button 
@@ -254,23 +288,21 @@ export default function ViewportPage() {
            )}
          </div>
 
-         {/* Top Center: Timeframes Menu */}
+         {/* Top Center: Timeframes Menu (Now Fully Unlocked) */}
          <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-[#0a0a0a] border border-neutral-800 p-1.5 rounded-xl shadow-lg pointer-events-auto z-50 flex items-center space-x-1">
             {timeframes.map(t => {
-              const latestForTf = allHistory.find(h => h.timeframe === t)
-              const tfAccess = getSetupAccess(latestForTf)
               const isSelected = selectedTf === t
 
               return (
                 <button 
                   key={t}
-                  onClick={() => { if(tfAccess.hasAccess) { setSelectedTf(t); setActiveIndex(0); setScale(1); setPos({x:0, y:0}) } }}
-                  className={`flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors
-                    ${isSelected ? 'bg-white text-black' : 'text-neutral-500 hover:text-white hover:bg-white/5'}
-                    ${!tfAccess.hasAccess ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  // Anyone can click a timeframe now. It will reset to index 0 (the latest), 
+                  // and the main canvas will evaluate if they have access to that latest setup.
+                  onClick={() => { setSelectedTf(t); setActiveIndex(0); setScale(1); setPos({x:0, y:0}) }}
+                  className={`flex items-center px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors
+                    ${isSelected ? 'bg-white text-black' : 'text-neutral-500 hover:text-white hover:bg-white/5'}`}
                 >
                   {t}
-                  {!tfAccess.hasAccess && <Lock size={10} className={`ml-1.5 ${isSelected ? 'text-black' : 'text-neutral-600'}`} />}
                 </button>
               )
             })}
@@ -307,6 +339,7 @@ export default function ViewportPage() {
            {/* History List */}
            <div className="flex-1 overflow-y-auto scrollbar-hide py-3 px-2 space-y-1">
              {filteredHistory.map((item, idx) => {
+               // Only check access for historical items so we can show the lock icon in the sidebar
                const historyAccess = getSetupAccess(item)
                const isActive = activeIndex === idx
                const isItemBookmarked = watchlist.some(w => w.id === item.id)
@@ -314,6 +347,7 @@ export default function ViewportPage() {
                return (
                  <button 
                    key={item.id}
+                   // Can only click historical items if they have access to them (past the time delay)
                    onClick={() => { if(historyAccess.hasAccess) { setActiveIndex(idx); setScale(1); setPos({x:0, y:0}) } }}
                    className={`w-full flex items-center h-10 rounded-lg transition-all relative
                      ${isSidebarPinned ? 'justify-start px-3' : 'justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3'}
