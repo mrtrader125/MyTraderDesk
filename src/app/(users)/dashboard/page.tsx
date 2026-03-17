@@ -7,8 +7,8 @@ import { supabase } from '@/lib/supabase'
 
 export default function OperatorTerminal() {
   const router = useRouter()
-  const searchParams = useSearchParams() // <-- NEW: Grabs the URL parameters
-  const searchQuery = searchParams.get('search')?.toLowerCase() || '' // <-- NEW: Extracts the search text
+  const searchParams = useSearchParams() 
+  const searchQuery = searchParams.get('search')?.toLowerCase() || '' 
   
   const [mounted, setMounted] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
@@ -37,7 +37,6 @@ export default function OperatorTerminal() {
           const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
           if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
 
-          // --- NEW: Fetch Live Watchlist from Supabase ---
           const { data: vaultData } = await supabase
             .from('user_vault')
             .select('analysis_id, analyses(asset_symbol, timeframe)')
@@ -51,7 +50,6 @@ export default function OperatorTerminal() {
             }))
             setWatchlist(liveWatchlist)
           }
-          // -----------------------------------------------
 
           const { data: analyses, error } = await supabase.from('analyses').select('*').order('created_at', { ascending: false })
           if (!error && analyses) setSetups(analyses)
@@ -66,27 +64,7 @@ export default function OperatorTerminal() {
     fetchLiveTerminalData()
   }, [])
 
-    async function fetchLiveTerminalData() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
-          if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
-
-          const { data: analyses, error } = await supabase.from('analyses').select('*').order('created_at', { ascending: false })
-          if (!error && analyses) setSetups(analyses)
-        }
-      } catch (err) {
-        console.error("Dashboard Sync Error:", err)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchLiveTerminalData()
-  }, [])
-
-const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
+  const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
     e.stopPropagation() 
     if (!setup) return
 
@@ -95,20 +73,18 @@ const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
 
     const exists = watchlist.find(item => item.id === setup.id)
     
-    // Optimistic UI Update (feels instant)
     let updated = [...watchlist]
     if (exists) {
       updated = updated.filter(item => item.id !== setup.id)
       setWatchlist(updated)
-      // Remove from live database
       await supabase.from('user_vault').delete().match({ user_id: user.id, analysis_id: setup.id })
     } else {
       updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe }) 
       setWatchlist(updated)
-      // Insert into live database
       await supabase.from('user_vault').insert([{ user_id: user.id, analysis_id: setup.id }])
     }
   }
+
   const isLocked = (reqTier: string) => {
     if (userPlan === 'pro') return false
     if (userPlan === 'essential' && reqTier === 'pro') return true
@@ -116,7 +92,6 @@ const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
     return false
   }
 
-  // NEW: Filters by BOTH the pill tabs AND the TopNav search bar!
   const filteredSetups = setups.filter(setup => {
     const matchesTab = activeFilter === 'All' ? true : (setup.category || 'Forex').toLowerCase() === activeFilter.toLowerCase()
     const matchesSearch = setup.asset_symbol?.toLowerCase().includes(searchQuery)
@@ -193,14 +168,25 @@ const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
             </div>
           </div>
 
-          {/* ULTRA-COMPACT FILTERS (Search bar removed, handled by TopNav) */}
           <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800 mt-2">
             {FILTERS.map(f => {
               const locked = isLocked(f.req)
               return (
                 <button 
                   key={f.name}
-                  onClick={() => !locked && setActiveFilter(f.name)}
+                  onClick={async () => {
+                    if (!locked) {
+                      setActiveFilter(f.name)
+                      const { data: { user } } = await supabase.auth.getUser()
+                      if (user) {
+                        supabase.from('activity_logs').insert([{
+                          user_id: user.id,
+                          action: 'FILTER_CLICK',
+                          search_query: f.name 
+                        }]).then()
+                      }
+                    }
+                  }}
                   className={`flex items-center px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap
                     ${activeFilter === f.name ? 'bg-white text-black shadow-sm' : locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
                 >
@@ -222,7 +208,18 @@ const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
                 return (
                   <div 
                     key={setup.id} 
-                    onClick={() => router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`)}
+                    onClick={async () => {
+                      const { data: { user } } = await supabase.auth.getUser()
+                      if (user) {
+                        supabase.from('activity_logs').insert([{
+                          user_id: user.id,
+                          action: 'FEED_CLICK',
+                          asset_symbol: setup.asset_symbol,
+                          timeframe: setup.timeframe
+                        }]).then()
+                      }
+                      router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`)
+                    }}
                     className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
                   >
                     <div className="flex flex-col min-w-0 pr-2">
