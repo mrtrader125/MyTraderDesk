@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { CheckCircle2, Zap, Shield, Loader2 } from 'lucide-react'
 
-export default function PricingCards() {
+// 👇 NEW: Accept the userPlan prop here
+export default function PricingCards({ userPlan = 'free' }: { userPlan?: string }) {
   const [isYearly, setIsYearly] = useState(false)
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null)
 
@@ -85,10 +86,11 @@ export default function PricingCards() {
 
           <button 
             onClick={() => handleCheckout('ESSENTIAL')}
-            disabled={loadingPlan !== null}
+            // 👇 NEW: Disable if they are already on essential
+            disabled={loadingPlan !== null || userPlan === 'essential'}
             className="w-full py-4 rounded-xl bg-card-border hover:bg-neutral-700 text-white text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center disabled:opacity-50"
           >
-            {loadingPlan === 'ESSENTIAL' ? <Loader2 size={18} className="animate-spin" /> : 'Get Essential'}
+            {loadingPlan === 'ESSENTIAL' ? <Loader2 size={18} className="animate-spin" /> : userPlan === 'essential' ? 'Current Plan' : 'Get Essential'}
           </button>
         </div>
 
