@@ -1,12 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import { Search, Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, Bookmark, ChevronRight } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, Bookmark, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 export default function OperatorTerminal() {
   const router = useRouter()
+  const searchParams = useSearchParams() // <-- NEW: Grabs the URL parameters
+  const searchQuery = searchParams.get('search')?.toLowerCase() || '' // <-- NEW: Extracts the search text
+  
   const [mounted, setMounted] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
   const [userPlan, setUserPlan] = useState('free') 
@@ -33,9 +36,6 @@ export default function OperatorTerminal() {
         const parsed = JSON.parse(saved)
         const validItems = parsed.filter((item: any) => typeof item === 'object' && item.id && item.id.length > 20)
         setWatchlist(validItems)
-        if (parsed.length !== validItems.length) {
-          localStorage.setItem('analysis_watchlist', JSON.stringify(validItems))
-        }
       } catch (e) {
         localStorage.removeItem('analysis_watchlist')
       }
@@ -81,7 +81,12 @@ export default function OperatorTerminal() {
     return false
   }
 
-  const filteredSetups = setups.filter(setup => activeFilter === 'All' ? true : (setup.category || 'Forex').toLowerCase() === activeFilter.toLowerCase())
+  // NEW: Filters by BOTH the pill tabs AND the TopNav search bar!
+  const filteredSetups = setups.filter(setup => {
+    const matchesTab = activeFilter === 'All' ? true : (setup.category || 'Forex').toLowerCase() === activeFilter.toLowerCase()
+    const matchesSearch = setup.asset_symbol?.toLowerCase().includes(searchQuery)
+    return matchesTab && matchesSearch
+  })
 
   const getActiveSession = () => {
     const hour = new Date().getUTCHours()
@@ -153,36 +158,26 @@ export default function OperatorTerminal() {
             </div>
           </div>
 
-          {/* ULTRA-COMPACT FILTERS & SEARCH */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pt-2">
-            
-            {/* Pill-shaped filter container */}
-            <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full md:w-auto bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800">
-              {FILTERS.map(f => {
-                const locked = isLocked(f.req)
-                return (
-                  <button 
-                    key={f.name}
-                    onClick={() => !locked && setActiveFilter(f.name)}
-                    className={`flex items-center px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap
-                      ${activeFilter === f.name ? 'bg-white text-black shadow-sm' : locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
-                  >
-                    {locked && <Lock size={10} className="mr-1.5" />}
-                    {f.name}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Compact Search */}
-            <div className="flex items-center bg-[#0a0a0a] border border-neutral-800 rounded-xl px-3 py-1.5 w-full md:w-56 focus-within:border-neutral-600 transition-colors shrink-0">
-              <Search size={12} className="text-neutral-500 mr-2" />
-              <input type="text" placeholder="Search symbols..." className="bg-transparent border-none outline-none text-[10px] w-full text-white placeholder-neutral-500 font-bold uppercase tracking-wider" />
-            </div>
+          {/* ULTRA-COMPACT FILTERS (Search bar removed, handled by TopNav) */}
+          <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800 mt-2">
+            {FILTERS.map(f => {
+              const locked = isLocked(f.req)
+              return (
+                <button 
+                  key={f.name}
+                  onClick={() => !locked && setActiveFilter(f.name)}
+                  className={`flex items-center px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap
+                    ${activeFilter === f.name ? 'bg-white text-black shadow-sm' : locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                >
+                  {locked && <Lock size={10} className="mr-1.5" />}
+                  {f.name}
+                </button>
+              )
+            })}
           </div>
 
           <div>
-            <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-3">Intelligence Feed</h3>
+            <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-3 mt-4">Intelligence Feed</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
               {filteredSetups.map(setup => {
                 const isBull = setup.bias?.toUpperCase() === 'BULLISH'
@@ -214,7 +209,7 @@ export default function OperatorTerminal() {
 
               {filteredSetups.length === 0 && (
                 <div className="col-span-full py-12 text-center text-neutral-500 italic border border-dashed border-neutral-800 rounded-xl text-sm">
-                  No active intelligence deployments found.
+                  {searchQuery ? `No setups found matching "${searchQuery}"` : "No active intelligence deployments found."}
                 </div>
               )}
             </div>
