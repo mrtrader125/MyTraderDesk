@@ -1,67 +1,113 @@
 'use client'
-import { useEffect, useState } from 'react'
+
+import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import Link from 'next/link'
-import { BarChart3, Users, ArrowLeft, LayoutDashboard, Megaphone, Lock } from 'lucide-react'
+import { LayoutDashboard, Users, Send, Activity, LogOut, ShieldAlert, ChevronRight } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
-  const pathname = usePathname()
   const router = useRouter()
+  const pathname = usePathname()
+  const [isAuthorized, setIsAuthorized] = useState(false)
+  const [adminEmail, setAdminEmail] = useState('')
 
   useEffect(() => {
-    async function checkAdmin() {
+    async function verifyAdmin() {
       const { data: { user } } = await supabase.auth.getUser()
-      const role = user?.app_metadata?.role
       
-      if (role !== 'admin') {
-        router.push('/dashboard')
-      } else {
-        setIsAdmin(true)
+      // STRICT SECURITY GATE: Must have the database admin role
+      if (!user || user.app_metadata?.role !== 'admin') {
+        router.replace('/dashboard')
+        return
       }
+
+      setAdminEmail(user.email || 'Admin')
+      setIsAuthorized(true)
     }
-    checkAdmin()
+    verifyAdmin()
   }, [router])
 
-  if (isAdmin === null) return (
-    <div className="h-screen bg-[#020203] flex items-center justify-center">
-      <div className="animate-pulse flex flex-col items-center gap-4">
-        <Lock className="text-red-500" size={32} />
-        <span className="text-[10px] font-black uppercase tracking-[0.4em] text-neutral-500">Authenticating Terminal...</span>
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
+  const navLinks = [
+    { name: 'Command Center', path: '/admin', icon: LayoutDashboard },
+    { name: 'Deploy Intelligence', path: '/admin/analysis', icon: Send },
+    { name: 'User Directory', path: '/admin/users', icon: Users },
+    { name: 'System Logs', path: '/admin/logs', icon: Activity },
+  ]
+
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
+        <ShieldAlert className="text-red-500 animate-pulse" size={40} />
+        <span className="text-[10px] font-black tracking-[0.3em] text-neutral-500 uppercase">Verifying Clearance...</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex h-screen bg-[#050505] text-white font-sans overflow-hidden">
+      {/* SIDEBAR */}
+      <div className="w-64 bg-[#0a0a0a] border-r border-neutral-800 flex flex-col z-20 shrink-0">
+        
+        {/* Branding */}
+        <div className="h-16 flex items-center px-6 border-b border-neutral-800 shrink-0">
+          <div className="w-2 h-2 bg-brand-primary rounded-full animate-pulse mr-3"></div>
+          <h1 className="text-sm font-black uppercase tracking-widest text-white">OVERSEER</h1>
+        </div>
+
+        {/* Navigation */}
+        <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
+          {navLinks.map((link) => {
+            const isActive = pathname === link.path
+            return (
+              <button
+                key={link.name}
+                onClick={() => router.push(link.path)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all group ${
+                  isActive 
+                    ? 'bg-brand-primary text-white shadow-[0_0_15px_rgba(var(--brand-primary-rgb),0.2)]' 
+                    : 'text-neutral-500 hover:bg-white/5 hover:text-white'
+                }`}
+              >
+                <div className="flex items-center space-x-3">
+                  <link.icon size={16} className={isActive ? 'text-white' : 'text-neutral-500 group-hover:text-neutral-300'} />
+                  <span className="text-[10px] font-black uppercase tracking-widest">{link.name}</span>
+                </div>
+                {isActive && <ChevronRight size={14} className="opacity-50" />}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Admin Footer */}
+        <div className="p-4 border-t border-neutral-800 shrink-0">
+          <div className="bg-[#050505] border border-neutral-800 rounded-xl p-3 mb-3">
+            <span className="text-[8px] font-black text-brand-primary uppercase tracking-widest block mb-1">Root Access</span>
+            <span className="text-xs font-bold text-neutral-300 truncate block">{adminEmail}</span>
+          </div>
+          <button 
+            onClick={handleSignOut}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg text-red-500 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest transition-colors"
+          >
+            <LogOut size={14} />
+            <span>Lock Terminal</span>
+          </button>
+        </div>
+      </div>
+
+      {/* MAIN CONTENT AREA */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050505] relative">
+        {/* Glow effect */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-primary/5 blur-[120px] pointer-events-none"></div>
+        
+        <main className="flex-1 overflow-y-auto scrollbar-hide p-8 relative z-10">
+          {children}
+        </main>
       </div>
     </div>
   )
-
-  const adminNav = [
-    { name: 'Admin Dashboard', href: '/admin', icon: LayoutDashboard },
-    { name: 'Admin Analysis', href: '/admin/markets', icon: BarChart3 },
-    { name: 'Admin Users', href: '/admin/users', icon: Users },
-    { name: 'Broadcasts', href: '/admin/notifications', icon: Megaphone },
-  ]
-
-  return (
-    <div className="min-h-screen bg-[#020203] text-white flex">
-      <aside className="w-72 bg-app-bg transition-colors duration-700 border-r border-red-900/20 flex-shrink-0 flex flex-col">
-        <div className="p-10 pt-12">
-          <h1 className="text-3xl font-black tracking-tighter text-white italic leading-none">MY TRADER <br/> <span className="text-red-600">ADMIN</span></h1>
-        </div>
-        <nav className="flex-1 px-6 space-y-2 mt-8">
-          {adminNav.map((item) => (
-            <Link key={item.name} href={item.href} className={`flex items-center space-x-4 px-5 py-4 rounded-2xl font-bold transition-all border ${pathname === item.href ? 'bg-red-600/10 border-red-600/20 text-red-500' : 'border-transparent text-neutral-600 hover:text-white hover:bg-white/5'}`}>
-              <item.icon size={20} />
-              <span className="text-xs uppercase tracking-widest font-black">{item.name}</span>
-            </Link>
-          ))}
-        </nav>
-        <div className="p-8 border-t border-card-border transition-colors duration-700">
-          <Link href="/dashboard" className="text-xs font-bold text-blue-500 flex items-center gap-2 transition-all hover:gap-3">
-            <ArrowLeft size={14}/> Exit to Desk
-          </Link>
-        </div>
-      </aside>
-      <main className="flex-1 h-screen overflow-y-auto p-12">{children}</main>
-    </div>
-  )
 }
-
