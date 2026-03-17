@@ -18,4 +18,3 @@ const { data } = supabase.storage
 .getPublicUrl(fileName)
 
 return data.publicUrl
-}
