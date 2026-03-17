@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Bookmark, Lock, Clock, Shield, Crown, TrendingUp, TrendingDown, Minus, Trash2, Activity, FolderOpen, Edit3, X, FileText } from 'lucide-react'
+import { Bookmark, Lock, Clock, TrendingUp, TrendingDown, Minus, Trash2, Activity, FolderOpen, Edit3, X, FileText } from 'lucide-react'
 
 const CORE_ASSETS = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'AUDUSD', 'NZDUSD', 'USDCHF', 'XAUUSD', 'GBPCAD', 'CADJPY', 'EURJPY', 'EURAUD', 'GBPAUD']
 
@@ -18,6 +18,9 @@ const CATEGORIES = [
 
 export default function VaultPage() {
   const router = useRouter()
+  const searchParams = useSearchParams() // <-- NEW: Grabs the URL parameters
+  const searchQuery = searchParams.get('search')?.toLowerCase() || '' // <-- NEW: Extracts the search text
+
   const [vaultItems, setVaultItems] = useState<any[]>([])
   const [userPlan, setUserPlan] = useState<string>('free')
   const [loading, setLoading] = useState(true)
@@ -127,7 +130,12 @@ export default function VaultPage() {
     )
   }
 
-  const filteredItems = vaultItems.filter(item => activeTab === 'ALL' ? true : (item.category || 'FOREX').toUpperCase() === activeTab)
+  // NEW: Filters by BOTH the pill tabs AND the TopNav search bar!
+  const filteredItems = vaultItems.filter(item => {
+    const matchesTab = activeTab === 'ALL' ? true : (item.category || 'FOREX').toUpperCase() === activeTab
+    const matchesSearch = item.asset_symbol?.toLowerCase().includes(searchQuery)
+    return matchesTab && matchesSearch
+  })
 
   const grouped = { today: [] as any[], yesterday: [] as any[], thisWeek: [] as any[], older: [] as any[] }
   const now = new Date()
@@ -259,7 +267,9 @@ export default function VaultPage() {
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="py-16 text-center flex flex-col items-center">
-          <span className="text-xs font-black text-neutral-600 uppercase tracking-widest">No saved setups in this category.</span>
+          <span className="text-xs font-black text-neutral-600 uppercase tracking-widest">
+            {searchQuery ? `No saved setups matching "${searchQuery}"` : "No saved setups in this category."}
+          </span>
         </div>
       ) : (
         <div className="space-y-10">
@@ -301,6 +311,7 @@ export default function VaultPage() {
         </div>
       )}
 
+      {/* NOTES ENGINE (Same as before) */}
       {editingNoteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
