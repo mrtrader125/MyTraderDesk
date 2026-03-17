@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Bookmark, Lock, Clock, TrendingUp, TrendingDown, Minus, Trash2, Activity, FolderOpen, Edit3, X, FileText } from 'lucide-react'
@@ -15,7 +15,7 @@ const CATEGORIES = [
   { id: 'STOCKS', label: 'Stocks', req: 'pro' }
 ]
 
-export default function VaultPage() {
+function VaultContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const searchQuery = searchParams.get('search')?.toLowerCase() || ''
@@ -326,5 +326,14 @@ export default function VaultPage() {
         </div>
       )}
     </div>
+  )
+}
+
+// Next.js 15 Suspense Wrapper
+export default function VaultPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-amber-500" size={32} /></div>}>
+      <VaultContent />
+    </Suspense>
   )
 }
