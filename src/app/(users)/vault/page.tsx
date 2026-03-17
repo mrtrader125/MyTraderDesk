@@ -1,5 +1,5 @@
 'use client'
-
+import { getSetupAccess } from '@/lib/access'
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
