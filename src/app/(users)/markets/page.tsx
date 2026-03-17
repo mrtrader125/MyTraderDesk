@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Activity, Lock, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react'
@@ -14,7 +14,7 @@ const CATEGORIES = [
   { id: 'STOCKS', label: 'Stocks', req: 'pro' }
 ]
 
-export default function MarketsPage() {
+function MarketsContent() {
   const router = useRouter()
   
   // NEW: Grab the search query from the URL
@@ -184,5 +184,14 @@ export default function MarketsPage() {
         )}
       </div>
     </div>
+  )
+}
+
+// Next.js 15 Suspense Wrapper
+export default function MarketsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
+      <MarketsContent />
+    </Suspense>
   )
 }
