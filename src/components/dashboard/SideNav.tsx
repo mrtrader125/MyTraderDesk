@@ -19,8 +19,8 @@ export default function SideNav() {
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Markets', href: '/analysis', icon: LineChart },
-    { name: 'The Vault', href: '/dashboard/vault', icon: Bookmark },
-    { name: 'Performance', href: '/dashboard/performance', icon: Award },
+    { name: 'The Vault', href: '/vault', icon: Bookmark }, // Fixed!
+    { name: 'Performance', href: '/performance', icon: Award }, // Fixed!
     { name: 'Account', href: '/settings', icon: Settings },
   ]
 
