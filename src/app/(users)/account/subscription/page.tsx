@@ -13,13 +13,18 @@ export default function SubscriptionPage() {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
+        // 1. Get Plan
         const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
         if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
+        
+        // 2. LIVE FETCH: Get true Vault count
+        const { count } = await supabase
+          .from('user_vault')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          
+        if (count !== null) setSavedCount(count)
       }
-      
-      const saved = localStorage.getItem('analysis_watchlist')
-      if (saved) setSavedCount(JSON.parse(saved).length)
-      
       setLoading(false)
     }
     loadData()
