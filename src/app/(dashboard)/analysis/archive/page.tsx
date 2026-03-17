@@ -1,8 +1,9 @@
 'use client'
+
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Maximize2, Activity, Lock } from 'lucide-react'
+import { ArrowLeft, Lock, Clock, Shield, Crown, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 // System Configuration
 const CORE_ASSETS = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'AUDUSD', 'NZDUSD', 'USDCHF', 'XAUUSD', 'GBPCAD', 'CADJPY', 'EURJPY', 'EURAUD', 'GBPAUD']
@@ -35,7 +36,13 @@ function ArchiveContent() {
     loadData()
   }, [asset, router])
 
-  if (loading) return <div className="h-screen flex items-center justify-center text-neutral-500 text-[11px] font-medium tracking-widest uppercase">Retrieving Archive...</div>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <span className="text-neutral-500 text-[10px] font-black tracking-widest uppercase animate-pulse">Retrieving Archive...</span>
+      </div>
+    )
+  }
 
   // --- GROUPING LOGIC ---
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -49,11 +56,15 @@ function ArchiveContent() {
     else grouped.older.push(setup)
   })
 
+  // --- THE MODERNIZED ARCHIVE CARD ---
   const ArchiveCard = ({ setup }: { setup: any }) => {
     const dateObj = new Date(setup.created_at)
     const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
     const formattedTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     const displayText = setup.title || setup.content || `${asset} Setup`
+    
+    const isBull = setup.bias?.toUpperCase() === 'BULLISH'
+    const isBear = setup.bias?.toUpperCase() === 'BEARISH'
     
     // Authorization Check Engine
     const isCore = CORE_ASSETS.includes(asset || '')
@@ -74,78 +85,109 @@ function ArchiveContent() {
     return (
       <div 
         onClick={() => router.push(`/analysis/viewport?asset=${asset}`)}
-        className="bg-card-bg transition-colors duration-700 border border-card-border transition-colors duration-700 rounded-xl overflow-hidden flex flex-col group cursor-pointer hover:border-white/[0.08] hover:bg-white/[0.02] transition-all duration-300 shadow-card relative"
+        className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-neutral-600 transition-all duration-300 shadow-sm relative min-h-[220px]"
       >
-        <div className="h-32 w-full bg-app-bg transition-colors duration-700 relative overflow-hidden border-b border-card-border transition-colors duration-700">
+        {/* Top Image Section */}
+        <div className="h-32 w-full bg-black relative overflow-hidden border-b border-neutral-800/50">
           <img 
             src={setup.image_url} 
             alt="Setup" 
-            className={`w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-60 group-hover:opacity-100' : 'opacity-20 blur-sm grayscale'}`}
+            className={`w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-40 group-hover:opacity-100' : 'opacity-10 blur-md grayscale'}`}
           />
           
+          {/* Lock Overlay */}
           {!hasAccess && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40">
-              <Lock size={18} className="text-neutral-400 mb-1.5" />
-              <span className="text-[9px] font-bold text-neutral-300 uppercase tracking-widest">{requiredTier} REQUIRED</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
+              <Lock size={16} className={requiredTier === 'PRO' ? 'text-brand-primary mb-1.5' : 'text-blue-500 mb-1.5'} />
+              <span className="text-[9px] font-black text-white uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded border border-white/10">
+                {requiredTier} TIER
+              </span>
             </div>
           )}
 
+          {/* Timeframe & Bias Badges (If unlocked) */}
           {hasAccess && (
-            <div className="absolute top-2 right-2 bg-black/80 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-bold text-neutral-300 uppercase tracking-wider border border-card-border transition-colors duration-700">
-              {setup.timeframe}
-            </div>
+            <>
+              <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-2 py-1 rounded-md text-[9px] font-black text-white uppercase tracking-widest border border-white/10">
+                {setup.timeframe || '-'}
+              </div>
+              <div className={`absolute bottom-3 right-3 p-1.5 rounded-lg backdrop-blur-md border ${isBull ? 'bg-emerald-500/20 border-emerald-500/20 text-emerald-500' : isBear ? 'bg-red-500/20 border-red-500/20 text-red-500' : 'bg-neutral-800/80 border-neutral-700 text-neutral-400'}`}>
+                {isBull ? <TrendingUp size={12} /> : isBear ? <TrendingDown size={12} /> : <Minus size={12} />}
+              </div>
+            </>
           )}
         </div>
-        <div className="p-4 flex flex-col">
-          <div className="text-[9px] font-semibold text-neutral-500 tracking-widest mb-1.5 flex justify-between items-center">
-            <span>{formattedDate}</span>
+
+        {/* Bottom Details Section */}
+        <div className="p-4 flex flex-col flex-1 justify-between">
+          <h3 className={`text-[13px] font-bold line-clamp-2 leading-snug mb-3 transition-colors ${hasAccess ? 'text-neutral-200 group-hover:text-white' : 'text-neutral-600'}`}>
+            {hasAccess ? displayText : 'Intelligence Locked pending clearance.'}
+          </h3>
+          
+          <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-neutral-500 pt-3 border-t border-neutral-800/50">
+            <span className="flex items-center"><Clock size={10} className="mr-1" /> {formattedDate}</span>
             <span>{formattedTime}</span>
           </div>
-          <h3 className={`text-[13px] font-medium line-clamp-1 transition-colors ${hasAccess ? 'text-neutral-200 group-hover:text-blue-400' : 'text-neutral-600'}`}>
-            {hasAccess ? displayText : 'Intelligence Locked'}
-          </h3>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="w-full h-full p-6 pt-2 lg:px-8 lg:py-4 space-y-8 relative z-10 max-w-[1600px] mx-auto -mt-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-card-border transition-colors duration-700">
-        <div className="flex items-center space-x-4">
-          <button onClick={() => router.push('/analysis')} className="w-9 h-9 rounded-lg bg-white/[0.02] border border-card-border transition-colors duration-700 flex items-center justify-center text-neutral-400 hover:bg-white/[0.06] hover:text-white transition-colors"><ArrowLeft size={16} /></button>
-          <div>
-            <div className="flex items-center space-x-3 mb-0.5">
-              <h1 className="text-xl font-semibold text-white tracking-tight">{asset}</h1>
-            </div>
-          </div>
+    <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans">
+      
+      {/* COMPACT HEADER */}
+      <div className="flex items-center space-x-4 mb-10 pb-4 border-b border-neutral-800">
+        <button 
+          onClick={() => router.push('/analysis')} 
+          className="w-10 h-10 rounded-xl bg-white/5 border border-neutral-800 flex items-center justify-center text-neutral-400 hover:bg-white/10 hover:text-white transition-all shrink-0"
+        >
+          <ArrowLeft size={18} />
+        </button>
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-black text-white tracking-tighter uppercase italic">{asset} <span className="text-brand-primary">Archive</span></h1>
+          <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Historical Intelligence Records</p>
         </div>
       </div>
 
-      <div className="space-y-10">
+      <div className="space-y-12">
         {grouped.today.length > 0 && (
-          <section>
-            <h2 className="text-[11px] font-bold text-neutral-400 uppercase tracking-widest mb-4 flex items-center">Today <div className="ml-3 h-px flex-1 bg-white/[0.04]"></div></h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">
+              Deployed Today <div className="ml-4 h-px flex-1 bg-neutral-800"></div>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               {grouped.today.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
             </div>
           </section>
         )}
+
         {grouped.yesterday.length > 0 && (
-          <section>
-            <h2 className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest mb-4 flex items-center">Yesterday <div className="ml-3 h-px flex-1 bg-white/[0.04]"></div></h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
+            <h2 className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-4 flex items-center">
+              Yesterday <div className="ml-4 h-px flex-1 bg-neutral-800"></div>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               {grouped.yesterday.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
             </div>
           </section>
         )}
+
         {grouped.older.length > 0 && (
-          <section>
-            <h2 className="text-[11px] font-bold text-neutral-600 uppercase tracking-widest mb-4 flex items-center">Older Setups <div className="ml-3 h-px flex-1 bg-white/[0.04]"></div></h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
+            <h2 className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 flex items-center">
+              Historical Records <div className="ml-4 h-px flex-1 bg-neutral-800/50"></div>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 opacity-80 hover:opacity-100 transition-opacity">
               {grouped.older.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
             </div>
           </section>
+        )}
+
+        {history.length === 0 && (
+          <div className="py-20 text-center flex flex-col items-center">
+            <span className="text-sm font-black text-neutral-600 uppercase tracking-widest">No Historical Data Found</span>
+          </div>
         )}
       </div>
     </div>
@@ -153,6 +195,9 @@ function ArchiveContent() {
 }
 
 export default function ArchivePage() {
-  return <Suspense fallback={<div>Loading...</div>}><ArchiveContent /></Suspense>
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#050505]"></div>}>
+      <ArchiveContent />
+    </Suspense>
+  )
 }
-
