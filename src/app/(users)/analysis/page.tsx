@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Clock, Activity, BarChart2, Crown, Shield, Lock, TrendingUp, TrendingDown, Minus, ArrowRight } from 'lucide-react'
+import { Activity, Lock, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react'
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All', req: 'free' },
@@ -16,6 +16,11 @@ const CATEGORIES = [
 
 export default function MarketsPage() {
   const router = useRouter()
+  
+  // NEW: Grab the search query from the URL
+  const searchParams = useSearchParams()
+  const searchQuery = searchParams.get('search')?.toLowerCase() || ''
+  
   const [groupedAnalyses, setGroupedAnalyses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('ALL')
@@ -79,9 +84,12 @@ export default function MarketsPage() {
     return false
   }
 
-  const filteredMarkets = groupedAnalyses.filter(market => 
-    activeTab === 'ALL' ? true : market.category === activeTab
-  )
+  // NEW: Filter by BOTH the Active Tab AND the Search Query
+  const filteredMarkets = groupedAnalyses.filter(market => {
+    const matchesTab = activeTab === 'ALL' ? true : market.category === activeTab
+    const matchesSearch = market.symbol.toLowerCase().includes(searchQuery)
+    return matchesTab && matchesSearch
+  })
 
   if (loading) return (
     <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
@@ -117,7 +125,7 @@ export default function MarketsPage() {
 
       {/* DIRECTIONAL SLIDE ANIMATION */}
       <div 
-        key={activeTab} 
+        key={`${activeTab}-${searchQuery}`} // Added searchQuery to key to trigger re-animation on search
         className={`animate-in duration-500 fill-mode-both 
           ${slideDirection === 'right' ? 'slide-in-from-right-12' : 'slide-in-from-left-12'} 
           fade-in`}
@@ -128,10 +136,12 @@ export default function MarketsPage() {
                <>
                  <Lock size={32} className="text-brand-primary mb-4" />
                  <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Access Restricted</h3>
-                 <button onClick={() => router.push('/settings/billing')} className="mt-4 px-6 py-2 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg">Upgrade</button>
+                 <button onClick={() => router.push('/account/subscription')} className="mt-4 px-6 py-2 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg">Upgrade</button>
                </>
             ) : (
-              <span className="text-xs font-bold text-neutral-600 uppercase tracking-widest">No Active Setups</span>
+              <span className="text-xs font-bold text-neutral-600 uppercase tracking-widest">
+                {searchQuery ? `No markets matching "${searchQuery}"` : "No Active Setups"}
+              </span>
             )}
           </div>
         ) : (
