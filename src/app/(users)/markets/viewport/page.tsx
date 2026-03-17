@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin } from 'lucide-react'
@@ -21,7 +21,7 @@ const getTfWeight = (tf: string) => {
   return 99; 
 }
 
-export default function ViewportPage() {
+function ViewportContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const asset = searchParams.get('asset')
@@ -310,5 +310,14 @@ export default function ViewportPage() {
 
        </div>
     </div>
+  )
+}
+
+// Next.js 15 Suspense Wrapper
+export default function ViewportPage() {
+  return (
+    <Suspense fallback={<div className="h-screen bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
+      <ViewportContent />
+    </Suspense>
   )
 }
