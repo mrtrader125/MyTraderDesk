@@ -44,7 +44,7 @@ export default function ViewportPage() {
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
-    if (!asset) return router.push('/analysis')
+    if (!asset) return router.push('/markets')
 
     const saved = localStorage.getItem('analysis_watchlist')
     if (saved) {
@@ -204,7 +204,7 @@ export default function ViewportPage() {
 
        <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
          <div className="absolute top-5 left-5 flex items-start space-x-3 pointer-events-none z-50">
-           <button onClick={() => router.push('/analysis')} className="w-10 h-10 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"><ArrowLeft size={16} /></button>
+           <button onClick={() => router.push('/markets')} className="w-10 h-10 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"><ArrowLeft size={16} /></button>
            <div className="h-10 bg-[#0a0a0a] border border-neutral-800 px-4 rounded-xl flex items-center space-x-3 shadow-lg pointer-events-auto">
              <span className="text-sm font-black uppercase tracking-widest text-white">{asset}</span>
              <div className="w-px h-4 bg-neutral-800"></div>

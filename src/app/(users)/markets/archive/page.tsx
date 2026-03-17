@@ -20,7 +20,7 @@ function ArchiveContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!asset) return router.push('/analysis')
+    if (!asset) return router.push('/markets')
 
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -139,7 +139,7 @@ function ArchiveContent() {
       {/* COMPACT HEADER */}
       <div className="flex items-center space-x-4 mb-10 pb-4 border-b border-neutral-800">
         <button 
-          onClick={() => router.push('/analysis')} 
+          onClick={() => router.push('/markets')} 
           className="w-10 h-10 rounded-xl bg-white/5 border border-neutral-800 flex items-center justify-center text-neutral-400 hover:bg-white/10 hover:text-white transition-all shrink-0"
         >
           <ArrowLeft size={18} />
