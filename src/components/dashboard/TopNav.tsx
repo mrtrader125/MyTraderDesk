@@ -15,10 +15,13 @@ export default function TopNav() {
   const [user, setUser] = useState<any>(null)
   const [showDropdown, setShowDropdown] = useState(false)
   
-  // local state for smooth typing
+  // Local state for smooth, lag-free typing
   const [searchTerm, setSearchTerm] = useState('')
+  
+  // Ref to track if the current change originated from the URL or the keyboard
+  const isInitialSync = useRef(true)
 
-  // 1. Initial Load & Sync
+  // 1. Initial Load: Fetch User and Sync search bar with current URL
   useEffect(() => {
     setMounted(true)
     
@@ -28,15 +31,20 @@ export default function TopNav() {
     }
     loadUser()
 
-    // Sync input with URL if present
     const initialSearch = searchParams.get('search') || ''
     setSearchTerm(initialSearch)
-  }, []) // Only run once on mount
+  }, []) // Run once on mount
 
-  // 2. Optimized Logic Engine (Debounced URL & Tracking)
+  // 2. Logic Engine: Debounced URL update and Supabase Logging
   useEffect(() => {
-    // If user cleared the search, update URL immediately but don't log
-    if (searchTerm === '') {
+    // Skip the very first run to prevent logging the current URL as a "new search"
+    if (isInitialSync.current) {
+      isInitialSync.current = false
+      return
+    }
+
+    // Handle Empty Search: Clear URL immediately for better UX
+    if (searchTerm.trim() === '') {
       const params = new URLSearchParams(searchParams?.toString())
       if (params.has('search')) {
         params.delete('search')
@@ -45,14 +53,14 @@ export default function TopNav() {
       return
     }
 
-    // Wait 500ms after user stops typing to update URL and Log
+    // Debounce: Wait 500ms after user stops typing before updating URL and DB
     const timer = setTimeout(async () => {
-      // Update the URL
+      // Update the URL (scroll: false prevents the page from jumping)
       const params = new URLSearchParams(searchParams?.toString())
       params.set('search', searchTerm.trim())
       router.replace(`${pathname}?${params.toString()}`, { scroll: false })
 
-      // Silently log to Supabase
+      // Silently log the completed search query to Supabase
       if (user) {
         supabase.from('activity_logs').insert([{
           user_id: user.id,
@@ -60,12 +68,12 @@ export default function TopNav() {
           search_query: searchTerm.trim()
         }]).then()
       }
-    }, 500) // 500ms is standard for a responsive search bar
+    }, 500) 
 
     return () => clearTimeout(timer)
   }, [searchTerm, user, pathname, router])
 
-  // 3. UI Handler: ONLY updates the local state (Instant feel)
+  // 3. UI Handler: Updates the local state instantly for buttery-smooth typing
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
   }
@@ -75,7 +83,9 @@ export default function TopNav() {
     router.push('/login')
   }
 
+  // Do not show TopNav on full-screen chart viewports
   if (pathname?.includes('/viewport')) return null
+  
   const isAccountPage = pathname?.startsWith('/account')
   const userInitial = user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'
 
@@ -116,11 +126,19 @@ export default function TopNav() {
                   <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Active Operator</p>
                   <p className="text-xs font-bold text-white truncate mt-1">{user?.email || '...'}</p>
                 </div>
-                <button onClick={() => { router.push('/account/profile'); setShowDropdown(false); }} className="w-full flex items-center space-x-3 px-4 py-3 text-neutral-400 hover:text-white hover:bg-white/5 transition-all">
-                  <User size={16} /> <span className="text-[11px] font-black uppercase tracking-widest">Account Center</span>
+                <button 
+                  onClick={() => { router.push('/account/profile'); setShowDropdown(false); }} 
+                  className="w-full flex items-center space-x-3 px-4 py-3 text-neutral-400 hover:text-white hover:bg-white/5 transition-all text-left"
+                >
+                  <User size={16} /> 
+                  <span className="text-[11px] font-black uppercase tracking-widest">Account Center</span>
                 </button>
-                <button onClick={handleSignOut} className="w-full flex items-center space-x-3 px-4 py-3 text-red-500 hover:bg-red-500/10 transition-all border-t border-neutral-800 mt-2">
-                  <LogOut size={16} /> <span className="text-[11px] font-black uppercase tracking-widest">Disconnect</span>
+                <button 
+                  onClick={handleSignOut} 
+                  className="w-full flex items-center space-x-3 px-4 py-3 text-red-500 hover:bg-red-500/10 transition-all border-t border-neutral-800 mt-2 text-left"
+                >
+                  <LogOut size={16} /> 
+                  <span className="text-[11px] font-black uppercase tracking-widest">Disconnect</span>
                 </button>
               </div>
             </>
