@@ -1,19 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, ChevronRight, LogOut, User } from 'lucide-react'
-import { usePathname, useRouter } from 'next/navigation'
+import { Search, LogOut, User } from 'lucide-react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import NotificationBell from '@/components/notifications/NotificationBell'
 
 export default function TopNav() {
   const pathname = usePathname()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  
   const [mounted, setMounted] = useState(false)
-  const [search, setSearch] = useState('')
-  const [suggestions, setSuggestions] = useState<string[]>([])
   const [user, setUser] = useState<any>(null)
   const [showDropdown, setShowDropdown] = useState(false)
+  
+  // Initialize search input from URL
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
     setMounted(true)
@@ -28,35 +31,26 @@ export default function TopNav() {
     getUser()
   }, [])
 
+  // Sync state if URL changes from outside
   useEffect(() => {
-    if (search.length > 0) {
-      const fetchSuggestions = async () => {
-        try {
-          const { data, error } = await supabase.from('analyses').select('asset_symbol')
-          if (!error && data) {
-            const unique = Array.from(new Set(data.map(d => d.asset_symbol).filter(Boolean)))
-            setSuggestions(unique.filter((s: string) => s.toLowerCase().includes(search.toLowerCase())).slice(0, 5))
-          }
-        } catch (err) {
-          console.error("Search suggestion failed")
-        }
-      }
-      fetchSuggestions()
-    } else {
-      setSuggestions([])
-    }
-  }, [search])
+    setSearchTerm(searchParams?.get('search') || '')
+  }, [searchParams])
 
-  const handleSelect = (symbol: string) => {
-    try {
-      const saved = localStorage.getItem('analysis_watchlist')
-      const history = saved ? JSON.parse(saved) : []
-      const updated = Array.from(new Set([symbol, ...history]))
-      localStorage.setItem('analysis_watchlist', JSON.stringify(updated))
-    } catch (e) { } // Ignore localstorage errors
+  // Contextual URL Search logic
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value
+    setSearchTerm(val)
     
-    setSearch('')
-    router.push(`/analysis/viewport?asset=${symbol}`)
+    // Build the new URL with the search query
+    const params = new URLSearchParams(searchParams?.toString() || '')
+    if (val) {
+      params.set('search', val)
+    } else {
+      params.delete('search')
+    }
+    
+    // Replace current URL to trigger page updates without reloading
+    router.replace(`${pathname}?${params.toString()}`)
   }
 
   const handleSignOut = async () => {
@@ -66,44 +60,30 @@ export default function TopNav() {
 
   if (pathname?.includes('/viewport')) return null
 
+  // 1. Hide search entirely on any /account pages
+  const isAccountPage = pathname?.startsWith('/account')
+
   const userInitial = user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'
 
   return (
     <header className="h-16 w-full border-b border-neutral-800 bg-[#0a0a0a] flex items-center justify-between px-6 shrink-0 z-40 sticky top-0">
       
       <div className="flex-1 max-w-md relative">
-        {mounted && (
-          <>
-            <div className="flex items-center bg-neutral-900 border border-neutral-800 rounded-full px-4 py-2 w-full focus-within:border-neutral-600 transition-colors">
-              <Search size={16} className="text-neutral-500 mr-3 shrink-0" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search instruments..."
-                className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-neutral-500"
-              />
-            </div>
-
-            {suggestions.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-2xl overflow-hidden z-50">
-                {suggestions.map(s => (
-                  <button 
-                    key={s} 
-                    onClick={() => handleSelect(s)} 
-                    className="w-full px-5 py-3 text-left text-xs font-bold text-neutral-400 hover:bg-neutral-800 hover:text-white flex justify-between items-center transition-colors"
-                  >
-                    {s} <ChevronRight size={14} />
-                  </button>
-                ))}
-              </div>
-            )}
-          </>
+        {mounted && !isAccountPage && (
+          <div className="flex items-center bg-neutral-900 border border-neutral-800 rounded-full px-4 py-2 w-full focus-within:border-neutral-600 transition-colors">
+            <Search size={16} className="text-neutral-500 mr-3 shrink-0" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={handleSearch}
+              placeholder="Search current view..."
+              className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-neutral-500"
+            />
+          </div>
         )}
       </div>
 
       <div className="flex items-center space-x-4 ml-4 relative">
-        {/* IMPORTANT: If screen is STILL white after saving, comment out the line below! */}
         {mounted && <NotificationBell />}
 
         <div className="relative">
@@ -122,8 +102,8 @@ export default function TopNav() {
                   <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Active Operator</p>
                   <p className="text-xs font-bold text-white truncate mt-1">{user?.email || '...'}</p>
                 </div>
-                <button onClick={() => { router.push('/dashboard/account'); setShowDropdown(false); }} className="w-full flex items-center space-x-3 px-4 py-3 text-neutral-400 hover:text-white hover:bg-white/5 transition-all">
-                  <User size={16} /> <span className="text-[11px] font-black uppercase tracking-widest">Account Settings</span>
+                <button onClick={() => { router.push('/account/profile'); setShowDropdown(false); }} className="w-full flex items-center space-x-3 px-4 py-3 text-neutral-400 hover:text-white hover:bg-white/5 transition-all">
+                  <User size={16} /> <span className="text-[11px] font-black uppercase tracking-widest">Account Center</span>
                 </button>
                 <button onClick={handleSignOut} className="w-full flex items-center space-x-3 px-4 py-3 text-red-500 hover:bg-red-500/10 transition-all border-t border-neutral-800 mt-2">
                   <LogOut size={16} /> <span className="text-[11px] font-black uppercase tracking-widest">Disconnect</span>
