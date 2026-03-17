@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Search, LogOut, User } from 'lucide-react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -14,29 +14,45 @@ export default function TopNav() {
   const [mounted, setMounted] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [showDropdown, setShowDropdown] = useState(false)
+  
+  // local state for smooth typing
   const [searchTerm, setSearchTerm] = useState('')
 
-  // 1. Initial Load: Set mounted, fetch user, and grab initial search from URL
+  // 1. Initial Load & Sync
   useEffect(() => {
     setMounted(true)
     
-    // Grab user for the profile dropdown
     async function loadUser() {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
     }
     loadUser()
 
-    // Sync search bar with URL if they refresh the page
+    // Sync input with URL if present
     const initialSearch = searchParams.get('search') || ''
     setSearchTerm(initialSearch)
-  }, [searchParams])
+  }, []) // Only run once on mount
 
-  // 2. The Tracking Tracker: Silently logs searches after a 1.5s pause
+  // 2. Optimized Logic Engine (Debounced URL & Tracking)
   useEffect(() => {
-    if (!searchTerm || searchTerm.trim() === '') return
+    // If user cleared the search, update URL immediately but don't log
+    if (searchTerm === '') {
+      const params = new URLSearchParams(searchParams?.toString())
+      if (params.has('search')) {
+        params.delete('search')
+        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+      }
+      return
+    }
 
-    const delayDebounceFn = setTimeout(async () => {
+    // Wait 500ms after user stops typing to update URL and Log
+    const timer = setTimeout(async () => {
+      // Update the URL
+      const params = new URLSearchParams(searchParams?.toString())
+      params.set('search', searchTerm.trim())
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+
+      // Silently log to Supabase
       if (user) {
         supabase.from('activity_logs').insert([{
           user_id: user.id,
@@ -44,23 +60,14 @@ export default function TopNav() {
           search_query: searchTerm.trim()
         }]).then()
       }
-    }, 1500)
+    }, 500) // 500ms is standard for a responsive search bar
 
-    return () => clearTimeout(delayDebounceFn)
-  }, [searchTerm, user])
-    
-  // 3. UI Handler: Updates the input box and the URL instantly
+    return () => clearTimeout(timer)
+  }, [searchTerm, user, pathname, router])
+
+  // 3. UI Handler: ONLY updates the local state (Instant feel)
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value
-    setSearchTerm(val)
-
-    const params = new URLSearchParams(searchParams?.toString() || '')
-    if (val) {
-      params.set('search', val)
-    } else {
-      params.delete('search')
-    }
-    router.replace(`${pathname}?${params.toString()}`)
+    setSearchTerm(e.target.value)
   }
 
   const handleSignOut = async () => {
@@ -69,10 +76,7 @@ export default function TopNav() {
   }
 
   if (pathname?.includes('/viewport')) return null
-
-  // Hide search entirely on any /account pages
   const isAccountPage = pathname?.startsWith('/account')
-
   const userInitial = user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'
 
   return (
@@ -86,7 +90,7 @@ export default function TopNav() {
               type="text"
               value={searchTerm}
               onChange={handleSearch}
-              placeholder="Search current view..."
+              placeholder="Search assets (e.g. XAUUSD)..."
               className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-neutral-500"
             />
           </div>
