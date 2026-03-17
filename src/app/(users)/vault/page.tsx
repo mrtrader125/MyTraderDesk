@@ -18,78 +18,92 @@ const CATEGORIES = [
 
 export default function VaultPage() {
   const router = useRouter()
-  const searchParams = useSearchParams() // <-- NEW: Grabs the URL parameters
-  const searchQuery = searchParams.get('search')?.toLowerCase() || '' // <-- NEW: Extracts the search text
+  const searchParams = useSearchParams()
+  const searchQuery = searchParams.get('search')?.toLowerCase() || ''
 
   const [vaultItems, setVaultItems] = useState<any[]>([])
   const [userPlan, setUserPlan] = useState<string>('free')
   const [loading, setLoading] = useState(true)
   
   const [activeTab, setActiveTab] = useState('ALL')
-  const [notes, setNotes] = useState<Record<string, string>>({})
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [tempNote, setTempNote] = useState('')
 
   useEffect(() => {
-    async function loadVaultData() {
+    async function loadLiveVault() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
-          if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
+        if (!user) return
+
+        // 1. Get Clearance Plan
+        const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+        if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
+
+        // 2. LIVE FETCH: Get Vault Items + Joined Analysis Data
+        const { data: vaultData, error } = await supabase
+          .from('user_vault')
+          .select(`
+            id,
+            note,
+            created_at,
+            analysis_id,
+            analyses (*)
+          `)
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+
+        if (!error && vaultData) {
+          // Flatten the data to match your UI components perfectly
+          const formattedItems = vaultData.map(item => ({
+            ...item.analyses,
+            vault_id: item.id,
+            saved_note: item.note,
+            saved_at: item.created_at
+          }))
+          
+          setVaultItems(formattedItems)
         }
-
-        const savedWatchlist = localStorage.getItem('analysis_watchlist')
-        if (savedWatchlist) {
-          const parsed = JSON.parse(savedWatchlist)
-          const validIds = parsed.map((item: any) => item.id).filter(Boolean)
-
-          if (validIds.length > 0) {
-            const { data, error } = await supabase.from('analyses').select('*').in('id', validIds)
-            if (!error && data) {
-              const sortedData = validIds.map((id: string) => data.find(d => d.id === id)).filter(Boolean)
-              setVaultItems(sortedData)
-            }
-          }
-        }
-
-        const savedNotes = localStorage.getItem('vault_notes')
-        if (savedNotes) setNotes(JSON.parse(savedNotes))
 
       } catch (err) {
-        console.error("Vault Load Error:", err)
+        console.error("Live Vault Error:", err)
       } finally {
         setLoading(false)
       }
     }
-    loadVaultData()
+    loadLiveVault()
   }, [])
 
-  const removeFromVault = (e: React.MouseEvent, idToRemove: string) => {
+  // --- LIVE DELETE ---
+  const removeFromVault = async (e: React.MouseEvent, vaultIdToRemove: string) => {
     e.stopPropagation()
-    const updatedItems = vaultItems.filter(item => item.id !== idToRemove)
-    setVaultItems(updatedItems)
-
-    const saved = localStorage.getItem('analysis_watchlist')
-    if (saved) {
-      const parsed = JSON.parse(saved)
-      const updatedStorage = parsed.filter((item: any) => item.id !== idToRemove)
-      localStorage.setItem('analysis_watchlist', JSON.stringify(updatedStorage))
-    }
+    // Optimistic UI update for instant feel
+    setVaultItems(prev => prev.filter(item => item.vault_id !== vaultIdToRemove))
+    // Delete from live database
+    await supabase.from('user_vault').delete().eq('id', vaultIdToRemove)
   }
 
-  const handleOpenNote = (e: React.MouseEvent, id: string) => {
+  // --- LIVE NOTE SAVING ---
+  const handleOpenNote = (e: React.MouseEvent, vaultId: string, currentNote: string) => {
     e.stopPropagation()
-    setTempNote(notes[id] || '')
-    setEditingNoteId(id)
+    setTempNote(currentNote || '')
+    setEditingNoteId(vaultId)
   }
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
     if (!editingNoteId) return
-    const updatedNotes = { ...notes, [editingNoteId]: tempNote }
-    if (tempNote.trim() === '') delete updatedNotes[editingNoteId]
-    setNotes(updatedNotes)
-    localStorage.setItem('vault_notes', JSON.stringify(updatedNotes))
+    
+    // Update live database
+    const { error } = await supabase
+      .from('user_vault')
+      .update({ note: tempNote })
+      .eq('id', editingNoteId)
+
+    // Update local state if successful
+    if (!error) {
+      setVaultItems(prev => prev.map(item => 
+        item.vault_id === editingNoteId ? { ...item, saved_note: tempNote } : item
+      ))
+    }
     setEditingNoteId(null)
   }
 
@@ -125,12 +139,11 @@ export default function VaultPage() {
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-amber-500" size={32} />
-        <span className="text-[10px] font-black tracking-widest uppercase text-neutral-500">Unlocking Vault...</span>
+        <span className="text-[10px] font-black tracking-widest uppercase text-neutral-500">Unlocking Live Vault...</span>
       </div>
     )
   }
 
-  // NEW: Filters by BOTH the pill tabs AND the TopNav search bar!
   const filteredItems = vaultItems.filter(item => {
     const matchesTab = activeTab === 'ALL' ? true : (item.category || 'FOREX').toUpperCase() === activeTab
     const matchesSearch = item.asset_symbol?.toLowerCase().includes(searchQuery)
@@ -144,7 +157,8 @@ export default function VaultPage() {
   const thisWeek = new Date(today); thisWeek.setDate(thisWeek.getDate() - 7)
 
   filteredItems.forEach(setup => {
-    const d = new Date(setup.created_at).getTime()
+    // Group by when the user SAVED it, not when the analysis was created
+    const d = new Date(setup.saved_at).getTime() 
     if (d >= today.getTime()) grouped.today.push(setup)
     else if (d >= yesterday.getTime()) grouped.yesterday.push(setup)
     else if (d >= thisWeek.getTime()) grouped.thisWeek.push(setup)
@@ -155,7 +169,7 @@ export default function VaultPage() {
     const { hasAccess, requiredTier } = getSetupAccess(setup)
     const isBull = setup.bias?.toUpperCase() === 'BULLISH'
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
-    const hasNote = !!notes[setup.id]
+    const hasNote = setup.saved_note && setup.saved_note.trim() !== ''
 
     return (
       <div 
@@ -186,14 +200,14 @@ export default function VaultPage() {
           
           <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 z-20">
             <button 
-              onClick={(e) => handleOpenNote(e, setup.id)}
+              onClick={(e) => handleOpenNote(e, setup.vault_id, setup.saved_note)}
               className="p-1.5 bg-amber-500/80 backdrop-blur-md text-white rounded-md hover:bg-amber-500 transition-colors shadow-lg"
               title="Edit Note"
             >
               <Edit3 size={12} />
             </button>
             <button 
-              onClick={(e) => removeFromVault(e, setup.id)}
+              onClick={(e) => removeFromVault(e, setup.vault_id)}
               className="p-1.5 bg-red-500/80 backdrop-blur-md text-white rounded-md hover:bg-red-500 transition-colors shadow-lg"
               title="Remove from Vault"
             >
@@ -213,7 +227,7 @@ export default function VaultPage() {
               {hasNote && <FileText size={12} className="text-amber-500" />}
             </div>
             {hasNote ? (
-              <p className="text-[10px] font-medium text-amber-500/80 line-clamp-2 leading-snug mt-1.5 italic">"{notes[setup.id]}"</p>
+              <p className="text-[10px] font-medium text-amber-500/80 line-clamp-2 leading-snug mt-1.5 italic">"{setup.saved_note}"</p>
             ) : (
               <p className={`text-[10px] font-bold line-clamp-1 leading-snug mt-1.5 transition-colors ${hasAccess ? 'text-neutral-500' : 'text-neutral-600'}`}>
                 {hasAccess ? (setup.title || 'No notes added.') : 'Clearance restricted.'}
@@ -221,7 +235,7 @@ export default function VaultPage() {
             )}
           </div>
           <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-neutral-600 pt-3 border-t border-neutral-800/80 mt-3">
-            <span className="flex items-center"><Clock size={10} className="mr-1" /> {new Date(setup.created_at).toLocaleDateString()}</span>
+            <span className="flex items-center"><Clock size={10} className="mr-1" /> {new Date(setup.saved_at).toLocaleDateString()}</span>
             <span className="text-amber-500 flex items-center"><Bookmark size={10} className="fill-amber-500 mr-1" /> Vault</span>
           </div>
         </div>
@@ -232,7 +246,6 @@ export default function VaultPage() {
   return (
     <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden relative">
       
-      {/* ULTRA-COMPACT CENTERED TABS */}
       <div className="flex flex-col items-center mb-8 mt-1">
         <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800">
           {CATEGORIES.map((cat) => {
@@ -277,7 +290,7 @@ export default function VaultPage() {
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">Today <div className="ml-4 h-px flex-1 bg-neutral-800"></div></h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-                {grouped.today.map(setup => <VaultCard key={setup.id} setup={setup} />)}
+                {grouped.today.map(setup => <VaultCard key={setup.vault_id} setup={setup} />)}
               </div>
             </section>
           )}
@@ -286,7 +299,7 @@ export default function VaultPage() {
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
               <h2 className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-4 flex items-center">Yesterday <div className="ml-4 h-px flex-1 bg-neutral-800"></div></h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-                {grouped.yesterday.map(setup => <VaultCard key={setup.id} setup={setup} />)}
+                {grouped.yesterday.map(setup => <VaultCard key={setup.vault_id} setup={setup} />)}
               </div>
             </section>
           )}
@@ -295,7 +308,7 @@ export default function VaultPage() {
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
               <h2 className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-4 flex items-center">This Week <div className="ml-4 h-px flex-1 bg-neutral-800/50"></div></h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
-                {grouped.thisWeek.map(setup => <VaultCard key={setup.id} setup={setup} />)}
+                {grouped.thisWeek.map(setup => <VaultCard key={setup.vault_id} setup={setup} />)}
               </div>
             </section>
           )}
@@ -304,14 +317,13 @@ export default function VaultPage() {
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
               <h2 className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 flex items-center">Older Records <div className="ml-4 h-px flex-1 bg-neutral-800/30"></div></h2>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 opacity-80 hover:opacity-100 transition-opacity">
-                {grouped.older.map(setup => <VaultCard key={setup.id} setup={setup} />)}
+                {grouped.older.map(setup => <VaultCard key={setup.vault_id} setup={setup} />)}
               </div>
             </section>
           )}
         </div>
       )}
 
-      {/* NOTES ENGINE (Same as before) */}
       {editingNoteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
@@ -320,7 +332,12 @@ export default function VaultPage() {
               <Edit3 size={18} className="text-amber-500 mr-2" />
               <h3 className="text-sm font-black text-white uppercase tracking-widest">Operator Notes</h3>
             </div>
-            <textarea value={tempNote} onChange={(e) => setTempNote(e.target.value)} placeholder="Add your tactical notes, entry triggers, or observations here..." className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors resize-none mb-6 font-medium" />
+            <textarea 
+              value={tempNote} 
+              onChange={(e) => setTempNote(e.target.value)} 
+              placeholder="Add your tactical notes, entry triggers, or observations here..." 
+              className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors resize-none mb-6 font-medium" 
+            />
             <div className="flex justify-end space-x-3">
               <button onClick={() => setEditingNoteId(null)} className="px-5 py-2.5 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors">Cancel</button>
               <button onClick={handleSaveNote} className="px-6 py-2.5 bg-amber-500 text-black text-xs font-black uppercase tracking-widest rounded-lg hover:bg-amber-400 transition-colors shadow-[0_0_15px_rgba(245,158,11,0.2)]">Save Note</button>
