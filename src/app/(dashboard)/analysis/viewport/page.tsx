@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity } from 'lucide-react'
+import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin } from 'lucide-react'
 
 const CORE_ASSETS = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'AUDUSD', 'NZDUSD', 'USDCHF', 'XAUUSD', 'GBPCAD', 'CADJPY', 'EURJPY', 'EURAUD', 'GBPAUD']
 
@@ -15,10 +15,12 @@ export default function ViewportPage() {
   const [allHistory, setAllHistory] = useState<any[]>([])
   const [userPlan, setUserPlan] = useState<string>('free')
   const [loading, setLoading] = useState(true)
+  const [watchlist, setWatchlist] = useState<any[]>([])
 
   const [selectedTf, setSelectedTf] = useState<string>('')
   const [activeIndex, setActiveIndex] = useState(0)
   const [showInfo, setShowInfo] = useState(false)
+  const [isSidebarPinned, setIsSidebarPinned] = useState(false)
   
   // Physics States
   const [scale, setScale] = useState(1)
@@ -28,6 +30,16 @@ export default function ViewportPage() {
 
   useEffect(() => {
     if (!asset) return router.push('/analysis')
+
+    // Load Watchlist
+    const saved = localStorage.getItem('analysis_watchlist')
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        const validItems = parsed.filter((item: any) => typeof item === 'object' && item.id)
+        setWatchlist(validItems)
+      } catch (e) {}
+    }
 
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser()
@@ -54,6 +66,24 @@ export default function ViewportPage() {
   const timeframes = useMemo(() => Array.from(new Set(allHistory.map(a => a.timeframe))), [allHistory])
   const filteredHistory = useMemo(() => allHistory.filter(a => a.timeframe === selectedTf), [allHistory, selectedTf])
   const currentSetup = filteredHistory[activeIndex]
+
+  // Toggle Bookmark Function
+  const toggleBookmark = (e: React.MouseEvent, setup: any) => {
+    e.stopPropagation() 
+    if (!setup) return
+
+    let updated = [...watchlist]
+    const exists = updated.find(item => item.id === setup.id)
+    
+    if (exists) {
+      updated = updated.filter(item => item.id !== setup.id)
+    } else {
+      updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe }) 
+    }
+    
+    setWatchlist(updated)
+    localStorage.setItem('analysis_watchlist', JSON.stringify(updated))
+  }
 
   // Physics Handlers
   const handleWheel = (e: React.WheelEvent) => {
@@ -108,11 +138,12 @@ export default function ViewportPage() {
   if (!currentSetup) return <div className="h-screen bg-[#050505] flex items-center justify-center text-white">No data found for {asset}</div>
 
   const access = getSetupAccess(currentSetup)
+  const isCurrentBookmarked = watchlist.some(w => w.id === currentSetup.id)
 
   return (
     <div className="fixed inset-0 bg-[#050505] flex overflow-hidden text-white select-none touch-none font-sans">
         
-       {/* --- LAYER 1: BOTTOM CANVAS (Moved to Left) --- */}
+       {/* --- LAYER 1: BOTTOM CANVAS --- */}
        <div 
          className={`absolute inset-0 z-10 flex items-center justify-start pl-6 md:pl-16 pr-20 pt-20 pb-10 ${access.hasAccess ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
          onWheel={access.hasAccess ? handleWheel : undefined}
@@ -170,7 +201,7 @@ export default function ViewportPage() {
        {/* --- LAYER 3: TOP UI (COMPACT HEADER) --- */}
        <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
          
-         {/* Top Navigation Bar */}
+         {/* Top Left: Navigation & Info */}
          <div className="absolute top-5 left-5 flex items-start space-x-3 pointer-events-none z-50">
            <button 
              onClick={() => router.push('/analysis')} 
@@ -183,38 +214,24 @@ export default function ViewportPage() {
              <span className="text-sm font-black uppercase tracking-widest text-white">{asset}</span>
              
              <div className="w-px h-4 bg-neutral-800"></div>
-             
-             {/* Timeframes (Horizontal) */}
-             <div className="flex items-center space-x-1">
-               {timeframes.map(t => {
-                 const latestForTf = allHistory.find(h => h.timeframe === t)
-                 const tfAccess = getSetupAccess(latestForTf)
-                 const isSelected = selectedTf === t
 
-                 return (
-                   <button 
-                     key={t}
-                     onClick={() => { if(tfAccess.hasAccess) { setSelectedTf(t); setActiveIndex(0); setScale(1); setPos({x:0, y:0}) } }}
-                     className={`flex items-center px-2 py-1 rounded-md text-[9px] font-bold uppercase tracking-wider transition-colors
-                       ${isSelected ? 'bg-white text-black' : 'text-neutral-500 hover:text-white'}
-                       ${!tfAccess.hasAccess ? 'opacity-50 cursor-not-allowed' : ''}`}
-                   >
-                     {t}
-                     {!tfAccess.hasAccess && <Lock size={10} className={`ml-1 ${isSelected ? 'text-black' : 'text-neutral-600'}`} />}
-                   </button>
-                 )
-               })}
-             </div>
+             {/* Bookmark Button */}
+             <button 
+                onClick={(e) => toggleBookmark(e, currentSetup)}
+                className="text-neutral-500 hover:text-white transition-colors"
+              >
+                <Bookmark size={14} className={isCurrentBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
+              </button>
 
-             {/* Info Button */}
+             {/* Info Button (Changes to X when open) */}
              {access.hasAccess && (
                <>
                  <div className="w-px h-4 bg-neutral-800"></div>
                  <button 
                    onClick={() => setShowInfo(!showInfo)} 
-                   className={`transition-colors text-neutral-400 hover:text-white ${showInfo ? 'text-white' : ''}`}
+                   className={`transition-colors w-6 h-6 flex items-center justify-center rounded-md ${showInfo ? 'bg-white text-black' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
                  >
-                   <Info size={14} />
+                   {showInfo ? <X size={14} /> : <Info size={14} />}
                  </button>
                </>
              )}
@@ -237,15 +254,54 @@ export default function ViewportPage() {
            )}
          </div>
 
-         {/* RIGHT HISTORY MENU (Flawless Collapsed State) */}
-         <div className="absolute right-0 top-0 bottom-0 w-12 hover:w-56 bg-[#0a0a0a]/80 backdrop-blur-md border-l border-neutral-800 transition-all duration-300 group/sidebar pointer-events-auto z-40 flex flex-col shadow-2xl">
-           
+         {/* Top Center: Timeframes Menu */}
+         <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-[#0a0a0a] border border-neutral-800 p-1.5 rounded-xl shadow-lg pointer-events-auto z-50 flex items-center space-x-1">
+            {timeframes.map(t => {
+              const latestForTf = allHistory.find(h => h.timeframe === t)
+              const tfAccess = getSetupAccess(latestForTf)
+              const isSelected = selectedTf === t
+
+              return (
+                <button 
+                  key={t}
+                  onClick={() => { if(tfAccess.hasAccess) { setSelectedTf(t); setActiveIndex(0); setScale(1); setPos({x:0, y:0}) } }}
+                  className={`flex items-center px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors
+                    ${isSelected ? 'bg-white text-black' : 'text-neutral-500 hover:text-white hover:bg-white/5'}
+                    ${!tfAccess.hasAccess ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {t}
+                  {!tfAccess.hasAccess && <Lock size={10} className={`ml-1.5 ${isSelected ? 'text-black' : 'text-neutral-600'}`} />}
+                </button>
+              )
+            })}
+         </div>
+
+         {/* RIGHT HISTORY MENU (With Pin Feature) */}
+         <div className={`absolute right-0 top-0 bottom-0 z-40 flex flex-col shadow-2xl transition-all duration-300 border-l border-neutral-800 pointer-events-auto
+           ${isSidebarPinned ? 'w-56 bg-[#0a0a0a]/95' : 'w-12 hover:w-56 bg-[#0a0a0a]/80 backdrop-blur-md group/sidebar'}`}
+         >
            {/* Sidebar Header */}
-           <div className="h-14 flex items-center justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-5 border-b border-neutral-800 transition-all">
-             <Clock size={14} className="text-neutral-500 shrink-0" />
-             <span className="opacity-0 w-0 overflow-hidden group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 group-hover/sidebar:ml-2 transition-all duration-300 text-[10px] font-black text-neutral-300 uppercase tracking-widest whitespace-nowrap">
-               History
-             </span>
+           <div className={`h-14 flex items-center border-b border-neutral-800 transition-all
+             ${isSidebarPinned ? 'justify-between px-4' : 'justify-center group-hover/sidebar:justify-between group-hover/sidebar:px-4'}`}
+           >
+             <div className="flex items-center">
+               <Clock size={14} className="text-neutral-500 shrink-0" />
+               <span className={`text-[10px] font-black text-neutral-300 uppercase tracking-widest whitespace-nowrap transition-all duration-300
+                 ${isSidebarPinned ? 'opacity-100 w-auto ml-2' : 'opacity-0 w-0 overflow-hidden group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 group-hover/sidebar:ml-2'}`}
+               >
+                 History
+               </span>
+             </div>
+             
+             {/* Pin / Close Button */}
+             <button 
+               onClick={() => setIsSidebarPinned(!isSidebarPinned)}
+               className={`text-neutral-500 hover:text-white transition-colors
+                 ${isSidebarPinned ? 'block' : 'hidden group-hover/sidebar:block'}`}
+               title={isSidebarPinned ? "Close Panel" : "Pin Panel"}
+             >
+               {isSidebarPinned ? <X size={14} /> : <Pin size={14} />}
+             </button>
            </div>
            
            {/* History List */}
@@ -253,22 +309,24 @@ export default function ViewportPage() {
              {filteredHistory.map((item, idx) => {
                const historyAccess = getSetupAccess(item)
                const isActive = activeIndex === idx
+               const isItemBookmarked = watchlist.some(w => w.id === item.id)
 
                return (
                  <button 
                    key={item.id}
                    onClick={() => { if(historyAccess.hasAccess) { setActiveIndex(idx); setScale(1); setPos({x:0, y:0}) } }}
-                   className={`w-full flex items-center h-10 rounded-lg transition-all relative justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3
+                   className={`w-full flex items-center h-10 rounded-lg transition-all relative
+                     ${isSidebarPinned ? 'justify-start px-3' : 'justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3'}
                      ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}
                      ${!historyAccess.hasAccess ? 'cursor-not-allowed opacity-60' : ''}`}
                  >
                    {/* Collapsed Dot */}
-                   <div className="block group-hover/sidebar:hidden shrink-0">
+                   <div className={`${isSidebarPinned ? 'hidden' : 'block group-hover/sidebar:hidden shrink-0'}`}>
                      <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white shadow-[0_0_5px_#fff]' : 'bg-neutral-700'}`} />
                    </div>
                    
                    {/* Expanded Details */}
-                   <div className="hidden group-hover/sidebar:flex items-center justify-between w-full min-w-0">
+                   <div className={`items-center justify-between w-full min-w-0 ${isSidebarPinned ? 'flex' : 'hidden group-hover/sidebar:flex'}`}>
                      <div className="flex flex-col items-start min-w-0 pr-2">
                        <span className={`text-[10px] font-bold uppercase tracking-wider truncate ${isActive ? 'text-white' : 'text-neutral-400'}`}>
                          {new Date(item.created_at).toLocaleDateString()}
@@ -277,7 +335,11 @@ export default function ViewportPage() {
                          {new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                        </span>
                      </div>
-                     {!historyAccess.hasAccess && <Lock size={10} className="text-neutral-500 shrink-0" />}
+                     
+                     <div className="flex items-center space-x-1.5 shrink-0">
+                       {isItemBookmarked && <Bookmark size={10} className="fill-amber-500 text-amber-500" />}
+                       {!historyAccess.hasAccess && <Lock size={10} className="text-neutral-500" />}
+                     </div>
                    </div>
                  </button>
                )
