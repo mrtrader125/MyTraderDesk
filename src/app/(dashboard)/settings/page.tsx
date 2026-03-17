@@ -1,192 +1,255 @@
 'use client'
+
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import Link from 'next/link'
-import { 
-  Shield, Loader2, RefreshCw, BadgeCheck, Mail, 
-  CreditCard, BellRing, Monitor, User, ArrowUpRight, Lock 
-} from 'lucide-react'
+import { User, CreditCard, Settings, Shield, Crown, Activity, LogOut, AlertTriangle, Zap, Mail, Key } from 'lucide-react'
+
+const TABS = [
+  { id: 'PROFILE', label: 'Profile', icon: User },
+  { id: 'BILLING', label: 'Billing & Plan', icon: CreditCard },
+  { id: 'PREFERENCES', label: 'Preferences', icon: Settings },
+]
 
 export default function SettingsPage() {
-  const [email, setEmail] = useState('')
+  const router = useRouter()
+  const [activeTab, setActiveTab] = useState('PROFILE')
   const [loading, setLoading] = useState(true)
-  const [resetting, setResetting] = useState(false)
-  const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
+  
+  // User Data
+  const [userEmail, setUserEmail] = useState('')
+  const [userPlan, setUserPlan] = useState('free')
+  const [userName, setUserName] = useState('Operator')
 
   useEffect(() => {
-    async function loadAccountData() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) setEmail(user.email || '')
-      setLoading(false)
+    async function loadAccount() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          setUserEmail(user.email || '')
+          
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan, full_name')
+            .eq('id', user.id)
+            .single()
+            
+          if (profile) {
+            if (profile.plan) setUserPlan(profile.plan.toLowerCase())
+            if (profile.full_name) setUserName(profile.full_name)
+          }
+        }
+      } catch (err) {
+        console.error("Account Load Error:", err)
+      } finally {
+        setLoading(false)
+      }
     }
-    loadAccountData()
+    loadAccount()
   }, [])
 
-  const showToast = (text: string, type: 'success' | 'error') => {
-    setMessage({ text, type })
-    setTimeout(() => setMessage(null), 4000)
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
   }
 
-  const resetPassword = async () => {
-    setResetting(true)
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
-    })
-    
-    if (error) {
-      showToast(error.message, 'error')
-    } else {
-      showToast('Security link dispatched to your inbox', 'success')
-    }
-    setResetting(false)
-  }
-
-  if (loading) return (
-    <div className="h-full w-full flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <Loader2 className="animate-spin text-brand-primary" size={40} />
-        <p className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.4em]">Initializing System...</p>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
+        <Activity className="animate-pulse text-brand-primary" size={32} />
+        <span className="text-[10px] font-black tracking-widest uppercase text-neutral-500">Accessing Command Center...</span>
       </div>
-    </div>
-  )
+    )
+  }
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-20">
+    <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden">
       
-      {/* HEADER: WIDE & BREATHABLE */}
-      <header className="border-b border-card-border pb-8">
-        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter italic uppercase">
-          System <span className="text-brand-primary">Settings</span>
-        </h1>
-        <p className="text-neutral-500 text-[11px] font-bold uppercase tracking-[0.4em] mt-4 flex items-center gap-2">
-          <Monitor size={14} className="text-brand-primary" /> 
-          Terminal Configuration Hub
-        </p>
-      </header>
-
-      {/* TWO-COLUMN WIDE LAYOUT */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        
-        {/* LEFT COLUMN: NAVIGATION HUBS (Span 4) */}
-        <div className="lg:col-span-5 space-y-6">
-          
-          {/* Link to Profile Page */}
-          <Link href="/profile" className="block bg-card-bg border border-card-border rounded-3xl p-8 shadow-card hover:border-brand-primary/50 transition-all group">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-white/5 rounded-2xl group-hover:bg-brand-primary/10 group-hover:text-brand-primary transition-colors text-white">
-                  <User size={24} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-white uppercase tracking-wider">User Identity</h3>
-                  <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mt-1">Avatars, Bio, Display Name</p>
-                </div>
-              </div>
-              <ArrowUpRight size={20} className="text-neutral-600 group-hover:text-brand-primary group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
-            </div>
-          </Link>
-
-          {/* Link to Billing Page */}
-          <Link href="/settings/billing" className="block bg-card-bg border border-card-border rounded-3xl p-8 shadow-card hover:border-brand-primary/50 transition-all group">
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
-                <div className="p-4 bg-white/5 rounded-2xl group-hover:bg-brand-primary/10 group-hover:text-brand-primary transition-colors text-white">
-                  <CreditCard size={24} />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black text-white uppercase tracking-wider">Billing & Tier</h3>
-                  <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mt-1">Subscriptions & Invoices</p>
-                </div>
-              </div>
-              <ArrowUpRight size={20} className="text-neutral-600 group-hover:text-brand-primary group-hover:translate-x-1 group-hover:-translate-y-1 transition-all" />
-            </div>
-          </Link>
-
+      {/* HEADER */}
+      <div className="flex items-center justify-between mb-8 pb-6 border-b border-neutral-800">
+        <div className="flex flex-col">
+          <h1 className="text-3xl md:text-4xl font-black text-white tracking-tighter uppercase italic">Command <span className="text-neutral-500">Center</span></h1>
+          <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-1">Manage Clearance, Billing, and Security</p>
         </div>
+        
+        <button 
+          onClick={handleSignOut}
+          className="flex items-center space-x-2 px-4 py-2 bg-neutral-900 hover:bg-red-500/10 hover:text-red-500 text-neutral-400 border border-neutral-800 hover:border-red-500/20 rounded-xl transition-all text-[10px] font-black uppercase tracking-widest"
+        >
+          <LogOut size={14} />
+          <span className="hidden sm:block">Disconnect</span>
+        </button>
+      </div>
 
-        {/* RIGHT COLUMN: ACTIVE CONFIGURATIONS (Span 7) */}
-        <div className="lg:col-span-7 space-y-8">
-          
-          {/* SECURITY CARD */}
-          <section className="bg-card-bg border border-card-border rounded-[2rem] p-8 md:p-10 shadow-card">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="p-3 bg-red-500/10 rounded-xl">
-                <Lock size={20} className="text-red-500" />
-              </div>
-              <div>
-                <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Authentication</h3>
-                <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mt-1">Access Control</p>
-              </div>
-            </div>
+      {/* COMPACT TABS */}
+      <div className="flex flex-col items-center mb-10">
+        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-800 w-full max-w-md justify-between">
+          {TABS.map((tab) => {
+            const Icon = tab.icon
+            const active = activeTab === tab.id
+            return (
+              <button 
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`relative flex-1 flex justify-center items-center px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all
+                  ${active ? 'bg-white text-black shadow-sm scale-100' : 'text-neutral-500 hover:text-white hover:bg-white/5'}`}
+              >
+                <Icon size={12} className="mr-2" />
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* CONTENT AREA */}
+      <div className="max-w-4xl mx-auto">
+        
+        {/* ================= PROFILE TAB ================= */}
+        {activeTab === 'PROFILE' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
             
-            <div className="space-y-6">
-              <div className="p-6 bg-app-bg border border-card-border rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Registered Address</p>
-                  <div className="flex items-center gap-2 text-white font-medium">
-                    <Mail size={14} className="text-brand-primary" />
-                    {email}
+            <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8">
+              <h2 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center">
+                <User className="mr-2 text-neutral-500" size={16} /> Identity Parameters
+              </h2>
+              
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Operator Name</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={14} />
+                      <input 
+                        type="text" 
+                        defaultValue={userName}
+                        className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 pl-10 pr-4 text-xs font-bold text-white outline-none focus:border-neutral-500 transition-colors"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Encrypted Email</label>
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={14} />
+                      <input 
+                        type="email" 
+                        value={userEmail}
+                        disabled
+                        className="w-full bg-[#050505] border border-neutral-800/50 rounded-xl py-3 pl-10 pr-4 text-xs font-bold text-neutral-500 outline-none cursor-not-allowed"
+                      />
+                    </div>
                   </div>
                 </div>
-                <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 text-[9px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20">Verified</span>
-              </div>
 
-              <div className="space-y-4">
-                <p className="text-neutral-400 text-xs font-medium">
-                  To ensure maximum terminal security, request a cryptographic link to rotate your master password.
-                </p>
-                <button
-                  onClick={resetPassword}
-                  disabled={resetting}
-                  className="w-full py-5 bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                >
-                  {resetting ? <Loader2 className="animate-spin" size={16} /> : <RefreshCw size={16} />}
-                  Issue Password Reset
+                <div className="pt-4 flex justify-end">
+                  <button className="px-6 py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-colors">
+                    Update Identity
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8">
+              <h2 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center">
+                <Key className="mr-2 text-neutral-500" size={16} /> Security
+              </h2>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-bold text-white tracking-widest">Authentication Password</h3>
+                  <p className="text-[10px] font-medium text-neutral-500 mt-1">Request a secure link to modify your login credentials.</p>
+                </div>
+                <button className="px-5 py-2.5 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-neutral-800 border border-neutral-800 transition-colors">
+                  Reset Password
                 </button>
               </div>
             </div>
-          </section>
 
-          {/* SYSTEM PREFERENCES */}
-          <section className="bg-card-bg border border-card-border rounded-[2rem] p-8 md:p-10 shadow-card">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="p-3 bg-blue-500/10 rounded-xl">
-                <BellRing size={20} className="text-blue-500" />
-              </div>
-              <div>
-                <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">System Preferences</h3>
-                <p className="text-neutral-500 text-[10px] font-bold uppercase tracking-widest mt-1">Alerts & Behavior</p>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-center justify-between p-6 bg-app-bg rounded-2xl border border-card-border">
-                <div>
-                  <span className="text-xs font-black text-white uppercase tracking-wider block">Terminal Broadcasts</span>
-                  <span className="text-[10px] text-neutral-500 font-medium">Receive important updates and trade setups.</span>
-                </div>
-                {/* Visual Toggle */}
-                <div className="h-6 w-12 bg-brand-primary/20 border border-brand-primary/50 rounded-full relative cursor-pointer shadow-brand-glow">
-                  <div className="absolute right-1 top-1 h-4 w-4 bg-brand-primary rounded-full" />
-                </div>
-              </div>
-            </div>
-          </section>
-
-        </div>
-      </div>
-
-      {/* TOAST NOTIFICATION */}
-      {message && (
-        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[200] px-8 py-5 rounded-[2rem] border shadow-2xl animate-in slide-in-from-bottom-10 duration-500 flex items-center gap-4 ${
-          message.type === 'success' ? 'bg-[#0a0a0c] border-emerald-500/50 text-emerald-500' : 'bg-[#0a0a0c] border-red-500/50 text-red-500'
-        }`}>
-          <div className={`p-2 rounded-lg ${message.type === 'success' ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
-            {message.type === 'success' ? <BadgeCheck size={18}/> : <Shield size={18}/>}
           </div>
-          <p className="text-xs font-black uppercase tracking-widest">{message.text}</p>
-        </div>
-      )}
+        )}
+
+        {/* ================= BILLING TAB ================= */}
+        {activeTab === 'BILLING' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+            
+            {/* Active Plan Card */}
+            <div className="bg-gradient-to-br from-[#0a0a0a] to-[#050505] border border-neutral-800 rounded-3xl p-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-brand-primary/5 blur-[100px] rounded-full pointer-events-none"></div>
+              
+              <div className="flex flex-col md:flex-row md:items-center justify-between relative z-10 gap-6">
+                <div>
+                  <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-2 block">Current Clearance Level</span>
+                  <div className="flex items-center space-x-3">
+                    {userPlan === 'pro' ? <Crown className="text-brand-primary" size={28} /> : userPlan === 'essential' ? <Shield className="text-blue-500" size={28} /> : <Zap className="text-neutral-500" size={28} />}
+                    <h2 className={`text-3xl font-black uppercase tracking-tighter ${userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-white'}`}>
+                      {userPlan} Tier
+                    </h2>
+                  </div>
+                  <p className="text-xs font-medium text-neutral-400 mt-2 max-w-md">
+                    {userPlan === 'pro' ? 'Maximum clearance granted. Full access to Crypto, Indices, Stocks, and priority setups.' : 'Limited clearance. Upgrade to unlock restricted global markets and bypass time-delays.'}
+                  </p>
+                </div>
+
+                {userPlan !== 'pro' && (
+                  <button className="px-8 py-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.2)] whitespace-nowrap">
+                    Upgrade to Pro
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Danger Zone */}
+            <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 mt-12">
+              <h2 className="text-sm font-black text-red-500 uppercase tracking-widest mb-2 flex items-center">
+                <AlertTriangle className="mr-2" size={16} /> Danger Zone
+              </h2>
+              <p className="text-[11px] font-medium text-neutral-500 mb-6">
+                Canceling your subscription will immediately revoke your access to premium intelligence. This action cannot be undone.
+              </p>
+              <button className="px-6 py-3 bg-red-500/10 text-red-500 border border-red-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-500 hover:text-white transition-colors">
+                Cancel Subscription
+              </button>
+            </div>
+
+          </div>
+        )}
+
+        {/* ================= PREFERENCES TAB ================= */}
+        {activeTab === 'PREFERENCES' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+            
+            <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8">
+              <h2 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center">
+                <Zap className="mr-2 text-neutral-500" size={16} /> Interface Settings
+              </h2>
+              
+              <div className="space-y-6 divide-y divide-neutral-800/50">
+                <div className="flex items-center justify-between pb-6">
+                  <div>
+                    <h3 className="text-xs font-bold text-white tracking-widest">Terminal Theme</h3>
+                    <p className="text-[10px] font-medium text-neutral-500 mt-1">The interface is currently locked to Dark Mode for optimal market monitoring.</p>
+                  </div>
+                  <div className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest text-neutral-400 cursor-not-allowed">
+                    Dark Only
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-6">
+                  <div>
+                    <h3 className="text-xs font-bold text-white tracking-widest">Email Broadcasts</h3>
+                    <p className="text-[10px] font-medium text-neutral-500 mt-1">Receive immediate email alerts when new intelligence is deployed.</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <div className="w-11 h-6 bg-neutral-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-neutral-400 peer-checked:after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-primary"></div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+      </div>
     </div>
   )
 }
