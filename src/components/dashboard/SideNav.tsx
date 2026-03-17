@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -10,8 +10,14 @@ import {
 } from 'lucide-react'
 
 export default function SideNav() {
-  const [isOpen, setIsOpen] = useState(true)
+  // 1. Starts collapsed by default (false instead of true)
+  const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+
+  // 2. Auto-collapses the sidebar whenever the route changes
+  useEffect(() => {
+    setIsOpen(false)
+  }, [pathname])
 
   // Do not render sidebar on full-screen chart pages
   if (pathname?.includes('/viewport')) return null;
@@ -19,7 +25,7 @@ export default function SideNav() {
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Markets', href: '/analysis', icon: LineChart },
-    { name: 'The Vault', href: '/vault', icon: Bookmark }, // Fixed!
+    { name: 'The Vault', href: '/vault', icon: Bookmark }, 
     { name: 'Account', href: '/account/profile', icon: Settings },
   ]
 
@@ -32,15 +38,15 @@ export default function SideNav() {
     <aside className={`${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-screen shrink-0 z-50`}>
       
       {/* BRANDING & TOGGLE */}
-      <div className="h-16 flex items-center px-4 border-b border-neutral-800 justify-between">
+      <div className="h-16 flex items-center px-4 border-b border-neutral-800 justify-between overflow-hidden">
         {isOpen && (
-          <span className="font-black tracking-tight text-lg uppercase flex items-center">
+          <span className="font-black tracking-tight text-lg uppercase flex items-center whitespace-nowrap">
             <span className="text-blue-500 mr-1">MY</span> TRADER DESK
           </span>
         )}
         <button 
           onClick={() => setIsOpen(!isOpen)} 
-          className="p-2 hover:bg-neutral-800 rounded-lg text-neutral-400 transition-colors mx-auto"
+          className="p-2 hover:bg-neutral-800 rounded-lg text-neutral-400 transition-colors mx-auto shrink-0"
         >
           <Menu size={20} />
         </button>
@@ -50,7 +56,7 @@ export default function SideNav() {
       <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto scrollbar-hide">
         {navItems.map((item) => {
           // Check if active (handles sub-paths too)
-          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href))
+          const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href.split('/')[1] ? `/${item.href.split('/')[1]}` : item.href))
           
           return (
             <Link key={item.name} href={item.href}>
