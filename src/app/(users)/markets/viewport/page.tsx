@@ -4,8 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin } from 'lucide-react'
-
-const CORE_ASSETS = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'AUDUSD', 'NZDUSD', 'USDCHF', 'XAUUSD', 'GBPCAD', 'CADJPY', 'EURJPY', 'EURAUD', 'GBPAUD']
+import { getSetupAccess } from '@/lib/access' // <-- NEW: Centralized access engine
 
 const getTfWeight = (tf: string) => {
   const cleanTf = tf.trim().toLowerCase();
@@ -47,10 +46,15 @@ export default function ViewportPage() {
     if (!asset) return router.push('/markets')
 
     async function loadData() {
+      let currentPlan = 'free' // Track locally for the initial paywall check
+      
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
-        if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
+        if (profile?.plan) {
+          currentPlan = profile.plan.toLowerCase()
+          setUserPlan(currentPlan)
+        }
 
         const { data: vaultData } = await supabase
           .from('user_vault')
@@ -81,7 +85,9 @@ export default function ViewportPage() {
 
         if (user) {
            const targetSetup = data.find(d => d.timeframe === targetTf)
-           const accessCheck = getSetupAccess(targetSetup)
+           
+           // --- NEW: Using the centralized access logic to log paywall bumps ---
+           const accessCheck = getSetupAccess(targetSetup, currentPlan)
            
            if (!accessCheck.hasAccess) {
              supabase.from('activity_logs').insert([{
@@ -135,33 +141,6 @@ export default function ViewportPage() {
   const handleMouseMove = (e: React.MouseEvent) => { if (isDragging) setPos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y }) }
   const handleMouseUp = () => setIsDragging(false)
 
-  const getSetupAccess = (setup: any) => {
-    if (!setup) return { hasAccess: false, requiredTier: 'PRO', hoursLeft: 0, countdownText: '' }
-    const isCore = CORE_ASSETS.includes(asset || '')
-    const lowerTf = (setup.timeframe || '').toLowerCase().replace(/\s+/g, '') 
-    const isScalp = lowerTf.includes('5m') || lowerTf.includes('15m')
-    const isFastDelay = isScalp || lowerTf.includes('1h') || lowerTf.includes('h1')
-
-    const createdTime = new Date(setup.created_at).getTime()
-    const ageInHours = (new Date().getTime() - createdTime) / (1000 * 60 * 60)
-    const requiredDelayHours = isFastDelay ? 24 : 168
-    const isTimeUnlocked = ageInHours >= requiredDelayHours
-    const requiredTier = (!isCore || isScalp) ? 'PRO' : 'ESSENTIAL'
-
-    let hasAccess = false
-    if (userPlan === 'pro') hasAccess = true
-    else if (userPlan === 'essential' && requiredTier === 'ESSENTIAL') hasAccess = true
-    else if (isTimeUnlocked) hasAccess = true
-
-    const hoursLeft = Math.max(0, requiredDelayHours - ageInHours)
-    const daysLeft = Math.floor(hoursLeft / 24)
-    const remainingHours = Math.floor(hoursLeft % 24)
-    const remainingMins = Math.floor((hoursLeft * 60) % 60)
-    const countdownText = daysLeft > 0 ? `${daysLeft}d ${remainingHours}h` : `${remainingHours}h ${remainingMins}m`
-
-    return { hasAccess, requiredTier, hoursLeft, countdownText }
-  }
-
   if (loading) return (
     <div className="h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
       <Activity className="animate-pulse text-blue-500" size={32} />
@@ -171,7 +150,9 @@ export default function ViewportPage() {
 
   if (!currentSetup) return <div className="h-screen bg-[#050505] flex items-center justify-center text-white">No data found for {asset}</div>
 
-  const access = getSetupAccess(currentSetup)
+  // --- NEW: Checking access using the centralized engine ---
+  const access = getSetupAccess(currentSetup, userPlan)
+  
   const isCurrentBookmarked = watchlist.some(w => w.id === currentSetup.id)
 
   return (
@@ -200,9 +181,9 @@ export default function ViewportPage() {
        {!access.hasAccess && (
          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
            <div className="max-w-sm w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-800 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden pointer-events-auto">
-             <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full pointer-events-none ${access.requiredTier === 'PRO' ? 'bg-brand-primary/20' : 'bg-blue-600/20'}`}></div>
+             <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full pointer-events-none ${access.requiredTier === 'pro' ? 'bg-brand-primary/20' : 'bg-blue-600/20'}`}></div>
              <div className="w-14 h-14 bg-black border border-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-6 relative z-10 shadow-lg">
-                <Lock size={20} className={access.requiredTier === 'PRO' ? 'text-brand-primary' : 'text-blue-500'} />
+                <Lock size={20} className={access.requiredTier === 'pro' ? 'text-brand-primary' : 'text-blue-500'} />
              </div>
              <h2 className="text-lg font-black text-white tracking-tight uppercase mb-2 relative z-10">Clearance Required</h2>
              <p className="text-[11px] font-medium text-neutral-400 mb-6 relative z-10 leading-relaxed">
@@ -214,9 +195,9 @@ export default function ViewportPage() {
              </div>
              <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-6 relative z-10">(You can still view older history via the right sidebar)</p>
              <div className="relative z-10 pt-5 border-t border-neutral-800">
-               <button onClick={() => router.push('/account/subscription')} className={`w-full py-3 text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center space-x-2 transition-colors ${access.requiredTier === 'PRO' ? 'bg-brand-primary text-white hover:bg-brand-primary/90' : 'bg-blue-600 text-white hover:bg-blue-500'}`}>
-                 {access.requiredTier === 'PRO' ? <Crown size={14} /> : <Shield size={14} />}
-                 <span>Upgrade to {access.requiredTier}</span>
+               <button onClick={() => router.push('/account/subscription')} className={`w-full py-3 text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center space-x-2 transition-colors ${access.requiredTier === 'pro' ? 'bg-brand-primary text-white hover:bg-brand-primary/90' : 'bg-blue-600 text-white hover:bg-blue-500'}`}>
+                 {access.requiredTier === 'pro' ? <Crown size={14} /> : <Shield size={14} />}
+                 <span>Upgrade to {access.requiredTier.toUpperCase()}</span>
                </button>
              </div>
            </div>
@@ -296,7 +277,9 @@ export default function ViewportPage() {
            
            <div className="flex-1 overflow-y-auto scrollbar-hide py-3 px-2 space-y-1">
              {filteredHistory.map((item, idx) => {
-               const historyAccess = getSetupAccess(item)
+               // --- NEW: Using the centralized access logic for the sidebar history ---
+               const historyAccess = getSetupAccess(item, userPlan)
+               
                const isActive = activeIndex === idx
                const isItemBookmarked = watchlist.some(w => w.id === item.id)
 
