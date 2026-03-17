@@ -325,7 +325,7 @@ export default function OperatorTerminal() {
             
             {watchlist.length > 6 && (
               <button 
-                onClick={() => router.push('/dashboard/vault')}
+                onClick={() => router.push('/vault')}
                 className="w-full mt-3 py-2 text-[10px] font-bold text-neutral-500 hover:text-white uppercase tracking-widest transition-colors"
               >
                 View All {watchlist.length} Targets
