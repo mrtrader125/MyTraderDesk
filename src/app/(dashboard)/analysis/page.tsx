@@ -1,176 +1,269 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useMemo } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Clock, Activity, BarChart2, Crown, Shield, Lock, TrendingUp, TrendingDown, Minus, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Lock, Crown, ChevronRight, Clock, Shield, Info, X, Activity } from 'lucide-react'
 
-const CATEGORIES = [
-  { id: 'ALL', label: 'All', req: 'free' },
-  { id: 'FOREX', label: 'Forex', req: 'free' },
-  { id: 'GOLD', label: 'Gold', req: 'essential' },
-  { id: 'CRYPTO', label: 'Crypto', req: 'pro' },
-  { id: 'INDICES', label: 'Indices', req: 'pro' },
-  { id: 'STOCKS', label: 'Stocks', req: 'pro' }
-]
+const CORE_ASSETS = ['EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'AUDUSD', 'NZDUSD', 'USDCHF', 'XAUUSD', 'GBPCAD', 'CADJPY', 'EURJPY', 'EURAUD', 'GBPAUD']
 
-export default function MarketsPage() {
+export default function ViewportPage() {
+  const searchParams = useSearchParams()
   const router = useRouter()
-  const [groupedAnalyses, setGroupedAnalyses] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('ALL')
-  const [userPlan, setUserPlan] = useState('free')
+  const asset = searchParams.get('asset')
   
-  // Animation state: track index to determine slide direction
-  const [prevIndex, setPrevIndex] = useState(0)
-  const [slideDirection, setSlideDirection] = useState<'right' | 'left'>('right')
+  const [allHistory, setAllHistory] = useState<any[]>([])
+  const [userPlan, setUserPlan] = useState<string>('free')
+  const [loading, setLoading] = useState(true)
+
+  // Viewport Engine States
+  const [selectedTf, setSelectedTf] = useState<string>('')
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [showInfo, setShowInfo] = useState(false)
+  
+  // Physics States
+  const [scale, setScale] = useState(1)
+  const [pos, setPos] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
-    async function fetchMarketData() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
-          if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
-        }
-        const { data, error } = await supabase.from('analyses').select('*').order('created_at', { ascending: false })
-        if (!error && data) {
-          const grouped = data.reduce((acc: any, curr: any) => {
-            if (!acc[curr.asset_symbol]) {
-              acc[curr.asset_symbol] = {
-                symbol: curr.asset_symbol,
-                category: (curr.category || 'FOREX').toUpperCase(),
-                latestSetupId: curr.id,
-                latestImage: curr.image_url,
-                latestBias: curr.bias,
-                lastUpdated: curr.created_at,
-                count: 0,
-                timeframes: []
-              }
-            }
-            acc[curr.asset_symbol].count += 1
-            if (!acc[curr.asset_symbol].timeframes.includes(curr.timeframe)) {
-              acc[curr.asset_symbol].timeframes.push(curr.timeframe)
-            }
-            return acc
-          }, {})
-          setGroupedAnalyses(Object.values(grouped))
-        }
-      } catch (err) {
-        console.error(err)
-      } finally {
-        setLoading(false)
+    if (!asset) return router.push('/analysis')
+
+    async function loadData() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+        if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
       }
+
+      const { data } = await supabase
+        .from('analyses')
+        .select('*')
+        .eq('asset_symbol', asset)
+        .order('created_at', { ascending: false })
+        
+      if (data && data.length > 0) {
+        setAllHistory(data)
+        setSelectedTf(data[0].timeframe)
+      }
+      setLoading(false)
     }
-    fetchMarketData()
-  }, [])
+    loadData()
+  }, [asset, router])
 
-  const handleTabChange = (id: string, index: number) => {
-    setSlideDirection(index > prevIndex ? 'right' : 'left')
-    setPrevIndex(index)
-    setActiveTab(id)
+  const timeframes = useMemo(() => Array.from(new Set(allHistory.map(a => a.timeframe))), [allHistory])
+  const filteredHistory = useMemo(() => allHistory.filter(a => a.timeframe === selectedTf), [allHistory, selectedTf])
+  const currentSetup = filteredHistory[activeIndex]
+
+  // Physics Handlers
+  const handleWheel = (e: React.WheelEvent) => {
+    const zoomSensitivity = 0.0015
+    const newScale = Math.min(Math.max(0.4, scale - e.deltaY * zoomSensitivity), 5)
+    setScale(newScale)
   }
-
-  const isLocked = (reqTier: string) => {
-    if (userPlan === 'pro') return false
-    if (userPlan === 'essential' && reqTier === 'pro') return true
-    if (userPlan === 'free' && reqTier !== 'free') return true
-    return false
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true); setDragStart({ x: e.clientX - pos.x, y: e.clientY - pos.y })
   }
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isDragging) setPos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y })
+  }
+  const handleMouseUp = () => setIsDragging(false)
 
-  const filteredMarkets = groupedAnalyses.filter(market => 
-    activeTab === 'ALL' ? true : market.category === activeTab
-  )
+  // --- INDIVIDUAL SETUP ACCESS LOGIC ---
+  const getSetupAccess = (setup: any) => {
+    if (!setup) return { hasAccess: false, requiredTier: 'PRO', hoursLeft: 0, countdownText: '' }
+
+    const isCore = CORE_ASSETS.includes(asset || '')
+    const lowerTf = (setup.timeframe || '').toLowerCase().replace(/\s+/g, '') 
+    const isScalp = lowerTf.includes('5m') || lowerTf.includes('15m')
+    const isFastDelay = isScalp || lowerTf.includes('1h') || lowerTf.includes('h1')
+
+    const createdTime = new Date(setup.created_at).getTime()
+    const ageInHours = (new Date().getTime() - createdTime) / (1000 * 60 * 60)
+    const requiredDelayHours = isFastDelay ? 24 : 168
+    const isTimeUnlocked = ageInHours >= requiredDelayHours
+    const requiredTier = (!isCore || isScalp) ? 'PRO' : 'ESSENTIAL'
+
+    let hasAccess = false
+    if (userPlan === 'pro') hasAccess = true
+    else if (userPlan === 'essential' && requiredTier === 'ESSENTIAL') hasAccess = true
+    else if (isTimeUnlocked) hasAccess = true
+
+    const hoursLeft = Math.max(0, requiredDelayHours - ageInHours)
+    const daysLeft = Math.floor(hoursLeft / 24)
+    const remainingHours = Math.floor(hoursLeft % 24)
+    const remainingMins = Math.floor((hoursLeft * 60) % 60)
+    const countdownText = daysLeft > 0 ? `${daysLeft}d ${remainingHours}h` : `${remainingHours}h ${remainingMins}m`
+
+    return { hasAccess, requiredTier, hoursLeft, countdownText }
+  }
 
   if (loading) return (
-    <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
+    <div className="h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
       <Activity className="animate-pulse text-blue-500" size={32} />
+      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Connecting...</span>
     </div>
   )
 
+  if (!currentSetup) return <div className="h-screen bg-[#050505] flex items-center justify-center text-white">No data found for {asset}</div>
+
+  const access = getSetupAccess(currentSetup)
+
   return (
-    <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden">
-      
-      {/* CENTERED COMPACT TABS */}
-      <div className="flex flex-col items-center mb-10 mt-2">
-        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-800">
-          {CATEGORIES.map((cat, idx) => {
-            const locked = isLocked(cat.req)
-            const active = activeTab === cat.id
-            return (
-              <button 
-                key={cat.id}
-                onClick={() => !locked && handleTabChange(cat.id, idx)}
-                className={`relative flex items-center px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] transition-all
-                  ${active ? 'bg-white text-black shadow-xl scale-105' : 
-                    locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-500 hover:text-white'}`}
-              >
-                {locked && <Lock size={10} className="mr-1.5" />}
-                {cat.label}
-              </button>
-            )
-          })}
-        </div>
-      </div>
+    <div className="fixed inset-0 bg-[#050505] flex overflow-hidden text-white select-none touch-none font-sans">
+        
+       {/* --- LAYER 1: BOTTOM CANVAS (PHYSICS ENGINE) --- */}
+       <div 
+         className={`absolute inset-0 z-10 flex items-center justify-center p-24 md:p-40 ${access.hasAccess ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
+         onWheel={access.hasAccess ? handleWheel : undefined}
+         onMouseDown={access.hasAccess ? handleMouseDown : undefined}
+         onMouseMove={access.hasAccess ? handleMouseMove : undefined}
+         onMouseUp={access.hasAccess ? handleMouseUp : undefined}
+         onMouseLeave={access.hasAccess ? handleMouseUp : undefined}
+       >
+         <img 
+           src={currentSetup.image_url} 
+           alt={asset || "Trading Analysis"}
+           draggable={false}
+           className="w-full h-full object-contain pointer-events-none"
+           style={{ 
+             transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, 
+             transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+             filter: access.hasAccess ? 'none' : 'blur(12px) grayscale(60%) opacity(40%)'
+           }} 
+         />
+       </div>
 
-      {/* DIRECTIONAL SLIDE ANIMATION */}
-      <div 
-        key={activeTab} 
-        className={`animate-in duration-500 fill-mode-both 
-          ${slideDirection === 'right' ? 'slide-in-from-right-12' : 'slide-in-from-left-12'} 
-          fade-in`}
-      >
-        {filteredMarkets.length === 0 ? (
-          <div className="max-w-md mx-auto border border-dashed border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
-            {userPlan === 'free' && activeTab !== 'ALL' && activeTab !== 'FOREX' ? (
+       {/* --- LAYER 2: PAYWALL OVERLAY (ONLY SHOWS OVER CANVAS, NOT MENUS) --- */}
+       {!access.hasAccess && (
+         <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+           <div className="max-w-md w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-800 rounded-3xl p-10 text-center shadow-2xl relative overflow-hidden pointer-events-auto">
+             <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full pointer-events-none ${access.requiredTier === 'PRO' ? 'bg-brand-primary/20' : 'bg-blue-600/20'}`}></div>
+             
+             <div className="w-16 h-16 bg-black border border-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-6 relative z-10 shadow-lg">
+                <Lock size={24} className={access.requiredTier === 'PRO' ? 'text-brand-primary' : 'text-blue-500'} />
+             </div>
+
+             <h2 className="text-xl font-black text-white tracking-tight uppercase mb-2 relative z-10">Clearance Required</h2>
+             <p className="text-[12px] font-medium text-neutral-400 mb-6 relative z-10 leading-relaxed">
+               The <span className="text-white font-bold">{currentSetup.timeframe}</span> setup for <span className="text-white font-bold">{asset}</span> is restricted. It will unlock for your tier in:
+             </p>
+
+             <div className="flex items-center justify-center space-x-2 bg-black border border-neutral-800 rounded-xl py-3 mb-8 relative z-10">
+               <Clock size={16} className="text-neutral-500" />
+               <span className="text-lg font-black text-white tracking-widest">{access.countdownText}</span>
+             </div>
+
+             <div className="relative z-10 pt-6 border-t border-neutral-800">
+               <button 
+                 onClick={() => router.push('/settings/billing')}
+                 className={`w-full py-3.5 text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center space-x-2 transition-colors ${access.requiredTier === 'PRO' ? 'bg-brand-primary text-white hover:bg-brand-primary/90' : 'bg-blue-600 text-white hover:bg-blue-500'}`}
+               >
+                 {access.requiredTier === 'PRO' ? <Crown size={14} /> : <Shield size={14} />}
+                 <span>Upgrade to {access.requiredTier}</span>
+               </button>
+             </div>
+           </div>
+         </div>
+       )}
+
+       {/* --- LAYER 3: TOP UI (MENUS & OVERLAYS) --- */}
+       <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
+         
+         {/* TOP HEADER */}
+         <div className="absolute top-6 left-6 flex items-start space-x-4 pointer-events-none z-50">
+           <button 
+             onClick={() => router.push('/analysis')} 
+             className="w-12 h-12 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto"
+           >
+             <ArrowLeft size={18} />
+           </button>
+           
+           <div className="bg-[#0a0a0a] border border-neutral-800 px-5 py-3 rounded-xl flex items-center space-x-4 shadow-xl pointer-events-auto">
+             <span className="text-xl font-black uppercase tracking-tighter">{asset}</span>
+             <span className="px-2 py-0.5 bg-white/5 text-neutral-400 text-[10px] font-black uppercase tracking-widest rounded border border-white/10">{currentSetup.timeframe}</span>
+             
+             {access.hasAccess && (
                <>
-                 <Lock size={32} className="text-brand-primary mb-4" />
-                 <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Access Restricted</h3>
-                 <button onClick={() => router.push('/settings/billing')} className="mt-4 px-6 py-2 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg">Upgrade</button>
+                 <div className="w-px h-6 bg-neutral-800"></div>
+                 <button 
+                   onClick={() => setShowInfo(!showInfo)} 
+                   className={`transition-colors p-1.5 rounded-lg ${showInfo ? 'bg-white text-black' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}
+                 >
+                   {showInfo ? <X size={16} /> : <Info size={16} />}
+                 </button>
                </>
-            ) : (
-              <span className="text-xs font-bold text-neutral-600 uppercase tracking-widest">No Active Setups</span>
-            )}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {filteredMarkets.map(market => (
-              <div 
-                key={market.symbol}
-                onClick={() => router.push(`/analysis/viewport?asset=${market.symbol}`)}
-                className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-neutral-600 transition-all cursor-pointer group flex flex-col min-h-[140px]"
-              >
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-black border border-neutral-800 flex items-center justify-center overflow-hidden relative">
-                      <img src={market.latestImage} className="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-opacity duration-500" alt="" />
-                      <div className={`absolute bottom-0 right-0 p-1 backdrop-blur-md ${market.latestBias === 'BULLISH' ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {market.latestBias === 'BULLISH' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                      </div>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black text-white">{market.symbol}</h3>
-                      <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">{market.category}</span>
-                    </div>
-                  </div>
-                </div>
+             )}
+           </div>
 
-                <div className="mt-auto pt-4 border-t border-neutral-800/50 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold text-white bg-white/5 px-2 py-1 rounded">{market.count} Setup{market.count > 1 ? 's' : ''}</span>
-                  </div>
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); router.push(`/analysis/archive?asset=${market.symbol}`); }}
-                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
-                  >
-                    <ArrowRight size={14} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+           {/* INFO PANEL */}
+           {showInfo && access.hasAccess && (
+             <div className="absolute top-16 left-16 w-[320px] max-h-[60vh] overflow-y-auto bg-[#0a0a0a]/95 backdrop-blur-xl border border-neutral-800 rounded-2xl p-6 shadow-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4">
+               <h3 className="text-sm font-black text-white mb-3 uppercase tracking-wider">
+                 {currentSetup.title || 'Analysis Notes'}
+               </h3>
+               <p className="text-[12px] font-medium text-neutral-400 leading-relaxed whitespace-pre-wrap">
+                 {currentSetup.content || 'No additional notes provided.'}
+               </p>
+               <div className="mt-4 pt-4 border-t border-neutral-800 flex items-center space-x-2 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
+                 <Clock size={12} />
+                 <span>Published {new Date(currentSetup.created_at).toLocaleDateString()}</span>
+               </div>
+             </div>
+           )}
+         </div>
+
+         {/* LEFT TIMEFRAME MENU */}
+         <div className="absolute left-0 top-24 bottom-0 w-16 hover:w-48 bg-transparent hover:bg-[#050505]/95 border-r border-transparent hover:border-neutral-800 transition-all duration-300 flex flex-col pt-4 group pointer-events-auto z-40">
+           <div className="opacity-0 group-hover:opacity-100 px-6 pb-4 text-[9px] font-black text-neutral-600 uppercase tracking-[0.2em] transition-opacity whitespace-nowrap">Timeframes</div>
+           <div className="flex-1 overflow-y-auto px-3 space-y-2 scrollbar-hide">
+             {timeframes.map(t => {
+               // Quick check if this specific timeframe has a lock on it for the user
+               const latestForTf = allHistory.find(h => h.timeframe === t)
+               const tfAccess = getSetupAccess(latestForTf)
+
+               return (
+                 <button 
+                   key={t}
+                   onClick={() => { setSelectedTf(t); setActiveIndex(0); setScale(1); setPos({x:0, y:0}) }}
+                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap overflow-hidden
+                     ${selectedTf === t ? 'bg-white text-black opacity-100' : 'text-neutral-500 hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100'}`}
+                 >
+                   <span>{t}</span>
+                   {!tfAccess.hasAccess && <Lock size={12} className={selectedTf === t ? 'text-black' : 'text-neutral-600'} />}
+                 </button>
+               )
+             })}
+           </div>
+         </div>
+
+         {/* RIGHT HISTORY MENU */}
+         <div className="absolute right-0 top-24 bottom-0 w-16 hover:w-56 bg-transparent hover:bg-[#050505]/95 border-l border-transparent hover:border-neutral-800 transition-all duration-300 flex flex-col pt-4 group pointer-events-auto z-40">
+           <div className="opacity-0 group-hover:opacity-100 px-6 pb-4 text-[9px] font-black text-neutral-600 uppercase tracking-[0.2em] transition-opacity whitespace-nowrap">History</div>
+           <div className="flex-1 overflow-y-auto px-3 space-y-2 scrollbar-hide">
+             {filteredHistory.map((item, idx) => {
+               const historyAccess = getSetupAccess(item)
+
+               return (
+                 <button 
+                   key={item.id}
+                   onClick={() => { setActiveIndex(idx); setScale(1); setPos({x:0, y:0}) }}
+                   className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all whitespace-nowrap overflow-hidden
+                     ${activeIndex === idx ? 'bg-[#0a0a0a] border border-neutral-700 text-white opacity-100' : 'bg-transparent text-neutral-500 hover:text-white hover:bg-white/5 opacity-0 group-hover:opacity-100'}`}
+                 >
+                   <div className="flex flex-col items-start">
+                     <span className="text-[11px] font-bold uppercase tracking-wider">{new Date(item.created_at).toLocaleDateString()}</span>
+                     <span className="text-[9px] font-bold text-neutral-600 mt-0.5">{new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                   </div>
+                   {!historyAccess.hasAccess && <Lock size={12} className="text-neutral-600 shrink-0 ml-2" />}
+                 </button>
+               )
+             })}
+           </div>
+         </div>
+
+       </div>
     </div>
   )
 }
