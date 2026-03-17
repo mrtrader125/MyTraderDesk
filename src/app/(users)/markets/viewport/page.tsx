@@ -261,4 +261,34 @@ export default function ViewportPage() {
              {filteredHistory.map((item, idx) => {
                const historyAccess = getSetupAccess(item)
                const isActive = activeIndex === idx
-               const isItemBookmarked = watchlist.some(
+               const isItemBookmarked = watchlist.some(w => w.id === item.id)
+
+               return (
+                 <button 
+                   key={item.id}
+                   onClick={() => { if(historyAccess.hasAccess) { setActiveIndex(idx); setScale(1); setPos({x:0, y:0}) } }}
+                   className={`w-full flex items-center h-10 rounded-lg transition-all relative ${isSidebarPinned ? 'justify-start px-3' : 'justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3'} ${isActive ? 'bg-white/10' : 'hover:bg-white/5'} ${!historyAccess.hasAccess ? 'cursor-not-allowed opacity-60' : ''}`}
+                 >
+                   <div className={`${isSidebarPinned ? 'hidden' : 'block group-hover/sidebar:hidden shrink-0'}`}>
+                     <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white shadow-[0_0_5px_#fff]' : 'bg-neutral-700'}`} />
+                   </div>
+                   <div className={`items-center justify-between w-full min-w-0 ${isSidebarPinned ? 'flex' : 'hidden group-hover/sidebar:flex'}`}>
+                     <div className="flex flex-col items-start min-w-0 pr-2">
+                       <span className={`text-[10px] font-bold uppercase tracking-wider truncate ${isActive ? 'text-white' : 'text-neutral-400'}`}>{new Date(item.created_at).toLocaleDateString()}</span>
+                       <span className="text-[8px] font-bold text-neutral-600">{new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                     </div>
+                     <div className="flex items-center space-x-1.5 shrink-0">
+                       {isItemBookmarked && <Bookmark size={10} className="fill-amber-500 text-amber-500" />}
+                       {!historyAccess.hasAccess && <Lock size={10} className="text-neutral-500" />}
+                     </div>
+                   </div>
+                 </button>
+               )
+             })}
+           </div>
+         </div>
+
+       </div>
+    </div>
+  )
+}
