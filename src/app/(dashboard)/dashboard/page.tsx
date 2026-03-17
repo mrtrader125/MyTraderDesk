@@ -13,7 +13,6 @@ export default function OperatorTerminal() {
   const [setups, setSetups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   
-  // Watchlist State
   const [watchlist, setWatchlist] = useState<any[]>([])
 
   const FILTERS = [
@@ -28,18 +27,12 @@ export default function OperatorTerminal() {
   useEffect(() => {
     setMounted(true)
 
-    // RUTHLESS LOCAL STORAGE WIPE
-    // This destroys any old ghost data from previous builds
     const saved = localStorage.getItem('analysis_watchlist')
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        // Strictly only keep items that are objects AND have a valid UUID
         const validItems = parsed.filter((item: any) => typeof item === 'object' && item.id && item.id.length > 20)
-        
         setWatchlist(validItems)
-        
-        // If it found ghost data, overwrite local storage with the cleaned list
         if (parsed.length !== validItems.length) {
           localStorage.setItem('analysis_watchlist', JSON.stringify(validItems))
         }
@@ -51,21 +44,11 @@ export default function OperatorTerminal() {
     async function fetchLiveTerminalData() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        
         if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('plan')
-            .eq('id', user.id)
-            .single()
-            
+          const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
           if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
 
-          const { data: analyses, error } = await supabase
-            .from('analyses')
-            .select('*')
-            .order('created_at', { ascending: false })
-
+          const { data: analyses, error } = await supabase.from('analyses').select('*').order('created_at', { ascending: false })
           if (!error && analyses) setSetups(analyses)
         }
       } catch (err) {
@@ -78,20 +61,15 @@ export default function OperatorTerminal() {
     fetchLiveTerminalData()
   }, [])
 
-  // Precision Bookmark Toggle
   const toggleBookmark = (e: React.MouseEvent, setup: any) => {
     e.stopPropagation() 
     let updated = [...watchlist]
     const exists = updated.find(item => item.id === setup.id)
-    
     if (exists) {
-      // Remove it
       updated = updated.filter(item => item.id !== setup.id)
     } else {
-      // Add it precisely
       updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe }) 
     }
-    
     setWatchlist(updated)
     localStorage.setItem('analysis_watchlist', JSON.stringify(updated))
   }
@@ -103,11 +81,7 @@ export default function OperatorTerminal() {
     return false
   }
 
-  const filteredSetups = setups.filter(setup => {
-    if (activeFilter === 'All') return true
-    const marketMatch = (setup.category || 'Forex').toLowerCase()
-    return marketMatch === activeFilter.toLowerCase()
-  })
+  const filteredSetups = setups.filter(setup => activeFilter === 'All' ? true : (setup.category || 'Forex').toLowerCase() === activeFilter.toLowerCase())
 
   const getActiveSession = () => {
     const hour = new Date().getUTCHours()
@@ -126,7 +100,6 @@ export default function OperatorTerminal() {
     const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
 
     const todayCount = setups.filter(s => new Date(s.created_at) >= today).length
-    
     if (todayCount > 0) {
       deployCount = todayCount; deployLabel = "Deployed Today"
     } else {
@@ -148,16 +121,10 @@ export default function OperatorTerminal() {
 
   return (
     <div className="w-full min-h-screen text-white p-6 md:p-8 font-sans">
-      
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        
-        {/* ================= LEFT COLUMN: Metrics & Feed ================= */}
         <div className="lg:col-span-8 xl:col-span-9 space-y-8">
           
-          {/* TOP METRICS ROW (RE-PROPORTIONED) */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            
-            {/* Intelligence Card */}
             <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
               <div className="min-w-0 pr-2">
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">{deployLabel}</div>
@@ -168,7 +135,6 @@ export default function OperatorTerminal() {
               </div>
             </div>
 
-            {/* Market Session Card */}
             <div className="md:col-span-4 xl:col-span-6 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
               <div className="min-w-0 pr-2">
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">Market Session</div>
@@ -179,7 +145,6 @@ export default function OperatorTerminal() {
               </div>
             </div>
             
-            {/* Active Plan Card (Given more room so ESSENTIAL fits perfectly) */}
             <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
               <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate">Active Plan</div>
               <div className={`text-xl font-black uppercase tracking-widest truncate ${userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
@@ -188,7 +153,6 @@ export default function OperatorTerminal() {
             </div>
           </div>
 
-          {/* Filters & Search */}
           <div className="border-b border-neutral-800 pb-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex items-center space-x-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide w-full md:w-auto">
               {FILTERS.map(f => {
@@ -198,11 +162,7 @@ export default function OperatorTerminal() {
                     key={f.name}
                     onClick={() => !locked && setActiveFilter(f.name)}
                     className={`flex items-center px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap
-                      ${activeFilter === f.name 
-                        ? 'bg-white text-black' 
-                        : locked 
-                          ? 'bg-transparent text-neutral-600 cursor-not-allowed hover:bg-neutral-900 border border-transparent' 
-                          : 'bg-transparent text-neutral-400 hover:text-white hover:bg-neutral-800 border border-neutral-800'}`}
+                      ${activeFilter === f.name ? 'bg-white text-black' : locked ? 'bg-transparent text-neutral-600 cursor-not-allowed hover:bg-neutral-900 border border-transparent' : 'bg-transparent text-neutral-400 hover:text-white hover:bg-neutral-800 border border-neutral-800'}`}
                   >
                     {locked && <Lock size={12} className="mr-2 text-yellow-500" />}
                     {f.name}
@@ -217,11 +177,9 @@ export default function OperatorTerminal() {
             </div>
           </div>
 
-          {/* Feed Grid */}
           <div>
             <h3 className="text-sm font-black text-neutral-400 uppercase tracking-widest mb-4">Intelligence Feed</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-              
               {filteredSetups.map(setup => {
                 const isBull = setup.bias?.toUpperCase() === 'BULLISH'
                 const isBear = setup.bias?.toUpperCase() === 'BEARISH'
@@ -230,7 +188,8 @@ export default function OperatorTerminal() {
                 return (
                   <div 
                     key={setup.id} 
-                    onClick={() => router.push(`/analysis/viewport?asset=${setup.asset_symbol}`)}
+                    // NEW URL ARGUMENT HERE: &tf=${setup.timeframe}
+                    onClick={() => router.push(`/analysis/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`)}
                     className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
                   >
                     <div className="flex flex-col min-w-0 pr-2">
@@ -239,13 +198,9 @@ export default function OperatorTerminal() {
                     </div>
                     
                     <div className="flex items-center space-x-1.5 shrink-0">
-                      <button 
-                        onClick={(e) => toggleBookmark(e, setup)}
-                        className="text-neutral-600 hover:text-white transition-colors p-1"
-                      >
+                      <button onClick={(e) => toggleBookmark(e, setup)} className="text-neutral-600 hover:text-white transition-colors p-1">
                         <Bookmark size={14} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
                       </button>
-
                       <div className={`p-1.5 rounded-lg shrink-0 ${isBull ? 'bg-emerald-500/10 text-emerald-500' : isBear ? 'bg-red-500/10 text-red-500' : 'bg-neutral-800 text-neutral-400'}`}>
                         {isBull ? <TrendingUp size={14} /> : isBear ? <TrendingDown size={14} /> : <Minus size={14} />}
                       </div>
@@ -259,15 +214,11 @@ export default function OperatorTerminal() {
                   No active intelligence deployments found.
                 </div>
               )}
-
             </div>
           </div>
-
         </div>
 
-        {/* ================= RIGHT COLUMN: Broadcast & Watchlist ================= */}
         <div className="lg:col-span-4 xl:col-span-3 space-y-6 sticky top-6">
-          
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
               <div className="flex items-center">
@@ -306,7 +257,8 @@ export default function OperatorTerminal() {
                 watchlist.slice(0, 6).map((item) => (
                   <div 
                     key={item.id}
-                    onClick={() => router.push(`/analysis/viewport?asset=${item.symbol}`)}
+                    // NEW URL ARGUMENT HERE: &tf=${item.timeframe}
+                    onClick={() => router.push(`/analysis/viewport?asset=${item.symbol}&tf=${item.timeframe}`)}
                     className="flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl cursor-pointer transition-colors group"
                   >
                     <div className="flex items-center">
@@ -324,17 +276,12 @@ export default function OperatorTerminal() {
             </div>
             
             {watchlist.length > 6 && (
-              <button 
-                onClick={() => router.push('/vault')}
-                className="w-full mt-3 py-2 text-[10px] font-bold text-neutral-500 hover:text-white uppercase tracking-widest transition-colors"
-              >
+              <button onClick={() => router.push('/vault')} className="w-full mt-3 py-2 text-[10px] font-bold text-neutral-500 hover:text-white uppercase tracking-widest transition-colors">
                 View All {watchlist.length} Targets
               </button>
             )}
           </div>
-
         </div>
-
       </div>
     </div>
   )
