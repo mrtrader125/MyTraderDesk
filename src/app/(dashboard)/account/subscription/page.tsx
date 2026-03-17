@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Shield, Crown, Zap, AlertTriangle, Activity, BarChart2, Bookmark } from 'lucide-react'
+import { Shield, Crown, Zap, AlertTriangle, Activity, Bookmark } from 'lucide-react'
 
 export default function SubscriptionPage() {
   const [userPlan, setUserPlan] = useState('free')
@@ -58,7 +58,7 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      {/* USAGE STATS (Psychological retention) */}
+      {/* USAGE STATS */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-6 flex items-center justify-between">
           <div>
@@ -81,4 +81,13 @@ export default function SubscriptionPage() {
         <h2 className="text-sm font-black text-red-500 uppercase tracking-widest mb-2 flex items-center">
           <AlertTriangle className="mr-2" size={16} /> Danger Zone
         </h2>
-        <p className="text-[10px] font
+        <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6 leading-relaxed max-w-lg">
+          Canceling your subscription revokes live intelligence access at the end of your billing cycle.
+        </p>
+        <button className="px-6 py-3 bg-transparent text-red-500/80 border border-red-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors">
+          Cancel Subscription
+        </button>
+      </div>
+    </div>
+  )
+}
