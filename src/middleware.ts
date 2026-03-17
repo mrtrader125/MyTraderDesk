@@ -39,12 +39,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
 
-    // 3. ADMIN CHECK: Let you in if Email matches OR Role matches
+    // 3. ADMIN CHECK: Strictly enforce database role
     if (user && isAdminRoute) {
-      const isMyEmail = user.email === 'mytraderdesk@gmail.com'
       const isRoleAdmin = user.app_metadata?.role === 'admin'
 
-      if (!isMyEmail && !isRoleAdmin) {
+      if (!isRoleAdmin) {
+        // Kick them back to the user dashboard if they aren't a true admin
         return NextResponse.redirect(new URL('/dashboard?error=AdminOnly', request.url))
       }
     }
