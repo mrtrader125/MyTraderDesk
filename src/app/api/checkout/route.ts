@@ -41,7 +41,12 @@ export async function POST(request: Request) {
       data: {
         type: 'checkouts',
         attributes: {
-          checkout_data: { custom: { user_id: user.id } }
+          checkout_data: { 
+            email: user.email, // 🚨 NEW: Pre-fills the checkout form so the user doesn't have to type it!
+            custom: { 
+              user_id: user.id 
+            } 
+          }
         },
         relationships: {
           store: { data: { type: 'stores', id: process.env.LEMONSQUEEZY_STORE_ID } },
