@@ -15,23 +15,20 @@ export default function GlobalAuditLedger() {
   useEffect(() => {
     async function fetchLedger() {
       try {
-        // 1. Fetch Logs
         const { data: activityLogs, error: logsError } = await supabase
           .from('activity_logs')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(500)
 
-        if (logsError) console.error("Logs Fetch Error (Check RLS):", logsError)
+        if (logsError) console.error("Logs Fetch Error:", logsError)
 
-        // 2. Fetch Profiles (might fail due to RLS, but we won't let it crash the page)
         const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, plan')
 
-        if (profilesError) console.error("Profiles Fetch Error (Check RLS):", profilesError)
+        if (profilesError) console.error("Profiles Fetch Error:", profilesError)
 
-        // 3. Map the data together (Even if profiles failed, activityLogs will still render)
         if (activityLogs) {
           const profileMap: Record<string, any> = {}
           if (profiles) {
@@ -68,7 +65,46 @@ export default function GlobalAuditLedger() {
     return matchesSearch && matchesAction
   })
 
-  // Action Type Configurations for styling
+  // NEW: CSV Export Logic
+  const handleExportCSV = () => {
+    if (filteredLogs.length === 0) {
+      alert("No telemetry data available to export.")
+      return
+    }
+
+    // 1. Define the CSV headers
+    const headers = ["Timestamp (UTC)", "Operator Name", "Operator ID", "Clearance Level", "Action Triggered", "Target/Payload"]
+    
+    // 2. Map the filtered data into CSV rows
+    const csvRows = filteredLogs.map(log => [
+      new Date(log.created_at).toISOString(),
+      `"${log.user_name}"`, // Wrapped in quotes in case a name has a comma
+      log.user_id,
+      log.user_plan.toUpperCase(),
+      log.action,
+      `"${log.target}"` // Wrapped in quotes
+    ])
+
+    // 3. Combine headers and rows
+    const csvContent = [
+      headers.join(","),
+      ...csvRows.map(row => row.join(","))
+    ].join("\n")
+
+    // 4. Create a downloadable file object (Blob)
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    
+    // 5. Trigger the download programmatically
+    const link = document.createElement("a")
+    link.setAttribute("href", url)
+    link.setAttribute("download", `overseer_audit_logs_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  // Action Type Configurations
   const ACTION_TYPES = [
     { id: 'ALL', label: 'All Activity', icon: Database, color: 'text-white border-neutral-700 bg-neutral-800' },
     { id: 'SEARCH', label: 'Asset Searches', icon: Search, color: 'text-white border-white/20 bg-white/5' },
@@ -108,7 +144,11 @@ export default function GlobalAuditLedger() {
           <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Master record of all network activity and operator telemetry</p>
         </div>
 
-        <button className="flex items-center px-6 py-3 bg-[#0a0a0a] border border-neutral-800 text-neutral-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:text-white hover:border-neutral-600 transition-colors shrink-0">
+        {/* 🚨 UPDATED BUTTON WITH ONCLICK 🚨 */}
+        <button 
+          onClick={handleExportCSV}
+          className="flex items-center px-6 py-3 bg-[#0a0a0a] border border-neutral-800 text-neutral-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:text-white hover:border-neutral-600 hover:bg-white/5 transition-colors shrink-0"
+        >
           <ArrowDownToLine size={14} className="mr-2" /> Export to CSV
         </button>
       </div>
