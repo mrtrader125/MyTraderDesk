@@ -33,7 +33,6 @@ export const PLAN_CONFIG = {
     priceYearly: 0,
     allowedCategories: ['FOREX'],
     allowedTimeframes: TIMEFRAMES.STANDARD,
-    // The exact hours a setup must be "old" before a free user can view it
     delays: {
       '1H': 24,
       '4H': 48,
@@ -49,7 +48,7 @@ export const PLAN_CONFIG = {
     priceYearly: 49.99,
     allowedCategories: ['FOREX', 'COMMODITY'],
     allowedTimeframes: TIMEFRAMES.STANDARD,
-    delays: {} // 0 delay (Instant before NY Session)
+    delays: {} // 0 delay
   },
   pro: {
     id: 'pro',
@@ -58,25 +57,22 @@ export const PLAN_CONFIG = {
     priceYearly: 99.99,
     allowedCategories: ['FOREX', 'COMMODITY', 'CRYPTO', 'INDICES', 'STOCKS'],
     allowedTimeframes: TIMEFRAMES.STANDARD,
-    delays: {} // 0 delay (On-spot setups)
+    delays: {} // 0 delay
   },
   premium: {
     id: 'premium',
     name: 'Gold Premium',
     priceMonthly: 199.00,
     priceYearly: 1990.00,
-    // Gets everything PLUS Fundamental/Sentimental Scalping logic
     allowedCategories: ['FOREX', 'COMMODITY', 'CRYPTO', 'INDICES', 'STOCKS', 'FUNDAMENTAL', 'SENTIMENTAL'],
     allowedTimeframes: [...TIMEFRAMES.STANDARD, ...TIMEFRAMES.SCALPING],
-    delays: {} // 0 delay (Absolute Priority)
+    delays: {} // 0 delay
   }
 };
 
 // ==========================================
 // 3. HELPER FUNCTIONS
 // ==========================================
-
-// Auto-detect category from symbol (e.g., 'XAUUSD' -> 'COMMODITY')
 export function getAssetCategory(symbol: string): string {
   const upperSymbol = symbol.trim().toUpperCase();
   for (const [category, assets] of Object.entries(ASSET_CATEGORIES)) {
@@ -85,7 +81,6 @@ export function getAssetCategory(symbol: string): string {
   return 'FOREX'; // Fallback
 }
 
-// Format timeframe input to standard key (e.g., '1 Hour' -> '1H')
 export function normalizeTimeframe(tf: string): string {
   const clean = tf.trim().toUpperCase().replace(/\s+/g, '');
   if (clean.includes('1M') && !clean.includes('MO')) return '1M';
