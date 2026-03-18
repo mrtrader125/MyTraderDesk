@@ -36,7 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Deploy Analysis', path: '/admin/analysis', icon: Send },
     { name: 'User Directory', path: '/admin/users', icon: Users },
-    { name: 'Broadcast', path: '/admin/notifications', icon: Broadcast },
+    { name: 'Broadcast', path: '/admin/notifications', icon: Radio },
     { name: 'System Logs', path: '/admin/logs', icon: Activity },
   ]
 
