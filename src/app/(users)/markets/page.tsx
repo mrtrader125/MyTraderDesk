@@ -154,8 +154,14 @@ function MarketsContent() {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-black border border-neutral-800 flex items-center justify-center overflow-hidden relative shrink-0">
-                      <img src={market.latestImage} className="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-opacity duration-500" alt="" />
+                 <div className="w-12 h-12 rounded-xl bg-black border border-neutral-800 flex items-center justify-center overflow-hidden relative shrink-0">
+                      <img 
+                        src={market.latestImage} 
+                        className="w-full h-full object-cover opacity-100 group-hover:scale-110 transition-transform duration-700" 
+                        style={{ imageRendering: 'high-quality' }}
+                        alt="" 
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] to-transparent opacity-50 pointer-events-none" />
                       <div className={`absolute bottom-0 right-0 p-1 backdrop-blur-md ${market.latestBias === 'BULLISH' ? 'text-emerald-500' : 'text-red-500'}`}>
                         {market.latestBias === 'BULLISH' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                       </div>
