@@ -108,9 +108,6 @@ export default function DeploySetupPage() {
                   {Object.keys(ASSET_CATEGORIES).map(category => (
                     <option key={category} value={category}>{category.charAt(0) + category.slice(1).toLowerCase()}</option>
                   ))}
-                  {/* Additional Premium Tiers */}
-                  <option value="FUNDAMENTAL">Fundamental</option>
-                  <option value="SENTIMENTAL">Sentimental</option>
                 </select>
               </div>
             </div>
