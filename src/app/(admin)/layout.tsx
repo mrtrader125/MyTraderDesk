@@ -3,7 +3,17 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { LayoutDashboard, Users, Send, Activity, LogOut, ShieldAlert, ChevronRight } from 'lucide-react'
+// 👇 FIX: Added 'Radio' to the imports so the build doesn't crash
+import { 
+  LayoutDashboard, 
+  Users, 
+  Send, 
+  Activity, 
+  LogOut, 
+  ShieldAlert, 
+  ChevronRight,
+  Radio 
+} from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -16,6 +26,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const { data: { user } } = await supabase.auth.getUser()
       
       // STRICT SECURITY GATE: Must have the database admin role
+      // Note: Ensure your Supabase user actually has metadata role === 'admin'
       if (!user || user.app_metadata?.role !== 'admin') {
         router.replace('/dashboard')
         return
@@ -61,7 +72,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto">
+        <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto scrollbar-hide">
           {navLinks.map((link) => {
             const isActive = pathname === link.path
             return (
