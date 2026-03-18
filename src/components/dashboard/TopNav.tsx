@@ -1,22 +1,20 @@
 'use client'
 
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { Search, LogOut, User } from 'lucide-react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import NotificationBell from '@/components/notifications/NotificationBell'
 
 function TopNavContent() {
   const pathname = usePathname()
   const router = useRouter()
-  const searchParams = useSearchParams()
   
   const [mounted, setMounted] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [showDropdown, setShowDropdown] = useState(false)
   
   const [searchTerm, setSearchTerm] = useState('')
-  const isInitialSync = useRef(true)
 
   useEffect(() => {
     setMounted(true)
@@ -25,53 +23,34 @@ function TopNavContent() {
       setUser(user)
     }
     loadUser()
-
-    const initialSearch = searchParams.get('search') || ''
-    setSearchTerm(initialSearch)
   }, [])
 
-  // Sync input box and broadcast instantly if URL changes via Sidebar navigation
+  // NEW FIX: Clear the search bar cleanly whenever the user navigates to a new page.
+  // This prevents ghost text and ensures the new page shows all items.
   useEffect(() => {
-    const currentUrlSearch = searchParams.get('search') || ''
-    setSearchTerm(currentUrlSearch)
-    window.dispatchEvent(new CustomEvent('globalSearch', { detail: currentUrlSearch }))
-  }, [searchParams])
+    setSearchTerm('')
+    window.dispatchEvent(new CustomEvent('globalSearch', { detail: '' }))
+  }, [pathname])
 
-  // Debounced URL update and Supabase Logging
+  // Debounced logging to Supabase (No URL changing!)
   useEffect(() => {
-    if (isInitialSync.current) {
-      isInitialSync.current = false
-      return
-    }
-
+    if (!searchTerm || !user) return
+    
     const timer = setTimeout(() => {
-      const currentUrlSearch = searchParams.get('search') || ''
-      const newSearch = searchTerm.trim()
-
-      if (newSearch !== currentUrlSearch) {
-        const params = new URLSearchParams(searchParams.toString())
-        if (newSearch === '') params.delete('search')
-        else params.set('search', newSearch)
-        
-        router.replace(`${pathname}?${params.toString()}`, { scroll: false })
-
-        if (newSearch !== '' && user) {
-          supabase.from('activity_logs').insert([{
-            user_id: user.id,
-            action: 'SEARCH',
-            search_query: newSearch
-          }]).then()
-        }
-      }
-    }, 400)
+      supabase.from('activity_logs').insert([{
+        user_id: user.id,
+        action: 'SEARCH',
+        search_query: searchTerm
+      }]).then()
+    }, 800) // 800ms debounce so we don't spam the database
 
     return () => clearTimeout(timer)
-  }, [searchTerm, user, pathname, router, searchParams])
+  }, [searchTerm, user])
 
-  // INSTANT SEARCH BROADCAST
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
     setSearchTerm(val)
+    // Broadcast instantly to the page without touching the URL
     window.dispatchEvent(new CustomEvent('globalSearch', { detail: val }))
   }
 
@@ -145,6 +124,7 @@ function TopNavContent() {
   )
 }
 
+// Next.js 15 Suspense Wrapper
 export default function TopNav() {
   return (
     <Suspense fallback={<div className="h-16 w-full border-b border-neutral-800 bg-[#0a0a0a] shrink-0 z-40 sticky top-0"></div>}>
