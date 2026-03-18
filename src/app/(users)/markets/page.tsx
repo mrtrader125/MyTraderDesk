@@ -16,19 +16,25 @@ const CATEGORIES = [
 
 function MarketsContent() {
   const router = useRouter()
-  
-  // NEW: Grab the search query from the URL
   const searchParams = useSearchParams()
-  const searchQuery = searchParams.get('search')?.toLowerCase() || ''
+  
+  // LIVE SEARCH STATE
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
   
   const [groupedAnalyses, setGroupedAnalyses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('ALL')
   const [userPlan, setUserPlan] = useState('free')
   
-  // Animation states
   const [prevIndex, setPrevIndex] = useState(0)
   const [slideDirection, setSlideDirection] = useState<'right' | 'left'>('right')
+
+  // INSTANT SEARCH LISTENER
+  useEffect(() => {
+    const handleSearch = (e: any) => setSearchQuery(e.detail?.toLowerCase() || '')
+    window.addEventListener('globalSearch', handleSearch)
+    return () => window.removeEventListener('globalSearch', handleSearch)
+  }, [])
 
   useEffect(() => {
     async function fetchMarketData() {
@@ -84,10 +90,10 @@ function MarketsContent() {
     return false
   }
 
-  // NEW: Filter by BOTH the Active Tab AND the Search Query
   const filteredMarkets = groupedAnalyses.filter(market => {
     const matchesTab = activeTab === 'ALL' ? true : market.category === activeTab
-    const matchesSearch = market.symbol.toLowerCase().includes(searchQuery)
+    // Safe Includes Check
+    const matchesSearch = (market.symbol || '').toLowerCase().includes(searchQuery)
     return matchesTab && matchesSearch
   })
 
@@ -100,8 +106,6 @@ function MarketsContent() {
 
   return (
     <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden">
-      
-      {/* CENTERED COMPACT TABS */}
       <div className="flex flex-col items-center mb-10 mt-2">
         <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-800">
           {CATEGORIES.map((cat, idx) => {
@@ -123,9 +127,8 @@ function MarketsContent() {
         </div>
       </div>
 
-      {/* DIRECTIONAL SLIDE ANIMATION */}
       <div 
-        key={`${activeTab}-${searchQuery}`} // Added searchQuery to key to trigger re-animation on search
+        key={`${activeTab}-${searchQuery}`}
         className={`animate-in duration-500 fill-mode-both 
           ${slideDirection === 'right' ? 'slide-in-from-right-12' : 'slide-in-from-left-12'} 
           fade-in`}
@@ -154,14 +157,8 @@ function MarketsContent() {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center space-x-4">
-                 <div className="w-12 h-12 rounded-xl bg-black border border-neutral-800 flex items-center justify-center overflow-hidden relative shrink-0">
-                      <img 
-                        src={market.latestImage} 
-                        className="w-full h-full object-cover opacity-100 group-hover:scale-110 transition-transform duration-700" 
-                        style={{ imageRendering: 'high-quality' }}
-                        alt="" 
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] to-transparent opacity-50 pointer-events-none" />
+                    <div className="w-12 h-12 rounded-xl bg-black border border-neutral-800 flex items-center justify-center overflow-hidden relative shrink-0">
+                      <img src={market.latestImage} className="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-opacity duration-500" alt="" />
                       <div className={`absolute bottom-0 right-0 p-1 backdrop-blur-md ${market.latestBias === 'BULLISH' ? 'text-emerald-500' : 'text-red-500'}`}>
                         {market.latestBias === 'BULLISH' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                       </div>
@@ -193,7 +190,6 @@ function MarketsContent() {
   )
 }
 
-// Next.js 15 Suspense Wrapper
 export default function MarketsPage() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
