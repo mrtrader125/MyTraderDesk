@@ -16,6 +16,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Variant ID is required' }, { status: 400 })
     }
 
+    // Capture the exact origin URL (handles localhost for testing, and your real domain for production)
+    const origin = request.headers.get('origin') || 'https://mytraderdesk.com'
+
     const cookieStore = await cookies()
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,8 +44,13 @@ export async function POST(request: Request) {
       data: {
         type: 'checkouts',
         attributes: {
+          // 🚨 NEW: This block controls what happens AFTER they pay
+          checkout_options: {
+            redirect_url: `${origin}/dashboard?payment=success`,
+            button_color: '#3b82f6' // Brands the Lemon Squeezy button with your brand-primary blue
+          },
           checkout_data: { 
-            email: user.email, // 🚨 NEW: Pre-fills the checkout form so the user doesn't have to type it!
+            email: user.email, 
             custom: { 
               user_id: user.id 
             } 
