@@ -5,14 +5,15 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Bookmark, Lock, Clock, TrendingUp, TrendingDown, Minus, Trash2, Activity, FolderOpen, Edit3, X, FileText } from 'lucide-react'
 import { getSetupAccess } from '@/lib/access'
+import { CATEGORY_REQUIREMENTS } from '@/lib/assetRegistry'
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All', req: 'free' },
-  { id: 'FOREX', label: 'Forex', req: 'free' },
-  { id: 'GOLD', label: 'Gold', req: 'essential' },
-  { id: 'CRYPTO', label: 'Crypto', req: 'pro' },
-  { id: 'INDICES', label: 'Indices', req: 'pro' },
-  { id: 'STOCKS', label: 'Stocks', req: 'pro' }
+  { id: 'FOREX', label: 'Forex', req: CATEGORY_REQUIREMENTS.FOREX },
+  { id: 'COMMODITY', label: 'Commodity', req: CATEGORY_REQUIREMENTS.COMMODITY }, // Updated
+  { id: 'CRYPTO', label: 'Crypto', req: CATEGORY_REQUIREMENTS.CRYPTO },
+  { id: 'INDICES', label: 'Indices', req: CATEGORY_REQUIREMENTS.INDICES },
+  { id: 'STOCKS', label: 'Stocks', req: CATEGORY_REQUIREMENTS.STOCKS }
 ]
 
 function VaultContent() {
