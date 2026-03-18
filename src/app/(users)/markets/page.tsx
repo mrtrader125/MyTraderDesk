@@ -4,22 +4,28 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Activity, Lock, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react'
-import { CATEGORY_REQUIREMENTS } from '@/lib/assetRegistry'
+import { ASSET_CATEGORIES, PLAN_CONFIG } from '@/lib/platformConfig'
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All', req: 'free' },
-  { id: 'FOREX', label: 'Forex', req: CATEGORY_REQUIREMENTS.FOREX },
-  { id: 'COMMODITY', label: 'Commodity', req: CATEGORY_REQUIREMENTS.COMMODITY }, // Updated
-  { id: 'CRYPTO', label: 'Crypto', req: CATEGORY_REQUIREMENTS.CRYPTO },
-  { id: 'INDICES', label: 'Indices', req: CATEGORY_REQUIREMENTS.INDICES },
-  { id: 'STOCKS', label: 'Stocks', req: CATEGORY_REQUIREMENTS.STOCKS }
+  ...Object.keys(ASSET_CATEGORIES).map(category => {
+    let requiredTier = 'premium';
+    if (PLAN_CONFIG.free.allowedCategories.includes(category)) requiredTier = 'free';
+    else if (PLAN_CONFIG.essential.allowedCategories.includes(category)) requiredTier = 'essential';
+    else if (PLAN_CONFIG.pro.allowedCategories.includes(category)) requiredTier = 'pro';
+
+    return {
+      id: category,
+      label: category.charAt(0) + category.slice(1).toLowerCase(),
+      req: requiredTier
+    }
+  })
 ]
 
 function MarketsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  // LIVE SEARCH STATE
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
   
   const [groupedAnalyses, setGroupedAnalyses] = useState<any[]>([])
@@ -30,7 +36,6 @@ function MarketsContent() {
   const [prevIndex, setPrevIndex] = useState(0)
   const [slideDirection, setSlideDirection] = useState<'right' | 'left'>('right')
 
-  // INSTANT SEARCH LISTENER
   useEffect(() => {
     const handleSearch = (e: any) => setSearchQuery(e.detail?.toLowerCase() || '')
     window.addEventListener('globalSearch', handleSearch)
@@ -85,15 +90,15 @@ function MarketsContent() {
   }
 
   const isLocked = (reqTier: string) => {
-    if (userPlan === 'pro') return false
-    if (userPlan === 'essential' && reqTier === 'pro') return true
-    if (userPlan === 'free' && reqTier !== 'free') return true
-    return false
+    if (userPlan === 'premium') return false
+    if (userPlan === 'pro' && reqTier !== 'premium') return false
+    if (userPlan === 'essential' && (reqTier === 'essential' || reqTier === 'free')) return false
+    if (userPlan === 'free' && reqTier === 'free') return false
+    return true
   }
 
   const filteredMarkets = groupedAnalyses.filter(market => {
     const matchesTab = activeTab === 'ALL' ? true : market.category === activeTab
-    // Safe Includes Check
     const matchesSearch = (market.symbol || '').toLowerCase().includes(searchQuery)
     return matchesTab && matchesSearch
   })
