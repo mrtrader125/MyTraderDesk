@@ -19,7 +19,7 @@ export default function AdminDashboard() {
   })
 
   useEffect(() => {
-    async function fetchGodModeStats() {
+    async function fetchDashboardStats() {
       const now = new Date()
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
       const startOfYesterday = new Date(startOfToday); startOfYesterday.setDate(startOfYesterday.getDate() - 1)
@@ -45,7 +45,7 @@ export default function AdminDashboard() {
           const profileMap: Record<string, string> = {}
 
           profiles.forEach(p => {
-            profileMap[p.id] = p.full_name || 'Unknown Operator'
+            profileMap[p.id] = p.full_name || 'Unknown User'
             const joinedAt = new Date(p.created_at).getTime()
             const plan = (p.plan || 'free').toLowerCase()
             const cycle = (p.billing_cycle || 'monthly').toLowerCase()
@@ -118,8 +118,8 @@ export default function AdminDashboard() {
       }
     }
 
-    fetchGodModeStats()
-    const interval = setInterval(fetchGodModeStats, 30000)
+    fetchDashboardStats()
+    const interval = setInterval(fetchDashboardStats, 30000)
     return () => clearInterval(interval)
   }, [])
 
@@ -127,7 +127,7 @@ export default function AdminDashboard() {
     return (
       <div className="h-full flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-brand-primary" size={40} />
-        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Aggregating Telemetry...</span>
+        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Loading Analytics...</span>
       </div>
     )
   }
@@ -135,8 +135,8 @@ export default function AdminDashboard() {
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 pb-12 animate-in fade-in duration-500">
       <div>
-        <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">Network <span className="text-brand-primary">Telemetry</span></h2>
-        <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Real-time Financials & Output Metrics</p>
+        <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">Platform <span className="text-brand-primary">Analytics</span></h2>
+        <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Real-time Financial & Engagement Metrics</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
@@ -155,24 +155,24 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <StatCard label="Total Operators" value={data.totalUsers} subValue={`${data.paidUsers} Paid Seats`} icon={Users} color="text-white" />
+        <StatCard label="Total Traders" value={data.totalUsers} subValue={`${data.paidUsers} Paid Seats`} icon={Users} color="text-white" />
         <StatCard label="New Signups (Today)" value={data.signups.today} subValue={`${data.signups.week} This Week`} icon={TrendingUp} color="text-brand-primary" />
-        <StatCard label="Active Deployments" value={data.setups.total} subValue="Last 30 Days" icon={Target} color="text-blue-500" />
+        <StatCard label="Published Setups" value={data.setups.total} subValue="Last 30 Days" icon={Target} color="text-blue-500" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg">
-          <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center"><Activity size={16} className="mr-2 text-brand-primary" /> Intelligence Output</h3>
+          <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center"><Activity size={16} className="mr-2 text-brand-primary" /> Analysis Output</h3>
           <div className="space-y-3">
-            <TimeRow label="Deployed Today" count={data.setups.today} highlight={true} />
-            <TimeRow label="Deployed Yesterday" count={data.setups.yesterday} />
+            <TimeRow label="Published Today" count={data.setups.today} highlight={true} />
+            <TimeRow label="Published Yesterday" count={data.setups.yesterday} />
             <TimeRow label="Earlier This Week" count={data.setups.week} />
             <TimeRow label="Older (7-30 Days)" count={data.setups.older} dim={true} />
           </div>
         </div>
 
         <div className="bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
-          <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center"><BarChart2 size={16} className="mr-2 text-blue-500" /> Clearance Distribution</h3>
+          <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center"><BarChart2 size={16} className="mr-2 text-blue-500" /> Subscription Tiers</h3>
           
           <div className="w-full h-3 rounded-full flex overflow-hidden bg-neutral-900 mb-6 border border-neutral-800">
             <div style={{ width: `${(data.plans.premium / (data.totalUsers || 1)) * 100}%` }} className="h-full bg-amber-500 transition-all duration-1000"></div>
@@ -190,7 +190,7 @@ export default function AdminDashboard() {
       </div>
 
       <div>
-        <h2 className="text-lg font-black text-white uppercase tracking-tighter italic mb-4 mt-4">Active <span className="text-brand-primary">Surveillance</span></h2>
+        <h2 className="text-lg font-black text-white uppercase tracking-tighter italic mb-4 mt-4">Platform <span className="text-brand-primary">Engagement</span></h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1 bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg">
             <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center"><Search size={16} className="mr-2 text-white" /> Trending Assets</h3>
@@ -200,7 +200,7 @@ export default function AdminDashboard() {
                   <div key={i} className="flex flex-col">
                     <div className="flex justify-between items-end mb-1">
                       <span className="text-xs font-bold text-white tracking-widest">{item.term}</span>
-                      <span className="text-[10px] font-black text-neutral-500">{item.count} hits</span>
+                      <span className="text-[10px] font-black text-neutral-500">{item.count} searches</span>
                     </div>
                     <div className="w-full h-1.5 bg-neutral-900 rounded-full overflow-hidden">
                       <div className="h-full bg-white transition-all duration-1000 rounded-full" style={{ width: `${(item.count / data.topSearches[0].count) * 100}%` }}></div>
@@ -213,8 +213,8 @@ export default function AdminDashboard() {
 
           <div className="lg:col-span-2 bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center"><Activity size={16} className="mr-2 text-blue-500" /> Operator Stream</h3>
-              <div className="flex items-center"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-2"></div><span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Live Sync</span></div>
+              <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center"><Activity size={16} className="mr-2 text-blue-500" /> Live Activity Feed</h3>
+              <div className="flex items-center"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-2"></div><span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Live Updates</span></div>
             </div>
             <div className="flex-1 overflow-y-auto max-h-[250px] pr-2 space-y-2 scrollbar-hide">
               {data.recentActivity.length > 0 ? (
@@ -237,7 +237,7 @@ export default function AdminDashboard() {
                     </div>
                   )
                 })
-              ) : <div className="text-center py-10 text-[10px] font-bold text-neutral-600 uppercase tracking-widest">Awaiting Network Activity...</div>}
+              ) : <div className="text-center py-10 text-[10px] font-bold text-neutral-600 uppercase tracking-widest">Awaiting user activity...</div>}
             </div>
           </div>
         </div>
