@@ -17,7 +17,7 @@ export default function PricingCards({ userPlan = 'free' }: { userPlan?: string 
       : (isYearly ? process.env.NEXT_PUBLIC_LEMONSQUEEZY_ESSENTIAL_YEARLY_ID : process.env.NEXT_PUBLIC_LEMONSQUEEZY_ESSENTIAL_MONTHLY_ID)
 
     if (!variantId) {
-      alert("Billing configuration is missing. Ensure you added Premium IDs to your .env.local")
+      alert("Billing configuration is missing. Ensure you added the correct IDs to your .env.local")
       setLoadingPlan(null)
       return
     }
@@ -90,23 +90,55 @@ export default function PricingCards({ userPlan = 'free' }: { userPlan?: string 
         </div>
 
         {/* GOLD PREMIUM CARD */}
-        <div className="bg-[#0a0a0a] border border-amber-500/40 rounded-[1.5rem] p-6 md:p-8 flex flex-col relative overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.08)] hover:border-amber-500 transition-colors">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[50px] rounded-full pointer-events-none"></div>
+        <div className="bg-[#0a0a0a] border border-amber-500/20 rounded-[1.5rem] p-6 md:p-8 flex flex-col relative overflow-hidden shadow-[0_0_40px_rgba(245,158,11,0.05)] hover:border-amber-500/40 transition-colors">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 blur-[50px] rounded-full pointer-events-none"></div>
           <div className="p-3 bg-amber-500/10 text-amber-500 rounded-xl w-fit mb-4"><Crown size={20} /></div>
           <h3 className="text-lg font-black text-white uppercase tracking-wider mb-1.5">Gold Premium</h3>
           <p className="text-[9px] text-amber-500/70 font-bold uppercase tracking-widest mb-6 leading-relaxed">The ultimate day-trader terminal.</p>
+          
+          {/* ========================================================================================================= */}
+          {/* 🚀 ONCE YOU ARE READY TO LAUNCH GOLD PREMIUM, DELETE THE "COMING SOON PRICE" AND UNCOMMENT THE REAL PRICE */}
+          {/* ========================================================================================================= */}
+          
+          {/* --- REAL PRICE (CURRENTLY INACTIVE) --- */}
+          {/*
           <div className="mb-6">
             <span className="text-3xl font-black text-amber-500">${isYearly ? '1990.00' : '199.00'}</span>
             <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1.5">/ {isYearly ? 'yr' : 'mo'}</span>
           </div>
-          <ul className="space-y-4 mb-8 flex-1">
+          */}
+
+          {/* --- COMING SOON PRICE --- */}
+          <div className="mb-6 py-1">
+            <span className="text-xl font-black text-amber-500/40 uppercase tracking-widest italic">In Development</span>
+          </div>
+          {/* ========================================================================================================= */}
+
+
+          <ul className="space-y-4 mb-8 flex-1 opacity-60 grayscale-[50%]">
             {['GOLD TERMINAL Access', 'Fundamentals & Sentiment', 'Scalping Timeframes (1m-30m)', 'Behind-the-Setups Logic'].map((f, i) => (
               <li key={i} className="flex items-center text-[10px] font-bold text-white uppercase tracking-widest"><CheckCircle2 size={14} className="text-amber-500 mr-2.5 shrink-0" /> {f}</li>
             ))}
           </ul>
+
+
+          {/* ========================================================================================================= */}
+          {/* 🚀 ONCE YOU ARE READY TO LAUNCH GOLD PREMIUM, DELETE THE "COMING SOON BUTTON" AND UNCOMMENT THE REAL ONE */}
+          {/* ========================================================================================================= */}
+
+          {/* --- REAL BUTTON (CURRENTLY INACTIVE) --- */}
+          {/*
           <button onClick={() => handleCheckout('PREMIUM')} disabled={loadingPlan !== null || userPlan === 'premium'} className="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-[10px] font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(245,158,11,0.3)] disabled:opacity-50">
             {loadingPlan === 'PREMIUM' ? <Loader2 size={16} className="animate-spin mx-auto" /> : userPlan === 'premium' ? 'Current Plan' : 'Get Gold Premium'}
           </button>
+          */}
+
+          {/* --- COMING SOON BUTTON --- */}
+          <button disabled className="w-full py-3.5 rounded-xl bg-neutral-900 border border-neutral-800 text-neutral-600 text-[10px] font-black uppercase tracking-widest cursor-not-allowed">
+            Releasing Soon
+          </button>
+          {/* ========================================================================================================= */}
+
         </div>
 
       </div>
