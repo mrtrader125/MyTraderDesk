@@ -2,8 +2,20 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-// 👇 FIX: Added Clock and Radio to the verified imports
-import { Radio, Send, Activity, Trash2, BellRing, AlertTriangle, Info, Zap, Globe, Clock } from 'lucide-react'
+// 👇 VERIFIED IMPORTS: Added Clock and LinkIcon to prevent ReferenceErrors
+import { 
+  Radio, 
+  Send, 
+  Activity, 
+  Trash2, 
+  BellRing, 
+  AlertTriangle, 
+  Info, 
+  Zap, 
+  Globe, 
+  Clock, 
+  Link as LinkIcon 
+} from 'lucide-react'
 
 export default function BroadcastArrayPage() {
   const [loading, setLoading] = useState(true)
@@ -15,6 +27,7 @@ export default function BroadcastArrayPage() {
   const [urgency, setUrgency] = useState<'INFO' | 'WARNING' | 'CRITICAL'>('INFO')
   const [title, setTitle] = useState('')
   const [message, setMessage] = useState('')
+  const [link, setLink] = useState('') // New state for links
   const [targetTier, setTargetTier] = useState<string>('ALL')
 
   useEffect(() => {
@@ -42,11 +55,13 @@ export default function BroadcastArrayPage() {
     
     setTransmitting(true)
     try {
+      // Targets the modernized schema columns
       const { error } = await supabase.from('notifications').insert([{
         type,
         urgency,
         title,
         message,
+        link: link || null, // Optional link support
         target_tier: targetTier,
         status: 'ACTIVE'
       }])
@@ -55,10 +70,11 @@ export default function BroadcastArrayPage() {
 
       setTitle('')
       setMessage('')
+      setLink('')
       fetchHistory()
     } catch (err) {
       console.error(err)
-      alert("Transmission failed. Check if the 'notifications' table matches the new schema.")
+      alert("Transmission failed. Ensure you ran the SQL script to add the new columns.")
     } finally {
       setTransmitting(false)
     }
@@ -141,6 +157,14 @@ export default function BroadcastArrayPage() {
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Message Payload</label>
                   <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message data..." className="w-full h-24 bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-medium text-white outline-none focus:border-brand-primary/50 transition-colors resize-none" />
                 </div>
+                
+                {/* NEW: ATTACHMENT LINK FIELD */}
+                <div className="space-y-2">
+                  <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest flex items-center">
+                    <LinkIcon size={10} className="mr-1" /> Attachment Link (Optional)
+                  </label>
+                  <input type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://..." className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-neutral-400 outline-none focus:border-brand-primary/50 transition-colors" />
+                </div>
               </div>
 
               <button onClick={handleTransmit} disabled={transmitting || !title || !message} className="w-full py-4 bg-brand-primary text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary/90 transition-all shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
@@ -152,17 +176,17 @@ export default function BroadcastArrayPage() {
         </div>
 
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-[#050505] border border-neutral-800 border-dashed rounded-[2rem] p-6">
+          <div className="bg-[#050505] border border-neutral-800 border-dashed rounded-[2rem] p-6 text-center">
             <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-6 flex items-center justify-center"><Globe size={14} className="mr-2 text-neutral-600" /> Live Operator Preview</h3>
             <div className="flex items-center justify-center min-h-[150px]">
               {type === 'BROADCAST' ? (
-                <div className={`w-full p-4 rounded-xl relative overflow-hidden border ${urgency === 'CRITICAL' ? 'bg-red-500/10 border-red-500/20' : urgency === 'WARNING' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}>
+                <div className={`w-full p-4 rounded-xl text-left relative overflow-hidden border ${urgency === 'CRITICAL' ? 'bg-red-500/10 border-red-500/20' : urgency === 'WARNING' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}>
                   <div className={`absolute top-0 right-0 w-16 h-16 blur-xl rounded-full ${urgency === 'CRITICAL' ? 'bg-red-500/20' : urgency === 'WARNING' ? 'bg-amber-500/20' : 'bg-blue-500/20'}`}></div>
                   <span className={`text-[9px] font-black uppercase tracking-widest block mb-1.5 relative z-10 ${urgency === 'CRITICAL' ? 'text-red-400' : urgency === 'WARNING' ? 'text-amber-400' : 'text-blue-400'}`}>{title || 'System Broadcast'}</span>
                   <p className={`text-xs leading-relaxed font-medium relative z-10 ${urgency === 'CRITICAL' ? 'text-red-100' : urgency === 'WARNING' ? 'text-amber-100' : 'text-blue-100'}`}>{message || 'Transmission payload.'}</p>
                 </div>
               ) : (
-                <div className="w-full max-w-sm bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl p-4">
+                <div className="w-full max-w-sm bg-[#0a0a0a] text-left border border-neutral-800 rounded-2xl shadow-2xl p-4">
                   <div className="flex items-start space-x-3">
                     <div className={`mt-0.5 p-2 rounded-xl shrink-0 ${urgency === 'CRITICAL' ? 'bg-red-500/10 text-red-500' : urgency === 'WARNING' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
                       {urgency === 'CRITICAL' ? <AlertTriangle size={14} /> : urgency === 'WARNING' ? <Zap size={14} /> : <Info size={14} />}
@@ -196,6 +220,7 @@ export default function BroadcastArrayPage() {
                       </div>
                       <span className="text-xs font-black text-white truncate block mb-1">{item.title}</span>
                       <p className="text-[10px] text-neutral-500 font-medium truncate">{item.message}</p>
+                      {item.link && <p className="text-[8px] text-brand-primary font-bold truncate mt-1 flex items-center"><LinkIcon size={8} className="mr-1" /> {item.link}</p>}
                     </div>
                     <button onClick={() => handleDelete(item.id)} className="p-1.5 text-neutral-600 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors shrink-0"><Trash2 size={14} /></button>
                   </div>
