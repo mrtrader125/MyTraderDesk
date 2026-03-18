@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Shield, Crown, Zap, AlertTriangle, Activity, Bookmark, X } from 'lucide-react'
+import { Shield, Crown, Zap, AlertTriangle, Activity, Bookmark, X, ExternalLink } from 'lucide-react'
 import PricingCards from '@/components/pricing/PricingCards'
 
 export default function SubscriptionPage() {
@@ -10,6 +10,9 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true)
   const [savedCount, setSavedCount] = useState(0)
   const [showPricing, setShowPricing] = useState(false)
+
+  // 🚨 REPLACE THIS WITH YOUR ACTUAL LEMON SQUEEZY STORE URL
+  const CUSTOMER_PORTAL_URL = "https://your-store-name.lemonsqueezy.com/billing"
 
   useEffect(() => {
     async function loadData() {
@@ -59,7 +62,7 @@ export default function SubscriptionPage() {
           {userPlan !== 'premium' && (
             <button 
               onClick={() => setShowPricing(true)}
-              className="px-8 py-4 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.2)] whitespace-nowrap shrink-0"
+              className={`px-8 py-4 bg-brand-primary ${userPlan === 'free' ? 'text-black' : 'text-white'} text-[10px] font-black uppercase tracking-widest rounded-xl hover:opacity-90 transition-all shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.2)] whitespace-nowrap shrink-0`}
             >
               Upgrade Plan
             </button>
@@ -84,15 +87,24 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      <div className="border border-red-500/10 rounded-3xl p-8 mt-12">
-        <h2 className="text-sm font-black text-red-500 uppercase tracking-widest mb-2 flex items-center"><AlertTriangle className="mr-2" size={16} /> Danger Zone</h2>
-        <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6 leading-relaxed max-w-lg">Canceling your subscription revokes live market access at the end of your billing cycle.</p>
-        <button className="px-6 py-3 bg-transparent text-red-500/80 border border-red-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors">Cancel Subscription</button>
-      </div>
+      {/* DANGER ZONE - UPDATED CANCELLATION LOGIC */}
+      {userPlan !== 'free' && (
+        <div className="border border-red-500/10 rounded-3xl p-8 mt-12">
+          <h2 className="text-sm font-black text-red-500 uppercase tracking-widest mb-2 flex items-center"><AlertTriangle className="mr-2" size={16} /> Danger Zone</h2>
+          <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-6 leading-relaxed max-w-lg">
+            Canceling your subscription revokes live market access at the end of your billing cycle. You can manage your cancellation securely in the billing portal.
+          </p>
+          <button 
+            onClick={() => window.open(CUSTOMER_PORTAL_URL, '_blank')}
+            className="flex items-center px-6 py-3 bg-transparent text-red-500/80 border border-red-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-red-500/10 hover:text-red-500 transition-colors"
+          >
+            Cancel Subscription <ExternalLink size={12} className="ml-2" />
+          </button>
+        </div>
+      )}
 
       {showPricing && userPlan !== 'premium' && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto">
-          {/* EXPANDED TO 1200px FOR 3 CARDS */}
           <div className="relative w-full max-w-[1200px] bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 sm:p-8 shadow-2xl my-auto animate-in fade-in zoom-in-95 duration-200">
             <button onClick={() => setShowPricing(false)} className="absolute top-5 right-5 p-2 text-neutral-500 hover:text-white bg-[#050505] hover:bg-neutral-800 border border-neutral-800 rounded-full transition-colors z-20">
               <X size={16} />
