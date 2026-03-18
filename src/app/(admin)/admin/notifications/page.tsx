@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Radio, Send, Activity, Trash2, BellRing, AlertTriangle, Info, Zap, Globe } from 'lucide-react'
+// 👇 FIX: Added Clock and Radio to the verified imports
+import { Radio, Send, Activity, Trash2, BellRing, AlertTriangle, Info, Zap, Globe, Clock } from 'lucide-react'
 
 export default function BroadcastArrayPage() {
   const [loading, setLoading] = useState(true)
@@ -57,7 +58,7 @@ export default function BroadcastArrayPage() {
       fetchHistory()
     } catch (err) {
       console.error(err)
-      alert("Transmission failed. Make sure the 'notifications' table exists.")
+      alert("Transmission failed. Check if the 'notifications' table matches the new schema.")
     } finally {
       setTransmitting(false)
     }
@@ -91,7 +92,7 @@ export default function BroadcastArrayPage() {
         
         <div className="lg:col-span-7 space-y-6">
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
-            <div className="absolute -top-32 -left-32 w-64 h-64 bg-brand-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
+            <div className="absolute -top-32 -right-32 w-64 h-64 bg-brand-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
             
             <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center relative z-10">
               <Radio size={16} className="mr-2 text-brand-primary" /> Transmission Composer
@@ -102,8 +103,8 @@ export default function BroadcastArrayPage() {
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Transmission Type</label>
                   <select value={type} onChange={(e: any) => setType(e.target.value)} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors appearance-none">
-                    <option value="BROADCAST">Dashboard Broadcast (Large)</option>
-                    <option value="ALERT">Notification Bell (Alert)</option>
+                    <option value="BROADCAST">Dashboard Broadcast</option>
+                    <option value="ALERT">Notification Bell</option>
                   </select>
                 </div>
                 <div className="space-y-2">
@@ -134,11 +135,11 @@ export default function BroadcastArrayPage() {
               <div className="space-y-4 pt-2 border-t border-neutral-800/50">
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Headline</label>
-                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g., High-Impact News Approaching" className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-sm font-black text-white outline-none focus:border-brand-primary/50 transition-colors" />
+                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Transmission Subject" className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-sm font-black text-white outline-none focus:border-brand-primary/50 transition-colors" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Message Payload</label>
-                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Detail the instructions or alert for the operators..." className="w-full h-24 bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-medium text-white outline-none focus:border-brand-primary/50 transition-colors resize-none" />
+                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message data..." className="w-full h-24 bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-medium text-white outline-none focus:border-brand-primary/50 transition-colors resize-none" />
                 </div>
               </div>
 
@@ -146,7 +147,6 @@ export default function BroadcastArrayPage() {
                 {transmitting ? <Activity className="animate-spin mr-2" size={16} /> : <Send className="mr-2" size={16} />}
                 {transmitting ? 'Transmitting...' : 'Execute Transmission'}
               </button>
-
             </div>
           </div>
         </div>
@@ -159,7 +159,7 @@ export default function BroadcastArrayPage() {
                 <div className={`w-full p-4 rounded-xl relative overflow-hidden border ${urgency === 'CRITICAL' ? 'bg-red-500/10 border-red-500/20' : urgency === 'WARNING' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}>
                   <div className={`absolute top-0 right-0 w-16 h-16 blur-xl rounded-full ${urgency === 'CRITICAL' ? 'bg-red-500/20' : urgency === 'WARNING' ? 'bg-amber-500/20' : 'bg-blue-500/20'}`}></div>
                   <span className={`text-[9px] font-black uppercase tracking-widest block mb-1.5 relative z-10 ${urgency === 'CRITICAL' ? 'text-red-400' : urgency === 'WARNING' ? 'text-amber-400' : 'text-blue-400'}`}>{title || 'System Broadcast'}</span>
-                  <p className={`text-xs leading-relaxed font-medium relative z-10 ${urgency === 'CRITICAL' ? 'text-red-100' : urgency === 'WARNING' ? 'text-amber-100' : 'text-blue-100'}`}>{message || 'Your message payload will appear here.'}</p>
+                  <p className={`text-xs leading-relaxed font-medium relative z-10 ${urgency === 'CRITICAL' ? 'text-red-100' : urgency === 'WARNING' ? 'text-amber-100' : 'text-blue-100'}`}>{message || 'Transmission payload.'}</p>
                 </div>
               ) : (
                 <div className="w-full max-w-sm bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl p-4">
@@ -168,8 +168,8 @@ export default function BroadcastArrayPage() {
                       {urgency === 'CRITICAL' ? <AlertTriangle size={14} /> : urgency === 'WARNING' ? <Zap size={14} /> : <Info size={14} />}
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-white mb-1">{title || 'Alert Headline'}</h4>
-                      <p className="text-[10px] text-neutral-400 leading-relaxed font-medium line-clamp-2">{message || 'Alert description payload.'}</p>
+                      <h4 className="text-xs font-black text-white mb-1">{title || 'Alert Subject'}</h4>
+                      <p className="text-[10px] text-neutral-400 leading-relaxed font-medium line-clamp-2">{message || 'Alert description.'}</p>
                       <span className="text-[8px] font-black text-neutral-600 uppercase tracking-widest mt-2 block">Just now</span>
                     </div>
                   </div>
@@ -184,7 +184,7 @@ export default function BroadcastArrayPage() {
               {history.length === 0 ? (
                 <div className="text-center py-10">
                   <BellRing className="mx-auto text-neutral-700 mb-3" size={24} />
-                  <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">No previous transmissions.</p>
+                  <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">No previous history.</p>
                 </div>
               ) : (
                 history.map(item => (
