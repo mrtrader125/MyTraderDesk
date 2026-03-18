@@ -9,8 +9,8 @@ function OperatorTerminal() {
   const router = useRouter()
   const searchParams = useSearchParams() 
   
-  // 1. Grab search query directly from URL (Reactive)
-  const searchQuery = searchParams.get('search')?.toLowerCase() || '' 
+  // LIVE SEARCH STATE
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
   
   const [mounted, setMounted] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
@@ -28,6 +28,13 @@ function OperatorTerminal() {
     { name: 'Stocks', req: 'pro' }
   ]
 
+  // INSTANT SEARCH LISTENER
+  useEffect(() => {
+    const handleSearch = (e: any) => setSearchQuery(e.detail?.toLowerCase() || '')
+    window.addEventListener('globalSearch', handleSearch)
+    return () => window.removeEventListener('globalSearch', handleSearch)
+  }, [])
+
   useEffect(() => {
     setMounted(true)
 
@@ -35,11 +42,9 @@ function OperatorTerminal() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-          // Fetch Plan
           const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
           if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
 
-          // Fetch Live Vault/Watchlist
           const { data: vaultData } = await supabase
             .from('user_vault')
             .select('analysis_id, analyses(asset_symbol, timeframe)')
@@ -53,7 +58,6 @@ function OperatorTerminal() {
             })))
           }
 
-          // Fetch All Analyses
           const { data: analyses, error } = await supabase.from('analyses').select('*').order('created_at', { ascending: false })
           if (!error && analyses) setSetups(analyses)
         }
@@ -63,15 +67,14 @@ function OperatorTerminal() {
         setLoading(false)
       }
     }
-
     fetchLiveTerminalData()
   }, [])
 
-  // 2. OPTIMIZATION: Filter logic wrapped in useMemo to stop the typing lag
   const filteredSetups = useMemo(() => {
     return setups.filter(setup => {
       const matchesTab = activeFilter === 'All' ? true : (setup.category || 'Forex').toLowerCase() === activeFilter.toLowerCase()
-      const matchesSearch = setup.asset_symbol?.toLowerCase().includes(searchQuery)
+      // Safe Includes Check
+      const matchesSearch = (setup.asset_symbol || '').toLowerCase().includes(searchQuery)
       return matchesTab && matchesSearch
     })
   }, [setups, activeFilter, searchQuery])
@@ -112,7 +115,6 @@ function OperatorTerminal() {
     return 'Inter-Bank'
   }
 
-  // Calculate Deployment Stats
   const { deployCount, deployLabel } = useMemo(() => {
     if (setups.length === 0) return { deployCount: 0, deployLabel: 'Deployments' }
     const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -139,7 +141,6 @@ function OperatorTerminal() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-8 xl:col-span-9 space-y-6">
           
-          {/* Top Stats */}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
               <div className="min-w-0 pr-2">
@@ -169,7 +170,6 @@ function OperatorTerminal() {
             </div>
           </div>
 
-          {/* Categories */}
           <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800 mt-2">
             {FILTERS.map(f => {
               const locked = isLocked(f.req)
@@ -199,7 +199,6 @@ function OperatorTerminal() {
             })}
           </div>
 
-          {/* Main Feed */}
           <div>
             <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-3 mt-4">Intelligence Feed</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
@@ -251,7 +250,6 @@ function OperatorTerminal() {
           </div>
         </div>
 
-        {/* Sidebar Widgets */}
         <div className="lg:col-span-4 xl:col-span-3 space-y-6 sticky top-6">
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
@@ -320,7 +318,6 @@ function OperatorTerminal() {
   )
 }
 
-// Next.js 15 Suspense Wrapper
 export default function DashboardPage() {
   return (
     <Suspense fallback={
