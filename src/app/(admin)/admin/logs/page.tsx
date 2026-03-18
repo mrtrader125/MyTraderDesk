@@ -15,23 +15,29 @@ export default function GlobalAuditLedger() {
   useEffect(() => {
     async function fetchLedger() {
       try {
-        // 1. Fetch the last 500 logs for deep analysis
-        const { data: activityLogs } = await supabase
+        // 1. Fetch Logs
+        const { data: activityLogs, error: logsError } = await supabase
           .from('activity_logs')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(500)
 
-        // 2. Fetch profiles to map User IDs to actual Names
-        const { data: profiles } = await supabase
+        if (logsError) console.error("Logs Fetch Error (Check RLS):", logsError)
+
+        // 2. Fetch Profiles (might fail due to RLS, but we won't let it crash the page)
+        const { data: profiles, error: profilesError } = await supabase
           .from('profiles')
           .select('id, full_name, plan')
 
-        if (activityLogs && profiles) {
-          const profileMap: Record<string, any> = {}
-          profiles.forEach(p => { profileMap[p.id] = p })
+        if (profilesError) console.error("Profiles Fetch Error (Check RLS):", profilesError)
 
-          // 3. Map the data together
+        // 3. Map the data together (Even if profiles failed, activityLogs will still render)
+        if (activityLogs) {
+          const profileMap: Record<string, any> = {}
+          if (profiles) {
+            profiles.forEach(p => { profileMap[p.id] = p })
+          }
+
           const enrichedLogs = activityLogs.map(log => ({
             ...log,
             user_name: profileMap[log.user_id]?.full_name || 'Unknown Operator',
@@ -70,6 +76,16 @@ export default function GlobalAuditLedger() {
     { id: 'PAYWALL_BUMP', label: 'Paywall Hits', icon: AlertTriangle, color: 'text-red-500 border-red-500/30 bg-red-500/10' },
     { id: 'FILTER_CLICK', label: 'Category Filters', icon: BarChart2, color: 'text-neutral-400 border-neutral-700 bg-neutral-900' }
   ]
+
+  // Plan Color Helper
+  const getPlanColor = (plan: string) => {
+    switch (plan.toLowerCase()) {
+      case 'premium': return 'bg-amber-500'
+      case 'pro': return 'bg-brand-primary'
+      case 'essential': return 'bg-blue-500'
+      default: return 'bg-neutral-700'
+    }
+  }
 
   if (loading) {
     return (
@@ -154,7 +170,6 @@ export default function GlobalAuditLedger() {
               ) : (
                 filteredLogs.map((log) => {
                   const style = ACTION_TYPES.find(t => t.id === log.action) || ACTION_TYPES[0]
-                  const isPro = log.user_plan === 'pro'
                   
                   return (
                     <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group">
@@ -170,7 +185,7 @@ export default function GlobalAuditLedger() {
                       {/* Operator */}
                       <td className="p-5">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-1.5 h-6 rounded-full ${isPro ? 'bg-brand-primary' : 'bg-neutral-700'}`}></div>
+                          <div className={`w-1.5 h-6 rounded-full ${getPlanColor(log.user_plan)}`}></div>
                           <div>
                             <p className="text-xs font-black text-white">{log.user_name}</p>
                             <p className="text-[8px] font-bold text-neutral-600 font-mono mt-0.5 uppercase">ID: {log.user_id.split('-')[0]}</p>
