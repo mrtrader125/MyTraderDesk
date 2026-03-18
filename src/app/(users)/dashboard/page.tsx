@@ -16,6 +16,9 @@ function OperatorTerminal() {
   const [setups, setSetups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [watchlist, setWatchlist] = useState<any[]>([])
+  
+  // NEW: Broadcast State
+  const [activeBroadcast, setActiveBroadcast] = useState<any>(null)
 
   // DYNAMIC FILTERS
   const FILTERS = useMemo(() => {
@@ -49,6 +52,20 @@ function OperatorTerminal() {
         if (user) {
           const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
           if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
+
+          // NEW: Fetch Active Broadcasts targeting this user's tier (or ALL)
+          const { data: broadcasts } = await supabase
+            .from('notifications')
+            .select('*')
+            .eq('type', 'BROADCAST')
+            .eq('status', 'ACTIVE')
+            .in('target_tier', ['ALL', profile?.plan ? profile.plan.toUpperCase() : 'FREE'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+
+          if (broadcasts && broadcasts.length > 0) {
+            setActiveBroadcast(broadcasts[0])
+          }
 
           const { data: vaultData } = await supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe)').eq('user_id', user.id)
           if (vaultData) {
@@ -242,11 +259,23 @@ function OperatorTerminal() {
             </div>
             
             <div className="space-y-4">
-              <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/20 blur-xl rounded-full"></div>
-                <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest block mb-1.5 relative z-10">System Broadcast</span>
-                <p className="text-xs text-blue-100 leading-relaxed font-medium relative z-10">Terminal synced. Monitor setups closely during upcoming high-impact overlap sessions.</p>
-              </div>
+              {/* NEW: DYNAMIC BROADCAST RENDERER */}
+              {activeBroadcast ? (
+                <div className={`p-4 rounded-xl relative overflow-hidden border ${activeBroadcast.urgency === 'CRITICAL' ? 'bg-red-500/10 border-red-500/20' : activeBroadcast.urgency === 'WARNING' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}>
+                  <div className={`absolute top-0 right-0 w-16 h-16 blur-xl rounded-full ${activeBroadcast.urgency === 'CRITICAL' ? 'bg-red-500/20' : activeBroadcast.urgency === 'WARNING' ? 'bg-amber-500/20' : 'bg-blue-500/20'}`}></div>
+                  <span className={`text-[9px] font-black uppercase tracking-widest block mb-1.5 relative z-10 ${activeBroadcast.urgency === 'CRITICAL' ? 'text-red-400' : activeBroadcast.urgency === 'WARNING' ? 'text-amber-400' : 'text-blue-400'}`}>
+                    {activeBroadcast.title}
+                  </span>
+                  <p className={`text-xs leading-relaxed font-medium relative z-10 ${activeBroadcast.urgency === 'CRITICAL' ? 'text-red-100' : activeBroadcast.urgency === 'WARNING' ? 'text-amber-100' : 'text-blue-100'}`}>
+                    {activeBroadcast.message}
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-neutral-900/30 border border-neutral-800/50 rounded-xl text-center">
+                  <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">System Standby</span>
+                </div>
+              )}
+              
               <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between">
                 <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Network</span>
                 <span className="text-[10px] font-bold text-emerald-500 flex items-center"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></div> Operational</span>
