@@ -1,20 +1,19 @@
 // src/lib/platformConfig.ts
 
-// ==========================================
-// 1. GLOBAL ASSET REGISTRY
-// ==========================================
 export const ASSET_CATEGORIES = {
   FOREX: [
-    'EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'AUDUSD', 'NZDUSD', 'USDCHF', // Majors
-    'EURGBP', 'EURJPY', 'EURCHF', 'EURAUD', 'EURCAD', 'EURNZD', // EUR Crosses
-    'GBPJPY', 'GBPCHF', 'GBPAUD', 'GBPCAD', 'GBPNZD', // GBP Crosses
-    'AUDJPY', 'AUDCHF', 'AUDCAD', 'AUDNZD', // AUD Crosses
-    'CADJPY', 'CADCHF', 'NZDJPY', 'NZDCHF', 'NZDCAD', 'CHFJPY' // Others
+    'EURUSD', 'GBPUSD', 'USDJPY', 'USDCAD', 'AUDUSD', 'NZDUSD', 'USDCHF',
+    'EURGBP', 'EURJPY', 'EURCHF', 'EURAUD', 'EURCAD', 'EURNZD',
+    'GBPJPY', 'GBPCHF', 'GBPAUD', 'GBPCAD', 'GBPNZD',
+    'AUDJPY', 'AUDCHF', 'AUDCAD', 'AUDNZD',
+    'CADJPY', 'CADCHF', 'NZDJPY', 'NZDCHF', 'NZDCAD', 'CHFJPY'
   ],
   COMMODITY: ['XAUUSD', 'XAUEUR', 'XAGUSD', 'XPTUSD', 'XPDUSD', 'COPPER', 'USOIL', 'UKOIL', 'NGAS'],
   CRYPTO: ['BTCUSD', 'ETHUSD', 'SOLUSD', 'XRPUSD', 'ADAUSD', 'DOGEUSD', 'DOTUSD', 'LINKUSD', 'MATICUSD', 'BNBUSD'],
   INDICES: ['US30', 'NAS100', 'SPX500', 'GER40', 'UK100', 'JPN225', 'FRA40', 'AUS200'],
-  STOCKS: ['AAPL', 'TSLA', 'MSFT', 'AMZN', 'NVDA', 'META', 'GOOGL', 'AMD']
+  STOCKS: ['AAPL', 'TSLA', 'MSFT', 'AMZN', 'NVDA', 'META', 'GOOGL', 'AMD'],
+  FUNDAMENTAL: ['FUNDAMENTAL'],
+  SENTIMENTAL: ['SENTIMENTAL']
 };
 
 export const TIMEFRAMES = {
@@ -22,9 +21,6 @@ export const TIMEFRAMES = {
   STANDARD: ['1H', '4H', '1D', '1W', '1MO']
 };
 
-// ==========================================
-// 2. MASTER PLAN & SUBSCRIPTION RULES
-// ==========================================
 export const PLAN_CONFIG = {
   free: {
     id: 'free',
@@ -48,7 +44,7 @@ export const PLAN_CONFIG = {
     priceYearly: 49.99,
     allowedCategories: ['FOREX', 'COMMODITY'],
     allowedTimeframes: TIMEFRAMES.STANDARD,
-    delays: {} // 0 delay
+    delays: {}
   },
   pro: {
     id: 'pro',
@@ -57,7 +53,7 @@ export const PLAN_CONFIG = {
     priceYearly: 99.99,
     allowedCategories: ['FOREX', 'COMMODITY', 'CRYPTO', 'INDICES', 'STOCKS'],
     allowedTimeframes: TIMEFRAMES.STANDARD,
-    delays: {} // 0 delay
+    delays: {}
   },
   premium: {
     id: 'premium',
@@ -66,19 +62,16 @@ export const PLAN_CONFIG = {
     priceYearly: 1990.00,
     allowedCategories: ['FOREX', 'COMMODITY', 'CRYPTO', 'INDICES', 'STOCKS', 'FUNDAMENTAL', 'SENTIMENTAL'],
     allowedTimeframes: [...TIMEFRAMES.STANDARD, ...TIMEFRAMES.SCALPING],
-    delays: {} // 0 delay
+    delays: {}
   }
 };
 
-// ==========================================
-// 3. HELPER FUNCTIONS
-// ==========================================
 export function getAssetCategory(symbol: string): string {
   const upperSymbol = symbol.trim().toUpperCase();
   for (const [category, assets] of Object.entries(ASSET_CATEGORIES)) {
     if (assets.includes(upperSymbol)) return category;
   }
-  return 'FOREX'; // Fallback
+  return 'FOREX';
 }
 
 export function normalizeTimeframe(tf: string): string {
@@ -92,5 +85,5 @@ export function normalizeTimeframe(tf: string): string {
   if (clean.includes('D')) return '1D';
   if (clean.includes('W')) return '1W';
   if (clean.includes('MO')) return '1MO';
-  return '1D'; // Fallback
+  return '1D'; 
 }
