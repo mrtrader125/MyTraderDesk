@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-// 👇 VERIFIED IMPORTS: Added Clock and LinkIcon to prevent ReferenceErrors
 import { 
   Radio, 
   Send, 
@@ -158,7 +157,7 @@ export default function BroadcastArrayPage() {
                   <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message data..." className="w-full h-24 bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-medium text-white outline-none focus:border-brand-primary/50 transition-colors resize-none" />
                 </div>
                 
-                {/* NEW: ATTACHMENT LINK FIELD */}
+                {/* ATTACHMENT LINK FIELD */}
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest flex items-center">
                     <LinkIcon size={10} className="mr-1" /> Attachment Link (Optional)
@@ -167,7 +166,7 @@ export default function BroadcastArrayPage() {
                 </div>
               </div>
 
-              <button onClick={handleTransmit} disabled={transmitting || !title || !message} className="w-full py-4 bg-brand-primary text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary/90 transition-all shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+              <button onClick={handleTransmit} disabled={transmitting || !title || !message} className="w-full py-4 bg-brand-primary text-black text-xs font-black uppercase tracking-widest rounded-xl hover:bg-white/90 transition-all shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
                 {transmitting ? <Activity className="animate-spin mr-2" size={16} /> : <Send className="mr-2" size={16} />}
                 {transmitting ? 'Transmitting...' : 'Execute Transmission'}
               </button>
