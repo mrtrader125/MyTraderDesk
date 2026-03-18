@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-// 👇 VERIFIED IMPORTS: All icons used below are explicitly defined here
 import { 
   Plus, 
   Trash2, 
@@ -47,8 +46,8 @@ export default function AnalysisArsenalPage() {
   }
 
   const filteredSetups = setups.filter(s => 
-    s.asset_symbol?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.category?.toLowerCase().includes(searchTerm.toLowerCase())
+    (s.asset_symbol || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (s.category || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
   if (loading) {
@@ -80,12 +79,12 @@ export default function AnalysisArsenalPage() {
               placeholder="Search assets..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors w-64"
+              className="bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-white placeholder:text-neutral-500 outline-none focus:border-brand-primary/50 transition-colors w-64"
             />
           </div>
           <button 
             onClick={() => router.push('/admin/analysis/new')}
-            className="flex items-center px-6 py-3 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-brand-primary/90 transition-colors shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.3)] shrink-0"
+            className="flex items-center px-6 py-3 bg-brand-primary text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-white/90 transition-colors shadow-lg shrink-0"
           >
             <Plus size={16} className="mr-2" /> Deploy Setup
           </button>
@@ -114,7 +113,7 @@ export default function AnalysisArsenalPage() {
                     <img 
                       src={setup.image_url} 
                       alt={setup.asset_symbol} 
-                      className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" 
+                      className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-500" 
                       style={{ imageRendering: 'high-quality' }}
                     />
                   ) : (
@@ -140,7 +139,7 @@ export default function AnalysisArsenalPage() {
                 <div className="p-5 flex flex-col flex-1">
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <h3 className="text-2xl font-black text-white tracking-tighter">{setup.asset_symbol}</h3>
+                      <h3 className="text-xl font-black text-white tracking-tighter uppercase italic">{setup.asset_symbol}</h3>
                       <div className="flex items-center text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-1">
                         <Clock size={10} className="mr-1.5" /> 
                         {new Date(setup.created_at).toLocaleDateString()} at {new Date(setup.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
@@ -148,11 +147,11 @@ export default function AnalysisArsenalPage() {
                     </div>
                   </div>
 
-                  <p className="text-[10px] font-medium text-neutral-400 line-clamp-2 leading-relaxed flex-1 mb-5">
+                  <p className="text-[10px] font-medium text-neutral-300 line-clamp-2 mt-4 flex-1 bg-white/5 p-3 rounded-lg border border-white/5 leading-relaxed">
                     {setup.title || setup.content || "No tactical notes provided."}
                   </p>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-neutral-800/50">
+                  <div className="flex items-center justify-between pt-4 border-t border-neutral-800/50 mt-4">
                     <button 
                       onClick={() => window.open(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`, '_blank')}
                       className="text-[9px] font-black text-brand-primary uppercase tracking-widest flex items-center hover:text-white transition-colors"
