@@ -5,22 +5,28 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Bookmark, Lock, Clock, TrendingUp, TrendingDown, Minus, Trash2, Activity, FolderOpen, Edit3, X, FileText } from 'lucide-react'
 import { getSetupAccess } from '@/lib/access'
-import { CATEGORY_REQUIREMENTS } from '@/lib/assetRegistry'
+import { ASSET_CATEGORIES, PLAN_CONFIG } from '@/lib/platformConfig'
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All', req: 'free' },
-  { id: 'FOREX', label: 'Forex', req: CATEGORY_REQUIREMENTS.FOREX },
-  { id: 'COMMODITY', label: 'Commodity', req: CATEGORY_REQUIREMENTS.COMMODITY }, // Updated
-  { id: 'CRYPTO', label: 'Crypto', req: CATEGORY_REQUIREMENTS.CRYPTO },
-  { id: 'INDICES', label: 'Indices', req: CATEGORY_REQUIREMENTS.INDICES },
-  { id: 'STOCKS', label: 'Stocks', req: CATEGORY_REQUIREMENTS.STOCKS }
+  ...Object.keys(ASSET_CATEGORIES).map(category => {
+    let requiredTier = 'premium';
+    if (PLAN_CONFIG.free.allowedCategories.includes(category)) requiredTier = 'free';
+    else if (PLAN_CONFIG.essential.allowedCategories.includes(category)) requiredTier = 'essential';
+    else if (PLAN_CONFIG.pro.allowedCategories.includes(category)) requiredTier = 'pro';
+
+    return {
+      id: category,
+      label: category.charAt(0) + category.slice(1).toLowerCase(),
+      req: requiredTier
+    }
+  })
 ]
 
 function VaultContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
-  // LIVE SEARCH STATE
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
 
   const [vaultItems, setVaultItems] = useState<any[]>([])
@@ -31,7 +37,6 @@ function VaultContent() {
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [tempNote, setTempNote] = useState('')
 
-  // INSTANT SEARCH LISTENER
   useEffect(() => {
     const handleSearch = (e: any) => setSearchQuery(e.detail?.toLowerCase() || '')
     window.addEventListener('globalSearch', handleSearch)
@@ -93,10 +98,11 @@ function VaultContent() {
   }
 
   const isLocked = (reqTier: string) => {
-    if (userPlan === 'pro') return false
-    if (userPlan === 'essential' && reqTier === 'pro') return true
-    if (userPlan === 'free' && reqTier !== 'free') return true
-    return false
+    if (userPlan === 'premium') return false
+    if (userPlan === 'pro' && reqTier !== 'premium') return false
+    if (userPlan === 'essential' && (reqTier === 'essential' || reqTier === 'free')) return false
+    if (userPlan === 'free' && reqTier === 'free') return false
+    return true
   }
 
   if (loading) {
@@ -110,7 +116,6 @@ function VaultContent() {
 
   const filteredItems = vaultItems.filter(item => {
     const matchesTab = activeTab === 'ALL' ? true : (item.category || 'FOREX').toUpperCase() === activeTab
-    // Safe Includes Check
     const matchesSearch = (item.asset_symbol || '').toLowerCase().includes(searchQuery)
     return matchesTab && matchesSearch
   })
@@ -144,7 +149,7 @@ function VaultContent() {
           <img src={setup.image_url} alt="Setup" className={`w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100 group-hover:scale-105' : 'opacity-10 blur-md grayscale'}`} />
           {!hasAccess && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
-              <Lock size={16} className={requiredTier === 'pro' ? 'text-brand-primary mb-1.5' : 'text-blue-500 mb-1.5'} />
+              <Lock size={16} className={requiredTier === 'premium' ? 'text-amber-500 mb-1.5' : requiredTier === 'pro' ? 'text-brand-primary mb-1.5' : 'text-blue-500 mb-1.5'} />
               <span className="text-[8px] font-black text-white uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded border border-white/10 shadow-lg">{requiredTier.toUpperCase()}</span>
             </div>
           )}
