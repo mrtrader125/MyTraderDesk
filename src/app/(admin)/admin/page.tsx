@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Users, DollarSign, Activity, TrendingUp, Shield, Crown, Zap, BarChart2, Target } from 'lucide-react'
+import { Users, DollarSign, Activity, TrendingUp, Shield, Crown, Zap, BarChart2, Target, Search, AlertTriangle } from 'lucide-react'
 
 // Accurate Pricing (Split by cycle)
 const PRICING = {
@@ -18,12 +18,13 @@ export default function AdminDashboard() {
     totalUsers: 0,
     signups: { today: 0, yesterday: 0, week: 0 },
     setups: { today: 0, yesterday: 0, week: 0, older: 0, total: 0 },
-    plans: { free: 0, essential: 0, pro: 0 }
+    plans: { free: 0, essential: 0, pro: 0 },
+    topSearches: [],
+    recentActivity: []
   })
 
   useEffect(() => {
     async function fetchGodModeStats() {
-      // 1. Time Boundaries
       const now = new Date()
       const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
       const startOfYesterday = new Date(startOfToday); startOfYesterday.setDate(startOfYesterday.getDate() - 1)
@@ -31,14 +32,16 @@ export default function AdminDashboard() {
       const startOfMonth = new Date(startOfToday); startOfMonth.setDate(startOfMonth.getDate() - 30)
 
       try {
-        // 2. Fetch Profiles (Users)
-        const { data: profiles } = await supabase.from('profiles').select('created_at, plan, billing_cycle')
+        // Fetch Core Data
+        const { data: profiles } = await supabase.from('profiles').select('id, created_at, plan, billing_cycle, full_name')
+        const { data: analyses } = await supabase.from('analyses').select('created_at').gte('created_at', startOfMonth.toISOString())
         
-        // 3. Fetch Analyses (Setups) from the last 30 days
-        const { data: analyses } = await supabase
-          .from('analyses')
-          .select('created_at')
-          .gte('created_at', startOfMonth.toISOString())
+        // NEW: Fetch Tracker Logs (Last 100 actions for performance)
+        const { data: logs } = await supabase
+          .from('activity_logs')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100)
 
         if (profiles && analyses) {
           // --- PROCESS USERS & REVENUE ---
@@ -48,37 +51,34 @@ export default function AdminDashboard() {
           const signups = { today: 0, yesterday: 0, week: 0 }
           const plans = { free: 0, essential: 0, pro: 0 }
 
+          // Profile Map for quick lookup in logs
+          const profileMap: Record<string, string> = {}
+
           profiles.forEach(p => {
+            profileMap[p.id] = p.full_name || 'Unknown Operator'
             const joinedAt = new Date(p.created_at).getTime()
             const plan = (p.plan || 'free').toLowerCase()
             const cycle = (p.billing_cycle || 'monthly').toLowerCase()
             
-            // Growth Metrics
             if (joinedAt >= startOfToday.getTime()) signups.today++
             else if (joinedAt >= startOfYesterday.getTime()) signups.yesterday++
             if (joinedAt >= startOfWeek.getTime()) signups.week++
 
-            // Revenue & Plan Metrics
             if (plan === 'essential') { 
-              plans.essential++
-              paidUsers++
+              plans.essential++; paidUsers++;
               if (cycle === 'yearly') yearlyRev += PRICING.essential.yearly
               else monthlyRev += PRICING.essential.monthly
             }
             else if (plan === 'pro') { 
-              plans.pro++
-              paidUsers++
+              plans.pro++; paidUsers++;
               if (cycle === 'yearly') yearlyRev += PRICING.pro.yearly
               else monthlyRev += PRICING.pro.monthly
             }
-            else { 
-              plans.free++ 
-            }
+            else { plans.free++ }
           })
 
-          // --- PROCESS SETUPS (Content Health) ---
+          // --- PROCESS SETUPS ---
           const setups = { today: 0, yesterday: 0, week: 0, older: 0, total: analyses.length }
-          
           analyses.forEach(a => {
             const postedAt = new Date(a.created_at).getTime()
             if (postedAt >= startOfToday.getTime()) setups.today++
@@ -87,14 +87,40 @@ export default function AdminDashboard() {
             else setups.older++
           })
 
+          // --- PROCESS TRACKER LOGS ---
+          const searchCounts: Record<string, number> = {}
+          const activityFeed: any[] = []
+
+          if (logs) {
+            logs.forEach(log => {
+              // Build visual activity feed
+              activityFeed.push({
+                id: log.id,
+                user: profileMap[log.user_id] || 'Unknown',
+                action: log.action,
+                target: log.search_query || log.asset_symbol || log.timeframe || '',
+                time: new Date(log.created_at)
+              })
+
+              // Aggregate searches
+              if (log.action === 'SEARCH' && log.search_query) {
+                const term = log.search_query.toUpperCase()
+                searchCounts[term] = (searchCounts[term] || 0) + 1
+              }
+            })
+          }
+
+          // Sort top searches
+          const topSearches = Object.entries(searchCounts)
+            .map(([term, count]) => ({ term, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5) // Top 5
+
           setData({ 
             loading: false, 
             revenue: { monthly: monthlyRev, yearly: yearlyRev }, 
-            paidUsers, 
-            totalUsers: profiles.length,
-            signups, 
-            setups, 
-            plans 
+            paidUsers, totalUsers: profiles.length, signups, setups, plans,
+            topSearches, recentActivity: activityFeed
           })
         }
       } catch (err) {
@@ -103,6 +129,10 @@ export default function AdminDashboard() {
     }
 
     fetchGodModeStats()
+    
+    // Optional: Refresh data every 30 seconds to make it truly "Live"
+    const interval = setInterval(fetchGodModeStats, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   if (data.loading) {
@@ -135,14 +165,12 @@ export default function AdminDashboard() {
             <div className="p-2.5 bg-[#050505] border border-neutral-800 rounded-xl w-fit mb-4 text-emerald-500">
               <DollarSign size={18} />
             </div>
-            
             <div className="mb-4">
               <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Monthly MRR</div>
               <div className="text-3xl font-black text-white tracking-tighter">
                 ${data.revenue.monthly.toFixed(2)}<span className="text-xs text-neutral-600 font-bold tracking-normal">/mo</span>
               </div>
             </div>
-
             <div className="pt-3 border-t border-neutral-800/50">
               <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-0.5">Yearly ARR</div>
               <div className="text-lg font-black text-emerald-500 tracking-tighter">
@@ -152,21 +180,17 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* KPI CARDS */}
         <StatCard label="Total Operators" value={data.totalUsers} subValue={`${data.paidUsers} Paid Seats`} icon={Users} color="text-white" />
         <StatCard label="New Signups (Today)" value={data.signups.today} subValue={`${data.signups.week} This Week`} icon={TrendingUp} color="text-brand-primary" />
         <StatCard label="Active Deployments" value={data.setups.total} subValue="Last 30 Days" icon={Target} color="text-blue-500" />
       </div>
 
-      {/* BOTTOM ROW: SPLIT INTELLIGENCE & PLAN DISTRIBUTION */}
+      {/* MIDDLE ROW: SPLIT INTELLIGENCE & PLAN DISTRIBUTION */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* LEFT: Content Health (30-Day Window) */}
         <div className="bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg">
           <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center">
             <Activity size={16} className="mr-2 text-brand-primary" /> Intelligence Output
           </h3>
-          
           <div className="space-y-3">
             <TimeRow label="Deployed Today" count={data.setups.today} highlight={true} />
             <TimeRow label="Deployed Yesterday" count={data.setups.yesterday} />
@@ -175,27 +199,113 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* RIGHT: Plan Distribution */}
         <div className="bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
           <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center">
             <BarChart2 size={16} className="mr-2 text-blue-500" /> Clearance Distribution
           </h3>
-          
-          {/* Progress Bar */}
           <div className="w-full h-3 rounded-full flex overflow-hidden bg-neutral-900 mb-6 border border-neutral-800">
             <div style={{ width: `${(data.plans.pro / (data.totalUsers || 1)) * 100}%` }} className="h-full bg-brand-primary transition-all duration-1000"></div>
             <div style={{ width: `${(data.plans.essential / (data.totalUsers || 1)) * 100}%` }} className="h-full bg-blue-500 transition-all duration-1000"></div>
             <div style={{ width: `${(data.plans.free / (data.totalUsers || 1)) * 100}%` }} className="h-full bg-neutral-700 transition-all duration-1000"></div>
           </div>
-
           <div className="space-y-3 flex-1">
             <PlanRow label="Pro Tier" count={data.plans.pro} icon={Crown} color="text-brand-primary" />
             <PlanRow label="Essential Tier" count={data.plans.essential} icon={Shield} color="text-blue-500" />
             <PlanRow label="Free Tier" count={data.plans.free} icon={Zap} color="text-neutral-500" />
           </div>
         </div>
-
       </div>
+
+      {/* 👇 NEW: LIVE NETWORK TRACKERS */}
+      <div>
+        <h2 className="text-lg font-black text-white uppercase tracking-tighter italic mb-4 mt-4">
+          Active <span className="text-brand-primary">Surveillance</span>
+        </h2>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Tracker 1: Top Searches */}
+          <div className="lg:col-span-1 bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg">
+            <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center">
+              <Search size={16} className="mr-2 text-white" /> Trending Assets
+            </h3>
+            {data.topSearches.length > 0 ? (
+              <div className="space-y-4">
+                {data.topSearches.map((item: any, i: number) => (
+                  <div key={i} className="flex flex-col">
+                    <div className="flex justify-between items-end mb-1">
+                      <span className="text-xs font-bold text-white tracking-widest">{item.term}</span>
+                      <span className="text-[10px] font-black text-neutral-500">{item.count} hits</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-neutral-900 rounded-full overflow-hidden">
+                      {/* Dynamic bar width based on the highest search count */}
+                      <div 
+                        className="h-full bg-white transition-all duration-1000 rounded-full" 
+                        style={{ width: `${(item.count / data.topSearches[0].count) * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+               <div className="text-center py-6 text-[10px] font-bold text-neutral-600 uppercase tracking-widest">No recent search data</div>
+            )}
+          </div>
+
+          {/* Tracker 2: Live Activity Feed */}
+          <div className="lg:col-span-2 bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center">
+                <Activity size={16} className="mr-2 text-blue-500" /> Operator Stream
+              </h3>
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-2"></div>
+                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Live Sync</span>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto max-h-[250px] pr-2 space-y-2 scrollbar-hide">
+              {data.recentActivity.length > 0 ? (
+                data.recentActivity.map((log: any) => {
+                  
+                  // Style logic based on what the user did
+                  let actionColor = "text-neutral-500"
+                  let actionText = log.action
+                  let Icon = Activity
+                  
+                  if (log.action === 'SEARCH') { actionColor = "text-white"; actionText = "Searched for"; Icon = Search }
+                  if (log.action === 'VIEW_CHART') { actionColor = "text-blue-500"; actionText = "Viewed Setup"; Icon = Target }
+                  if (log.action === 'PAYWALL_BUMP') { actionColor = "text-red-500"; actionText = "Hit Paywall on"; Icon = AlertTriangle }
+                  if (log.action === 'FILTER_CLICK') { actionColor = "text-neutral-400"; actionText = "Filtered by"; Icon = BarChart2 }
+
+                  return (
+                    <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-[#050505] border border-neutral-800/50">
+                      <div className="flex items-center space-x-3 overflow-hidden">
+                        <div className={`p-1.5 rounded-lg bg-neutral-900 ${actionColor}`}>
+                          <Icon size={12} />
+                        </div>
+                        <div className="flex flex-col min-w-0 pr-2">
+                          <span className="text-[10px] font-black text-white truncate">{log.user}</span>
+                          <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest truncate">
+                            {actionText} <span className={actionColor}>{log.target}</span>
+                          </span>
+                        </div>
+                      </div>
+                      <span className="text-[8px] font-bold text-neutral-600 shrink-0">
+                        {log.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="text-center py-10 text-[10px] font-bold text-neutral-600 uppercase tracking-widest">Awaiting Network Activity...</div>
+              )}
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   )
 }
