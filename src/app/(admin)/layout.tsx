@@ -33,9 +33,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const navLinks = [
-    { name: 'Command Center', path: '/admin', icon: LayoutDashboard },
-    { name: 'Deploy Intelligence', path: '/admin/analysis', icon: Send },
+    { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { name: 'Deploy Analysis', path: '/admin/analysis', icon: Send },
     { name: 'User Directory', path: '/admin/users', icon: Users },
+    { name: 'Broadcast', path: '/admin/notifications', icon: Broadcast },
     { name: 'System Logs', path: '/admin/logs', icon: Activity },
   ]
 
