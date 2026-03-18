@@ -182,7 +182,7 @@ export default function DeploySetupPage() {
 
           </div>
 
-          {/* RIGHT COLUMN: CHART UPLOAD */}
+          {/* RIGHT COLUMN: HIGH QUALITY CHART UPLOAD */}
           <div className="flex flex-col h-full">
             <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-2 block">Chart Image Capture</label>
             
@@ -193,10 +193,16 @@ export default function DeploySetupPage() {
                 onChange={handleFileChange} 
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
               />
-              <div className={`absolute inset-0 border-2 border-dashed rounded-[1.5rem] flex flex-col items-center justify-center transition-all duration-300 overflow-hidden ${previewUrl ? 'border-brand-primary/50 bg-black' : 'border-neutral-800 bg-[#050505] hover:border-neutral-600 hover:bg-neutral-900/50'}`}>
+              <div className={`absolute inset-0 border-2 border-dashed rounded-[1.5rem] flex flex-col items-center justify-center transition-all duration-300 overflow-hidden ${previewUrl ? 'border-brand-primary/50 bg-[#050505]' : 'border-neutral-800 bg-[#050505] hover:border-neutral-600 hover:bg-neutral-900/50'}`}>
                 
                 {previewUrl ? (
-                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover opacity-80" />
+                  // FIXED QUALITY: Object Contain + No Opacity + High Rendering
+                  <img 
+                    src={previewUrl} 
+                    alt="Preview" 
+                    className="w-full h-full object-contain p-2 rounded-[1.5rem]" 
+                    style={{ imageRendering: 'high-quality' }}
+                  />
                 ) : (
                   <div className="text-center p-6">
                     <div className="w-16 h-16 bg-neutral-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-neutral-800 shadow-inner">
