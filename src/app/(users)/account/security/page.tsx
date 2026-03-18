@@ -52,7 +52,7 @@ export default function SecurityPage() {
       if (error) {
         showToast(error.message, 'error')
       } else {
-        showToast('Security link dispatched to your inbox', 'success')
+        showToast('Password reset link sent to your email', 'success')
       }
     } catch (err) {
       console.error(err)
@@ -96,11 +96,11 @@ export default function SecurityPage() {
     <div className="max-w-3xl space-y-8 pb-12 relative">
       <div>
         <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">Security</h2>
-        <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Protect your account and authentication parameters.</p>
+        <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Manage your account security and password settings.</p>
       </div>
 
       {/* SECURE RESET LINK MODULE */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 md:p-8">
         <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center">
           <Mail className="mr-2 text-neutral-500" size={16} /> Password Reset Link
         </h3>
@@ -109,7 +109,7 @@ export default function SecurityPage() {
           <div>
             <p className="text-xs font-bold text-white tracking-widest">{userEmail}</p>
             <p className="text-[10px] font-medium text-neutral-500 mt-1 max-w-sm">
-              We will send a secure, time-sensitive link to this email address to reset your authentication credentials safely.
+              We will send a secure, time-sensitive link to this email address to safely reset your password.
             </p>
           </div>
           
@@ -121,16 +121,16 @@ export default function SecurityPage() {
             {isSendingReset ? (
                <><Loader2 size={14} className="animate-spin mr-2" /> Sending...</>
             ) : (
-               'Issue Reset Link'
+               'Send Reset Link'
             )}
           </button>
         </div>
       </div>
 
       {/* MANUAL PASSWORD UPDATE MODULE */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 md:p-8">
         <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center">
-          <Key className="mr-2 text-neutral-500" size={16} /> Manual Update
+          <Key className="mr-2 text-neutral-500" size={16} /> Change Password
         </h3>
         
         <div className="space-y-4 max-w-md">
@@ -158,13 +158,13 @@ export default function SecurityPage() {
       </div>
 
       {/* ACTIVE SESSIONS INFO */}
-      <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 flex items-center justify-between">
+      <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-6 md:p-8 flex items-center justify-between">
         <div>
           <h3 className="text-sm font-black text-emerald-500 uppercase tracking-widest flex items-center">
             <ShieldCheck className="mr-2" size={16} /> Secure Sessions
           </h3>
           <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-2 max-w-sm leading-relaxed">
-            Your connection is encrypted. Updating your password will immediately terminate all active sessions on other devices.
+            Your connection is secure. Updating your password will immediately log you out of all other active devices.
           </p>
         </div>
       </div>
