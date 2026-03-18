@@ -6,7 +6,7 @@ import { Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, 
 import { supabase } from '@/lib/supabase'
 import { ASSET_CATEGORIES, PLAN_CONFIG } from '@/lib/platformConfig'
 
-function OperatorTerminal() {
+function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams() 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
@@ -46,7 +46,7 @@ function OperatorTerminal() {
 
   useEffect(() => {
     setMounted(true)
-    async function fetchLiveTerminalData() {
+    async function fetchDashboardData() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
@@ -83,7 +83,7 @@ function OperatorTerminal() {
         setLoading(false)
       }
     }
-    fetchLiveTerminalData()
+    fetchDashboardData()
   }, [])
 
   const filteredSetups = useMemo(() => {
@@ -131,23 +131,23 @@ function OperatorTerminal() {
     return 'Inter-Bank'
   }
 
-  const { deployCount, deployLabel } = useMemo(() => {
-    if (setups.length === 0) return { deployCount: 0, deployLabel: 'Deployments' }
+  const { setupCount, setupLabel } = useMemo(() => {
+    if (setups.length === 0) return { setupCount: 0, setupLabel: 'Total Setups' }
     const today = new Date(); today.setHours(0, 0, 0, 0)
     const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
     
     const todayCount = setups.filter(s => new Date(s.created_at) >= today).length
-    if (todayCount > 0) return { deployCount: todayCount, deployLabel: "Deployed Today" }
+    if (todayCount > 0) return { setupCount: todayCount, setupLabel: "Published Today" }
     
     const yesterdayCount = setups.filter(s => new Date(s.created_at) >= yesterday && new Date(s.created_at) < today).length
-    return { deployCount: yesterdayCount || setups.length, deployLabel: yesterdayCount > 0 ? "Deployed Yesterday" : "Total Active" }
+    return { setupCount: yesterdayCount || setups.length, setupLabel: yesterdayCount > 0 ? "Published Yesterday" : "Active Setups" }
   }, [setups])
 
   if (!mounted || loading) {
     return (
       <div className="w-full min-h-[80vh] bg-transparent flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-blue-500" size={40} />
-        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Syncing Terminal...</span>
+        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Syncing Dashboard...</span>
       </div>
     )
   }
@@ -159,24 +159,24 @@ function OperatorTerminal() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
               <div className="min-w-0 pr-2">
-                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">{deployLabel}</div>
-                <div className="text-3xl font-black text-white tracking-tighter truncate">{deployCount}</div>
+                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">{setupLabel}</div>
+                <div className="text-3xl font-black text-white tracking-tighter truncate">{setupCount}</div>
               </div>
               <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors shrink-0"><Zap size={20} /></div>
             </div>
 
             <div className="md:col-span-4 xl:col-span-6 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
               <div className="min-w-0 pr-2">
-                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">Market Session</div>
+                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">Trading Session</div>
                 <div className="text-2xl font-black text-white tracking-tight uppercase italic truncate">{getActiveSession()}</div>
               </div>
               <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors animate-pulse shrink-0"><Globe size={20} /></div>
             </div>
             
             <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
-              <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate">Active Plan</div>
+              <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate">Current Tier</div>
               <div className={`text-xl font-black uppercase tracking-widest truncate ${userPlan === 'premium' ? 'text-amber-500' : userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
-                {userPlan === 'premium' ? 'GOLD' : userPlan}
+                {userPlan === 'premium' ? 'Gold Premium' : userPlan}
               </div>
             </div>
           </div>
@@ -207,7 +207,7 @@ function OperatorTerminal() {
           </div>
 
           <div>
-            <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-3 mt-4">Intelligence Feed</h3>
+            <h3 className="text-xs font-black text-neutral-500 uppercase tracking-widest mb-3 mt-4">Market Analysis Feed</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
               {filteredSetups.map(setup => {
                 const isBull = setup.bias?.toUpperCase() === 'BULLISH'
@@ -241,7 +241,7 @@ function OperatorTerminal() {
               })}
               {filteredSetups.length === 0 && (
                 <div className="col-span-full py-12 text-center text-neutral-500 italic border border-dashed border-neutral-800 rounded-xl text-sm">
-                  {searchQuery ? `No setups found matching "${searchQuery}"` : "No active intelligence deployments found."}
+                  {searchQuery ? `No setups found matching "${searchQuery}"` : "No active market setups found."}
                 </div>
               )}
             </div>
@@ -253,7 +253,7 @@ function OperatorTerminal() {
             <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
               <div className="flex items-center">
                 <Activity size={16} className="text-blue-500 mr-2 animate-pulse" />
-                <h3 className="text-sm font-black text-white uppercase tracking-widest">Live Pulse</h3>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">System Updates</h3>
               </div>
               <BellRing size={14} className="text-neutral-500" />
             </div>
@@ -271,12 +271,12 @@ function OperatorTerminal() {
                 </div>
               ) : (
                 <div className="p-4 bg-neutral-900/30 border border-neutral-800/50 rounded-xl text-center">
-                  <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">System Standby</span>
+                  <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">No Active Broadcasts</span>
                 </div>
               )}
               
               <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between">
-                <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Network</span>
+                <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">System Status</span>
                 <span className="text-[10px] font-bold text-emerald-500 flex items-center"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></div> Operational</span>
               </div>
             </div>
@@ -288,7 +288,7 @@ function OperatorTerminal() {
                 <Bookmark size={16} className="text-amber-500 mr-2" />
                 <h3 className="text-sm font-black text-white uppercase tracking-widest">The Vault</h3>
               </div>
-              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Pinned Targets</span>
+              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Saved Setups</span>
             </div>
 
             <div className="space-y-2">
@@ -302,7 +302,7 @@ function OperatorTerminal() {
                     <ChevronRight size={14} className="text-neutral-600 group-hover:text-white transition-colors shrink-0" />
                   </div>
                 ))
-              ) : <div className="py-6 text-center text-neutral-600 text-xs italic font-medium">No setups pinned to vault.</div>}
+              ) : <div className="py-6 text-center text-neutral-600 text-xs italic font-medium">No saved setups.</div>}
             </div>
             
             {watchlist.length > 6 && <button onClick={() => router.push('/vault')} className="w-full mt-3 py-2 text-[10px] font-bold text-neutral-500 hover:text-white uppercase tracking-widest transition-colors">View All {watchlist.length} Targets</button>}
@@ -315,8 +315,8 @@ function OperatorTerminal() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div className="w-full min-h-[80vh] bg-[#050505] flex flex-col items-center justify-center space-y-4"><Activity className="animate-pulse text-blue-500" size={40} /><span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Loading Terminal...</span></div>}>
-      <OperatorTerminal />
+    <Suspense fallback={<div className="w-full min-h-[80vh] bg-[#050505] flex flex-col items-center justify-center space-y-4"><Activity className="animate-pulse text-blue-500" size={40} /><span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Loading Dashboard...</span></div>}>
+      <DashboardContent />
     </Suspense>
   )
 }
