@@ -17,7 +17,7 @@ function OperatorTerminal() {
   const [loading, setLoading] = useState(true)
   const [watchlist, setWatchlist] = useState<any[]>([])
   
-  // NEW: Broadcast State
+  // Broadcast State
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null)
 
   // DYNAMIC FILTERS
@@ -53,7 +53,7 @@ function OperatorTerminal() {
           const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
           if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
 
-          // NEW: Fetch Active Broadcasts targeting this user's tier (or ALL)
+          // Fetch Active Broadcasts targeting this user's tier (or ALL)
           const { data: broadcasts } = await supabase
             .from('notifications')
             .select('*')
@@ -259,7 +259,6 @@ function OperatorTerminal() {
             </div>
             
             <div className="space-y-4">
-              {/* NEW: DYNAMIC BROADCAST RENDERER */}
               {activeBroadcast ? (
                 <div className={`p-4 rounded-xl relative overflow-hidden border ${activeBroadcast.urgency === 'CRITICAL' ? 'bg-red-500/10 border-red-500/20' : activeBroadcast.urgency === 'WARNING' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}>
                   <div className={`absolute top-0 right-0 w-16 h-16 blur-xl rounded-full ${activeBroadcast.urgency === 'CRITICAL' ? 'bg-red-500/20' : activeBroadcast.urgency === 'WARNING' ? 'bg-amber-500/20' : 'bg-blue-500/20'}`}></div>
