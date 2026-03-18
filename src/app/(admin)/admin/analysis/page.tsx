@@ -3,8 +3,20 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-// 👇 FIX: Icons verified. 'Radio' used instead of 'Broadcast'
-import { Plus, Trash2, Activity, TrendingUp, TrendingDown, Clock, Search, ExternalLink, Image as ImageIcon, Minus, Radio } from 'lucide-react'
+// 👇 VERIFIED IMPORTS: All icons used below are explicitly defined here
+import { 
+  Plus, 
+  Trash2, 
+  Activity, 
+  TrendingUp, 
+  TrendingDown, 
+  Clock, 
+  Search, 
+  ExternalLink, 
+  Image as ImageIcon, 
+  Minus, 
+  Radio 
+} from 'lucide-react'
 
 export default function AnalysisArsenalPage() {
   const router = useRouter()
