@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, Bookmark, ChevronRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { CATEGORY_REQUIREMENTS } from '@/lib/assetRegistry'
 
 function OperatorTerminal() {
   const router = useRouter()
@@ -19,15 +20,15 @@ function OperatorTerminal() {
   const [loading, setLoading] = useState(true)
   const [watchlist, setWatchlist] = useState<any[]>([])
 
+// inside OperatorTerminal()...
   const FILTERS = [
     { name: 'All', req: 'free' },
-    { name: 'Forex', req: 'free' },
-    { name: 'Gold', req: 'essential' },
-    { name: 'Crypto', req: 'pro' },
-    { name: 'Indices', req: 'pro' },
-    { name: 'Stocks', req: 'pro' }
+    { name: 'Forex', req: CATEGORY_REQUIREMENTS.FOREX },
+    { name: 'Commodity', req: CATEGORY_REQUIREMENTS.COMMODITY }, // Updated
+    { name: 'Crypto', req: CATEGORY_REQUIREMENTS.CRYPTO },
+    { name: 'Indices', req: CATEGORY_REQUIREMENTS.INDICES },
+    { name: 'Stocks', req: CATEGORY_REQUIREMENTS.STOCKS }
   ]
-
   // INSTANT SEARCH LISTENER
   useEffect(() => {
     const handleSearch = (e: any) => setSearchQuery(e.detail?.toLowerCase() || '')
