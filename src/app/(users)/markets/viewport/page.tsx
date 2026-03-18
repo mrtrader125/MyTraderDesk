@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin } from 'lucide-react'
-import { getSetupAccess } from '@/lib/access' // <-- NEW: Centralized access engine
+import { getSetupAccess } from '@/lib/access'
 
 const getTfWeight = (tf: string) => {
   const cleanTf = tf.trim().toLowerCase();
@@ -46,7 +46,7 @@ function ViewportContent() {
     if (!asset) return router.push('/markets')
 
     async function loadData() {
-      let currentPlan = 'free' // Track locally for the initial paywall check
+      let currentPlan = 'free' 
       
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
@@ -86,7 +86,6 @@ function ViewportContent() {
         if (user) {
            const targetSetup = data.find(d => d.timeframe === targetTf)
            
-           // --- NEW: Using the centralized access logic to log paywall bumps ---
            const accessCheck = getSetupAccess(targetSetup, currentPlan)
            
            if (!accessCheck.hasAccess) {
@@ -150,9 +149,7 @@ function ViewportContent() {
 
   if (!currentSetup) return <div className="h-screen bg-[#050505] flex items-center justify-center text-white">No data found for {asset}</div>
 
-  // --- NEW: Checking access using the centralized engine ---
   const access = getSetupAccess(currentSetup, userPlan)
-  
   const isCurrentBookmarked = watchlist.some(w => w.id === currentSetup.id)
 
   return (
@@ -166,12 +163,17 @@ function ViewportContent() {
          onMouseLeave={access.hasAccess ? handleMouseUp : undefined}
        >
          {access.hasAccess ? (
+           // HIGH QUALITY IMAGE FIX
            <img 
              src={currentSetup.image_url} 
              alt={asset || "Trading Analysis"}
              draggable={false}
              className="max-w-full max-h-full object-contain pointer-events-none origin-left"
-             style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, transition: isDragging ? 'none' : 'transform 0.1s ease-out' }} 
+             style={{ 
+               transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, 
+               transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+               imageRendering: 'high-quality' // Forces browser to optimize rendering
+             }} 
            />
          ) : (
            <div className="w-full max-w-4xl aspect-video bg-[#0a0a0a] border border-neutral-800/50 rounded-[2rem] shadow-2xl" style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})` }} />
@@ -277,9 +279,7 @@ function ViewportContent() {
            
            <div className="flex-1 overflow-y-auto scrollbar-hide py-3 px-2 space-y-1">
              {filteredHistory.map((item, idx) => {
-               // --- NEW: Using the centralized access logic for the sidebar history ---
                const historyAccess = getSetupAccess(item, userPlan)
-               
                const isActive = activeIndex === idx
                const isItemBookmarked = watchlist.some(w => w.id === item.id)
 
