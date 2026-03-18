@@ -174,7 +174,6 @@ export default function AdminDashboard() {
         <div className="bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
           <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center"><BarChart2 size={16} className="mr-2 text-blue-500" /> Clearance Distribution</h3>
           
-          {/* UPDATED DISTRIBUTION BAR */}
           <div className="w-full h-3 rounded-full flex overflow-hidden bg-neutral-900 mb-6 border border-neutral-800">
             <div style={{ width: `${(data.plans.premium / (data.totalUsers || 1)) * 100}%` }} className="h-full bg-amber-500 transition-all duration-1000"></div>
             <div style={{ width: `${(data.plans.pro / (data.totalUsers || 1)) * 100}%` }} className="h-full bg-brand-primary transition-all duration-1000"></div>
