@@ -15,16 +15,11 @@ function TopNavContent() {
   const [user, setUser] = useState<any>(null)
   const [showDropdown, setShowDropdown] = useState(false)
   
-  // Local state for smooth, lag-free typing
   const [searchTerm, setSearchTerm] = useState('')
-  
-  // Ref to track initial mount
   const isInitialSync = useRef(true)
 
-  // 1. Initial Load: Fetch User and set initial search exactly ONCE
   useEffect(() => {
     setMounted(true)
-    
     async function loadUser() {
       const { data: { user } } = await supabase.auth.getUser()
       setUser(user)
@@ -33,15 +28,16 @@ function TopNavContent() {
 
     const initialSearch = searchParams.get('search') || ''
     setSearchTerm(initialSearch)
-  }, []) // <-- Empty array guarantees this never loops
+  }, [])
 
-  // NEW UX FIX: Sync the input box if the URL changes via Sidebar navigation
+  // Sync input box and broadcast instantly if URL changes via Sidebar navigation
   useEffect(() => {
     const currentUrlSearch = searchParams.get('search') || ''
     setSearchTerm(currentUrlSearch)
+    window.dispatchEvent(new CustomEvent('globalSearch', { detail: currentUrlSearch }))
   }, [searchParams])
 
-  // 2. Logic Engine: Debounced URL update and Supabase Logging
+  // Debounced URL update and Supabase Logging
   useEffect(() => {
     if (isInitialSync.current) {
       isInitialSync.current = false
@@ -52,19 +48,13 @@ function TopNavContent() {
       const currentUrlSearch = searchParams.get('search') || ''
       const newSearch = searchTerm.trim()
 
-      // CIRCUIT BREAKER: Only update URL and Database if the word actually changed
       if (newSearch !== currentUrlSearch) {
         const params = new URLSearchParams(searchParams.toString())
-        
-        if (newSearch === '') {
-          params.delete('search')
-        } else {
-          params.set('search', newSearch)
-        }
+        if (newSearch === '') params.delete('search')
+        else params.set('search', newSearch)
         
         router.replace(`${pathname}?${params.toString()}`, { scroll: false })
 
-        // Silently log to Supabase
         if (newSearch !== '' && user) {
           supabase.from('activity_logs').insert([{
             user_id: user.id,
@@ -73,14 +63,16 @@ function TopNavContent() {
           }]).then()
         }
       }
-    }, 400) // 400ms delay for a snappy but safe feel
+    }, 400)
 
     return () => clearTimeout(timer)
   }, [searchTerm, user, pathname, router, searchParams])
 
-  // 3. UI Handler: Updates local state instantly
+  // INSTANT SEARCH BROADCAST
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value)
+    const val = e.target.value
+    setSearchTerm(val)
+    window.dispatchEvent(new CustomEvent('globalSearch', { detail: val }))
   }
 
   const handleSignOut = async () => {
@@ -153,7 +145,6 @@ function TopNavContent() {
   )
 }
 
-// Next.js 15 Suspense Wrapper
 export default function TopNav() {
   return (
     <Suspense fallback={<div className="h-16 w-full border-b border-neutral-800 bg-[#0a0a0a] shrink-0 z-40 sticky top-0"></div>}>
