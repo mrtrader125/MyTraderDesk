@@ -31,7 +31,7 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // 2. Process Successful Subscriptions & Upgrades/Downgrades
+    // 2. Process Successful Subscriptions & Upgrades
     if (eventName === 'subscription_created' || eventName === 'order_created' || eventName === 'subscription_updated') {
       const variantId = payload.data.attributes.variant_id.toString()
 
@@ -47,6 +47,12 @@ export async function POST(req: Request) {
         planTarget = 'essential'; cycleTarget = 'monthly';
       } else if (variantId === process.env.NEXT_PUBLIC_LEMONSQUEEZY_ESSENTIAL_YEARLY_ID) {
         planTarget = 'essential'; cycleTarget = 'yearly';
+      } 
+      // 👇 NEW: Added Gold Premium routing
+      else if (variantId === process.env.NEXT_PUBLIC_LEMONSQUEEZY_PREMIUM_MONTHLY_ID) {
+        planTarget = 'premium'; cycleTarget = 'monthly';
+      } else if (variantId === process.env.NEXT_PUBLIC_LEMONSQUEEZY_PREMIUM_YEARLY_ID) {
+        planTarget = 'premium'; cycleTarget = 'yearly';
       }
 
       // Update the Database
@@ -62,8 +68,9 @@ export async function POST(req: Request) {
       console.log(`User ${userId} updated to ${planTarget.toUpperCase()} (${cycleTarget}) successfully.`)
     }
 
-    // 3. Process Cancellations & Expirations
-    if (eventName === 'subscription_expired' || eventName === 'subscription_cancelled') {
+    // 3. Process Expirations (Downgrades)
+    // 👇 FIX: Removed 'subscription_cancelled'. We ONLY downgrade when the time runs out (expired).
+    if (eventName === 'subscription_expired') {
       const { error } = await supabaseAdmin
         .from('profiles')
         .update({ 
