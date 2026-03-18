@@ -29,6 +29,7 @@ export default function DeploySetupPage() {
     }
   }
 
+  // AUTO-CATEGORIZE MAGIC
   const handleSymbolChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const symbol = e.target.value.toUpperCase();
     const detectedCategory = getAssetCategory(symbol);
@@ -72,7 +73,6 @@ export default function DeploySetupPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      
       <button onClick={() => router.push('/admin/analysis')} className="flex items-center text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">
         <ArrowLeft size={14} className="mr-2" /> Back to Arsenal
       </button>
@@ -108,8 +108,9 @@ export default function DeploySetupPage() {
                   {Object.keys(ASSET_CATEGORIES).map(category => (
                     <option key={category} value={category}>{category.charAt(0) + category.slice(1).toLowerCase()}</option>
                   ))}
-                  <option value="FUNDAMENTAL">Fundamental (Premium)</option>
-                  <option value="SENTIMENTAL">Sentimental (Premium)</option>
+                  {/* Additional Premium Tiers */}
+                  <option value="FUNDAMENTAL">Fundamental</option>
+                  <option value="SENTIMENTAL">Sentimental</option>
                 </select>
               </div>
             </div>
