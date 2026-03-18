@@ -49,7 +49,7 @@ export default function ProfilePage() {
           .update({ full_name: fullName })
           .eq('id', user.id)
 
-        // NEW FIX: Also update their Auth Metadata so the TopNav Avatar updates instantly
+        // Also update their Auth Metadata so the TopNav Avatar updates instantly
         await supabase.auth.updateUser({
           data: { full_name: fullName }
         })
@@ -78,7 +78,7 @@ export default function ProfilePage() {
       {/* PAGE HEADER */}
       <div>
         <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">Profile</h2>
-        <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Manage your operator identity and personal details.</p>
+        <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Manage your account identity and personal details.</p>
       </div>
 
       {/* CARD 1: IDENTITY */}
@@ -109,7 +109,7 @@ export default function ProfilePage() {
                   type="text" 
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Operator Name"
+                  placeholder="Your Name"
                   className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors"
                 />
               </div>
@@ -153,7 +153,7 @@ export default function ProfilePage() {
             </select>
           </div>
           <p className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest mt-2">
-            This affects how setup timestamps are displayed in your terminal.
+            This affects how market timestamps are displayed on your dashboard.
           </p>
         </div>
       </div>
