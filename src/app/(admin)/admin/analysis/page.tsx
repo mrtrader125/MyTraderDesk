@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Plus, Trash2, Activity, TrendingUp, TrendingDown, Clock, Search, ExternalLink, Image as ImageIcon } from 'lucide-react'
+// 👇 FIX: Icons verified. 'Radio' used instead of 'Broadcast'
+import { Plus, Trash2, Activity, TrendingUp, TrendingDown, Clock, Search, ExternalLink, Image as ImageIcon, Minus, Radio } from 'lucide-react'
 
 export default function AnalysisArsenalPage() {
   const router = useRouter()
@@ -29,7 +30,7 @@ export default function AnalysisArsenalPage() {
     const confirmed = window.confirm(`Are you sure you want to permanently delete the setup for ${symbol}? This will also remove it from users' Vaults.`)
     if (!confirmed) return
 
-    setSetups(prev => prev.filter(s => s.id !== id)) // Optimistic update
+    setSetups(prev => prev.filter(s => s.id !== id)) 
     await supabase.from('analyses').delete().eq('id', id)
   }
 
@@ -95,19 +96,15 @@ export default function AnalysisArsenalPage() {
             return (
               <div key={setup.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl overflow-hidden group hover:border-neutral-600 transition-colors shadow-lg flex flex-col">
                 
-               {/* Image Preview - HIGH QUALITY */}
+                {/* Image Preview */}
                 <div className="h-48 w-full bg-black relative overflow-hidden border-b border-neutral-800/50">
                   {setup.image_url ? (
-                    <>
-                      <img 
-                        src={setup.image_url} 
-                        alt={setup.asset_symbol} 
-                        className="w-full h-full object-cover opacity-100 group-hover:scale-105 transition-transform duration-700" 
-                        style={{ imageRendering: 'high-quality' }}
-                      />
-                      {/* Sleek Gradient Overlay for Text Readability instead of dimming the whole image */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/20 to-transparent opacity-80 pointer-events-none" />
-                    </>
+                    <img 
+                      src={setup.image_url} 
+                      alt={setup.asset_symbol} 
+                      className="w-full h-full object-cover opacity-60 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500" 
+                      style={{ imageRendering: 'high-quality' }}
+                    />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-neutral-800"><ImageIcon size={40} /></div>
                   )}
