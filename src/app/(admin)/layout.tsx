@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navLinks = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { name: 'Deploy Analysis', path: '/admin/analysis', icon: Send },
+    { name: 'Publish Setup', path: '/admin/analysis', icon: Send },
     { name: 'User Directory', path: '/admin/users', icon: Users },
     { name: 'Broadcast', path: '/admin/notifications', icon: Radio },
     { name: 'System Logs', path: '/admin/logs', icon: Activity },
@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
         <ShieldAlert className="text-red-500 animate-pulse" size={40} />
-        <span className="text-[10px] font-black tracking-[0.3em] text-neutral-500 uppercase">Verifying Clearance...</span>
+        <span className="text-[10px] font-black tracking-[0.3em] text-neutral-500 uppercase">Authenticating...</span>
       </div>
     )
   }
@@ -66,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Branding */}
         <div className="h-16 flex items-center px-6 border-b border-neutral-800 shrink-0">
           <div className="w-2 h-2 bg-brand-primary rounded-full animate-pulse mr-3"></div>
-          <h1 className="text-sm font-black uppercase tracking-widest text-white">OVERSEER</h1>
+          <h1 className="text-sm font-black uppercase tracking-widest text-white">ADMIN PORTAL</h1>
         </div>
 
         {/* Navigation */}
@@ -96,7 +96,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Admin Footer */}
         <div className="p-4 border-t border-neutral-800 shrink-0">
           <div className="bg-[#050505] border border-neutral-800 rounded-xl p-3 mb-3">
-            <span className="text-[8px] font-black text-brand-primary uppercase tracking-widest block mb-1">Root Access</span>
+            <span className="text-[8px] font-black text-brand-primary uppercase tracking-widest block mb-1">Admin Account</span>
             <span className="text-xs font-bold text-neutral-300 truncate block">{adminEmail}</span>
           </div>
           <button 
@@ -104,7 +104,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg text-red-500 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest transition-colors"
           >
             <LogOut size={14} />
-            <span>Lock Terminal</span>
+            <span>Sign Out</span>
           </button>
         </div>
       </div>
