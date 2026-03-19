@@ -58,7 +58,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <SideNav />
 
         {/* MAIN CONTENT WRAPPER */}
-        <div className="flex-1 flex flex-col relative overflow-hidden bg-[#050505]">
+        <div className="flex-1 flex flex-col relative overflow-hidden bg-neutral-50 dark:bg-[#050505] transition-colors duration-300">
           <TopNav />
           
           <main className="flex-1 overflow-y-auto scrollbar-hide">
