@@ -41,7 +41,7 @@ export default function UpdatePasswordPage() {
             {success ? <CheckCircle size={28} className="text-emerald-500" /> : <Lock size={28} className="text-brand-primary" />}
           </div>
 
-          <h1 className="text-3xl font-black text-white uppercase tracking-tighter italic mb-2">
+          <h1 className="text-3xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter italic mb-2">
             {success ? 'Secured' : 'New Password'}
           </h1>
           <p className="text-neutral-500 text-xs font-bold uppercase tracking-widest mb-8">
@@ -64,14 +64,14 @@ export default function UpdatePasswordPage() {
                   placeholder="••••••••••••"
                   required
                   minLength={6}
-                  className="w-full h-14 bg-white/[0.03] border border-white/10 rounded-2xl px-5 text-white focus:outline-none focus:border-brand-primary/50 transition-all font-medium tracking-widest"
+                  className="w-full h-14 bg-white/[0.03] border border-white/10 rounded-2xl px-5 text-neutral-900 dark:text-white focus:outline-none focus:border-brand-primary/50 transition-all font-medium tracking-widest"
                 />
               </div>
 
               <button
                 type="submit"
                 disabled={loading || password.length < 6}
-                className="w-full h-14 bg-brand-primary hover:bg-brand-primary/90 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-brand-glow flex items-center justify-center gap-3 disabled:opacity-50"
+                className="w-full h-14 bg-brand-primary hover:bg-brand-primary/90 text-neutral-900 dark:text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-brand-glow flex items-center justify-center gap-3 disabled:opacity-50"
               >
                 {loading ? <Loader2 className="animate-spin" size={18} /> : (
                   <>Set Password <ArrowRight size={18} /></>

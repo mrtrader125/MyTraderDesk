@@ -51,7 +51,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!isAuthorized) {
     return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
+      <div className="min-h-screen bg-neutral-50 dark:bg-[#050505] flex flex-col items-center justify-center space-y-4">
         <ShieldAlert className="text-red-500 animate-pulse" size={40} />
         <span className="text-[10px] font-black tracking-[0.3em] text-neutral-500 uppercase">Authenticating...</span>
       </div>
@@ -59,14 +59,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex h-screen bg-[#050505] text-white font-sans overflow-hidden">
+    <div className="flex h-screen bg-neutral-50 dark:bg-[#050505] text-neutral-900 dark:text-white font-sans overflow-hidden">
       {/* SIDEBAR */}
-      <div className="w-64 bg-[#0a0a0a] border-r border-neutral-800 flex flex-col z-20 shrink-0">
+      <div className="w-64 bg-white dark:bg-[#0a0a0a] border-r border-neutral-200 dark:border-neutral-800 flex flex-col z-20 shrink-0">
         
         {/* Branding */}
-        <div className="h-16 flex items-center px-6 border-b border-neutral-800 shrink-0">
+        <div className="h-16 flex items-center px-6 border-b border-neutral-200 dark:border-neutral-800 shrink-0">
           <div className="w-2 h-2 bg-brand-primary rounded-full animate-pulse mr-3"></div>
-          <h1 className="text-sm font-black uppercase tracking-widest text-white">ADMIN PORTAL</h1>
+          <h1 className="text-sm font-black uppercase tracking-widest text-neutral-900 dark:text-white">ADMIN PORTAL</h1>
         </div>
 
         {/* Navigation */}
@@ -80,7 +80,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all group ${
                   isActive 
                     ? 'bg-brand-primary text-black shadow-[0_0_15px_rgba(var(--brand-primary-rgb),0.2)]' 
-                    : 'text-neutral-500 hover:bg-white/5 hover:text-white'
+                    : 'text-neutral-500 hover:bg-white/5 hover:text-neutral-900 dark:text-white'
                 }`}
               >
                 <div className="flex items-center space-x-3">
@@ -94,8 +94,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         {/* Admin Footer */}
-        <div className="p-4 border-t border-neutral-800 shrink-0">
-          <div className="bg-[#050505] border border-neutral-800 rounded-xl p-3 mb-3">
+        <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 shrink-0">
+          <div className="bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 mb-3">
             <span className="text-[8px] font-black text-brand-primary uppercase tracking-widest block mb-1">Admin Account</span>
             <span className="text-xs font-bold text-neutral-300 truncate block">{adminEmail}</span>
           </div>
@@ -110,7 +110,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* MAIN CONTENT AREA */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#050505] relative">
+      <div className="flex-1 flex flex-col h-screen overflow-hidden bg-neutral-50 dark:bg-[#050505] relative">
         {/* Glow effect */}
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] bg-brand-primary/5 blur-[120px] pointer-events-none"></div>
         

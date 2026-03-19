@@ -95,19 +95,19 @@ export default function SecurityPage() {
   return (
     <div className="max-w-3xl space-y-8 pb-12 relative">
       <div>
-        <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">Security</h2>
+        <h2 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tight mb-1">Security</h2>
         <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Manage your account security and password settings.</p>
       </div>
 
       {/* SECURE RESET LINK MODULE */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 md:p-8">
-        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8">
+        <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center">
           <Mail className="mr-2 text-neutral-500" size={16} /> Password Reset Link
         </h3>
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-5 border border-neutral-800 rounded-2xl bg-[#050505]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-5 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-neutral-50 dark:bg-[#050505]">
           <div>
-            <p className="text-xs font-bold text-white tracking-widest">{userEmail}</p>
+            <p className="text-xs font-bold text-neutral-900 dark:text-white tracking-widest">{userEmail}</p>
             <p className="text-[10px] font-medium text-neutral-500 mt-1 max-w-sm">
               We will send a secure, time-sensitive link to this email address to safely reset your password.
             </p>
@@ -116,7 +116,7 @@ export default function SecurityPage() {
           <button 
             onClick={handleSendResetLink}
             disabled={isSendingReset}
-            className="px-6 py-3 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-800 border border-neutral-700 transition-colors shrink-0 disabled:opacity-50 flex items-center justify-center min-w-[160px]"
+            className="px-6 py-3 bg-neutral-900 text-neutral-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-800 border border-neutral-700 transition-colors shrink-0 disabled:opacity-50 flex items-center justify-center min-w-[160px]"
           >
             {isSendingReset ? (
                <><Loader2 size={14} className="animate-spin mr-2" /> Sending...</>
@@ -128,8 +128,8 @@ export default function SecurityPage() {
       </div>
 
       {/* MANUAL PASSWORD UPDATE MODULE */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 md:p-8">
-        <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8">
+        <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center">
           <Key className="mr-2 text-neutral-500" size={16} /> Change Password
         </h3>
         
@@ -141,7 +141,7 @@ export default function SecurityPage() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••" 
-              className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-brand-primary/50 transition-colors" 
+              className="w-full bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-xs text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors" 
             />
           </div>
           <div className="pt-2">

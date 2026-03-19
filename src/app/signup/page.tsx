@@ -60,12 +60,12 @@ export default function Signup() {
               <div className="w-20 h-20 bg-blue-500/10 border border-blue-500/20 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.2)] mb-8">
                 <Send className="text-blue-500 ml-1" size={32} />
               </div>
-              <h2 className="text-2xl font-black text-white tracking-tighter uppercase mb-3">
+              <h2 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tighter uppercase mb-3">
                 Check Your <span className="text-blue-500">Inbox</span>
               </h2>
               <p className="text-xs font-medium text-neutral-400 leading-relaxed mb-8">
                 We've sent a secure verification link to <br/>
-                <span className="text-white font-bold">{email}</span><br/><br/>
+                <span className="text-neutral-900 dark:text-white font-bold">{email}</span><br/><br/>
                 Please click the link to activate your account and access the terminal.
               </p>
               <Link 
@@ -82,7 +82,7 @@ export default function Signup() {
                 <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-xl mb-6">
                   <LineChart className="text-black" size={24} />
                 </div>
-                <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
+                <h1 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tighter uppercase">
                   Create <span className="text-blue-500">Account</span>
                 </h1>
                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mt-2">Join MyTraderDesk</p>
@@ -97,7 +97,7 @@ export default function Signup() {
                     <input 
                       type="text" 
                       placeholder="John Doe"
-                      className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-white text-sm focus:border-blue-500/40 outline-none transition-all placeholder:text-neutral-700"
+                      className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-neutral-900 dark:text-white text-sm focus:border-blue-500/40 outline-none transition-all placeholder:text-neutral-700"
                       onChange={(e) => setFullName(e.target.value)}
                     />
                   </div>
@@ -111,7 +111,7 @@ export default function Signup() {
                     <input 
                       type="email" 
                       placeholder="name@example.com"
-                      className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-white text-sm focus:border-blue-500/40 outline-none transition-all placeholder:text-neutral-700"
+                      className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-neutral-900 dark:text-white text-sm focus:border-blue-500/40 outline-none transition-all placeholder:text-neutral-700"
                       onChange={(e) => setEmail(e.target.value)}
                     />
                   </div>
@@ -125,7 +125,7 @@ export default function Signup() {
                     <input 
                       type="password" 
                       placeholder="••••••••"
-                      className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-white text-sm focus:border-blue-500/40 outline-none transition-all placeholder:text-neutral-700"
+                      className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-neutral-900 dark:text-white text-sm focus:border-blue-500/40 outline-none transition-all placeholder:text-neutral-700"
                       onChange={(e) => setPassword(e.target.value)}
                     />
                   </div>
@@ -149,7 +149,7 @@ export default function Signup() {
 
                 <div className="mt-8 pt-8 border-t border-white/5 text-center">
                   <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                    Already have an account? <Link href="/login" className="ml-2 text-white hover:text-blue-500 transition-colors underline decoration-white/20 underline-offset-4">Log In</Link>
+                    Already have an account? <Link href="/login" className="ml-2 text-neutral-900 dark:text-white hover:text-blue-500 transition-colors underline decoration-white/20 underline-offset-4">Log In</Link>
                   </p>
                 </div>
               </div>

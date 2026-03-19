@@ -153,27 +153,27 @@ function DashboardContent() {
   }
 
   return (
-    <div className="w-full min-h-screen text-white p-6 md:p-8 font-sans">
+    <div className="w-full min-h-screen text-neutral-900 dark:text-white p-6 md:p-8 font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-8 xl:col-span-9 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
+            <div className="md:col-span-4 xl:col-span-3 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
               <div className="min-w-0 pr-2">
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">{setupLabel}</div>
-                <div className="text-3xl font-black text-white tracking-tighter truncate">{setupCount}</div>
+                <div className="text-3xl font-black text-neutral-900 dark:text-white tracking-tighter truncate">{setupCount}</div>
               </div>
-              <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors shrink-0"><Zap size={20} /></div>
+              <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-neutral-900 dark:text-white transition-colors shrink-0"><Zap size={20} /></div>
             </div>
 
-            <div className="md:col-span-4 xl:col-span-6 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
+            <div className="md:col-span-4 xl:col-span-6 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
               <div className="min-w-0 pr-2">
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">Trading Session</div>
-                <div className="text-2xl font-black text-white tracking-tight uppercase italic truncate">{getActiveSession()}</div>
+                <div className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight uppercase italic truncate">{getActiveSession()}</div>
               </div>
-              <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors animate-pulse shrink-0"><Globe size={20} /></div>
+              <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-neutral-900 dark:text-white transition-colors animate-pulse shrink-0"><Globe size={20} /></div>
             </div>
             
-            <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
+            <div className="md:col-span-4 xl:col-span-3 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
               <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate">Current Tier</div>
               <div className={`text-xl font-black uppercase tracking-widest truncate ${userPlan === 'premium' ? 'text-amber-500' : userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
                 {userPlan === 'premium' ? 'Gold Premium' : userPlan}
@@ -181,7 +181,7 @@ function DashboardContent() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800 mt-2">
+          <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-white dark:bg-[#0a0a0a] p-1 rounded-xl border border-neutral-200 dark:border-neutral-800 mt-2">
             {FILTERS.map(f => {
               const locked = isLocked(f.req)
               return (
@@ -197,7 +197,7 @@ function DashboardContent() {
                     }
                   }}
                   className={`flex items-center px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap
-                    ${activeFilter === f.name ? 'bg-white text-black shadow-sm' : locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+                    ${activeFilter === f.name ? 'bg-white text-black shadow-sm' : locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-white/5'}`}
                 >
                   {locked && <Lock size={10} className="mr-1.5" />}
                   {f.name}
@@ -222,14 +222,14 @@ function DashboardContent() {
                       if (user) supabase.from('activity_logs').insert([{ user_id: user.id, action: 'FEED_CLICK', asset_symbol: setup.asset_symbol, timeframe: setup.timeframe }]).then()
                       router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=dashboard`)
                     }}
-                    className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
+                    className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
                   >
                     <div className="flex flex-col min-w-0 pr-2">
-                      <span className="text-sm font-black text-white tracking-tight truncate">{setup.asset_symbol || 'UNKNOWN'}</span>
+                      <span className="text-sm font-black text-neutral-900 dark:text-white tracking-tight truncate">{setup.asset_symbol || 'UNKNOWN'}</span>
                       <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5 truncate">{setup.timeframe || '-'}</span>
                     </div>
                     <div className="flex items-center space-x-1.5 shrink-0">
-                      <button onClick={(e) => toggleBookmark(e, setup)} className="text-neutral-600 hover:text-white transition-colors p-1">
+                      <button onClick={(e) => toggleBookmark(e, setup)} className="text-neutral-600 hover:text-neutral-900 dark:text-white transition-colors p-1">
                         <Bookmark size={14} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
                       </button>
                       <div className={`p-1.5 rounded-lg shrink-0 ${isBull ? 'bg-emerald-500/10 text-emerald-500' : isBear ? 'bg-red-500/10 text-red-500' : 'bg-neutral-800 text-neutral-400'}`}>
@@ -240,7 +240,7 @@ function DashboardContent() {
                 )
               })}
               {filteredSetups.length === 0 && (
-                <div className="col-span-full py-12 text-center text-neutral-500 italic border border-dashed border-neutral-800 rounded-xl text-sm">
+                <div className="col-span-full py-12 text-center text-neutral-500 italic border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl text-sm">
                   {searchQuery ? `No setups found matching "${searchQuery}"` : "No active market setups found."}
                 </div>
               )}
@@ -249,11 +249,11 @@ function DashboardContent() {
         </div>
 
         <div className="lg:col-span-4 xl:col-span-3 space-y-6 sticky top-6">
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
+          <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
               <div className="flex items-center">
                 <Activity size={16} className="text-blue-500 mr-2 animate-pulse" />
-                <h3 className="text-sm font-black text-white uppercase tracking-widest">System Updates</h3>
+                <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">System Updates</h3>
               </div>
               <BellRing size={14} className="text-neutral-500" />
             </div>
@@ -270,7 +270,7 @@ function DashboardContent() {
                   </p>
                 </div>
               ) : (
-                <div className="p-4 bg-neutral-900/30 border border-neutral-800/50 rounded-xl text-center">
+                <div className="p-4 bg-neutral-900/30 border border-neutral-200 dark:border-neutral-800/50 rounded-xl text-center">
                   <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">No Active Broadcasts</span>
                 </div>
               )}
@@ -282,11 +282,11 @@ function DashboardContent() {
             </div>
           </div>
 
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
+          <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
               <div className="flex items-center">
                 <Bookmark size={16} className="text-amber-500 mr-2" />
-                <h3 className="text-sm font-black text-white uppercase tracking-widest">The Vault</h3>
+                <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">The Vault</h3>
               </div>
               <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Saved Setups</span>
             </div>
@@ -296,16 +296,16 @@ function DashboardContent() {
                 watchlist.slice(0, 6).map((item) => (
                   <div key={item.id} onClick={() => router.push(`/markets/viewport?asset=${item.symbol}&tf=${item.timeframe}&from=dashboard`)} className="flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl cursor-pointer transition-colors group">
                     <div className="flex items-center">
-                      <span className="text-xs font-bold text-white tracking-widest truncate max-w-[100px]">{item.symbol}</span>
+                      <span className="text-xs font-bold text-neutral-900 dark:text-white tracking-widest truncate max-w-[100px]">{item.symbol}</span>
                       {item.timeframe && <span className="text-[9px] font-bold text-neutral-500 ml-2 uppercase truncate">{item.timeframe}</span>}
                     </div>
-                    <ChevronRight size={14} className="text-neutral-600 group-hover:text-white transition-colors shrink-0" />
+                    <ChevronRight size={14} className="text-neutral-600 group-hover:text-neutral-900 dark:text-white transition-colors shrink-0" />
                   </div>
                 ))
               ) : <div className="py-6 text-center text-neutral-600 text-xs italic font-medium">No saved setups.</div>}
             </div>
             
-            {watchlist.length > 6 && <button onClick={() => router.push('/vault')} className="w-full mt-3 py-2 text-[10px] font-bold text-neutral-500 hover:text-white uppercase tracking-widest transition-colors">View All {watchlist.length} Targets</button>}
+            {watchlist.length > 6 && <button onClick={() => router.push('/vault')} className="w-full mt-3 py-2 text-[10px] font-bold text-neutral-500 hover:text-neutral-900 dark:text-white uppercase tracking-widest transition-colors">View All {watchlist.length} Targets</button>}
           </div>
         </div>
       </div>
@@ -315,7 +315,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div className="w-full min-h-[80vh] bg-[#050505] flex flex-col items-center justify-center space-y-4"><Activity className="animate-pulse text-blue-500" size={40} /><span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Loading Dashboard...</span></div>}>
+    <Suspense fallback={<div className="w-full min-h-[80vh] bg-neutral-50 dark:bg-[#050505] flex flex-col items-center justify-center space-y-4"><Activity className="animate-pulse text-blue-500" size={40} /><span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Loading Dashboard...</span></div>}>
       <DashboardContent />
     </Suspense>
   )

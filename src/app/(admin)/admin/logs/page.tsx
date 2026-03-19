@@ -134,8 +134,8 @@ export default function SystemLogsPage() {
   }
 
   const ACTION_TYPES = [
-    { id: 'ALL', label: 'All Activity', icon: Database, color: 'text-white border-neutral-700 bg-neutral-800' },
-    { id: 'SEARCH', label: 'Searches', icon: Search, color: 'text-white border-white/20 bg-white/5' },
+    { id: 'ALL', label: 'All Activity', icon: Database, color: 'text-neutral-900 dark:text-white border-neutral-700 bg-neutral-800' },
+    { id: 'SEARCH', label: 'Searches', icon: Search, color: 'text-neutral-900 dark:text-white border-white/20 bg-white/5' },
     { id: 'VIEW_CHART', label: 'Chart Views', icon: Target, color: 'text-blue-500 border-blue-500/30 bg-blue-500/10' },
     { id: 'PAYWALL_BUMP', label: 'Paywall Hits', icon: AlertTriangle, color: 'text-red-500 border-red-500/30 bg-red-500/10' },
     { id: 'FILTER_CLICK', label: 'Category Filters', icon: BarChart2, color: 'text-neutral-400 border-neutral-700 bg-neutral-900' }
@@ -165,7 +165,7 @@ export default function SystemLogsPage() {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">
+          <h2 className="text-3xl font-black text-neutral-900 dark:text-white uppercase tracking-tighter italic">
             System <span className="text-brand-primary">Logs</span>
           </h2>
           <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Master record of all platform activity and engagement</p>
@@ -173,7 +173,7 @@ export default function SystemLogsPage() {
 
         <button 
           onClick={handleExportCSV}
-          className="flex items-center px-6 py-3 bg-[#0a0a0a] border border-neutral-800 text-neutral-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:text-white hover:border-neutral-600 hover:bg-white/5 transition-colors shrink-0"
+          className="flex items-center px-6 py-3 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 text-neutral-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:text-neutral-900 dark:text-white hover:border-neutral-600 hover:bg-white/5 transition-colors shrink-0"
         >
           <ArrowDownToLine size={14} className="mr-2" /> Export to CSV
         </button>
@@ -183,14 +183,14 @@ export default function SystemLogsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Top Overall Views */}
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 shadow-xl">
-          <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center border-b border-neutral-800 pb-3">
+        <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-[2rem] p-6 shadow-xl">
+          <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center border-b border-neutral-200 dark:border-neutral-800 pb-3">
             <Eye size={14} className="mr-2 text-blue-500" /> Most Viewed Charts (Overall)
           </h3>
           <div className="space-y-3">
             {insights.topViews.length > 0 ? insights.topViews.map((item, i) => (
-              <div key={i} className="flex justify-between items-center bg-[#050505] p-3 rounded-xl border border-neutral-800/50">
-                <span className="text-xs font-black text-white">{item.name}</span>
+              <div key={i} className="flex justify-between items-center bg-neutral-50 dark:bg-[#050505] p-3 rounded-xl border border-neutral-200 dark:border-neutral-800/50">
+                <span className="text-xs font-black text-neutral-900 dark:text-white">{item.name}</span>
                 <span className="text-[10px] font-bold text-neutral-500 bg-neutral-900 px-2 py-1 rounded-lg">{item.count} views</span>
               </div>
             )) : <div className="text-[10px] text-neutral-600 text-center py-4">No data yet.</div>}
@@ -198,14 +198,14 @@ export default function SystemLogsPage() {
         </div>
 
         {/* Top Overall Searches */}
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 shadow-xl">
-          <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center border-b border-neutral-800 pb-3">
+        <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-[2rem] p-6 shadow-xl">
+          <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center border-b border-neutral-200 dark:border-neutral-800 pb-3">
             <Search size={14} className="mr-2 text-brand-primary" /> Top Searched Assets
           </h3>
           <div className="space-y-3">
             {insights.topSearches.length > 0 ? insights.topSearches.map((item, i) => (
-              <div key={i} className="flex justify-between items-center bg-[#050505] p-3 rounded-xl border border-neutral-800/50">
-                <span className="text-xs font-black text-white">{item.name}</span>
+              <div key={i} className="flex justify-between items-center bg-neutral-50 dark:bg-[#050505] p-3 rounded-xl border border-neutral-200 dark:border-neutral-800/50">
+                <span className="text-xs font-black text-neutral-900 dark:text-white">{item.name}</span>
                 <span className="text-[10px] font-bold text-neutral-500 bg-neutral-900 px-2 py-1 rounded-lg">{item.count} searches</span>
               </div>
             )) : <div className="text-[10px] text-neutral-600 text-center py-4">No data yet.</div>}
@@ -213,25 +213,25 @@ export default function SystemLogsPage() {
         </div>
 
         {/* Top Views by Tier */}
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col">
-          <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center border-b border-neutral-800 pb-3">
+        <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col">
+          <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center border-b border-neutral-200 dark:border-neutral-800 pb-3">
             <Users size={14} className="mr-2 text-emerald-500" /> Most Viewed by Plan
           </h3>
           <div className="flex-1 flex flex-col justify-center space-y-4">
             
             <div className="flex items-center justify-between">
               <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-brand-primary mr-2"></div><span className="text-[10px] font-bold text-neutral-400 uppercase">Pro</span></div>
-              <span className="text-xs font-black text-white">{insights.tierViews.pro[0]?.name || 'N/A'}</span>
+              <span className="text-xs font-black text-neutral-900 dark:text-white">{insights.tierViews.pro[0]?.name || 'N/A'}</span>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-blue-500 mr-2"></div><span className="text-[10px] font-bold text-neutral-400 uppercase">Essential</span></div>
-              <span className="text-xs font-black text-white">{insights.tierViews.essential[0]?.name || 'N/A'}</span>
+              <span className="text-xs font-black text-neutral-900 dark:text-white">{insights.tierViews.essential[0]?.name || 'N/A'}</span>
             </div>
 
             <div className="flex items-center justify-between">
               <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-neutral-600 mr-2"></div><span className="text-[10px] font-bold text-neutral-400 uppercase">Free</span></div>
-              <span className="text-xs font-black text-white">{insights.tierViews.free[0]?.name || 'N/A'}</span>
+              <span className="text-xs font-black text-neutral-900 dark:text-white">{insights.tierViews.free[0]?.name || 'N/A'}</span>
             </div>
 
           </div>
@@ -240,7 +240,7 @@ export default function SystemLogsPage() {
       </div>
 
       {/* CONTROLS (Search & Filter) */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col lg:flex-row gap-6 mt-4">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col lg:flex-row gap-6 mt-4">
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
           <input 
@@ -248,7 +248,7 @@ export default function SystemLogsPage() {
             placeholder="Search by user name, ID, or asset (e.g., GOLD)..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3.5 pl-11 pr-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors"
+            className="w-full bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3.5 pl-11 pr-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors"
           />
         </div>
 
@@ -261,7 +261,7 @@ export default function SystemLogsPage() {
               key={type.id}
               onClick={() => setActionFilter(type.id)}
               className={`flex items-center px-4 py-3.5 rounded-xl border text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all
-                ${actionFilter === type.id ? type.color : 'bg-[#050505] border-neutral-800 text-neutral-500 hover:border-neutral-600'}`}
+                ${actionFilter === type.id ? type.color : 'bg-neutral-50 dark:bg-[#050505] border-neutral-200 dark:border-neutral-800 text-neutral-500 hover:border-neutral-600'}`}
             >
               <type.icon size={12} className="mr-2" />
               {type.label}
@@ -271,10 +271,10 @@ export default function SystemLogsPage() {
       </div>
 
       {/* THE MATRIX TABLE */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] overflow-hidden shadow-2xl flex flex-col h-[600px]">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-[2rem] overflow-hidden shadow-2xl flex flex-col h-[600px]">
         <div className="overflow-x-auto flex-1">
           <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead className="sticky top-0 z-10 bg-[#050505] border-b border-neutral-800 shadow-sm">
+            <thead className="sticky top-0 z-10 bg-neutral-50 dark:bg-[#050505] border-b border-neutral-200 dark:border-neutral-800 shadow-sm">
               <tr>
                 <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest w-48">Timestamp (UTC)</th>
                 <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">User Profile</th>
@@ -298,7 +298,7 @@ export default function SystemLogsPage() {
                     <tr key={log.id} className="hover:bg-white/[0.02] transition-colors group">
                       
                       <td className="p-5">
-                        <div className="font-mono text-[10px] text-neutral-400 group-hover:text-white transition-colors">
+                        <div className="font-mono text-[10px] text-neutral-400 group-hover:text-neutral-900 dark:text-white transition-colors">
                           <span className="block">{new Date(log.created_at).toLocaleDateString()}</span>
                           <span className="text-neutral-600 group-hover:text-neutral-400">{new Date(log.created_at).toLocaleTimeString()}</span>
                         </div>
@@ -308,7 +308,7 @@ export default function SystemLogsPage() {
                         <div className="flex items-center space-x-3">
                           <div className={`w-1.5 h-6 rounded-full ${getPlanColor(log.user_plan)}`}></div>
                           <div>
-                            <p className="text-xs font-black text-white">{log.user_name}</p>
+                            <p className="text-xs font-black text-neutral-900 dark:text-white">{log.user_name}</p>
                             <p className="text-[8px] font-bold text-neutral-600 font-mono mt-0.5 uppercase">ID: {log.user_id.split('-')[0]}</p>
                           </div>
                         </div>
@@ -322,7 +322,7 @@ export default function SystemLogsPage() {
                       </td>
 
                       <td className="p-5">
-                        <span className="text-xs font-black text-white tracking-widest uppercase">
+                        <span className="text-xs font-black text-neutral-900 dark:text-white tracking-widest uppercase">
                           {log.target}
                         </span>
                       </td>
@@ -335,7 +335,7 @@ export default function SystemLogsPage() {
           </table>
         </div>
         
-        <div className="p-4 bg-[#050505] border-t border-neutral-800 flex items-center justify-between shrink-0">
+        <div className="p-4 bg-neutral-50 dark:bg-[#050505] border-t border-neutral-200 dark:border-neutral-800 flex items-center justify-between shrink-0">
           <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Showing {filteredLogs.length} Records</span>
           <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center">
             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></div> Live Sync Active

@@ -36,7 +36,7 @@ export default function NotificationBell() {
     <div className="relative">
       <button 
         onClick={() => { setIsOpen(!isOpen); setHasNew(false) }}
-        className={`relative p-2 rounded-xl transition-all duration-300 ${isOpen ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
+        className={`relative p-2 rounded-xl transition-all duration-300 ${isOpen ? 'bg-white/10 text-neutral-900 dark:text-white' : 'text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-white/5'}`}
       >
         <Bell size={20} />
         {hasNew && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full border-2 border-[#0a0a0a] animate-pulse" />}
@@ -45,16 +45,16 @@ export default function NotificationBell() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-3 w-80 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-4 py-3 border-b border-neutral-800 flex justify-between items-center bg-[#050505]">
+          <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center bg-neutral-50 dark:bg-[#050505]">
               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Notifications</span>
               {hasNew && <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-[8px] font-black uppercase tracking-widest">New</span>}
             </div>
             
-            <div className="max-h-[350px] overflow-y-auto scrollbar-hide bg-[#0a0a0a]">
+            <div className="max-h-[350px] overflow-y-auto scrollbar-hide bg-white dark:bg-[#0a0a0a]">
               {notifications.length > 0 ? (
                 notifications.map(n => (
-                  <div key={n.id} className="p-4 border-b border-neutral-800/50 hover:bg-white/[0.02] transition-colors group">
+                  <div key={n.id} className="p-4 border-b border-neutral-200 dark:border-neutral-800/50 hover:bg-white/[0.02] transition-colors group">
                     <div className="flex items-start space-x-3 mb-1">
                       <div className="mt-0.5 shrink-0">
                         {n.urgency === 'CRITICAL' ? <Megaphone size={14} className="text-red-500" /> : 
@@ -62,10 +62,10 @@ export default function NotificationBell() {
                          <Info size={14} className="text-blue-500" />}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-xs font-black text-white block truncate mb-1">{n.title}</span>
+                        <span className="text-xs font-black text-neutral-900 dark:text-white block truncate mb-1">{n.title}</span>
                         <p className="text-[10px] text-neutral-400 leading-relaxed font-medium">{n.message}</p>
                         {n.link && (
-                          <a href={n.link} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center text-[9px] font-black uppercase tracking-widest text-brand-primary hover:text-white transition-colors">
+                          <a href={n.link} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center text-[9px] font-black uppercase tracking-widest text-brand-primary hover:text-neutral-900 dark:text-white transition-colors">
                             View Details <ExternalLink size={10} className="ml-1.5" />
                           </a>
                         )}

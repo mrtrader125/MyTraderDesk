@@ -110,9 +110,9 @@ function MarketsContent() {
   )
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden">
+    <div className="w-full min-h-screen bg-neutral-50 dark:bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden">
       <div className="flex flex-col items-center mb-10 mt-2">
-        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-800">
+        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-200 dark:border-neutral-800">
           {CATEGORIES.map((cat, idx) => {
             const locked = isLocked(cat.req)
             const active = activeTab === cat.id
@@ -122,7 +122,7 @@ function MarketsContent() {
                 onClick={() => !locked && handleTabChange(cat.id, idx)}
                 className={`relative flex items-center px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] transition-all
                   ${active ? 'bg-white text-black shadow-xl scale-105' : 
-                    locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-500 hover:text-white'}`}
+                    locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-500 hover:text-neutral-900 dark:text-white'}`}
               >
                 {locked && <Lock size={10} className="mr-1.5" />}
                 {cat.label}
@@ -139,12 +139,12 @@ function MarketsContent() {
           fade-in`}
       >
         {filteredMarkets.length === 0 ? (
-          <div className="max-w-md mx-auto border border-dashed border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
+          <div className="max-w-md mx-auto border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
             {userPlan === 'free' && activeTab !== 'ALL' && activeTab !== 'FOREX' ? (
                <>
                  <Lock size={32} className="text-brand-primary mb-4" />
-                 <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Access Restricted</h3>
-                 <button onClick={() => router.push('/account/subscription')} className="mt-4 px-6 py-2 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg">Upgrade</button>
+                 <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-2">Access Restricted</h3>
+                 <button onClick={() => router.push('/account/subscription')} className="mt-4 px-6 py-2 bg-brand-primary text-neutral-900 dark:text-white text-[10px] font-black uppercase tracking-widest rounded-lg">Upgrade</button>
                </>
             ) : (
               <span className="text-xs font-bold text-neutral-600 uppercase tracking-widest">
@@ -158,30 +158,30 @@ function MarketsContent() {
               <div 
                 key={market.symbol}
                 onClick={() => router.push(`/markets/viewport?asset=${market.symbol}&from=markets`)}
-                className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-neutral-600 transition-all cursor-pointer group flex flex-col min-h-[140px]"
+                className="bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 hover:border-neutral-600 transition-all cursor-pointer group flex flex-col min-h-[140px]"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-black border border-neutral-800 flex items-center justify-center overflow-hidden relative shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-black border border-neutral-200 dark:border-neutral-800 flex items-center justify-center overflow-hidden relative shrink-0">
                       <img src={market.latestImage} className="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-opacity duration-500" alt="" />
                       <div className={`absolute bottom-0 right-0 p-1 backdrop-blur-md ${market.latestBias === 'BULLISH' ? 'text-emerald-500' : 'text-red-500'}`}>
                         {market.latestBias === 'BULLISH' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
                       </div>
                     </div>
                     <div>
-                      <h3 className="text-xl font-black text-white">{market.symbol}</h3>
+                      <h3 className="text-xl font-black text-neutral-900 dark:text-white">{market.symbol}</h3>
                       <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">{market.category}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-neutral-800/50 flex items-center justify-between">
+                <div className="mt-auto pt-4 border-t border-neutral-200 dark:border-neutral-800/50 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-bold text-white bg-white/5 px-2 py-1 rounded">{market.count} Setup{market.count > 1 ? 's' : ''}</span>
+                    <span className="text-[10px] font-bold text-neutral-900 dark:text-white bg-white/5 px-2 py-1 rounded">{market.count} Setup{market.count > 1 ? 's' : ''}</span>
                   </div>
                   <button 
                     onClick={(e) => { e.stopPropagation(); router.push(`/markets/archive?asset=${market.symbol}&from=markets`); }}
-                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
+                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-500 hover:text-neutral-900 dark:text-white hover:bg-white/10 transition-all"
                   >
                     <ArrowRight size={14} />
                   </button>
@@ -197,7 +197,7 @@ function MarketsContent() {
 
 export default function MarketsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-neutral-50 dark:bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
       <MarketsContent />
     </Suspense>
   )

@@ -6,7 +6,7 @@ export default function Home(){
 
 return(
 
-<div className='bg-black text-white min-h-screen'>
+<div className='bg-black text-neutral-900 dark:text-white min-h-screen'>
 
 {/* HERO */}
 
@@ -138,7 +138,7 @@ Full analysis access
 <li>Priority updates</li>
 </ul>
 
-<Link href="/signup" className='block mt-6 px-6 py-3 bg-black text-white rounded-lg'>
+<Link href="/signup" className='block mt-6 px-6 py-3 bg-black text-neutral-900 dark:text-white rounded-lg'>
 Join Premium
 </Link>
 

@@ -77,11 +77,11 @@ export default function LoginPage() {
               <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
                 <AlertTriangle className="text-amber-500" size={28} />
               </div>
-              <h2 className="text-2xl font-black text-white tracking-tighter uppercase mb-2">
+              <h2 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tighter uppercase mb-2">
                 Verification <span className="text-amber-500">Required</span>
               </h2>
               <p className="text-xs font-medium text-neutral-400 leading-relaxed mb-8">
-                You must verify your email address before accessing the terminal. Please check the inbox for <span className="text-white font-bold">{email}</span>.
+                You must verify your email address before accessing the terminal. Please check the inbox for <span className="text-neutral-900 dark:text-white font-bold">{email}</span>.
               </p>
 
               {error && (
@@ -107,7 +107,7 @@ export default function LoginPage() {
 
               <button 
                 onClick={() => { setNeedsVerification(false); setResendSuccess(false); }}
-                className="text-[10px] font-bold text-neutral-500 hover:text-white uppercase tracking-widest transition-colors mt-2"
+                className="text-[10px] font-bold text-neutral-500 hover:text-neutral-900 dark:text-white uppercase tracking-widest transition-colors mt-2"
               >
                 Back to Login
               </button>
@@ -118,9 +118,9 @@ export default function LoginPage() {
               {/* HEADER SECTION */}
               <div className="flex flex-col items-center mb-10">
                 <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-6 shadow-inner relative overflow-hidden">
-                  <Lock className="text-white relative z-10" size={24} />
+                  <Lock className="text-neutral-900 dark:text-white relative z-10" size={24} />
                 </div>
-                <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
+                <h1 className="text-2xl font-black text-neutral-900 dark:text-white tracking-tighter uppercase">
                   Client <span className="text-blue-500">Login</span>
                 </h1>
                 <div className="flex items-center gap-2 mt-2">
@@ -142,7 +142,7 @@ export default function LoginPage() {
                       type="email" 
                       required
                       placeholder="trader@example.com"
-                      className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-white text-sm focus:border-blue-500/40 focus:bg-black/60 outline-none transition-all placeholder:text-neutral-700"
+                      className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-neutral-900 dark:text-white text-sm focus:border-blue-500/40 focus:bg-black/60 outline-none transition-all placeholder:text-neutral-700"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                     />
@@ -163,7 +163,7 @@ export default function LoginPage() {
                       type="password" 
                       required
                       placeholder="••••••••"
-                      className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-white text-sm focus:border-blue-500/40 focus:bg-black/60 outline-none transition-all placeholder:text-neutral-700"
+                      className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-neutral-900 dark:text-white text-sm focus:border-blue-500/40 focus:bg-black/60 outline-none transition-all placeholder:text-neutral-700"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                     />
@@ -200,7 +200,7 @@ export default function LoginPage() {
               <div className="mt-8 pt-8 border-t border-white/5 text-center">
                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
                   Don't have an account? 
-                  <Link href="/signup" className="ml-2 text-white hover:text-blue-500 transition-colors underline decoration-white/20 underline-offset-4">
+                  <Link href="/signup" className="ml-2 text-neutral-900 dark:text-white hover:text-blue-500 transition-colors underline decoration-white/20 underline-offset-4">
                     Sign Up
                   </Link>
                 </p>

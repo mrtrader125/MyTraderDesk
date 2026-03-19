@@ -9,7 +9,7 @@ export default function BillingPage() {
   return (
     <div className="max-w-3xl space-y-8 pb-12">
       <div>
-        <h2 className="text-xl font-black text-white uppercase tracking-tight mb-1">Billing & Invoices</h2>
+        <h2 className="text-xl font-black text-neutral-900 dark:text-white uppercase tracking-tight mb-1">Billing & Invoices</h2>
         <p className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Manage your payment methods and financial history.</p>
       </div>
 
@@ -20,7 +20,7 @@ export default function BillingPage() {
             <ShieldCheck className="text-emerald-500" size={20} />
           </div>
           <div>
-            <h4 className="text-white text-sm font-black uppercase tracking-tight">Secure Billing Active</h4>
+            <h4 className="text-neutral-900 dark:text-white text-sm font-black uppercase tracking-tight">Secure Billing Active</h4>
             <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest leading-relaxed mt-1">
               Your payments are processed securely via Lemon Squeezy. <br/>
               We do not store your credit card details on our servers.
@@ -30,12 +30,12 @@ export default function BillingPage() {
       </div>
 
       {/* PORTAL ACCESS CARD */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2.5rem] p-10 text-center">
-        <div className="w-16 h-16 bg-neutral-900 border border-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
+      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] p-10 text-center">
+        <div className="w-16 h-16 bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
           <CreditCard className="text-neutral-400" size={28} />
         </div>
         
-        <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2">Self-Service Portal</h3>
+        <h3 className="text-lg font-black text-neutral-900 dark:text-white uppercase tracking-tight mb-2">Self-Service Portal</h3>
         <p className="text-[11px] font-medium text-neutral-500 uppercase tracking-widest max-w-sm mx-auto mb-8 leading-relaxed">
           Update your payment method, download past invoices, or change your billing cycle directly through our secure partner portal.
         </p>

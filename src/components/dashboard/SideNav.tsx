@@ -35,10 +35,10 @@ export default function SideNav() {
   }
 
   return (
-    <aside className={`${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-screen shrink-0 z-50`}>
+    <aside className={`${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 border-r border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0a0a0a] flex flex-col h-screen shrink-0 z-50`}>
       
       {/* BRANDING & TOGGLE */}
-      <div className="h-16 flex items-center px-4 border-b border-neutral-800 justify-between overflow-hidden">
+      <div className="h-16 flex items-center px-4 border-b border-neutral-200 dark:border-neutral-800 justify-between overflow-hidden">
         {isOpen && (
           <span className="font-black tracking-tight text-lg uppercase flex items-center whitespace-nowrap">
             <span className="text-blue-500 mr-1">MY</span> TRADER DESK
@@ -61,7 +61,7 @@ export default function SideNav() {
           return (
             <Link key={item.name} href={item.href}>
               <div className={`flex items-center w-full p-3 rounded-xl transition-colors mb-2
-                ${isActive ? 'bg-white/10 text-white' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}>
+                ${isActive ? 'bg-white/10 text-neutral-900 dark:text-white' : 'text-neutral-400 hover:bg-white/5 hover:text-neutral-900 dark:text-white'}`}>
                 <item.icon size={20} className="shrink-0" />
                 {isOpen && <span className="ml-3 font-bold text-sm uppercase tracking-widest truncate">{item.name}</span>}
               </div>
@@ -71,7 +71,7 @@ export default function SideNav() {
       </nav>
 
       {/* DISCONNECT / LOGOUT */}
-      <div className="p-4 border-t border-neutral-800">
+      <div className="p-4 border-t border-neutral-200 dark:border-neutral-800">
         <button 
           onClick={handleSignOut}
           className="flex items-center w-full p-3 rounded-xl text-neutral-400 hover:bg-red-500/10 hover:text-red-500 transition-colors"

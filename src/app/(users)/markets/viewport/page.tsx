@@ -159,19 +159,19 @@ function ViewportContent() {
   const handleMouseUp = () => setIsDragging(false)
 
   if (loading) return (
-    <div className="h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
+    <div className="h-screen bg-neutral-50 dark:bg-[#050505] flex flex-col items-center justify-center space-y-4">
       <Activity className="animate-pulse text-blue-500" size={32} />
       <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Connecting...</span>
     </div>
   )
 
-  if (!currentSetup) return <div className="h-screen bg-[#050505] flex items-center justify-center text-white">No data found for {asset}</div>
+  if (!currentSetup) return <div className="h-screen bg-neutral-50 dark:bg-[#050505] flex items-center justify-center text-neutral-900 dark:text-white">No data found for {asset}</div>
 
   const access = getSetupAccess(currentSetup, userPlan)
   const isCurrentBookmarked = watchlist.some(w => w.id === currentSetup.id)
 
   return (
-    <div className="fixed inset-0 bg-[#050505] flex overflow-hidden text-white select-none touch-none font-sans">
+    <div className="fixed inset-0 bg-neutral-50 dark:bg-[#050505] flex overflow-hidden text-neutral-900 dark:text-white select-none touch-none font-sans">
        <div 
          className={`absolute inset-0 z-10 flex items-center justify-start pl-6 md:pl-16 pr-20 pt-20 pb-10 ${access.hasAccess ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
          onWheel={access.hasAccess ? handleWheel : undefined}
@@ -193,28 +193,28 @@ function ViewportContent() {
              }} 
            />
          ) : (
-           <div className="w-full max-w-4xl aspect-video bg-[#0a0a0a] border border-neutral-800/50 rounded-[2rem] shadow-2xl" style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})` }} />
+           <div className="w-full max-w-4xl aspect-video bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800/50 rounded-[2rem] shadow-2xl" style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})` }} />
          )}
        </div>
 
        {!access.hasAccess && (
          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-           <div className="max-w-sm w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-800 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden pointer-events-auto">
+           <div className="max-w-sm w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden pointer-events-auto">
              <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full pointer-events-none ${access.requiredTier === 'pro' ? 'bg-brand-primary/20' : 'bg-blue-600/20'}`}></div>
-             <div className="w-14 h-14 bg-black border border-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-6 relative z-10 shadow-lg">
+             <div className="w-14 h-14 bg-black border border-neutral-200 dark:border-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-6 relative z-10 shadow-lg">
                 <Lock size={20} className={access.requiredTier === 'pro' ? 'text-brand-primary' : 'text-blue-500'} />
              </div>
-             <h2 className="text-lg font-black text-white tracking-tight uppercase mb-2 relative z-10">Clearance Required</h2>
+             <h2 className="text-lg font-black text-neutral-900 dark:text-white tracking-tight uppercase mb-2 relative z-10">Clearance Required</h2>
              <p className="text-[11px] font-medium text-neutral-400 mb-6 relative z-10 leading-relaxed">
-               The <span className="text-white font-bold">{currentSetup.timeframe}</span> setup for <span className="text-white font-bold">{asset}</span> is restricted. It will unlock for your tier in:
+               The <span className="text-neutral-900 dark:text-white font-bold">{currentSetup.timeframe}</span> setup for <span className="text-neutral-900 dark:text-white font-bold">{asset}</span> is restricted. It will unlock for your tier in:
              </p>
-             <div className="flex items-center justify-center space-x-2 bg-black border border-neutral-800 rounded-xl py-3 mb-6 relative z-10">
+             <div className="flex items-center justify-center space-x-2 bg-black border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 mb-6 relative z-10">
                <Clock size={14} className="text-neutral-500" />
-               <span className="text-sm font-black text-white tracking-widest">{access.countdownText}</span>
+               <span className="text-sm font-black text-neutral-900 dark:text-white tracking-widest">{access.countdownText}</span>
              </div>
              <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-6 relative z-10">(You can still view older history via the right sidebar)</p>
-             <div className="relative z-10 pt-5 border-t border-neutral-800">
-               <button onClick={() => router.push('/account/subscription')} className={`w-full py-3 text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center space-x-2 transition-colors ${access.requiredTier === 'pro' ? 'bg-brand-primary text-white hover:bg-brand-primary/90' : 'bg-blue-600 text-white hover:bg-blue-500'}`}>
+             <div className="relative z-10 pt-5 border-t border-neutral-200 dark:border-neutral-800">
+               <button onClick={() => router.push('/account/subscription')} className={`w-full py-3 text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center space-x-2 transition-colors ${access.requiredTier === 'pro' ? 'bg-brand-primary text-neutral-900 dark:text-white hover:bg-brand-primary/90' : 'bg-blue-600 text-neutral-900 dark:text-white hover:bg-blue-500'}`}>
                  {access.requiredTier === 'pro' ? <Crown size={14} /> : <Shield size={14} />}
                  <span>Upgrade to {access.requiredTier.toUpperCase()}</span>
                </button>
@@ -229,37 +229,37 @@ function ViewportContent() {
            {/* 🚨 UPDATED BACK BUTTON */}
 <button 
   onClick={() => router.push(backPath)} 
-  className="w-10 h-10 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"
+  className="w-10 h-10 bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-neutral-900 dark:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"
 >
   <ArrowLeft size={16} />
 </button>           
-           <div className="h-10 bg-[#0a0a0a] border border-neutral-800 px-4 rounded-xl flex items-center space-x-3 shadow-lg pointer-events-auto">
-             <span className="text-sm font-black uppercase tracking-widest text-white">{asset}</span>
+           <div className="h-10 bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 px-4 rounded-xl flex items-center space-x-3 shadow-lg pointer-events-auto">
+             <span className="text-sm font-black uppercase tracking-widest text-neutral-900 dark:text-white">{asset}</span>
              <div className="w-px h-4 bg-neutral-800"></div>
-             <button onClick={(e) => toggleBookmark(e, currentSetup)} className="text-neutral-500 hover:text-white transition-colors">
+             <button onClick={(e) => toggleBookmark(e, currentSetup)} className="text-neutral-500 hover:text-neutral-900 dark:text-white transition-colors">
                 <Bookmark size={14} className={isCurrentBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
               </button>
              {access.hasAccess && (
                <>
                  <div className="w-px h-4 bg-neutral-800"></div>
-                 <button onClick={() => setShowInfo(!showInfo)} className={`transition-colors w-6 h-6 flex items-center justify-center rounded-md ${showInfo ? 'bg-white text-black' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}>
+                 <button onClick={() => setShowInfo(!showInfo)} className={`transition-colors w-6 h-6 flex items-center justify-center rounded-md ${showInfo ? 'bg-white text-black' : 'text-neutral-400 hover:text-neutral-900 dark:text-white hover:bg-white/10'}`}>
                    {showInfo ? <X size={14} /> : <Info size={14} />}
                  </button>
                </>
              )}
            </div>
            {showInfo && access.hasAccess && (
-             <div className="absolute top-12 left-[125px] w-[300px] max-h-[60vh] overflow-y-auto bg-[#0a0a0a]/95 backdrop-blur-xl border border-neutral-800 rounded-2xl p-5 shadow-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4">
-               <h3 className="text-xs font-black text-white mb-2 uppercase tracking-wider">{currentSetup.title || 'Analysis Notes'}</h3>
+             <div className="absolute top-12 left-[125px] w-[300px] max-h-[60vh] overflow-y-auto bg-[#0a0a0a]/95 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 shadow-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4">
+               <h3 className="text-xs font-black text-neutral-900 dark:text-white mb-2 uppercase tracking-wider">{currentSetup.title || 'Analysis Notes'}</h3>
                <p className="text-[11px] font-medium text-neutral-400 leading-relaxed whitespace-pre-wrap">{currentSetup.content || 'No additional notes provided.'}</p>
-               <div className="mt-3 pt-3 border-t border-neutral-800 flex items-center space-x-2 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
+               <div className="mt-3 pt-3 border-t border-neutral-200 dark:border-neutral-800 flex items-center space-x-2 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
                  <Clock size={10} /><span>{new Date(currentSetup.created_at).toLocaleDateString()}</span>
                </div>
              </div>
            )}
          </div>
 
-         <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-[#0a0a0a] border border-neutral-800 p-1.5 rounded-xl shadow-lg pointer-events-auto z-50 flex items-center space-x-1">
+         <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-1.5 rounded-xl shadow-lg pointer-events-auto z-50 flex items-center space-x-1">
             {timeframes.map(t => {
               const isSelected = selectedTf === t
               return (
@@ -282,7 +282,7 @@ function ViewportContent() {
                     }
                   }}
                   className={`flex items-center px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors
-                    ${isSelected ? 'bg-white text-black' : 'text-neutral-500 hover:text-white hover:bg-white/5'}`}
+                    ${isSelected ? 'bg-white text-black' : 'text-neutral-500 hover:text-neutral-900 dark:text-white hover:bg-white/5'}`}
                 >
                   {t}
                 </button>
@@ -290,13 +290,13 @@ function ViewportContent() {
             })}
          </div>
 
-         <div className={`absolute right-0 top-0 bottom-0 z-40 flex flex-col shadow-2xl transition-all duration-300 border-l border-neutral-800 pointer-events-auto ${isSidebarPinned ? 'w-56 bg-[#0a0a0a]/95' : 'w-12 hover:w-56 bg-[#0a0a0a]/80 backdrop-blur-md group/sidebar'}`}>
-           <div className={`h-14 flex items-center border-b border-neutral-800 transition-all ${isSidebarPinned ? 'justify-between px-4' : 'justify-center group-hover/sidebar:justify-between group-hover/sidebar:px-4'}`}>
+         <div className={`absolute right-0 top-0 bottom-0 z-40 flex flex-col shadow-2xl transition-all duration-300 border-l border-neutral-200 dark:border-neutral-800 pointer-events-auto ${isSidebarPinned ? 'w-56 bg-[#0a0a0a]/95' : 'w-12 hover:w-56 bg-[#0a0a0a]/80 backdrop-blur-md group/sidebar'}`}>
+           <div className={`h-14 flex items-center border-b border-neutral-200 dark:border-neutral-800 transition-all ${isSidebarPinned ? 'justify-between px-4' : 'justify-center group-hover/sidebar:justify-between group-hover/sidebar:px-4'}`}>
              <div className="flex items-center">
                <Clock size={14} className="text-neutral-500 shrink-0" />
                <span className={`text-[10px] font-black text-neutral-300 uppercase tracking-widest whitespace-nowrap transition-all duration-300 ${isSidebarPinned ? 'opacity-100 w-auto ml-2' : 'opacity-0 w-0 overflow-hidden group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 group-hover/sidebar:ml-2'}`}>History</span>
              </div>
-             <button onClick={() => setIsSidebarPinned(!isSidebarPinned)} className={`text-neutral-500 hover:text-white transition-colors ${isSidebarPinned ? 'block' : 'hidden group-hover/sidebar:block'}`} title={isSidebarPinned ? "Close Panel" : "Pin Panel"}>
+             <button onClick={() => setIsSidebarPinned(!isSidebarPinned)} className={`text-neutral-500 hover:text-neutral-900 dark:text-white transition-colors ${isSidebarPinned ? 'block' : 'hidden group-hover/sidebar:block'}`} title={isSidebarPinned ? "Close Panel" : "Pin Panel"}>
                {isSidebarPinned ? <X size={14} /> : <Pin size={14} />}
              </button>
            </div>
@@ -318,7 +318,7 @@ function ViewportContent() {
                    </div>
                    <div className={`items-center justify-between w-full min-w-0 ${isSidebarPinned ? 'flex' : 'hidden group-hover/sidebar:flex'}`}>
                      <div className="flex flex-col items-start min-w-0 pr-2">
-                       <span className={`text-[10px] font-bold uppercase tracking-wider truncate ${isActive ? 'text-white' : 'text-neutral-400'}`}>{new Date(item.created_at).toLocaleDateString()}</span>
+                       <span className={`text-[10px] font-bold uppercase tracking-wider truncate ${isActive ? 'text-neutral-900 dark:text-white' : 'text-neutral-400'}`}>{new Date(item.created_at).toLocaleDateString()}</span>
                        <span className="text-[8px] font-bold text-neutral-600">{new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                      </div>
                      <div className="flex items-center space-x-1.5 shrink-0">
@@ -340,7 +340,7 @@ function ViewportContent() {
 // Next.js 15 Suspense Wrapper
 export default function ViewportPage() {
   return (
-    <Suspense fallback={<div className="h-screen bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
+    <Suspense fallback={<div className="h-screen bg-neutral-50 dark:bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
       <ViewportContent />
     </Suspense>
   )

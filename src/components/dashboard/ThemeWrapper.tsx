@@ -19,7 +19,7 @@ export default function ThemeWrapper({ children }: { children: React.ReactNode }
   return (
     <div 
       data-theme={theme !== 'free' ? theme : undefined} 
-      className="flex h-screen bg-neutral-50 dark:bg-app-bg text-neutral-900 dark:text-neutral-200 overflow-hidden font-sans selection:bg-brand-primary/30 transition-colors duration-1000"
+      className="flex h-screen bg-neutral-50 dark:bg-app-bg text-neutral-900 dark:text-neutral-800 dark:text-neutral-200 overflow-hidden font-sans selection:bg-brand-primary/30 transition-colors duration-1000"
     >
       {children}
     </div>
