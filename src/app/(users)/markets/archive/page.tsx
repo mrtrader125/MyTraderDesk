@@ -66,7 +66,7 @@ function ArchiveContent() {
 
     return (
       <div 
-        onClick={() => router.push(`/markets/viewport?asset=${asset}`)}
+        onClick={() => router.push(`/markets/viewport?asset=${asset}&from=archive`)}
         className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-neutral-600 transition-all duration-300 shadow-sm relative min-h-[220px]"
       >
         <div className="h-32 w-full bg-black relative overflow-hidden border-b border-neutral-800/50">
