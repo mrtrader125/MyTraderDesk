@@ -98,7 +98,7 @@ function TopNavContent() {
               <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)}></div>
               <div className="absolute right-0 mt-3 w-56 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl z-20 overflow-hidden py-2 animate-in fade-in zoom-in-95 duration-200">
                 <div className="px-4 py-3 border-b border-neutral-800 mb-2">
-                  <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Active Operator</p>
+                  <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Account</p>
                   <p className="text-xs font-bold text-white truncate mt-1">{user?.email || '...'}</p>
                 </div>
                 <button 
