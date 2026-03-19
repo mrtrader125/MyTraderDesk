@@ -17,7 +17,7 @@ import {
   Radio 
 } from 'lucide-react'
 
-export default function AnalysisArsenalPage() {
+export default function AdminAnalysisPage() {
   const router = useRouter()
   const [setups, setSetups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -108,7 +108,7 @@ export default function AnalysisArsenalPage() {
               </div>
               
               <p className="text-[10px] font-medium text-neutral-400 line-clamp-2 flex-1 mb-4">
-                {setup.title || setup.content || "No tactical notes."}
+                {setup.title || setup.content || "No analysis notes."}
               </p>
 
               <div className="flex items-center gap-2 mt-auto">
@@ -136,7 +136,7 @@ export default function AnalysisArsenalPage() {
     return (
       <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-brand-primary" size={40} />
-        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Loading Arsenal...</span>
+        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Loading Setups...</span>
       </div>
     )
   }
@@ -148,9 +148,9 @@ export default function AnalysisArsenalPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">
-            Intelligence <span className="text-brand-primary">Arsenal</span>
+            Market <span className="text-brand-primary">Setups</span>
           </h2>
-          <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Manage active deployments</p>
+          <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Manage published analysis</p>
         </div>
 
         <div className="flex items-center gap-4">
@@ -168,7 +168,7 @@ export default function AnalysisArsenalPage() {
             onClick={() => router.push('/admin/analysis/new')}
             className="flex items-center px-5 py-2.5 bg-brand-primary text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-white/90 transition-colors shadow-lg shrink-0"
           >
-            <Plus size={14} className="mr-2" /> Deploy Setup
+            <Plus size={14} className="mr-2" /> Publish Setup
           </button>
         </div>
       </div>
@@ -176,7 +176,7 @@ export default function AnalysisArsenalPage() {
       {filteredSetups.length === 0 ? (
         <div className="w-full bg-[#0a0a0a] border border-dashed border-neutral-800 rounded-3xl p-16 flex flex-col items-center text-center">
           <Radio size={48} className="text-neutral-700 mb-6" />
-          <h3 className="text-lg font-black text-white uppercase tracking-widest mb-2">No Intelligence Found</h3>
+          <h3 className="text-lg font-black text-white uppercase tracking-widest mb-2">No Setups Found</h3>
         </div>
       ) : (
         <div className="space-y-10">
@@ -185,7 +185,7 @@ export default function AnalysisArsenalPage() {
           {grouped.today.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">
-                Deployed Today <div className="ml-4 h-px flex-1 bg-neutral-800"></div>
+                Published Today <div className="ml-4 h-px flex-1 bg-neutral-800"></div>
               </h2>
               {renderSetupGrid(grouped.today)}
             </section>
@@ -205,7 +205,7 @@ export default function AnalysisArsenalPage() {
           {grouped.older.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
               <h2 className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 flex items-center">
-                Older Deployments <div className="ml-4 h-px flex-1 bg-neutral-800/30"></div>
+                Older Setups <div className="ml-4 h-px flex-1 bg-neutral-800/30"></div>
               </h2>
               <div className="opacity-80 hover:opacity-100 transition-opacity">
                 {renderSetupGrid(grouped.older)}
