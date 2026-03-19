@@ -158,7 +158,7 @@ function MarketsContent() {
             {filteredMarkets.map(market => (
               <div 
                 key={market.symbol}
-                onClick={() => router.push(`/markets/viewport?asset=${market.symbol}`)}
+                onClick={() => router.push(`/markets/viewport?asset=${market.symbol}&from=markets`)}
                 className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-neutral-600 transition-all cursor-pointer group flex flex-col min-h-[140px]"
               >
                 <div className="flex justify-between items-start mb-4">
