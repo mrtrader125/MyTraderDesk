@@ -131,7 +131,7 @@ function VaultContent() {
 
     return (
       <div 
-        onClick={() => router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`)} 
+        onClick={() => router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=vault`)}
         className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-amber-500/40 hover:shadow-[0_0_15px_rgba(245,158,11,0.05)] transition-all duration-300 min-h-[180px] shadow-sm"
       >
         <div className="h-28 w-full bg-black relative overflow-hidden border-b border-neutral-800/50 shrink-0">
