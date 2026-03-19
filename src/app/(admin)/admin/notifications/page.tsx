@@ -16,9 +16,9 @@ import {
   Link as LinkIcon 
 } from 'lucide-react'
 
-export default function BroadcastArrayPage() {
+export default function BroadcastPage() {
   const [loading, setLoading] = useState(true)
-  const [transmitting, setTransmitting] = useState(false)
+  const [isSending, setIsSending] = useState(false)
   const [history, setHistory] = useState<any[]>([])
 
   // Composer State
@@ -49,10 +49,10 @@ export default function BroadcastArrayPage() {
     }
   }
 
-  const handleTransmit = async () => {
+  const handleSend = async () => {
     if (!title || !message) return alert("Title and Message are required.")
     
-    setTransmitting(true)
+    setIsSending(true)
     try {
       // Targets the modernized schema columns
       const { error } = await supabase.from('notifications').insert([{
@@ -73,9 +73,9 @@ export default function BroadcastArrayPage() {
       fetchHistory()
     } catch (err) {
       console.error(err)
-      alert("Transmission failed. Ensure you ran the SQL script to add the new columns.")
+      alert("Broadcast failed. Ensure you ran the SQL script to add the new columns.")
     } finally {
-      setTransmitting(false)
+      setIsSending(false)
     }
   }
 
@@ -88,7 +88,7 @@ export default function BroadcastArrayPage() {
     return (
       <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-brand-primary" size={40} />
-        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Initializing Broadcast Array...</span>
+        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Loading Broadcasts...</span>
       </div>
     )
   }
@@ -98,9 +98,9 @@ export default function BroadcastArrayPage() {
       
       <div>
         <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">
-          Broadcast <span className="text-brand-primary">Array</span>
+          System <span className="text-brand-primary">Broadcasts</span>
         </h2>
-        <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Transmit global network alerts and dashboard broadcasts</p>
+        <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Send global platform alerts and dashboard broadcasts</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -110,13 +110,13 @@ export default function BroadcastArrayPage() {
             <div className="absolute -top-32 -right-32 w-64 h-64 bg-brand-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
             
             <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center relative z-10">
-              <Radio size={16} className="mr-2 text-brand-primary" /> Transmission Composer
+              <Radio size={16} className="mr-2 text-brand-primary" /> Create Broadcast
             </h3>
 
             <div className="space-y-6 relative z-10">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Transmission Type</label>
+                  <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Broadcast Type</label>
                   <select value={type} onChange={(e: any) => setType(e.target.value)} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors appearance-none">
                     <option value="BROADCAST">Dashboard Broadcast</option>
                     <option value="ALERT">Notification Bell</option>
@@ -133,7 +133,7 @@ export default function BroadcastArrayPage() {
               </div>
 
               <div className="space-y-2 pt-2 border-t border-neutral-800/50">
-                <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Target Network Tier</label>
+                <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Target Subscription Tier</label>
                 <div className="flex flex-wrap gap-2">
                   {['ALL', 'FREE', 'ESSENTIAL', 'PRO', 'PREMIUM'].map((tier) => (
                     <button
@@ -150,11 +150,11 @@ export default function BroadcastArrayPage() {
               <div className="space-y-4 pt-2 border-t border-neutral-800/50">
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Headline</label>
-                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Transmission Subject" className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-sm font-black text-white outline-none focus:border-brand-primary/50 transition-colors" />
+                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Broadcast Subject" className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-sm font-black text-white outline-none focus:border-brand-primary/50 transition-colors" />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Message Payload</label>
-                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message data..." className="w-full h-24 bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-medium text-white outline-none focus:border-brand-primary/50 transition-colors resize-none" />
+                  <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Message Content</label>
+                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message content..." className="w-full h-24 bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-medium text-white outline-none focus:border-brand-primary/50 transition-colors resize-none" />
                 </div>
                 
                 {/* ATTACHMENT LINK FIELD */}
@@ -166,9 +166,9 @@ export default function BroadcastArrayPage() {
                 </div>
               </div>
 
-              <button onClick={handleTransmit} disabled={transmitting || !title || !message} className="w-full py-4 bg-brand-primary text-black text-xs font-black uppercase tracking-widest rounded-xl hover:bg-white/90 transition-all shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
-                {transmitting ? <Activity className="animate-spin mr-2" size={16} /> : <Send className="mr-2" size={16} />}
-                {transmitting ? 'Transmitting...' : 'Execute Transmission'}
+              <button onClick={handleSend} disabled={isSending || !title || !message} className="w-full py-4 bg-brand-primary text-black text-xs font-black uppercase tracking-widest rounded-xl hover:bg-white/90 transition-all shadow-[0_0_20px_rgba(var(--brand-primary-rgb),0.3)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center">
+                {isSending ? <Activity className="animate-spin mr-2" size={16} /> : <Send className="mr-2" size={16} />}
+                {isSending ? 'Sending...' : 'Send Broadcast'}
               </button>
             </div>
           </div>
@@ -176,13 +176,13 @@ export default function BroadcastArrayPage() {
 
         <div className="lg:col-span-5 space-y-6">
           <div className="bg-[#050505] border border-neutral-800 border-dashed rounded-[2rem] p-6 text-center">
-            <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-6 flex items-center justify-center"><Globe size={14} className="mr-2 text-neutral-600" /> Live Operator Preview</h3>
+            <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-6 flex items-center justify-center"><Globe size={14} className="mr-2 text-neutral-600" /> Live User Preview</h3>
             <div className="flex items-center justify-center min-h-[150px]">
               {type === 'BROADCAST' ? (
                 <div className={`w-full p-4 rounded-xl text-left relative overflow-hidden border ${urgency === 'CRITICAL' ? 'bg-red-500/10 border-red-500/20' : urgency === 'WARNING' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-blue-500/10 border-blue-500/20'}`}>
                   <div className={`absolute top-0 right-0 w-16 h-16 blur-xl rounded-full ${urgency === 'CRITICAL' ? 'bg-red-500/20' : urgency === 'WARNING' ? 'bg-amber-500/20' : 'bg-blue-500/20'}`}></div>
                   <span className={`text-[9px] font-black uppercase tracking-widest block mb-1.5 relative z-10 ${urgency === 'CRITICAL' ? 'text-red-400' : urgency === 'WARNING' ? 'text-amber-400' : 'text-blue-400'}`}>{title || 'System Broadcast'}</span>
-                  <p className={`text-xs leading-relaxed font-medium relative z-10 ${urgency === 'CRITICAL' ? 'text-red-100' : urgency === 'WARNING' ? 'text-amber-100' : 'text-blue-100'}`}>{message || 'Transmission payload.'}</p>
+                  <p className={`text-xs leading-relaxed font-medium relative z-10 ${urgency === 'CRITICAL' ? 'text-red-100' : urgency === 'WARNING' ? 'text-amber-100' : 'text-blue-100'}`}>{message || 'Broadcast message content.'}</p>
                 </div>
               ) : (
                 <div className="w-full max-w-sm bg-[#0a0a0a] text-left border border-neutral-800 rounded-2xl shadow-2xl p-4">
@@ -202,7 +202,7 @@ export default function BroadcastArrayPage() {
           </div>
 
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col h-[400px]">
-            <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center shrink-0"><Clock size={16} className="mr-2 text-neutral-500" /> Transmission History</h3>
+            <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center shrink-0"><Clock size={16} className="mr-2 text-neutral-500" /> Broadcast History</h3>
             <div className="flex-1 overflow-y-auto scrollbar-hide space-y-3 pr-2">
               {history.length === 0 ? (
                 <div className="text-center py-10">
