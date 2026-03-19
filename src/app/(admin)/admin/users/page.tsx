@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-// 👇 FIX: Added Bookmark, Clock, and all required icons here!
 import { Search, Shield, Crown, Zap, Activity, ChevronRight, X, User, Clock, AlertTriangle, Target, BarChart2, Bookmark } from 'lucide-react'
 
 export default function UsersDirectoryPage() {
@@ -82,7 +81,7 @@ export default function UsersDirectoryPage() {
     return (
       <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-brand-primary" size={40} />
-        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Accessing Directory...</span>
+        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Loading Directory...</span>
       </div>
     )
   }
@@ -94,16 +93,16 @@ export default function UsersDirectoryPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">
-            Operator <span className="text-brand-primary">Directory</span>
+            User <span className="text-brand-primary">Directory</span>
           </h2>
-          <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Manage network access and monitor user telemetry</p>
+          <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Manage accounts and monitor platform activity</p>
         </div>
 
         <div className="relative w-full md:w-72">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
           <input 
             type="text" 
-            placeholder="Search operators..." 
+            placeholder="Search users..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors"
@@ -117,10 +116,10 @@ export default function UsersDirectoryPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-neutral-800 bg-[#050505]">
-                <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Operator Identity</th>
-                <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Clearance Tier</th>
-                <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Network Entry</th>
-                <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest text-right">Telemetry</th>
+                <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">User Profile</th>
+                <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Active Plan</th>
+                <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Joined Date</th>
+                <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest text-right">Activity</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-800/50">
@@ -128,7 +127,7 @@ export default function UsersDirectoryPage() {
                 <tr>
                   <td colSpan={4} className="p-12 text-center">
                     <User className="mx-auto text-neutral-700 mb-4" size={32} />
-                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">No operators found matching query.</span>
+                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">No users found matching query.</span>
                   </td>
                 </tr>
               ) : (
@@ -147,7 +146,7 @@ export default function UsersDirectoryPage() {
                             {user.full_name ? user.full_name.charAt(0).toUpperCase() : '?'}
                           </div>
                           <div>
-                            <p className="text-sm font-black text-white">{user.full_name || 'Unknown Operator'}</p>
+                            <p className="text-sm font-black text-white">{user.full_name || 'Unknown User'}</p>
                             <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest font-mono mt-0.5">{user.id.split('-')[0]}...</p>
                           </div>
                         </div>
@@ -195,7 +194,7 @@ export default function UsersDirectoryPage() {
                     <User size={18} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-black text-white">{selectedUser.full_name || 'Unknown Operator'}</h3>
+                    <h3 className="text-lg font-black text-white">{selectedUser.full_name || 'Unknown User'}</h3>
                     <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest font-mono">ID: {selectedUser.id}</span>
                   </div>
                 </div>
@@ -204,7 +203,7 @@ export default function UsersDirectoryPage() {
                     selectedUser.plan === 'essential' ? 'bg-blue-500/10 border-blue-500/30 text-blue-500' : 
                     'bg-neutral-800 border-neutral-700 text-neutral-400'}`}
                 >
-                  Clearance: {selectedUser.plan || 'Free'}
+                  Plan: {selectedUser.plan || 'Free'}
                 </div>
               </div>
               <button onClick={() => setSelectedUser(null)} className="p-2 text-neutral-500 hover:text-white bg-neutral-900 rounded-full transition-colors">
@@ -215,19 +214,19 @@ export default function UsersDirectoryPage() {
             {loadingDetails ? (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4">
                 <Activity className="animate-pulse text-brand-primary" size={32} />
-                <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[9px]">Decrypting Logs...</span>
+                <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[9px]">Loading Activity...</span>
               </div>
             ) : (
               <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-8">
                 
                 {/* Stats Grid */}
                 <div>
-                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-800 pb-2">Lifetime Telemetry</h4>
+                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-800 pb-2">Lifetime Activity</h4>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="bg-[#050505] border border-neutral-800 rounded-xl p-4 text-center">
                       <Bookmark className="mx-auto text-amber-500 mb-2" size={16} />
                       <span className="text-xl font-black text-white block">{userStats.vaultCount}</span>
-                      <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Vaulted</span>
+                      <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Saved</span>
                     </div>
                     <div className="bg-[#050505] border border-neutral-800 rounded-xl p-4 text-center">
                       <Search className="mx-auto text-blue-500 mb-2" size={16} />
@@ -244,9 +243,9 @@ export default function UsersDirectoryPage() {
 
                 {/* Action Controls */}
                 <div>
-                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-800 pb-2">Operator Controls</h4>
+                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-800 pb-2">User Controls</h4>
                   <button className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-white uppercase tracking-widest transition-all text-center mb-3">
-                    Copy Operator Email
+                    Copy User Email
                   </button>
                   <p className="text-[9px] font-bold text-neutral-600 text-center leading-relaxed">
                     Note: Billing cycle modifications and subscription cancellations must be performed directly in your Lemon Squeezy dashboard.
