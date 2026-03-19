@@ -157,7 +157,7 @@ function DashboardContent() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         <div className="lg:col-span-8 xl:col-span-9 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-            <div className="md:col-span-4 xl:col-span-3 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
+            <div className="md:col-span-4 xl:col-span-3 bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
               <div className="min-w-0 pr-2">
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">{setupLabel}</div>
                 <div className="text-3xl font-black text-neutral-900 dark:text-white tracking-tighter truncate">{setupCount}</div>
@@ -165,7 +165,7 @@ function DashboardContent() {
               <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-neutral-900 dark:text-white transition-colors shrink-0"><Zap size={20} /></div>
             </div>
 
-            <div className="md:col-span-4 xl:col-span-6 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
+            <div className="md:col-span-4 xl:col-span-6 bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
               <div className="min-w-0 pr-2">
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">Trading Session</div>
                 <div className="text-2xl font-black text-neutral-900 dark:text-white tracking-tight uppercase italic truncate">{getActiveSession()}</div>
@@ -173,7 +173,7 @@ function DashboardContent() {
               <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-neutral-900 dark:text-white transition-colors animate-pulse shrink-0"><Globe size={20} /></div>
             </div>
             
-            <div className="md:col-span-4 xl:col-span-3 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
+            <div className="md:col-span-4 xl:col-span-3 bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
               <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate">Current Tier</div>
               <div className={`text-xl font-black uppercase tracking-widest truncate ${userPlan === 'premium' ? 'text-amber-500' : userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
                 {userPlan === 'premium' ? 'Gold Premium' : userPlan}
@@ -181,7 +181,7 @@ function DashboardContent() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-white dark:bg-[#0a0a0a] p-1 rounded-xl border border-neutral-200 dark:border-neutral-800 mt-2">
+          <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-white dark:bg-card-bg shadow-md dark:shadow-card p-1 rounded-xl border border-neutral-200 dark:border-card-border mt-2">
             {FILTERS.map(f => {
               const locked = isLocked(f.req)
               return (
@@ -222,7 +222,7 @@ function DashboardContent() {
                       if (user) supabase.from('activity_logs').insert([{ user_id: user.id, action: 'FEED_CLICK', asset_symbol: setup.asset_symbol, timeframe: setup.timeframe }]).then()
                       router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=dashboard`)
                     }}
-                    className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
+                    className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
                   >
                     <div className="flex flex-col min-w-0 pr-2">
                       <span className="text-sm font-black text-neutral-900 dark:text-white tracking-tight truncate">{setup.asset_symbol || 'UNKNOWN'}</span>
@@ -240,7 +240,7 @@ function DashboardContent() {
                 )
               })}
               {filteredSetups.length === 0 && (
-                <div className="col-span-full py-12 text-center text-neutral-500 italic border border-dashed border-neutral-200 dark:border-neutral-800 rounded-xl text-sm">
+                <div className="col-span-full py-12 text-center text-neutral-500 italic border border-dashed border-neutral-200 dark:border-card-border rounded-xl text-sm">
                   {searchQuery ? `No setups found matching "${searchQuery}"` : "No active market setups found."}
                 </div>
               )}
@@ -249,8 +249,8 @@ function DashboardContent() {
         </div>
 
         <div className="lg:col-span-4 xl:col-span-3 space-y-6 sticky top-6">
-          <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
+          <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-200 dark:border-card-border">
               <div className="flex items-center">
                 <Activity size={16} className="text-blue-500 mr-2 animate-pulse" />
                 <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">System Updates</h3>
@@ -270,7 +270,7 @@ function DashboardContent() {
                   </p>
                 </div>
               ) : (
-                <div className="p-4 bg-neutral-900/30 border border-neutral-200 dark:border-neutral-800/50 rounded-xl text-center">
+                <div className="p-4 bg-neutral-900/30 border border-neutral-200 dark:border-card-border/50 rounded-xl text-center">
                   <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">No Active Broadcasts</span>
                 </div>
               )}
@@ -282,8 +282,8 @@ function DashboardContent() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-200 dark:border-neutral-800">
+          <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-200 dark:border-card-border">
               <div className="flex items-center">
                 <Bookmark size={16} className="text-amber-500 mr-2" />
                 <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest">The Vault</h3>
@@ -315,7 +315,7 @@ function DashboardContent() {
 
 export default function DashboardPage() {
   return (
-    <Suspense fallback={<div className="w-full min-h-[80vh] bg-neutral-50 dark:bg-[#050505] flex flex-col items-center justify-center space-y-4"><Activity className="animate-pulse text-blue-500" size={40} /><span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Loading Dashboard...</span></div>}>
+    <Suspense fallback={<div className="w-full min-h-[80vh] bg-neutral-100 dark:bg-app-bg flex flex-col items-center justify-center space-y-4"><Activity className="animate-pulse text-blue-500" size={40} /><span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Loading Dashboard...</span></div>}>
       <DashboardContent />
     </Suspense>
   )

@@ -140,15 +140,15 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
-        <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-6 rounded-3xl shadow-lg relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 flex flex-col justify-between">
+        <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border p-6 rounded-3xl shadow-lg relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-[50px] rounded-full pointer-events-none group-hover:bg-emerald-500/20 transition-all"></div>
           <div className="relative z-10">
-            <div className="p-2.5 bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl w-fit mb-4 text-emerald-500"><DollarSign size={18} /></div>
+            <div className="p-2.5 bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl w-fit mb-4 text-emerald-500"><DollarSign size={18} /></div>
             <div className="mb-4">
               <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Monthly MRR</div>
               <div className="text-3xl font-black text-neutral-900 dark:text-white tracking-tighter">${data.revenue.monthly.toFixed(2)}<span className="text-xs text-neutral-600 font-bold tracking-normal">/mo</span></div>
             </div>
-            <div className="pt-3 border-t border-neutral-200 dark:border-neutral-800/50">
+            <div className="pt-3 border-t border-neutral-200 dark:border-card-border/50">
               <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-0.5">Yearly ARR</div>
               <div className="text-lg font-black text-emerald-500 tracking-tighter">${data.revenue.yearly.toFixed(2)}<span className="text-[10px] text-emerald-500/50 font-bold tracking-normal">/yr</span></div>
             </div>
@@ -161,7 +161,7 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg">
+        <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border p-6 sm:p-8 rounded-3xl shadow-lg">
           <h3 className="text-xs font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center"><Activity size={16} className="mr-2 text-brand-primary" /> Analysis Output</h3>
           <div className="space-y-3">
             <TimeRow label="Published Today" count={data.setups.today} highlight={true} />
@@ -171,10 +171,10 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
+        <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
           <h3 className="text-xs font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center"><BarChart2 size={16} className="mr-2 text-blue-500" /> Subscription Tiers</h3>
           
-          <div className="w-full h-3 rounded-full flex overflow-hidden bg-neutral-900 mb-6 border border-neutral-200 dark:border-neutral-800">
+          <div className="w-full h-3 rounded-full flex overflow-hidden bg-neutral-900 mb-6 border border-neutral-200 dark:border-card-border">
             <div style={{ width: `${(data.plans.premium / (data.totalUsers || 1)) * 100}%` }} className="h-full bg-amber-500 transition-all duration-1000"></div>
             <div style={{ width: `${(data.plans.pro / (data.totalUsers || 1)) * 100}%` }} className="h-full bg-brand-primary transition-all duration-1000"></div>
             <div style={{ width: `${(data.plans.essential / (data.totalUsers || 1)) * 100}%` }} className="h-full bg-blue-500 transition-all duration-1000"></div>
@@ -192,7 +192,7 @@ export default function AdminDashboard() {
       <div>
         <h2 className="text-lg font-black text-neutral-900 dark:text-white uppercase tracking-tighter italic mb-4 mt-4">Platform <span className="text-brand-primary">Engagement</span></h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg">
+          <div className="lg:col-span-1 bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border p-6 sm:p-8 rounded-3xl shadow-lg">
             <h3 className="text-xs font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center"><Search size={16} className="mr-2 text-neutral-900 dark:text-white" /> Trending Assets</h3>
             {data.topSearches.length > 0 ? (
               <div className="space-y-4">
@@ -211,7 +211,7 @@ export default function AdminDashboard() {
             ) : <div className="text-center py-6 text-[10px] font-bold text-neutral-600 uppercase tracking-widest">No recent search data</div>}
           </div>
 
-          <div className="lg:col-span-2 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
+          <div className="lg:col-span-2 bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xs font-black text-neutral-900 dark:text-white uppercase tracking-widest flex items-center"><Activity size={16} className="mr-2 text-blue-500" /> Live Activity Feed</h3>
               <div className="flex items-center"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-2"></div><span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Live Updates</span></div>
@@ -225,7 +225,7 @@ export default function AdminDashboard() {
                   if (log.action === 'PAYWALL_BUMP') { actionColor = "text-red-500"; actionText = "Hit Paywall on"; Icon = AlertTriangle }
                   if (log.action === 'FILTER_CLICK') { actionColor = "text-neutral-400"; actionText = "Filtered by"; Icon = BarChart2 }
                   return (
-                    <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800/50">
+                    <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border/50">
                       <div className="flex items-center space-x-3 overflow-hidden">
                         <div className={`p-1.5 rounded-lg bg-neutral-900 ${actionColor}`}><Icon size={12} /></div>
                         <div className="flex flex-col min-w-0 pr-2">
@@ -248,19 +248,19 @@ export default function AdminDashboard() {
 
 function StatCard({ label, value, subValue, color, icon: Icon }: any) {
   return (
-    <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 p-6 rounded-3xl shadow-lg relative overflow-hidden group hover:border-neutral-600 transition-all duration-500 flex flex-col justify-between">
+    <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border p-6 rounded-3xl shadow-lg relative overflow-hidden group hover:border-neutral-600 transition-all duration-500 flex flex-col justify-between">
       <div className="relative z-10">
-        <div className={`p-2.5 bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl w-fit mb-4 ${color}`}><Icon size={18} /></div>
+        <div className={`p-2.5 bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl w-fit mb-4 ${color}`}><Icon size={18} /></div>
         <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">{label}</div>
         <div className="text-3xl font-black text-neutral-900 dark:text-white tracking-tighter">{value}</div>
       </div>
-      <div className="pt-3 mt-4 border-t border-neutral-200 dark:border-neutral-800/50"><div className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">{subValue}</div></div>
+      <div className="pt-3 mt-4 border-t border-neutral-200 dark:border-card-border/50"><div className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">{subValue}</div></div>
     </div>
   )
 }
 function TimeRow({ label, count, highlight = false, dim = false }: any) {
   return (
-    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-colors ${highlight ? 'bg-brand-primary/5 border-brand-primary/20 text-neutral-900 dark:text-white' : dim ? 'bg-neutral-50 dark:bg-[#050505] border-neutral-900 text-neutral-600' : 'bg-neutral-50 dark:bg-[#050505] border-neutral-200 dark:border-neutral-800 text-neutral-400'}`}>
+    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-colors ${highlight ? 'bg-brand-primary/5 border-brand-primary/20 text-neutral-900 dark:text-white' : dim ? 'bg-neutral-100 dark:bg-app-bg border-neutral-900 text-neutral-600' : 'bg-neutral-100 dark:bg-app-bg border-neutral-200 dark:border-card-border text-neutral-400'}`}>
       <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
       <span className={`text-sm font-black ${highlight ? 'text-brand-primary' : ''}`}>{count} <span className="text-[9px] text-neutral-600">SETUPS</span></span>
     </div>
@@ -268,7 +268,7 @@ function TimeRow({ label, count, highlight = false, dim = false }: any) {
 }
 function PlanRow({ label, count, color, icon: Icon }: any) {
   return (
-    <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800">
+    <div className="flex items-center justify-between p-4 rounded-2xl bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border">
       <div className="flex items-center space-x-3">
         <Icon size={14} className={color} />
         <span className="text-[10px] font-black uppercase tracking-widest text-neutral-900 dark:text-white">{label}</span>

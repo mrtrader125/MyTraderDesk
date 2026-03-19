@@ -65,11 +65,11 @@ function TopNavContent() {
   const userInitial = user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'
 
   return (
-    <header className="h-16 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0a0a0a] flex items-center justify-between px-6 shrink-0 z-40 sticky top-0">
+    <header className="h-16 w-full border-b border-neutral-200 dark:border-card-border bg-white dark:bg-card-bg shadow-md dark:shadow-card flex items-center justify-between px-6 shrink-0 z-40 sticky top-0">
       
       <div className="flex-1 max-w-md relative">
         {mounted && !isAccountPage && (
-          <div className="flex items-center bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-full px-4 py-2 w-full focus-within:border-neutral-600 transition-colors">
+          <div className="flex items-center bg-neutral-900 border border-neutral-200 dark:border-card-border rounded-full px-4 py-2 w-full focus-within:border-neutral-600 transition-colors">
             <Search size={16} className="text-neutral-500 mr-3 shrink-0" />
             <input
               type="text"
@@ -96,8 +96,8 @@ function TopNavContent() {
           {showDropdown && mounted && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)}></div>
-              <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl z-20 overflow-hidden py-2 animate-in fade-in zoom-in-95 duration-200">
-                <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 mb-2">
+              <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-2xl shadow-2xl z-20 overflow-hidden py-2 animate-in fade-in zoom-in-95 duration-200">
+                <div className="px-4 py-3 border-b border-neutral-200 dark:border-card-border mb-2">
                   <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Account</p>
                   <p className="text-xs font-bold text-neutral-900 dark:text-white truncate mt-1">{user?.email || '...'}</p>
                 </div>
@@ -110,7 +110,7 @@ function TopNavContent() {
                 </button>
                 <button 
                   onClick={handleSignOut} 
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-red-500 hover:bg-red-500/10 transition-all border-t border-neutral-200 dark:border-neutral-800 mt-2 text-left"
+                  className="w-full flex items-center space-x-3 px-4 py-3 text-red-500 hover:bg-red-500/10 transition-all border-t border-neutral-200 dark:border-card-border mt-2 text-left"
                 >
                   <LogOut size={16} /> 
                   <span className="text-[11px] font-black uppercase tracking-widest">Disconnect</span>
@@ -127,7 +127,7 @@ function TopNavContent() {
 // Next.js 15 Suspense Wrapper
 export default function TopNav() {
   return (
-    <Suspense fallback={<div className="h-16 w-full border-b border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0a0a0a] shrink-0 z-40 sticky top-0"></div>}>
+    <Suspense fallback={<div className="h-16 w-full border-b border-neutral-200 dark:border-card-border bg-white dark:bg-card-bg shadow-md dark:shadow-card shrink-0 z-40 sticky top-0"></div>}>
       <TopNavContent />
     </Suspense>
   )

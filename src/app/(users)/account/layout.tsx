@@ -16,7 +16,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname()
 
   return (
-    <div className="w-full min-h-screen bg-neutral-50 dark:bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden">
+    <div className="w-full min-h-screen bg-neutral-100 dark:bg-app-bg p-6 md:p-8 font-sans overflow-x-hidden">
       
       {/* TWO-COLUMN LAYOUT (Header Removed) */}
       <div className="flex flex-col md:flex-row gap-8 lg:gap-12 items-start pt-2">
@@ -34,7 +34,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
                 className={`flex items-center px-4 py-3 rounded-xl transition-all whitespace-nowrap text-[10px] font-black uppercase tracking-widest ${
                   isActive 
                     ? 'bg-white text-black shadow-[0_0_15px_rgba(255,255,255,0.1)] scale-100' 
-                    : 'text-neutral-500 hover:text-neutral-900 dark:text-white hover:bg-white dark:bg-[#0a0a0a]'
+                    : 'text-neutral-500 hover:text-neutral-900 dark:text-white hover:bg-white dark:bg-card-bg shadow-md dark:shadow-card'
                 }`}
               >
                 <Icon size={14} className="mr-3 shrink-0" />

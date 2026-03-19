@@ -96,7 +96,7 @@ function VaultContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-[#050505] flex flex-col items-center justify-center space-y-4">
+      <div className="min-h-screen bg-neutral-100 dark:bg-app-bg flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-amber-500" size={32} />
         <span className="text-[10px] font-black tracking-widest uppercase text-neutral-500">Loading Saved Setups...</span>
       </div>
@@ -132,9 +132,9 @@ function VaultContent() {
     return (
       <div 
         onClick={() => router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=vault`)}
-        className="bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-amber-500/40 hover:shadow-[0_0_15px_rgba(245,158,11,0.05)] transition-all duration-300 min-h-[180px] shadow-sm"
+        className="bg-[#0a0a0a] border border-neutral-200 dark:border-card-border rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-amber-500/40 hover:shadow-[0_0_15px_rgba(245,158,11,0.05)] transition-all duration-300 min-h-[180px] shadow-sm"
       >
-        <div className="h-28 w-full bg-black relative overflow-hidden border-b border-neutral-200 dark:border-neutral-800/50 shrink-0">
+        <div className="h-28 w-full bg-black relative overflow-hidden border-b border-neutral-200 dark:border-card-border/50 shrink-0">
           <img src={setup.image_url} alt="Setup" className={`w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100 group-hover:scale-105' : 'opacity-10 blur-md grayscale'}`} />
           
           {!hasAccess && (
@@ -171,7 +171,7 @@ function VaultContent() {
             )}
           </div>
           
-          <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-neutral-600 pt-3 border-t border-neutral-200 dark:border-neutral-800/80 mt-3">
+          <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-neutral-600 pt-3 border-t border-neutral-200 dark:border-card-border/80 mt-3">
             <span className="flex items-center"><Clock size={10} className="mr-1" /> {new Date(setup.saved_at).toLocaleDateString()}</span>
             <span className="text-amber-500 flex items-center"><Bookmark size={10} className="fill-amber-500 mr-1" /> Vault</span>
           </div>
@@ -181,9 +181,9 @@ function VaultContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-neutral-50 dark:bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden relative">
+    <div className="w-full min-h-screen bg-neutral-100 dark:bg-app-bg p-6 md:p-8 font-sans overflow-x-hidden relative">
       <div className="flex flex-col items-center mb-8 mt-1">
-        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1 rounded-xl border border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1 rounded-xl border border-neutral-200 dark:border-card-border">
           {CATEGORIES.map((cat) => {
             const locked = isLocked(cat.req)
             const active = activeTab === cat.id
@@ -201,7 +201,7 @@ function VaultContent() {
       </div>
 
       {vaultItems.length === 0 ? (
-        <div className="w-full max-w-xl mx-auto mt-6 border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
+        <div className="w-full max-w-xl mx-auto mt-6 border border-dashed border-neutral-200 dark:border-card-border rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
           <FolderOpen size={40} className="text-neutral-700 mb-4" />
           <h3 className="text-lg font-black text-neutral-900 dark:text-white uppercase tracking-tight mb-2">Vault is Empty</h3>
           <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-relaxed mb-6">No saved analysis yet, start bookmarking to build your vault.</p>
@@ -254,7 +254,7 @@ function VaultContent() {
       {/* NOTES MODAL */}
       {editingNoteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
-          <div className="bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
+          <div className="bg-[#0a0a0a] border border-neutral-200 dark:border-card-border rounded-2xl w-full max-w-lg shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
             <button onClick={() => setEditingNoteId(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-neutral-900 dark:text-white transition-colors"><X size={20} /></button>
             <div className="flex items-center mb-6">
               <Edit3 size={18} className="text-amber-500 mr-2" />
@@ -264,7 +264,7 @@ function VaultContent() {
               value={tempNote} 
               onChange={(e) => setTempNote(e.target.value)} 
               placeholder="Add your analysis notes..." 
-              className="w-full h-32 bg-black border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors resize-none mb-6 font-medium" 
+              className="w-full h-32 bg-black border border-neutral-200 dark:border-card-border rounded-xl p-4 text-sm text-neutral-900 dark:text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors resize-none mb-6 font-medium" 
             />
             <div className="flex justify-end space-x-3">
               <button onClick={() => setEditingNoteId(null)} className="px-5 py-2.5 rounded-lg text-xs font-bold text-neutral-400 hover:text-neutral-900 dark:text-white transition-colors">Cancel</button>
@@ -280,7 +280,7 @@ function VaultContent() {
 
 export default function VaultPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-neutral-50 dark:bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-amber-500" size={32} /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-neutral-100 dark:bg-app-bg flex items-center justify-center"><Activity className="animate-pulse text-amber-500" size={32} /></div>}>
       <VaultContent />
     </Suspense>
   )

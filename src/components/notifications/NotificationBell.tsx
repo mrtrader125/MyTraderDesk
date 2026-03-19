@@ -45,16 +45,16 @@ export default function NotificationBell() {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-4 py-3 border-b border-neutral-200 dark:border-neutral-800 flex justify-between items-center bg-neutral-50 dark:bg-[#050505]">
+          <div className="absolute right-0 mt-3 w-80 bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-4 py-3 border-b border-neutral-200 dark:border-card-border flex justify-between items-center bg-neutral-100 dark:bg-app-bg">
               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Notifications</span>
               {hasNew && <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-[8px] font-black uppercase tracking-widest">New</span>}
             </div>
             
-            <div className="max-h-[350px] overflow-y-auto scrollbar-hide bg-white dark:bg-[#0a0a0a]">
+            <div className="max-h-[350px] overflow-y-auto scrollbar-hide bg-white dark:bg-card-bg shadow-md dark:shadow-card">
               {notifications.length > 0 ? (
                 notifications.map(n => (
-                  <div key={n.id} className="p-4 border-b border-neutral-200 dark:border-neutral-800/50 hover:bg-white/[0.02] transition-colors group">
+                  <div key={n.id} className="p-4 border-b border-neutral-200 dark:border-card-border/50 hover:bg-white/[0.02] transition-colors group">
                     <div className="flex items-start space-x-3 mb-1">
                       <div className="mt-0.5 shrink-0">
                         {n.urgency === 'CRITICAL' ? <Megaphone size={14} className="text-red-500" /> : 

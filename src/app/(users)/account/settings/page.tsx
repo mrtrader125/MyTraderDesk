@@ -19,13 +19,13 @@ export default function SettingsPage() {
       </div>
 
       {/* NOTIFICATIONS MODULE */}
-      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8">
+      <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-neutral-200 dark:border-card-border rounded-3xl p-6 md:p-8">
         <h3 className="text-sm font-black text-neutral-900 dark:text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center">
           <Bell className="mr-2 text-neutral-500" size={16} /> Notification Preferences
         </h3>
         
         <div className="space-y-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-neutral-50 dark:bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 rounded-2xl">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-neutral-50 dark:bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-neutral-200 dark:border-card-border rounded-2xl">
             <div>
               <p className="text-xs font-bold text-neutral-900 dark:text-neutral-900 dark:text-white tracking-widest uppercase">System Broadcasts</p>
               <p className="text-[10px] font-medium text-neutral-500 mt-1 max-w-sm">Receive pop-up alerts for live platform updates and critical announcements.</p>
@@ -38,12 +38,12 @@ export default function SettingsPage() {
       </div>
 
       {/* DISPLAY PREFERENCES (THE THEME TOGGLE) */}
-      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8">
+      <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-neutral-200 dark:border-card-border rounded-3xl p-6 md:p-8">
         <h3 className="text-sm font-black text-neutral-900 dark:text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center">
           <Monitor className="mr-2 text-neutral-500" size={16} /> Display & UI
         </h3>
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-neutral-50 dark:bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-200 dark:border-neutral-800 rounded-2xl">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 bg-neutral-50 dark:bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-neutral-200 dark:border-card-border rounded-2xl">
           <div>
             <p className="text-xs font-bold text-neutral-900 dark:text-neutral-900 dark:text-white tracking-widest uppercase">Platform Theme</p>
             <p className="text-[10px] font-medium text-neutral-500 mt-1 max-w-sm">Manually toggle between light mode and dark mode.</p>

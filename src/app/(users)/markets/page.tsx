@@ -110,9 +110,9 @@ function MarketsContent() {
   )
 
   return (
-    <div className="w-full min-h-screen bg-neutral-50 dark:bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden">
+    <div className="w-full min-h-screen bg-neutral-100 dark:bg-app-bg p-6 md:p-8 font-sans overflow-x-hidden">
       <div className="flex flex-col items-center mb-10 mt-2">
-        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-200 dark:border-card-border">
           {CATEGORIES.map((cat, idx) => {
             const locked = isLocked(cat.req)
             const active = activeTab === cat.id
@@ -139,7 +139,7 @@ function MarketsContent() {
           fade-in`}
       >
         {filteredMarkets.length === 0 ? (
-          <div className="max-w-md mx-auto border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
+          <div className="max-w-md mx-auto border border-dashed border-neutral-200 dark:border-card-border rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
             {userPlan === 'free' && activeTab !== 'ALL' && activeTab !== 'FOREX' ? (
                <>
                  <Lock size={32} className="text-brand-primary mb-4" />
@@ -158,11 +158,11 @@ function MarketsContent() {
               <div 
                 key={market.symbol}
                 onClick={() => router.push(`/markets/viewport?asset=${market.symbol}&from=markets`)}
-                className="bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl p-5 hover:border-neutral-600 transition-all cursor-pointer group flex flex-col min-h-[140px]"
+                className="bg-[#0a0a0a] border border-neutral-200 dark:border-card-border rounded-2xl p-5 hover:border-neutral-600 transition-all cursor-pointer group flex flex-col min-h-[140px]"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-black border border-neutral-200 dark:border-neutral-800 flex items-center justify-center overflow-hidden relative shrink-0">
+                    <div className="w-12 h-12 rounded-xl bg-black border border-neutral-200 dark:border-card-border flex items-center justify-center overflow-hidden relative shrink-0">
                       <img src={market.latestImage} className="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-opacity duration-500" alt="" />
                       <div className={`absolute bottom-0 right-0 p-1 backdrop-blur-md ${market.latestBias === 'BULLISH' ? 'text-emerald-500' : 'text-red-500'}`}>
                         {market.latestBias === 'BULLISH' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
@@ -175,7 +175,7 @@ function MarketsContent() {
                   </div>
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-neutral-200 dark:border-neutral-800/50 flex items-center justify-between">
+                <div className="mt-auto pt-4 border-t border-neutral-200 dark:border-card-border/50 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-bold text-neutral-900 dark:text-white bg-white/5 px-2 py-1 rounded">{market.count} Setup{market.count > 1 ? 's' : ''}</span>
                   </div>
@@ -197,7 +197,7 @@ function MarketsContent() {
 
 export default function MarketsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-neutral-50 dark:bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-neutral-100 dark:bg-app-bg flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
       <MarketsContent />
     </Suspense>
   )

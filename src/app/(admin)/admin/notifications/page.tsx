@@ -106,7 +106,7 @@ export default function BroadcastPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         <div className="lg:col-span-7 space-y-6">
-          <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-[2rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
+          <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-[2rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
             <div className="absolute -top-32 -right-32 w-64 h-64 bg-brand-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
             
             <h3 className="text-xs font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center relative z-10">
@@ -117,14 +117,14 @@ export default function BroadcastPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Broadcast Type</label>
-                  <select value={type} onChange={(e: any) => setType(e.target.value)} className="w-full bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors appearance-none">
+                  <select value={type} onChange={(e: any) => setType(e.target.value)} className="w-full bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl py-3 px-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors appearance-none">
                     <option value="BROADCAST">Dashboard Broadcast</option>
                     <option value="ALERT">Notification Bell</option>
                   </select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Urgency Level</label>
-                  <select value={urgency} onChange={(e: any) => setUrgency(e.target.value)} className="w-full bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors appearance-none">
+                  <select value={urgency} onChange={(e: any) => setUrgency(e.target.value)} className="w-full bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl py-3 px-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors appearance-none">
                     <option value="INFO">Info (Blue)</option>
                     <option value="WARNING">Warning (Amber)</option>
                     <option value="CRITICAL">Critical (Red)</option>
@@ -132,14 +132,14 @@ export default function BroadcastPage() {
                 </div>
               </div>
 
-              <div className="space-y-2 pt-2 border-t border-neutral-200 dark:border-neutral-800/50">
+              <div className="space-y-2 pt-2 border-t border-neutral-200 dark:border-card-border/50">
                 <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Target Subscription Tier</label>
                 <div className="flex flex-wrap gap-2">
                   {['ALL', 'FREE', 'ESSENTIAL', 'PRO', 'PREMIUM'].map((tier) => (
                     <button
                       key={tier}
                       onClick={() => setTargetTier(tier)}
-                      className={`flex-1 min-w-[80px] py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${targetTier === tier ? 'bg-white text-black border-white shadow-md' : 'bg-neutral-50 dark:bg-[#050505] text-neutral-500 border-neutral-200 dark:border-neutral-800 hover:border-neutral-600'}`}
+                      className={`flex-1 min-w-[80px] py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${targetTier === tier ? 'bg-white text-black border-white shadow-md' : 'bg-neutral-100 dark:bg-app-bg text-neutral-500 border-neutral-200 dark:border-card-border hover:border-neutral-600'}`}
                     >
                       {tier}
                     </button>
@@ -147,14 +147,14 @@ export default function BroadcastPage() {
                 </div>
               </div>
 
-              <div className="space-y-4 pt-2 border-t border-neutral-200 dark:border-neutral-800/50">
+              <div className="space-y-4 pt-2 border-t border-neutral-200 dark:border-card-border/50">
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Headline</label>
-                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Broadcast Subject" className="w-full bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-sm font-black text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors" />
+                  <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Broadcast Subject" className="w-full bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl py-3 px-4 text-sm font-black text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Message Content</label>
-                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message content..." className="w-full h-24 bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-xs font-medium text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors resize-none" />
+                  <textarea value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Message content..." className="w-full h-24 bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl py-3 px-4 text-xs font-medium text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors resize-none" />
                 </div>
                 
                 {/* ATTACHMENT LINK FIELD */}
@@ -162,7 +162,7 @@ export default function BroadcastPage() {
                   <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest flex items-center">
                     <LinkIcon size={10} className="mr-1" /> Attachment Link (Optional)
                   </label>
-                  <input type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://..." className="w-full bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-neutral-400 outline-none focus:border-brand-primary/50 transition-colors" />
+                  <input type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://..." className="w-full bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl py-3 px-4 text-xs font-bold text-neutral-400 outline-none focus:border-brand-primary/50 transition-colors" />
                 </div>
               </div>
 
@@ -175,7 +175,7 @@ export default function BroadcastPage() {
         </div>
 
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 border-dashed rounded-[2rem] p-6 text-center">
+          <div className="bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border border-dashed rounded-[2rem] p-6 text-center">
             <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-6 flex items-center justify-center"><Globe size={14} className="mr-2 text-neutral-600" /> Live User Preview</h3>
             <div className="flex items-center justify-center min-h-[150px]">
               {type === 'BROADCAST' ? (
@@ -185,7 +185,7 @@ export default function BroadcastPage() {
                   <p className={`text-xs leading-relaxed font-medium relative z-10 ${urgency === 'CRITICAL' ? 'text-red-100' : urgency === 'WARNING' ? 'text-amber-100' : 'text-blue-100'}`}>{message || 'Broadcast message content.'}</p>
                 </div>
               ) : (
-                <div className="w-full max-w-sm bg-white dark:bg-[#0a0a0a] text-left border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl p-4">
+                <div className="w-full max-w-sm bg-white dark:bg-card-bg shadow-md dark:shadow-card text-left border border-neutral-200 dark:border-card-border rounded-2xl shadow-2xl p-4">
                   <div className="flex items-start space-x-3">
                     <div className={`mt-0.5 p-2 rounded-xl shrink-0 ${urgency === 'CRITICAL' ? 'bg-red-500/10 text-red-500' : urgency === 'WARNING' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
                       {urgency === 'CRITICAL' ? <AlertTriangle size={14} /> : urgency === 'WARNING' ? <Zap size={14} /> : <Info size={14} />}
@@ -201,7 +201,7 @@ export default function BroadcastPage() {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col h-[400px]">
+          <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-[2rem] p-6 shadow-xl flex flex-col h-[400px]">
             <h3 className="text-xs font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-4 flex items-center shrink-0"><Clock size={16} className="mr-2 text-neutral-500" /> Broadcast History</h3>
             <div className="flex-1 overflow-y-auto scrollbar-hide space-y-3 pr-2">
               {history.length === 0 ? (
@@ -211,7 +211,7 @@ export default function BroadcastPage() {
                 </div>
               ) : (
                 history.map(item => (
-                  <div key={item.id} className="bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 flex items-start justify-between group">
+                  <div key={item.id} className="bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl p-4 flex items-start justify-between group">
                     <div className="flex-1 min-w-0 pr-4">
                       <div className="flex items-center space-x-2 mb-1">
                         <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${item.type === 'BROADCAST' ? 'bg-brand-primary/20 text-brand-primary' : 'bg-neutral-800 text-neutral-400'}`}>{item.type}</span>

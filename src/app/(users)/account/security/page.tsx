@@ -100,12 +100,12 @@ export default function SecurityPage() {
       </div>
 
       {/* SECURE RESET LINK MODULE */}
-      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8">
+      <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-3xl p-6 md:p-8">
         <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center">
           <Mail className="mr-2 text-neutral-500" size={16} /> Password Reset Link
         </h3>
         
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-5 border border-neutral-200 dark:border-neutral-800 rounded-2xl bg-neutral-50 dark:bg-[#050505]">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-5 border border-neutral-200 dark:border-card-border rounded-2xl bg-neutral-100 dark:bg-app-bg">
           <div>
             <p className="text-xs font-bold text-neutral-900 dark:text-white tracking-widest">{userEmail}</p>
             <p className="text-[10px] font-medium text-neutral-500 mt-1 max-w-sm">
@@ -128,7 +128,7 @@ export default function SecurityPage() {
       </div>
 
       {/* MANUAL PASSWORD UPDATE MODULE */}
-      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8">
+      <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-3xl p-6 md:p-8">
         <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center">
           <Key className="mr-2 text-neutral-500" size={16} /> Change Password
         </h3>
@@ -141,7 +141,7 @@ export default function SecurityPage() {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••" 
-              className="w-full bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-xs text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors" 
+              className="w-full bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl py-3 px-4 text-xs text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors" 
             />
           </div>
           <div className="pt-2">

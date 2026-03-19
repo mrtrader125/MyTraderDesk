@@ -34,7 +34,7 @@ function ArchiveContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-[#050505] flex items-center justify-center">
+      <div className="min-h-screen bg-neutral-100 dark:bg-app-bg flex items-center justify-center">
         <span className="text-neutral-500 text-[10px] font-black tracking-widest uppercase animate-pulse">Loading Archive...</span>
       </div>
     )
@@ -67,9 +67,9 @@ function ArchiveContent() {
     return (
       <div 
         onClick={() => router.push(`/markets/viewport?asset=${asset}&from=archive`)}
-        className="bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-neutral-600 transition-all duration-300 shadow-sm relative min-h-[220px]"
+        className="bg-[#0a0a0a] border border-neutral-200 dark:border-card-border rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-neutral-600 transition-all duration-300 shadow-sm relative min-h-[220px]"
       >
-        <div className="h-32 w-full bg-black relative overflow-hidden border-b border-neutral-200 dark:border-neutral-800/50">
+        <div className="h-32 w-full bg-black relative overflow-hidden border-b border-neutral-200 dark:border-card-border/50">
           <img src={setup.image_url} alt="Setup" className={`w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-40 group-hover:opacity-100' : 'opacity-10 blur-md grayscale'}`} />
           
           {!hasAccess && (
@@ -97,7 +97,7 @@ function ArchiveContent() {
           <h3 className={`text-[13px] font-bold line-clamp-2 leading-snug mb-3 transition-colors ${hasAccess ? 'text-neutral-800 dark:text-neutral-200 group-hover:text-neutral-900 dark:text-white' : 'text-neutral-600'}`}>
             {hasAccess ? displayText : 'Analysis Locked.'}
           </h3>
-          <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-neutral-500 pt-3 border-t border-neutral-200 dark:border-neutral-800/50">
+          <div className="flex justify-between items-center text-[9px] font-bold uppercase tracking-widest text-neutral-500 pt-3 border-t border-neutral-200 dark:border-card-border/50">
             <span className="flex items-center"><Clock size={10} className="mr-1" /> {formattedDate}</span>
             <span>{formattedTime}</span>
           </div>
@@ -107,11 +107,11 @@ function ArchiveContent() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-neutral-50 dark:bg-[#050505] p-6 md:p-8 font-sans">
-      <div className="flex items-center space-x-4 mb-10 pb-4 border-b border-neutral-200 dark:border-neutral-800">
+    <div className="w-full min-h-screen bg-neutral-100 dark:bg-app-bg p-6 md:p-8 font-sans">
+      <div className="flex items-center space-x-4 mb-10 pb-4 border-b border-neutral-200 dark:border-card-border">
         <button 
           onClick={() => router.push('/markets')}
-          className="w-10 h-10 rounded-xl bg-white/5 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center text-neutral-400 hover:bg-white/10 hover:text-neutral-900 dark:text-white transition-all shrink-0"
+          className="w-10 h-10 rounded-xl bg-white/5 border border-neutral-200 dark:border-card-border flex items-center justify-center text-neutral-400 hover:bg-white/10 hover:text-neutral-900 dark:text-white transition-all shrink-0"
         >
           <ArrowLeft size={18} />
         </button>
@@ -167,7 +167,7 @@ function ArchiveContent() {
 
 export default function ArchivePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-neutral-50 dark:bg-[#050505]"></div>}>
+    <Suspense fallback={<div className="min-h-screen bg-neutral-100 dark:bg-app-bg"></div>}>
       <ArchiveContent />
     </Suspense>
   )

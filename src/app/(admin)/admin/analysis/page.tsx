@@ -71,9 +71,9 @@ export default function AdminAnalysisPage() {
         const isBear = setup.bias?.toUpperCase() === 'BEARISH'
 
         return (
-          <div key={setup.id} className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden group hover:border-neutral-600 transition-colors shadow-lg flex flex-col">
+          <div key={setup.id} className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-2xl overflow-hidden group hover:border-neutral-600 transition-colors shadow-lg flex flex-col">
             
-            <div className="h-32 w-full bg-black relative overflow-hidden border-b border-neutral-200 dark:border-neutral-800/50">
+            <div className="h-32 w-full bg-black relative overflow-hidden border-b border-neutral-200 dark:border-card-border/50">
               {setup.image_url ? (
                 <img 
                   src={setup.image_url} 
@@ -85,10 +85,10 @@ export default function AdminAnalysisPage() {
               )}
               
               <div className="absolute top-2 left-2 flex gap-1.5">
-                <span className="bg-white dark:bg-[#0a0a0a]/90 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-neutral-900 dark:text-white uppercase tracking-widest border border-white/10 shadow-lg">
+                <span className="bg-white dark:bg-card-bg shadow-md dark:shadow-card/90 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-neutral-900 dark:text-white uppercase tracking-widest border border-white/10 shadow-lg">
                   {setup.category}
                 </span>
-                <span className="bg-white dark:bg-[#0a0a0a]/90 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-neutral-900 dark:text-white uppercase tracking-widest border border-white/10 shadow-lg">
+                <span className="bg-white dark:bg-card-bg shadow-md dark:shadow-card/90 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-neutral-900 dark:text-white uppercase tracking-widest border border-white/10 shadow-lg">
                   {setup.timeframe}
                 </span>
               </div>
@@ -120,7 +120,7 @@ export default function AdminAnalysisPage() {
                 </button>
                 <button 
                   onClick={() => handleDelete(setup.id, setup.asset_symbol)}
-                  className="p-2 text-neutral-500 hover:text-neutral-900 dark:text-white hover:bg-red-500 hover:border-red-500 bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg transition-all"
+                  className="p-2 text-neutral-500 hover:text-neutral-900 dark:text-white hover:bg-red-500 hover:border-red-500 bg-neutral-900 border border-neutral-200 dark:border-card-border rounded-lg transition-all"
                 >
                   <Trash2 size={14} />
                 </button>
@@ -161,7 +161,7 @@ export default function AdminAnalysisPage() {
               placeholder="Search assets..." 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-xl py-2.5 pl-11 pr-4 text-xs font-bold text-neutral-900 dark:text-white placeholder:text-neutral-500 outline-none focus:border-brand-primary/50 transition-colors w-64"
+              className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-xl py-2.5 pl-11 pr-4 text-xs font-bold text-neutral-900 dark:text-white placeholder:text-neutral-500 outline-none focus:border-brand-primary/50 transition-colors w-64"
             />
           </div>
           <button 
@@ -174,7 +174,7 @@ export default function AdminAnalysisPage() {
       </div>
 
       {filteredSetups.length === 0 ? (
-        <div className="w-full bg-white dark:bg-[#0a0a0a] border border-dashed border-neutral-200 dark:border-neutral-800 rounded-3xl p-16 flex flex-col items-center text-center">
+        <div className="w-full bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-dashed border-neutral-200 dark:border-card-border rounded-3xl p-16 flex flex-col items-center text-center">
           <Radio size={48} className="text-neutral-700 mb-6" />
           <h3 className="text-lg font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-2">No Setups Found</h3>
         </div>

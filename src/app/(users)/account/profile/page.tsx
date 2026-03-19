@@ -82,7 +82,7 @@ export default function ProfilePage() {
       </div>
 
       {/* CARD 1: IDENTITY */}
-      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8">
+      <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-3xl p-6 md:p-8">
         <div className="flex items-center justify-between mb-8">
           <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest flex items-center">
             <User className="mr-2 text-neutral-500" size={16} /> Personal Information
@@ -90,7 +90,7 @@ export default function ProfilePage() {
           
           {/* Avatar Placeholder */}
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 rounded-full bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center relative group cursor-pointer overflow-hidden">
+            <div className="w-12 h-12 rounded-full bg-neutral-900 border border-neutral-200 dark:border-card-border flex items-center justify-center relative group cursor-pointer overflow-hidden">
               <User size={20} className="text-neutral-500 group-hover:opacity-0 transition-opacity" />
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                 <Camera size={14} className="text-neutral-900 dark:text-white" />
@@ -110,7 +110,7 @@ export default function ProfilePage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Your Name"
-                  className="w-full bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors"
+                  className="w-full bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl py-3 px-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors"
                 />
               </div>
             </div>
@@ -123,7 +123,7 @@ export default function ProfilePage() {
                   type="email" 
                   value={email}
                   disabled
-                  className="w-full bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800/50 rounded-xl py-3 pl-4 pr-10 text-xs font-bold text-neutral-500 outline-none cursor-not-allowed"
+                  className="w-full bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border/50 rounded-xl py-3 pl-4 pr-10 text-xs font-bold text-neutral-500 outline-none cursor-not-allowed"
                 />
               </div>
             </div>
@@ -132,7 +132,7 @@ export default function ProfilePage() {
       </div>
 
       {/* CARD 2: REGIONAL SETTINGS */}
-      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 md:p-8">
+      <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-3xl p-6 md:p-8">
         <h3 className="text-sm font-black text-neutral-900 dark:text-white uppercase tracking-widest mb-6 flex items-center">
           <Globe className="mr-2 text-neutral-500" size={16} /> Regional Settings
         </h3>
@@ -143,7 +143,7 @@ export default function ProfilePage() {
             <select 
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
-              className="w-full bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors appearance-none cursor-pointer"
+              className="w-full bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl py-3 px-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors appearance-none cursor-pointer"
             >
               <option value={timezone}>{timezone} (Auto-Detected)</option>
               <option value="UTC">UTC (Universal Coordinated Time)</option>

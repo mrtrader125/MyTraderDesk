@@ -30,8 +30,8 @@ export default function BillingPage() {
       </div>
 
       {/* PORTAL ACCESS CARD */}
-      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] p-10 text-center">
-        <div className="w-16 h-16 bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
+      <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-[2.5rem] p-10 text-center">
+        <div className="w-16 h-16 bg-neutral-900 border border-neutral-200 dark:border-card-border rounded-2xl flex items-center justify-center mx-auto mb-6">
           <CreditCard className="text-neutral-400" size={28} />
         </div>
         

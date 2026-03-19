@@ -105,17 +105,17 @@ export default function UsersDirectoryPage() {
             placeholder="Search users..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors"
+            className="w-full bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-neutral-900 dark:text-white outline-none focus:border-brand-primary/50 transition-colors"
           />
         </div>
       </div>
 
       {/* THE DIRECTORY TABLE */}
-      <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800 rounded-3xl overflow-hidden shadow-lg">
+      <div className="bg-white dark:bg-card-bg shadow-md dark:shadow-card border border-neutral-200 dark:border-card-border rounded-3xl overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-[#050505]">
+              <tr className="border-b border-neutral-200 dark:border-card-border bg-neutral-100 dark:bg-app-bg">
                 <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">User Profile</th>
                 <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Active Plan</th>
                 <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Joined Date</th>
@@ -142,7 +142,7 @@ export default function UsersDirectoryPage() {
                     >
                       <td className="p-5">
                         <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center text-xs font-black text-neutral-400 group-hover:border-neutral-600 transition-colors">
+                          <div className="w-8 h-8 rounded-full bg-neutral-900 border border-neutral-200 dark:border-card-border flex items-center justify-center text-xs font-black text-neutral-400 group-hover:border-neutral-600 transition-colors">
                             {user.full_name ? user.full_name.charAt(0).toUpperCase() : '?'}
                           </div>
                           <div>
@@ -184,10 +184,10 @@ export default function UsersDirectoryPage() {
         <>
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity" onClick={() => setSelectedUser(null)}></div>
           
-          <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white dark:bg-[#0a0a0a] border-l border-neutral-200 dark:border-neutral-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white dark:bg-card-bg shadow-md dark:shadow-card border-l border-neutral-200 dark:border-card-border shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
             
             {/* Panel Header */}
-            <div className="p-6 border-b border-neutral-200 dark:border-neutral-800 flex items-start justify-between bg-neutral-50 dark:bg-[#050505]">
+            <div className="p-6 border-b border-neutral-200 dark:border-card-border flex items-start justify-between bg-neutral-100 dark:bg-app-bg">
               <div>
                 <div className="flex items-center space-x-3 mb-2">
                   <div className="w-10 h-10 rounded-full bg-brand-primary/10 border border-brand-primary/30 flex items-center justify-center text-brand-primary">
@@ -221,19 +221,19 @@ export default function UsersDirectoryPage() {
                 
                 {/* Stats Grid */}
                 <div>
-                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-200 dark:border-neutral-800 pb-2">Lifetime Activity</h4>
+                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-200 dark:border-card-border pb-2">Lifetime Activity</h4>
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 text-center">
+                    <div className="bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl p-4 text-center">
                       <Bookmark className="mx-auto text-amber-500 mb-2" size={16} />
                       <span className="text-xl font-black text-neutral-900 dark:text-white block">{userStats.vaultCount}</span>
                       <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Saved</span>
                     </div>
-                    <div className="bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 text-center">
+                    <div className="bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl p-4 text-center">
                       <Search className="mx-auto text-blue-500 mb-2" size={16} />
                       <span className="text-xl font-black text-neutral-900 dark:text-white block">{userStats.searchCount}</span>
                       <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Searches</span>
                     </div>
-                    <div className="bg-neutral-50 dark:bg-[#050505] border border-neutral-200 dark:border-neutral-800 rounded-xl p-4 text-center">
+                    <div className="bg-neutral-100 dark:bg-app-bg border border-neutral-200 dark:border-card-border rounded-xl p-4 text-center">
                       <AlertTriangle className={`mx-auto mb-2 ${userStats.paywallHits > 0 ? 'text-red-500' : 'text-neutral-600'}`} size={16} />
                       <span className="text-xl font-black text-neutral-900 dark:text-white block">{userStats.paywallHits}</span>
                       <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Paywalls Hit</span>
@@ -243,7 +243,7 @@ export default function UsersDirectoryPage() {
 
                 {/* Action Controls */}
                 <div>
-                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-200 dark:border-neutral-800 pb-2">User Controls</h4>
+                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-200 dark:border-card-border pb-2">User Controls</h4>
                   <button className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[10px] font-black text-neutral-900 dark:text-white uppercase tracking-widest transition-all text-center mb-3">
                     Copy User Email
                   </button>
@@ -254,7 +254,7 @@ export default function UsersDirectoryPage() {
 
                 {/* Activity Feed */}
                 <div>
-                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-200 dark:border-neutral-800 pb-2 flex items-center justify-between">
+                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-200 dark:border-card-border pb-2 flex items-center justify-between">
                     <span>Recent Actions</span>
                     <span className="text-brand-primary bg-brand-primary/10 px-2 py-0.5 rounded text-[8px]">LIVE</span>
                   </h4>
@@ -274,7 +274,7 @@ export default function UsersDirectoryPage() {
                         if (log.action === 'FILTER_CLICK') { actionColor = "text-neutral-400"; actionText = "Filtered"; Icon = BarChart2 }
 
                         return (
-                          <div key={log.id} className="flex items-start space-x-3 p-3 bg-neutral-50 dark:bg-[#050505] rounded-xl border border-neutral-200 dark:border-neutral-800/50">
+                          <div key={log.id} className="flex items-start space-x-3 p-3 bg-neutral-100 dark:bg-app-bg rounded-xl border border-neutral-200 dark:border-card-border/50">
                             <div className={`mt-0.5 p-1.5 rounded-md bg-neutral-900 ${actionColor}`}>
                               <Icon size={10} />
                             </div>
