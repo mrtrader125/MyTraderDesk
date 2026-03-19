@@ -59,7 +59,7 @@ function AdminViewportContent() {
     return (
       <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-brand-primary" size={40} />
-        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Decrypting Intelligence...</span>
+        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Loading Analysis...</span>
       </div>
     )
   }
@@ -76,7 +76,7 @@ function AdminViewportContent() {
         onClick={() => router.push('/admin/analysis')} 
         className="flex items-center text-[10px] font-black uppercase tracking-widest text-neutral-500 hover:text-white transition-colors"
       >
-        <ArrowLeft size={14} className="mr-2" /> Return to Arsenal
+        <ArrowLeft size={14} className="mr-2" /> Return to Setups
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -103,7 +103,7 @@ function AdminViewportContent() {
           
           <div className="p-4 border-t border-neutral-800 bg-[#0a0a0a] flex items-center justify-between">
             <div className="flex items-center text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-              <Clock size={12} className="mr-2" /> Deployed: {new Date(setup.created_at).toLocaleString()}
+              <Clock size={12} className="mr-2" /> Published: {new Date(setup.created_at).toLocaleString()}
             </div>
             <button 
               onClick={() => window.open(setup.image_url, '_blank')}
@@ -114,12 +114,12 @@ function AdminViewportContent() {
           </div>
         </div>
 
-        {/* TACTICAL SIDE PANEL */}
+        {/* SIDE PANEL */}
         <div className="lg:col-span-1 space-y-6">
           
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 shadow-xl">
             <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center">
-              <Activity size={14} className="mr-2" /> Target Metadata
+              <Activity size={14} className="mr-2" /> Setup Details
             </h3>
             
             <div className="space-y-4">
@@ -132,7 +132,7 @@ function AdminViewportContent() {
               </div>
 
               <div>
-                <span className="text-[9px] text-neutral-600 font-bold uppercase tracking-widest block mb-1">Clearance Category</span>
+                <span className="text-[9px] text-neutral-600 font-bold uppercase tracking-widest block mb-1">Market Category</span>
                 <div className="flex items-center text-sm font-black text-white">
                   <Tag size={12} className="mr-1.5 text-brand-primary" /> {setup.category}
                 </div>
@@ -141,11 +141,11 @@ function AdminViewportContent() {
           </div>
 
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 shadow-xl flex-1">
-            <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4">Tactical Notes</h3>
+            <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4">Analysis Notes</h3>
             <div className="bg-[#050505] border border-neutral-800/50 rounded-xl p-4 min-h-[150px]">
               {setup.title && <h4 className="text-sm font-black text-white mb-2">{setup.title}</h4>}
               <p className="text-[11px] font-medium text-neutral-400 leading-relaxed whitespace-pre-wrap">
-                {setup.content || "No intelligence notes attached to this deployment."}
+                {setup.content || "No analysis notes provided for this setup."}
               </p>
             </div>
           </div>
@@ -154,7 +154,7 @@ function AdminViewportContent() {
             onClick={handleDelete}
             className="w-full flex items-center justify-center py-4 bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white border border-red-500/20 hover:border-red-500 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-lg"
           >
-            <Trash2 size={14} className="mr-2" /> Revoke Deployment
+            <Trash2 size={14} className="mr-2" /> Delete Setup
           </button>
 
         </div>
