@@ -227,14 +227,12 @@ function ViewportContent() {
          <div className="absolute top-5 left-5 flex items-start space-x-3 pointer-events-none z-50">
            
            {/* 🚨 UPDATED BACK BUTTON */}
-           <button 
-             onClick={() => router.push(backPath)} 
-             className="h-10 px-4 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"
-           >
-             <ArrowLeft size={14} className="mr-2" />
-             <span className="text-[10px] font-black uppercase tracking-widest">{backLabel}</span>
-           </button>
-           
+<button 
+  onClick={() => router.push(backPath)} 
+  className="w-10 h-10 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"
+>
+  <ArrowLeft size={16} />
+</button>           
            <div className="h-10 bg-[#0a0a0a] border border-neutral-800 px-4 rounded-xl flex items-center space-x-3 shadow-lg pointer-events-auto">
              <span className="text-sm font-black uppercase tracking-widest text-white">{asset}</span>
              <div className="w-px h-4 bg-neutral-800"></div>
