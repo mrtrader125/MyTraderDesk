@@ -14,25 +14,17 @@ const CATEGORIES = [
     if (PLAN_CONFIG.free.allowedCategories.includes(category)) requiredTier = 'free';
     else if (PLAN_CONFIG.essential.allowedCategories.includes(category)) requiredTier = 'essential';
     else if (PLAN_CONFIG.pro.allowedCategories.includes(category)) requiredTier = 'pro';
-
-    return {
-      id: category,
-      label: category.charAt(0) + category.slice(1).toLowerCase(),
-      req: requiredTier
-    }
+    return { id: category, label: category.charAt(0) + category.slice(1).toLowerCase(), req: requiredTier }
   })
 ]
 
 function VaultContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
-
   const [vaultItems, setVaultItems] = useState<any[]>([])
   const [userPlan, setUserPlan] = useState<string>('free')
   const [loading, setLoading] = useState(true)
-  
   const [activeTab, setActiveTab] = useState('ALL')
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [tempNote, setTempNote] = useState('')
@@ -60,10 +52,7 @@ function VaultContent() {
 
         if (!error && vaultData) {
           const formattedItems = vaultData.map(item => ({
-            ...item.analyses,
-            vault_id: item.id,
-            saved_note: item.note,
-            saved_at: item.created_at
+            ...item.analyses, vault_id: item.id, saved_note: item.note, saved_at: item.created_at
           }))
           setVaultItems(formattedItems)
         }
@@ -109,7 +98,7 @@ function VaultContent() {
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-amber-500" size={32} />
-        <span className="text-[10px] font-black tracking-widest uppercase text-neutral-500">Unlocking Live Vault...</span>
+        <span className="text-[10px] font-black tracking-widest uppercase text-neutral-500">Loading Saved Setups...</span>
       </div>
     )
   }
@@ -127,7 +116,7 @@ function VaultContent() {
   const thisWeek = new Date(today); thisWeek.setDate(thisWeek.getDate() - 7)
 
   filteredItems.forEach(setup => {
-    const d = new Date(setup.saved_at).getTime() 
+    const d = new Date(setup.saved_at).getTime()
     if (d >= today.getTime()) grouped.today.push(setup)
     else if (d >= yesterday.getTime()) grouped.yesterday.push(setup)
     else if (d >= thisWeek.getTime()) grouped.thisWeek.push(setup)
@@ -142,24 +131,28 @@ function VaultContent() {
 
     return (
       <div 
-        onClick={() => router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`)}
+        onClick={() => router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}`)} 
         className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-amber-500/40 hover:shadow-[0_0_15px_rgba(245,158,11,0.05)] transition-all duration-300 min-h-[180px] shadow-sm"
       >
         <div className="h-28 w-full bg-black relative overflow-hidden border-b border-neutral-800/50 shrink-0">
           <img src={setup.image_url} alt="Setup" className={`w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100 group-hover:scale-105' : 'opacity-10 blur-md grayscale'}`} />
+          
           {!hasAccess && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
               <Lock size={16} className={requiredTier === 'premium' ? 'text-amber-500 mb-1.5' : requiredTier === 'pro' ? 'text-brand-primary mb-1.5' : 'text-blue-500 mb-1.5'} />
               <span className="text-[8px] font-black text-white uppercase tracking-widest bg-white/10 px-2 py-0.5 rounded border border-white/10 shadow-lg">{requiredTier.toUpperCase()}</span>
             </div>
           )}
+
           {hasAccess && (
             <div className="absolute top-2 left-2 bg-[#0a0a0a]/90 backdrop-blur-md px-2 py-0.5 rounded-md text-[9px] font-black text-white uppercase tracking-widest border border-white/10">{setup.timeframe || '-'}</div>
           )}
+
           <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 z-20">
             <button onClick={(e) => handleOpenNote(e, setup.vault_id, setup.saved_note)} className="p-1.5 bg-amber-500/80 backdrop-blur-md text-white rounded-md hover:bg-amber-500 transition-colors shadow-lg"><Edit3 size={12} /></button>
             <button onClick={(e) => removeFromVault(e, setup.vault_id)} className="p-1.5 bg-red-500/80 backdrop-blur-md text-white rounded-md hover:bg-red-500 transition-colors shadow-lg"><Trash2 size={12} /></button>
           </div>
+
           <div className={`absolute bottom-2 right-2 p-1 rounded-md backdrop-blur-md border shadow-lg ${isBull ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-500' : isBear ? 'bg-red-500/20 border-red-500/30 text-red-500' : 'bg-neutral-800/80 border-neutral-700 text-neutral-400'}`}>
             {isBull ? <TrendingUp size={12} /> : isBear ? <TrendingDown size={12} /> : <Minus size={12} />}
           </div>
@@ -174,9 +167,10 @@ function VaultContent() {
             {hasNote ? (
               <p className="text-[10px] font-medium text-amber-500/80 line-clamp-2 leading-snug mt-1.5 italic">"{setup.saved_note}"</p>
             ) : (
-              <p className={`text-[10px] font-bold line-clamp-1 leading-snug mt-1.5 transition-colors ${hasAccess ? 'text-neutral-500' : 'text-neutral-600'}`}>{hasAccess ? (setup.title || 'No notes added.') : 'Clearance restricted.'}</p>
+              <p className={`text-[10px] font-bold line-clamp-1 leading-snug mt-1.5 transition-colors ${hasAccess ? 'text-neutral-500' : 'text-neutral-600'}`}>{hasAccess ? (setup.title || 'No notes added.') : 'Access restricted.'}</p>
             )}
           </div>
+          
           <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-neutral-600 pt-3 border-t border-neutral-800/80 mt-3">
             <span className="flex items-center"><Clock size={10} className="mr-1" /> {new Date(setup.saved_at).toLocaleDateString()}</span>
             <span className="text-amber-500 flex items-center"><Bookmark size={10} className="fill-amber-500 mr-1" /> Vault</span>
@@ -195,14 +189,11 @@ function VaultContent() {
             const active = activeTab === cat.id
             return (
               <button 
-                key={cat.id}
+                key={cat.id} 
                 onClick={() => !locked && setActiveTab(cat.id)}
-                className={`relative flex items-center px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all
-                  ${active ? 'bg-white text-black shadow-sm scale-100' : 
-                    locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-500 hover:text-white'}`}
+                className={`relative flex items-center px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${active ? 'bg-white text-black shadow-sm scale-100' : locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-500 hover:text-white'}`}
               >
-                {locked && <Lock size={10} className="mr-1" />}
-                {cat.label}
+                {locked && <Lock size={10} className="mr-1" />} {cat.label}
               </button>
             )
           })}
@@ -230,6 +221,7 @@ function VaultContent() {
               </div>
             </section>
           )}
+
           {grouped.yesterday.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
               <h2 className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-4 flex items-center">Yesterday <div className="ml-4 h-px flex-1 bg-neutral-800"></div></h2>
@@ -238,6 +230,7 @@ function VaultContent() {
               </div>
             </section>
           )}
+
           {grouped.thisWeek.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
               <h2 className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] mb-4 flex items-center">This Week <div className="ml-4 h-px flex-1 bg-neutral-800/50"></div></h2>
@@ -246,6 +239,7 @@ function VaultContent() {
               </div>
             </section>
           )}
+
           {grouped.older.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
               <h2 className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 flex items-center">Older Records <div className="ml-4 h-px flex-1 bg-neutral-800/30"></div></h2>
@@ -257,15 +251,21 @@ function VaultContent() {
         </div>
       )}
 
+      {/* NOTES MODAL */}
       {editingNoteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
             <button onClick={() => setEditingNoteId(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors"><X size={20} /></button>
             <div className="flex items-center mb-6">
               <Edit3 size={18} className="text-amber-500 mr-2" />
-              <h3 className="text-sm font-black text-white uppercase tracking-widest">Operator Notes</h3>
+              <h3 className="text-sm font-black text-white uppercase tracking-widest">Setup Notes</h3>
             </div>
-            <textarea value={tempNote} onChange={(e) => setTempNote(e.target.value)} placeholder="Add your tactical notes..." className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors resize-none mb-6 font-medium" />
+            <textarea 
+              value={tempNote} 
+              onChange={(e) => setTempNote(e.target.value)} 
+              placeholder="Add your analysis notes..." 
+              className="w-full h-32 bg-black border border-neutral-800 rounded-xl p-4 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-amber-500/50 transition-colors resize-none mb-6 font-medium" 
+            />
             <div className="flex justify-end space-x-3">
               <button onClick={() => setEditingNoteId(null)} className="px-5 py-2.5 rounded-lg text-xs font-bold text-neutral-400 hover:text-white transition-colors">Cancel</button>
               <button onClick={handleSaveNote} className="px-6 py-2.5 bg-amber-500 text-black text-xs font-black uppercase tracking-widest rounded-lg hover:bg-amber-400 transition-colors shadow-[0_0_15px_rgba(245,158,11,0.2)]">Save Note</button>
@@ -273,6 +273,7 @@ function VaultContent() {
           </div>
         </div>
       )}
+
     </div>
   )
 }
