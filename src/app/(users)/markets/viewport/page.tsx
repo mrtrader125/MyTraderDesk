@@ -27,6 +27,9 @@ function ViewportContent() {
   const asset = searchParams.get('asset')
   const tfParam = searchParams.get('tf')
   
+  // 🚨 NEW: Grab the origin parameter from the URL
+  const fromParam = searchParams.get('from')
+
   const [allHistory, setAllHistory] = useState<any[]>([])
   const [userPlan, setUserPlan] = useState('free')
   const [loading, setLoading] = useState(true)
@@ -42,8 +45,23 @@ function ViewportContent() {
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
+  // 🚨 NEW: Dynamic routing logic
+  let backPath = '/markets'
+  let backLabel = 'Markets'
+
+  if (fromParam === 'dashboard') {
+    backPath = '/dashboard'
+    backLabel = 'Dashboard'
+  } else if (fromParam === 'vault') {
+    backPath = '/vault'
+    backLabel = 'Vault'
+  } else if (fromParam === 'archive') {
+    backPath = `/markets/archive?asset=${asset}`
+    backLabel = 'Archive'
+  }
+
   useEffect(() => {
-    if (!asset) return router.push('/markets')
+    if (!asset) return router.push(backPath)
 
     async function loadData() {
       let currentPlan = 'free' 
@@ -101,7 +119,7 @@ function ViewportContent() {
       setLoading(false)
     }
     loadData()
-  }, [asset, tfParam, router])
+  }, [asset, tfParam, router, backPath])
 
   const timeframes = useMemo(() => {
     const uniqueTfs = Array.from(new Set(allHistory.map(a => a.timeframe)))
@@ -163,7 +181,6 @@ function ViewportContent() {
          onMouseLeave={access.hasAccess ? handleMouseUp : undefined}
        >
          {access.hasAccess ? (
-           // HIGH QUALITY IMAGE FIX
            <img 
              src={currentSetup.image_url} 
              alt={asset || "Trading Analysis"}
@@ -172,7 +189,7 @@ function ViewportContent() {
              style={{ 
                transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, 
                transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-               imageRendering: 'high-quality' // Forces browser to optimize rendering
+               imageRendering: 'high-quality'
              }} 
            />
          ) : (
@@ -208,7 +225,16 @@ function ViewportContent() {
 
        <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
          <div className="absolute top-5 left-5 flex items-start space-x-3 pointer-events-none z-50">
-           <button onClick={() => router.push('/markets')} className="w-10 h-10 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"><ArrowLeft size={16} /></button>
+           
+           {/* 🚨 UPDATED BACK BUTTON */}
+           <button 
+             onClick={() => router.push(backPath)} 
+             className="h-10 px-4 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"
+           >
+             <ArrowLeft size={14} className="mr-2" />
+             <span className="text-[10px] font-black uppercase tracking-widest">{backLabel}</span>
+           </button>
+           
            <div className="h-10 bg-[#0a0a0a] border border-neutral-800 px-4 rounded-xl flex items-center space-x-3 shadow-lg pointer-events-auto">
              <span className="text-sm font-black uppercase tracking-widest text-white">{asset}</span>
              <div className="w-px h-4 bg-neutral-800"></div>
@@ -225,7 +251,7 @@ function ViewportContent() {
              )}
            </div>
            {showInfo && access.hasAccess && (
-             <div className="absolute top-12 left-14 w-[300px] max-h-[60vh] overflow-y-auto bg-[#0a0a0a]/95 backdrop-blur-xl border border-neutral-800 rounded-2xl p-5 shadow-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4">
+             <div className="absolute top-12 left-[125px] w-[300px] max-h-[60vh] overflow-y-auto bg-[#0a0a0a]/95 backdrop-blur-xl border border-neutral-800 rounded-2xl p-5 shadow-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4">
                <h3 className="text-xs font-black text-white mb-2 uppercase tracking-wider">{currentSetup.title || 'Analysis Notes'}</h3>
                <p className="text-[11px] font-medium text-neutral-400 leading-relaxed whitespace-pre-wrap">{currentSetup.content || 'No additional notes provided.'}</p>
                <div className="mt-3 pt-3 border-t border-neutral-800 flex items-center space-x-2 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
