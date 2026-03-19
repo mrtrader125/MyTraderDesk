@@ -1,344 +1,204 @@
 'use client'
 
-import { useState, useEffect, useMemo, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin } from 'lucide-react'
-import { getSetupAccess } from '@/lib/access'
+import { Activity, Lock, TrendingUp, TrendingDown, ArrowRight } from 'lucide-react'
+import { ASSET_CATEGORIES, PLAN_CONFIG } from '@/lib/platformConfig'
 
-const getTfWeight = (tf: string) => {
-  const cleanTf = tf.trim().toLowerCase();
-  if (cleanTf === '1m' || cleanTf === '1min') return 1;
-  if (cleanTf === '5m' || cleanTf === '5mins' || cleanTf === '5min') return 2;
-  if (cleanTf === '15m' || cleanTf === '15mins' || cleanTf === '15min') return 3;
-  if (cleanTf === '30m' || cleanTf === '30mins' || cleanTf === '30min') return 4;
-  if (cleanTf === '1h' || cleanTf === '1hr' || cleanTf === 'h1') return 5;
-  if (cleanTf === '2h' || cleanTf === '2hr' || cleanTf === 'h2') return 6;
-  if (cleanTf === '4h' || cleanTf === '4hr' || cleanTf === 'h4') return 7;
-  if (cleanTf === 'd' || cleanTf === '1d' || cleanTf === 'daily') return 8;
-  if (cleanTf === 'w' || cleanTf === '1w' || cleanTf === 'weekly') return 9;
-  if (cleanTf === 'm' || cleanTf === '1mo' || cleanTf === 'monthly') return 10;
-  return 99; 
-}
+const CATEGORIES = [
+  { id: 'ALL', label: 'All', req: 'free' },
+  ...Object.keys(ASSET_CATEGORIES).map(category => {
+    let requiredTier = 'premium';
+    if (PLAN_CONFIG.free.allowedCategories.includes(category)) requiredTier = 'free';
+    else if (PLAN_CONFIG.essential.allowedCategories.includes(category)) requiredTier = 'essential';
+    else if (PLAN_CONFIG.pro.allowedCategories.includes(category)) requiredTier = 'pro';
+    return {
+      id: category,
+      label: category.charAt(0) + category.slice(1).toLowerCase(),
+      req: requiredTier
+    }
+  })
+]
 
-function ViewportContent() {
-  const searchParams = useSearchParams()
+function MarketsContent() {
   const router = useRouter()
-  const asset = searchParams.get('asset')
-  const tfParam = searchParams.get('tf')
+  const searchParams = useSearchParams()
   
-  // Grab the origin parameter from the URL
-  const fromParam = searchParams.get('from')
-
-  const [allHistory, setAllHistory] = useState<any[]>([])
-  const [userPlan, setUserPlan] = useState('free')
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
+  
+  const [groupedAnalyses, setGroupedAnalyses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [watchlist, setWatchlist] = useState<any[]>([])
-
-  const [selectedTf, setSelectedTf] = useState<string>('')
-  const [activeIndex, setActiveIndex] = useState(0)
-  const [showInfo, setShowInfo] = useState(false)
-  const [isSidebarPinned, setIsSidebarPinned] = useState(false)
+  const [activeTab, setActiveTab] = useState('ALL')
+  const [userPlan, setUserPlan] = useState('free')
   
-  const [scale, setScale] = useState(1)
-  const [pos, setPos] = useState({ x: 0, y: 0 })
-  const [isDragging, setIsDragging] = useState(false)
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
-
-  // 🚨 Dynamic routing logic (Invisible to the user)
-  let backPath = '/markets'
-
-  if (fromParam === 'dashboard') {
-    backPath = '/dashboard'
-  } else if (fromParam === 'vault') {
-    backPath = '/vault'
-  } else if (fromParam === 'archive') {
-    backPath = `/markets/archive?asset=${asset}`
-  }
+  const [prevIndex, setPrevIndex] = useState(0)
+  const [slideDirection, setSlideDirection] = useState<'right' | 'left'>('right')
 
   useEffect(() => {
-    if (!asset) return router.push(backPath)
+    const handleSearch = (e: any) => setSearchQuery(e.detail?.toLowerCase() || '')
+    window.addEventListener('globalSearch', handleSearch)
+    return () => window.removeEventListener('globalSearch', handleSearch)
+  }, [])
 
-    async function loadData() {
-      let currentPlan = 'free' 
-      
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
-        if (profile?.plan) {
-          currentPlan = profile.plan.toLowerCase()
-          setUserPlan(currentPlan)
-        }
-
-        const { data: vaultData } = await supabase
-          .from('user_vault')
-          .select('analysis_id')
-          .eq('user_id', user.id)
-
-        if (vaultData) {
-          const liveWatchlist = vaultData.map((v: any) => ({ id: v.analysis_id }))
-          setWatchlist(liveWatchlist)
-        }
-      }
-
-      const { data } = await supabase
-        .from('analyses')
-        .select('*')
-        .eq('asset_symbol', asset)
-        .order('created_at', { ascending: false })
-        
-      if (data && data.length > 0) {
-        setAllHistory(data)
-        const requestedTfExists = tfParam && data.some(d => d.timeframe === tfParam)
-        
-        let targetTf = data[0].timeframe
-        if (requestedTfExists) {
-          targetTf = tfParam!
-        }
-        setSelectedTf(targetTf)
-
+  useEffect(() => {
+    async function fetchMarketData() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-           const targetSetup = data.find(d => d.timeframe === targetTf)
-           
-           const accessCheck = getSetupAccess(targetSetup, currentPlan)
-           
-           if (!accessCheck.hasAccess) {
-             supabase.from('activity_logs').insert([{
-               user_id: user.id,
-               action: 'PAYWALL_BUMP',
-               asset_symbol: asset,
-               timeframe: targetTf
-             }]).then()
-           }
+          const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+          if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
         }
+        const { data, error } = await supabase.from('analyses').select('*').order('created_at', { ascending: false })
+        
+        if (!error && data) {
+          const grouped = data.reduce((acc: any, curr: any) => {
+            if (!acc[curr.asset_symbol]) {
+              acc[curr.asset_symbol] = {
+                symbol: curr.asset_symbol,
+                category: (curr.category || 'FOREX').toUpperCase(),
+                latestSetupId: curr.id,
+                latestImage: curr.image_url,
+                latestBias: curr.bias,
+                lastUpdated: curr.created_at,
+                count: 0,
+                timeframes: []
+              }
+            }
+            acc[curr.asset_symbol].count += 1
+            if (!acc[curr.asset_symbol].timeframes.includes(curr.timeframe)) {
+              acc[curr.asset_symbol].timeframes.push(curr.timeframe)
+            }
+            return acc
+          }, {})
+          setGroupedAnalyses(Object.values(grouped))
+        }
+      } catch (err) {
+        console.error(err)
+      } finally {
+        setLoading(false)
       }
-      setLoading(false)
     }
-    loadData()
-  }, [asset, tfParam, router, backPath])
+    fetchMarketData()
+  }, [])
 
-  const timeframes = useMemo(() => {
-    const uniqueTfs = Array.from(new Set(allHistory.map(a => a.timeframe)))
-    return uniqueTfs.sort((a, b) => getTfWeight(a) - getTfWeight(b))
-  }, [allHistory])
-  
-  const filteredHistory = useMemo(() => allHistory.filter(a => a.timeframe === selectedTf), [allHistory, selectedTf])
-  const currentSetup = filteredHistory[activeIndex]
-
-  const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
-    e.stopPropagation() 
-    if (!setup) return
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const exists = watchlist.find(item => item.id === setup.id)
-    
-    let updated = [...watchlist]
-    if (exists) {
-      updated = updated.filter(item => item.id !== setup.id)
-      setWatchlist(updated)
-      await supabase.from('user_vault').delete().match({ user_id: user.id, analysis_id: setup.id })
-    } else {
-      updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe }) 
-      setWatchlist(updated)
-      await supabase.from('user_vault').insert([{ user_id: user.id, analysis_id: setup.id }])
-    }
+  const handleTabChange = (id: string, index: number) => {
+    setSlideDirection(index > prevIndex ? 'right' : 'left')
+    setPrevIndex(index)
+    setActiveTab(id)
   }
 
-  const handleWheel = (e: React.WheelEvent) => {
-    const zoomSensitivity = 0.0015
-    setScale(Math.min(Math.max(0.4, scale - e.deltaY * zoomSensitivity), 5))
+  const isLocked = (reqTier: string) => {
+    if (userPlan === 'premium') return false
+    if (userPlan === 'pro' && reqTier !== 'premium') return false
+    if (userPlan === 'essential' && (reqTier === 'essential' || reqTier === 'free')) return false
+    if (userPlan === 'free' && reqTier === 'free') return false
+    return true
   }
-  const handleMouseDown = (e: React.MouseEvent) => { setIsDragging(true); setDragStart({ x: e.clientX - pos.x, y: e.clientY - pos.y }) }
-  const handleMouseMove = (e: React.MouseEvent) => { if (isDragging) setPos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y }) }
-  const handleMouseUp = () => setIsDragging(false)
+
+  const filteredMarkets = groupedAnalyses.filter(market => {
+    const matchesTab = activeTab === 'ALL' ? true : market.category === activeTab
+    const matchesSearch = (market.symbol || '').toLowerCase().includes(searchQuery)
+    return matchesTab && matchesSearch
+  })
 
   if (loading) return (
-    <div className="h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
+    <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
       <Activity className="animate-pulse text-blue-500" size={32} />
-      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Connecting...</span>
+      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Loading Markets...</span>
     </div>
   )
 
-  if (!currentSetup) return <div className="h-screen bg-[#050505] flex items-center justify-center text-white">No data found for {asset}</div>
-
-  const access = getSetupAccess(currentSetup, userPlan)
-  const isCurrentBookmarked = watchlist.some(w => w.id === currentSetup.id)
-
   return (
-    <div className="fixed inset-0 bg-[#050505] flex overflow-hidden text-white select-none touch-none font-sans">
-       <div 
-         className={`absolute inset-0 z-10 flex items-center justify-start pl-6 md:pl-16 pr-20 pt-20 pb-10 ${access.hasAccess ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
-         onWheel={access.hasAccess ? handleWheel : undefined}
-         onMouseDown={access.hasAccess ? handleMouseDown : undefined}
-         onMouseMove={access.hasAccess ? handleMouseMove : undefined}
-         onMouseUp={access.hasAccess ? handleMouseUp : undefined}
-         onMouseLeave={access.hasAccess ? handleMouseUp : undefined}
-       >
-         {access.hasAccess ? (
-           <img 
-             src={currentSetup.image_url} 
-             alt={asset || "Trading Analysis"}
-             draggable={false}
-             className="max-w-full max-h-full object-contain pointer-events-none origin-left"
-             style={{ 
-               transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, 
-               transition: isDragging ? 'none' : 'transform 0.1s ease-out',
-               imageRendering: 'high-quality'
-             }} 
-           />
-         ) : (
-           <div className="w-full max-w-4xl aspect-video bg-[#0a0a0a] border border-neutral-800/50 rounded-[2rem] shadow-2xl" style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})` }} />
-         )}
-       </div>
-
-       {!access.hasAccess && (
-         <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-           <div className="max-w-sm w-full bg-[#0a0a0a]/90 backdrop-blur-xl border border-neutral-800 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden pointer-events-auto">
-             <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full pointer-events-none ${access.requiredTier === 'pro' ? 'bg-brand-primary/20' : 'bg-blue-600/20'}`}></div>
-             <div className="w-14 h-14 bg-black border border-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-6 relative z-10 shadow-lg">
-                <Lock size={20} className={access.requiredTier === 'pro' ? 'text-brand-primary' : 'text-blue-500'} />
-             </div>
-             <h2 className="text-lg font-black text-white tracking-tight uppercase mb-2 relative z-10">Clearance Required</h2>
-             <p className="text-[11px] font-medium text-neutral-400 mb-6 relative z-10 leading-relaxed">
-               The <span className="text-white font-bold">{currentSetup.timeframe}</span> setup for <span className="text-white font-bold">{asset}</span> is restricted. It will unlock for your tier in:
-             </p>
-             <div className="flex items-center justify-center space-x-2 bg-black border border-neutral-800 rounded-xl py-3 mb-6 relative z-10">
-               <Clock size={14} className="text-neutral-500" />
-               <span className="text-sm font-black text-white tracking-widest">{access.countdownText}</span>
-             </div>
-             <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-6 relative z-10">(You can still view older history via the right sidebar)</p>
-             <div className="relative z-10 pt-5 border-t border-neutral-800">
-               <button onClick={() => router.push('/account/subscription')} className={`w-full py-3 text-[10px] font-black uppercase tracking-widest rounded-xl flex items-center justify-center space-x-2 transition-colors ${access.requiredTier === 'pro' ? 'bg-brand-primary text-white hover:bg-brand-primary/90' : 'bg-blue-600 text-white hover:bg-blue-500'}`}>
-                 {access.requiredTier === 'pro' ? <Crown size={14} /> : <Shield size={14} />}
-                 <span>Upgrade to {access.requiredTier.toUpperCase()}</span>
-               </button>
-             </div>
-           </div>
-         </div>
-       )}
-
-       <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
-         <div className="absolute top-5 left-5 flex items-start space-x-3 pointer-events-none z-50">
-           
-           {/* 🚨 SQUEAKY CLEAN SQUARE BACK BUTTON */}
-           <button 
-             onClick={() => router.push(backPath)} 
-             className="w-10 h-10 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"
-           >
-             <ArrowLeft size={16} />
-           </button>
-           
-           <div className="h-10 bg-[#0a0a0a] border border-neutral-800 px-4 rounded-xl flex items-center space-x-3 shadow-lg pointer-events-auto">
-             <span className="text-sm font-black uppercase tracking-widest text-white">{asset}</span>
-             <div className="w-px h-4 bg-neutral-800"></div>
-             <button onClick={(e) => toggleBookmark(e, currentSetup)} className="text-neutral-500 hover:text-white transition-colors">
-                <Bookmark size={14} className={isCurrentBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
+    <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden">
+      <div className="flex flex-col items-center mb-10 mt-2">
+        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-800">
+          {CATEGORIES.map((cat, idx) => {
+            const locked = isLocked(cat.req)
+            const active = activeTab === cat.id
+            return (
+              <button 
+                key={cat.id}
+                onClick={() => !locked && handleTabChange(cat.id, idx)}
+                className={`relative flex items-center px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] transition-all
+                  ${active ? 'bg-white text-black shadow-xl scale-105' : 
+                    locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-500 hover:text-white'}`}
+              >
+                {locked && <Lock size={10} className="mr-1.5" />}
+                {cat.label}
               </button>
-             {access.hasAccess && (
+            )
+          })}
+        </div>
+      </div>
+
+      <div 
+        key={`${activeTab}-${searchQuery}`}
+        className={`animate-in duration-500 fill-mode-both 
+          ${slideDirection === 'right' ? 'slide-in-from-right-12' : 'slide-in-from-left-12'} 
+          fade-in`}
+      >
+        {filteredMarkets.length === 0 ? (
+          <div className="max-w-md mx-auto border border-dashed border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
+            {userPlan === 'free' && activeTab !== 'ALL' && activeTab !== 'FOREX' ? (
                <>
-                 <div className="w-px h-4 bg-neutral-800"></div>
-                 <button onClick={() => setShowInfo(!showInfo)} className={`transition-colors w-6 h-6 flex items-center justify-center rounded-md ${showInfo ? 'bg-white text-black' : 'text-neutral-400 hover:text-white hover:bg-white/10'}`}>
-                   {showInfo ? <X size={14} /> : <Info size={14} />}
-                 </button>
+                 <Lock size={32} className="text-brand-primary mb-4" />
+                 <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Access Restricted</h3>
+                 <button onClick={() => router.push('/account/subscription')} className="mt-4 px-6 py-2 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg">Upgrade</button>
                </>
-             )}
-           </div>
-           {showInfo && access.hasAccess && (
-             <div className="absolute top-12 left-14 w-[300px] max-h-[60vh] overflow-y-auto bg-[#0a0a0a]/95 backdrop-blur-xl border border-neutral-800 rounded-2xl p-5 shadow-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4">
-               <h3 className="text-xs font-black text-white mb-2 uppercase tracking-wider">{currentSetup.title || 'Analysis Notes'}</h3>
-               <p className="text-[11px] font-medium text-neutral-400 leading-relaxed whitespace-pre-wrap">{currentSetup.content || 'No additional notes provided.'}</p>
-               <div className="mt-3 pt-3 border-t border-neutral-800 flex items-center space-x-2 text-[9px] font-bold uppercase tracking-widest text-neutral-500">
-                 <Clock size={10} /><span>{new Date(currentSetup.created_at).toLocaleDateString()}</span>
-               </div>
-             </div>
-           )}
-         </div>
+            ) : (
+              <span className="text-xs font-bold text-neutral-600 uppercase tracking-widest">
+                {searchQuery ? `No markets matching "${searchQuery}"` : "No Active Setups"}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredMarkets.map(market => (
+              <div 
+                key={market.symbol}
+                onClick={() => router.push(`/markets/viewport?asset=${market.symbol}&from=markets`)}
+                className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-neutral-600 transition-all cursor-pointer group flex flex-col min-h-[140px]"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-12 h-12 rounded-xl bg-black border border-neutral-800 flex items-center justify-center overflow-hidden relative shrink-0">
+                      <img src={market.latestImage} className="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-opacity duration-500" alt="" />
+                      <div className={`absolute bottom-0 right-0 p-1 backdrop-blur-md ${market.latestBias === 'BULLISH' ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {market.latestBias === 'BULLISH' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-white">{market.symbol}</h3>
+                      <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">{market.category}</span>
+                    </div>
+                  </div>
+                </div>
 
-         <div className="absolute top-5 left-1/2 -translate-x-1/2 bg-[#0a0a0a] border border-neutral-800 p-1.5 rounded-xl shadow-lg pointer-events-auto z-50 flex items-center space-x-1">
-            {timeframes.map(t => {
-              const isSelected = selectedTf === t
-              return (
-                <button 
-                  key={t}
-                  onClick={async () => { 
-                    setSelectedTf(t); 
-                    setActiveIndex(0); 
-                    setScale(1); 
-                    setPos({x:0, y:0});
-
-                    const { data: { user } } = await supabase.auth.getUser()
-                    if (user) {
-                      supabase.from('activity_logs').insert([{
-                        user_id: user.id,
-                        action: 'VIEW_CHART',
-                        asset_symbol: asset,
-                        timeframe: t
-                      }]).then() 
-                    }
-                  }}
-                  className={`flex items-center px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors
-                    ${isSelected ? 'bg-white text-black' : 'text-neutral-500 hover:text-white hover:bg-white/5'}`}
-                >
-                  {t}
-                </button>
-              )
-            })}
-         </div>
-
-         <div className={`absolute right-0 top-0 bottom-0 z-40 flex flex-col shadow-2xl transition-all duration-300 border-l border-neutral-800 pointer-events-auto ${isSidebarPinned ? 'w-56 bg-[#0a0a0a]/95' : 'w-12 hover:w-56 bg-[#0a0a0a]/80 backdrop-blur-md group/sidebar'}`}>
-           <div className={`h-14 flex items-center border-b border-neutral-800 transition-all ${isSidebarPinned ? 'justify-between px-4' : 'justify-center group-hover/sidebar:justify-between group-hover/sidebar:px-4'}`}>
-             <div className="flex items-center">
-               <Clock size={14} className="text-neutral-500 shrink-0" />
-               <span className={`text-[10px] font-black text-neutral-300 uppercase tracking-widest whitespace-nowrap transition-all duration-300 ${isSidebarPinned ? 'opacity-100 w-auto ml-2' : 'opacity-0 w-0 overflow-hidden group-hover/sidebar:w-auto group-hover/sidebar:opacity-100 group-hover/sidebar:ml-2'}`}>History</span>
-             </div>
-             <button onClick={() => setIsSidebarPinned(!isSidebarPinned)} className={`text-neutral-500 hover:text-white transition-colors ${isSidebarPinned ? 'block' : 'hidden group-hover/sidebar:block'}`} title={isSidebarPinned ? "Close Panel" : "Pin Panel"}>
-               {isSidebarPinned ? <X size={14} /> : <Pin size={14} />}
-             </button>
-           </div>
-           
-           <div className="flex-1 overflow-y-auto scrollbar-hide py-3 px-2 space-y-1">
-             {filteredHistory.map((item, idx) => {
-               const historyAccess = getSetupAccess(item, userPlan)
-               const isActive = activeIndex === idx
-               const isItemBookmarked = watchlist.some(w => w.id === item.id)
-
-               return (
-                 <button 
-                   key={item.id}
-                   onClick={() => { if(historyAccess.hasAccess) { setActiveIndex(idx); setScale(1); setPos({x:0, y:0}) } }}
-                   className={`w-full flex items-center h-10 rounded-lg transition-all relative ${isSidebarPinned ? 'justify-start px-3' : 'justify-center group-hover/sidebar:justify-start group-hover/sidebar:px-3'} ${isActive ? 'bg-white/10' : 'hover:bg-white/5'} ${!historyAccess.hasAccess ? 'cursor-not-allowed opacity-60' : ''}`}
-                 >
-                   <div className={`${isSidebarPinned ? 'hidden' : 'block group-hover/sidebar:hidden shrink-0'}`}>
-                     <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white shadow-[0_0_5px_#fff]' : 'bg-neutral-700'}`} />
-                   </div>
-                   <div className={`items-center justify-between w-full min-w-0 ${isSidebarPinned ? 'flex' : 'hidden group-hover/sidebar:flex'}`}>
-                     <div className="flex flex-col items-start min-w-0 pr-2">
-                       <span className={`text-[10px] font-bold uppercase tracking-wider truncate ${isActive ? 'text-white' : 'text-neutral-400'}`}>{new Date(item.created_at).toLocaleDateString()}</span>
-                       <span className="text-[8px] font-bold text-neutral-600">{new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
-                     </div>
-                     <div className="flex items-center space-x-1.5 shrink-0">
-                       {isItemBookmarked && <Bookmark size={10} className="fill-amber-500 text-amber-500" />}
-                       {!historyAccess.hasAccess && <Lock size={10} className="text-neutral-500" />}
-                     </div>
-                   </div>
-                 </button>
-               )
-             })}
-           </div>
-         </div>
-
-       </div>
+                <div className="mt-auto pt-4 border-t border-neutral-800/50 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] font-bold text-white bg-white/5 px-2 py-1 rounded">{market.count} Setup{market.count > 1 ? 's' : ''}</span>
+                  </div>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); router.push(`/markets/archive?asset=${market.symbol}&from=markets`); }}
+                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
+                  >
+                    <ArrowRight size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
 
-// Next.js 15 Suspense Wrapper
-export default function ViewportPage() {
+export default function MarketsPage() {
   return (
-    <Suspense fallback={<div className="h-screen bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
-      <ViewportContent />
+    <Suspense fallback={<div className="min-h-screen bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
+      <MarketsContent />
     </Suspense>
   )
 }
