@@ -96,13 +96,30 @@ function VaultContent() {
   }
 
 if (loading) return (
-  <div className="w-full h-[70vh] flex flex-col items-center justify-center space-y-4">
-    <Loader2 className="animate-spin text-neutral-400 dark:text-neutral-500" size={32} />
-    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
-      Authenticating...
-    </span>
-  </div>
-)
+    <div className="w-full min-h-screen p-6 md:p-8 font-sans overflow-x-hidden">
+      <div className="mb-10">
+        <div className="h-8 w-48 bg-neutral-200 dark:bg-[#0a0a0a] rounded-lg animate-pulse mb-2"></div>
+        <div className="h-4 w-72 bg-neutral-200 dark:bg-[#0a0a0a] rounded-md animate-pulse"></div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="bg-white dark:bg-card-bg border border-neutral-200 dark:border-card-border shadow-md dark:shadow-card rounded-2xl p-5 min-h-[140px] flex flex-col justify-between animate-pulse">
+            <div className="flex items-start space-x-4">
+              <div className="w-12 h-12 rounded-xl bg-neutral-200 dark:bg-neutral-800/50 shrink-0"></div>
+              <div className="space-y-2 w-full pt-1">
+                <div className="h-5 w-24 bg-neutral-200 dark:bg-neutral-800/50 rounded-md"></div>
+                <div className="h-3 w-12 bg-neutral-200 dark:bg-neutral-800/50 rounded-md"></div>
+              </div>
+            </div>
+            <div className="mt-auto pt-4 border-t border-neutral-100 dark:border-neutral-800/50 flex items-center justify-between">
+              <div className="h-5 w-16 bg-neutral-200 dark:bg-neutral-800/50 rounded"></div>
+              <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-800/50"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 
   const filteredItems = vaultItems.filter(item => {
     const matchesTab = activeTab === 'ALL' ? true : (item.category || 'FOREX').toUpperCase() === activeTab
