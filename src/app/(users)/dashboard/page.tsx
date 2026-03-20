@@ -143,15 +143,24 @@ function DashboardContent() {
     return { setupCount: yesterdayCount || setups.length, setupLabel: yesterdayCount > 0 ? "Published Yesterday" : "Active Setups" }
   }, [setups])
 
-  if (!mounted || loading) {
+if (!mounted || loading) {
     return (
-      <div className="w-full min-h-[80vh] bg-transparent flex flex-col items-center justify-center space-y-4">
-        <Activity className="animate-pulse text-blue-500" size={40} />
-        <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-xs">Syncing Dashboard...</span>
+      <div className="w-full min-h-[80vh] p-6 md:p-8 font-sans space-y-8">
+        {/* Skeleton Welcome Banner */}
+        <div className="w-full h-32 bg-white dark:bg-card-bg border border-neutral-200 dark:border-card-border shadow-md dark:shadow-card rounded-[2rem] animate-pulse"></div>
+        
+        {/* Skeleton Quick Action Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-24 bg-white dark:bg-card-bg border border-neutral-200 dark:border-card-border shadow-md dark:shadow-card rounded-2xl animate-pulse"></div>
+          ))}
+        </div>
+
+        {/* Skeleton Main Data Area */}
+        <div className="w-full h-64 bg-white dark:bg-card-bg border border-neutral-200 dark:border-card-border shadow-md dark:shadow-card rounded-3xl animate-pulse"></div>
       </div>
     )
   }
-
   return (
     <div className="w-full min-h-screen text-white p-6 md:p-8 font-sans">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
