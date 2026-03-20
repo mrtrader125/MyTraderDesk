@@ -29,8 +29,13 @@ export default function SubscriptionPage() {
     loadData()
   }, [])
 
-  if (loading) return <div className="animate-pulse flex space-x-4 p-8"><Activity className="text-brand-primary" /></div>
-
+ if (loading) {
+    return (
+      <div className="w-full h-64 flex flex-col items-center justify-center space-y-4">
+        <Activity className="animate-pulse text-brand-primary" size={24} />
+      </div>
+    )
+  }
   return (
     <div className="max-w-3xl space-y-8 pb-12">
       <div>
