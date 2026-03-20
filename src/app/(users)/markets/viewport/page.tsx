@@ -159,9 +159,23 @@ function ViewportContent() {
   const handleMouseUp = () => setIsDragging(false)
 
   if (loading) return (
-    <div className="h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
-      <Activity className="animate-pulse text-blue-500" size={32} />
-      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500">Connecting...</span>
+    <div className="fixed inset-0 bg-neutral-50 dark:bg-[#050505] flex overflow-hidden">
+      {/* Top Left Controls */}
+      <div className="absolute top-5 left-5 flex space-x-3 z-50 animate-pulse">
+        <div className="w-10 h-10 bg-neutral-200 dark:bg-[#0a0a0a] border border-neutral-300 dark:border-neutral-800 rounded-xl"></div>
+        <div className="h-10 w-48 bg-neutral-200 dark:bg-[#0a0a0a] border border-neutral-300 dark:border-neutral-800 rounded-xl"></div>
+      </div>
+      
+      {/* Top Center Timeframes */}
+      <div className="absolute top-5 left-1/2 -translate-x-1/2 h-10 w-64 bg-neutral-200 dark:bg-[#0a0a0a] border border-neutral-300 dark:border-neutral-800 rounded-xl z-50 animate-pulse"></div>
+
+      {/* Right Sidebar */}
+      <div className="absolute right-0 top-0 bottom-0 w-12 border-l border-neutral-300 dark:border-neutral-800 bg-neutral-100 dark:bg-[#0a0a0a]/80 z-40 animate-pulse"></div>
+
+      {/* Main Image Stage */}
+      <div className="absolute inset-0 z-10 flex items-center justify-center pl-6 md:pl-16 pr-20 pt-20 pb-10">
+        <div className="w-full max-w-4xl aspect-video bg-neutral-200 dark:bg-[#0a0a0a] border border-neutral-300 dark:border-neutral-800/50 rounded-[2rem] shadow-xl animate-pulse"></div>
+      </div>
     </div>
   )
 
