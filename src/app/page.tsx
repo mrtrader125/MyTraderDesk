@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Target, Shield, Zap, TrendingUp, Globe2, BarChart3, Activity } from 'lucide-react'
+import { ArrowRight, Target, Shield, TrendingUp, Brain, CheckCircle2 } from 'lucide-react'
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false)
@@ -16,18 +16,11 @@ export default function Home() {
   return (
     <div className="bg-slate-50 text-slate-900 min-h-screen font-sans overflow-x-hidden">
 
-      {/* Ambient Background */}
-      <div className="fixed top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-400/10 blur-[150px] rounded-full pointer-events-none z-0" />
-      <div className="fixed bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-indigo-400/5 blur-[150px] rounded-full pointer-events-none z-0" />
-
       {/* NAVBAR */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200 py-4 shadow-sm' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <div className="font-black text-xl uppercase flex items-center">
-            <span className="bg-gradient-to-br from-blue-700 to-indigo-700 bg-clip-text text-transparent">
-              MY
-            </span>
-            <span className="ml-1.5">TRADER DESK</span>
+          <div className="font-black text-xl uppercase">
+            MY TRADER DESK
           </div>
 
           <div className="flex gap-4 items-center">
@@ -35,160 +28,132 @@ export default function Home() {
               Sign In
             </Link>
             <Link href="/signup" className="px-6 py-2.5 text-sm font-bold bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all shadow-md">
-              Request Access
+              Get Access
             </Link>
           </div>
         </div>
       </nav>
 
       {/* HERO */}
-      <section className="relative z-10 pt-40 pb-20 px-6 max-w-6xl mx-auto text-center">
+      <section className="pt-40 pb-24 px-6 max-w-6xl mx-auto text-center">
 
-        <div className="inline-flex items-center space-x-2 bg-white border border-slate-200 rounded-full px-5 py-2 mb-10 shadow-sm">
-          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
-          <span className="text-xs font-bold text-slate-600 uppercase tracking-[0.2em]">
-            Institutional Analysis Desk
-          </span>
-        </div>
-
-        <h1 className="text-6xl md:text-8xl font-black tracking-tight leading-[1.1]">
-          TRADE WITH <br />
+        <h1 className="text-5xl md:text-7xl font-black leading-tight">
+          Stop Second Guessing.
+          <br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
-            STRUCTURE & CLARITY
+            Start Executing With Clarity.
           </span>
         </h1>
 
-        <p className="mt-8 text-xl text-slate-600 max-w-3xl mx-auto">
-          Built for traders who require discipline, structure, and clarity — not noise.
-          MyTraderDesk operates as a private digital analysis floor delivering professional market perspectives.
+        <p className="mt-8 text-xl text-slate-600 max-w-2xl mx-auto">
+          You already know how to trade. The real problem is hesitation.
+          MyTraderDesk helps you validate your analysis, remove doubt, and execute with confidence.
         </p>
 
-        {/* CTA */}
-        <div className="mt-10">
-          <Link href="/signup" className="px-8 py-4 bg-blue-600 text-white rounded-full font-bold uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg">
-            Enter the Trading Desk
+        <div className="mt-10 flex justify-center gap-4 flex-wrap">
+          <Link href="/signup" className="px-8 py-4 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition-all shadow-lg">
+            Join the Desk
+          </Link>
+          <Link href="#how" className="px-8 py-4 border border-slate-300 rounded-full font-bold hover:bg-slate-100 transition">
+            See How It Works
           </Link>
         </div>
 
-        {/* TRUST BAR */}
-        <div className="mt-10 flex flex-wrap justify-center gap-6 text-sm text-slate-500 font-semibold uppercase">
-          <span>Structured Analysis</span>
-          <span>•</span>
-          <span>Multi-Market Coverage</span>
-          <span>•</span>
-          <span>Risk-Defined Setups</span>
-        </div>
-
-        {/* MOCKUP */}
-        <div className="w-full mt-20">
-          <div className="w-full aspect-[21/9] bg-white border rounded-3xl shadow-xl flex flex-col overflow-hidden">
-            <div className="h-12 border-b flex items-center px-6 gap-2 bg-slate-50">
-              <div className="w-3 h-3 rounded-full bg-slate-300" />
-              <div className="w-3 h-3 rounded-full bg-slate-300" />
-              <div className="w-3 h-3 rounded-full bg-slate-300" />
-            </div>
-            <div className="flex-1 flex items-center justify-center">
-              <Activity className="w-24 h-24 text-blue-100" />
-            </div>
-          </div>
-        </div>
-
       </section>
 
-      {/* HOW IT WORKS */}
-      <section className="max-w-6xl mx-auto py-24 px-6 text-center">
-        <h2 className="text-4xl font-black mb-12">How the Desk Operates</h2>
+      {/* PROBLEM SECTION */}
+      <section className="max-w-5xl mx-auto py-20 px-6 text-center">
+        <h2 className="text-4xl font-black mb-6">The Real Problem Traders Face</h2>
 
-        <div className="grid md:grid-cols-3 gap-10 text-left">
-          <div>
-            <h3 className="font-bold text-lg mb-2">Market Mapping</h3>
-            <p className="text-slate-600">
-              Liquidity zones, structure, and directional bias defined daily.
-            </p>
-          </div>
+        <p className="text-slate-600 text-lg max-w-3xl mx-auto">
+          It's not strategy. It's not entries. It's not indicators.
+          <br /><br />
+          It's the constant doubt:
+        </p>
 
-          <div>
-            <h3 className="font-bold text-lg mb-2">Scenario Planning</h3>
-            <p className="text-slate-600">
-              Multiple trade paths with confirmations and invalidations.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="font-bold text-lg mb-2">Execution Alignment</h3>
-            <p className="text-slate-600">
-              Align entries with structured logic instead of emotions.
-            </p>
-          </div>
+        <div className="mt-8 space-y-4 text-xl font-semibold">
+          <p>“Is my analysis correct?”</p>
+          <p>“What if I’m wrong?”</p>
         </div>
+
+        <p className="mt-8 text-slate-600 max-w-2xl mx-auto">
+          This hesitation leads to missed trades, early exits, and inconsistent results.
+        </p>
       </section>
 
-      {/* FEATURES */}
-      <section className="max-w-7xl mx-auto py-24 px-6">
-        <h2 className="text-4xl font-black text-center mb-16">Professional Edge</h2>
+      {/* SOLUTION */}
+      <section id="how" className="max-w-6xl mx-auto py-24 px-6">
+        <h2 className="text-4xl font-black text-center mb-16">How MyTraderDesk Fixes This</h2>
 
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-3 gap-8">
 
           <div className="bg-white p-8 rounded-2xl border shadow-sm">
-            <Target className="text-blue-600 mb-4" />
-            <h3 className="font-bold mb-2">Trade Confluence</h3>
-            <p className="text-slate-600">Validate setups with professional confirmation.</p>
+            <Brain className="text-blue-600 mb-4" />
+            <h3 className="font-bold text-lg mb-2">Perspective</h3>
+            <p className="text-slate-600">
+              Compare your analysis with structured market perspectives.
+            </p>
+          </div>
+
+          <div className="bg-white p-8 rounded-2xl border shadow-sm">
+            <CheckCircle2 className="text-green-600 mb-4" />
+            <h3 className="font-bold text-lg mb-2">Validation</h3>
+            <p className="text-slate-600">
+              When your idea aligns, you execute with confidence.
+            </p>
           </div>
 
           <div className="bg-white p-8 rounded-2xl border shadow-sm">
             <Shield className="text-indigo-600 mb-4" />
-            <h3 className="font-bold mb-2">Risk Framework</h3>
-            <p className="text-slate-600">Defined invalidation levels for capital protection.</p>
-          </div>
-
-          <div className="bg-white p-8 rounded-2xl border shadow-sm">
-            <TrendingUp className="text-emerald-600 mb-4" />
-            <h3 className="font-bold mb-2">Multi-Market</h3>
-            <p className="text-slate-600">Forex, Gold, Crypto coverage.</p>
+            <h3 className="font-bold text-lg mb-2">Risk Control</h3>
+            <p className="text-slate-600">
+              When it doesn’t align, reduce risk or stay out.
+            </p>
           </div>
 
         </div>
       </section>
 
-      {/* TRANSPARENCY */}
-      <section className="max-w-5xl mx-auto py-24 px-6 text-center">
-        <h2 className="text-3xl font-black mb-6">Transparency Over Hype</h2>
+      {/* OUTCOME */}
+      <section className="max-w-5xl mx-auto py-20 px-6 text-center">
+        <h2 className="text-4xl font-black mb-6">What Changes For You</h2>
 
-        <p className="text-slate-600 mb-10">
-          Every analysis includes reasoning, context, and risk definition.
-          No signals. No guessing.
-        </p>
+        <div className="grid md:grid-cols-3 gap-6 mt-10 text-left">
 
-        <div className="grid grid-cols-3 gap-6">
-          <div>
-            <p className="text-3xl font-black text-blue-600">Daily</p>
-            <p className="text-slate-500 text-sm">Market Coverage</p>
+          <div className="bg-white p-6 rounded-xl border">
+            <h3 className="font-bold mb-2">Clarity</h3>
+            <p className="text-slate-600">No more overthinking every trade.</p>
           </div>
-          <div>
-            <p className="text-3xl font-black text-blue-600">3+</p>
-            <p className="text-slate-500 text-sm">Markets</p>
+
+          <div className="bg-white p-6 rounded-xl border">
+            <h3 className="font-bold mb-2">Confidence</h3>
+            <p className="text-slate-600">Execute trades without hesitation.</p>
           </div>
-          <div>
-            <p className="text-3xl font-black text-blue-600">100%</p>
-            <p className="text-slate-500 text-sm">Structured</p>
+
+          <div className="bg-white p-6 rounded-xl border">
+            <h3 className="font-bold mb-2">Consistency</h3>
+            <p className="text-slate-600">Improve results with structured decisions.</p>
           </div>
+
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="bg-slate-900 text-white text-center py-32 px-6">
+      {/* FINAL CTA */}
+      <section className="bg-slate-900 text-white text-center py-28 px-6">
         <h2 className="text-5xl font-black mb-6">
-          STEP ONTO THE DESK
+          Trade Without Doubt
         </h2>
 
-        <Link href="/signup" className="px-10 py-5 bg-blue-600 rounded-full font-bold uppercase hover:bg-blue-500 transition-all">
-          Create Account
+        <p className="text-slate-400 mb-10 max-w-xl mx-auto">
+          Stop guessing. Start executing with a clear, structured approach.
+        </p>
+
+        <Link href="/signup" className="px-10 py-5 bg-blue-600 rounded-full font-bold hover:bg-blue-500 transition-all">
+          Join MyTraderDesk
         </Link>
 
-        {/* DISCLAIMER */}
-        <p className="mt-8 text-xs text-slate-400 max-w-xl mx-auto">
-          Trading involves risk. MyTraderDesk provides analysis and educational insights,
-          not financial advice. Always manage your own risk.
+        <p className="mt-8 text-xs text-slate-500 max-w-xl mx-auto">
+          Not financial advice. Always manage your own risk.
         </p>
       </section>
 
