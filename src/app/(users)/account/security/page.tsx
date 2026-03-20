@@ -84,7 +84,7 @@ export default function SecurityPage() {
     }
   }
 
-  if (loading) {
+ if (loading) {
     return (
       <div className="w-full h-64 flex flex-col items-center justify-center space-y-4">
         <Activity className="animate-pulse text-brand-primary" size={24} />
