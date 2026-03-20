@@ -23,8 +23,8 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
       <div className="flex flex-col md:flex-row gap-8 lg:gap-12 items-start pt-2">
         
         {/* INNER LEFT SIDEBAR (Sticky Navigation) */}
-        <nav className="w-full md:w-48 shrink-0 flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible scrollbar-hide pb-4 md:pb-0 md:sticky md:top-8 self-start z-10">
-          {ACCOUNT_LINKS.map((link) => {
+<nav className="w-full md:w-48 shrink-0 flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible scrollbar-hide pb-4 md:pb-0 md:sticky md:top-10 self-start z-10">
+  {ACCOUNT_LINKS.map((link) => {
             const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
             const Icon = link.icon
             
