@@ -41,8 +41,7 @@ export default function SideNav() {
       <div className="h-16 flex items-center px-4 border-b border-neutral-800 justify-between overflow-hidden">
         {isOpen && (
           <span className="font-black tracking-tight text-lg uppercase flex items-center whitespace-nowrap">
-            <span className="bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.4)]">MY
-            </span> TRADER DESK
+            <span className="bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.4)]">MY</span> TRADER DESK
           </span>
         )}
         <button 
