@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { Bookmark, Lock, Clock, TrendingUp, TrendingDown, Minus, Trash2, Activity, FolderOpen, Edit3, X, FileText } from 'lucide-react'
 import { getSetupAccess } from '@/lib/access'
 import { ASSET_CATEGORIES, PLAN_CONFIG } from '@/lib/platformConfig'
+import { Loader2 } from 'lucide-react'
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All', req: 'free' },
