@@ -37,16 +37,25 @@ export default function SideNav() {
   return (
     <aside className={`${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-screen shrink-0 z-50`}>
       
-      {/* BRANDING & TOGGLE */}
-      <div className="h-16 flex items-center px-4 border-b border-neutral-800 justify-between overflow-hidden">
+    {/* BRANDING & TOGGLE */}
+      <div className={`flex items-center py-8 select-none transition-all ${isOpen ? 'px-6 justify-between' : 'justify-center'}`}>
+        
         {isOpen && (
-          <span className="font-black tracking-tight text-lg uppercase flex items-center whitespace-nowrap">
-            <span className="text-blue-500 mr-1">MY</span> TRADER DESK
-          </span>
+          <h1 className="text-xl md:text-2xl font-black tracking-tighter uppercase shrink-0 animate-in fade-in duration-300">
+            {/* The Glowing "MY" */}
+            <span className="bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.4)]">
+              MY
+            </span>
+            {/* The Standard "TRADERDESK" */}
+            <span className="text-neutral-900 dark:text-white ml-0.5">
+              TraderDesk
+            </span>
+          </h1>
         )}
+
         <button 
           onClick={() => setIsOpen(!isOpen)} 
-          className="p-2 hover:bg-neutral-800 rounded-lg text-neutral-400 transition-colors mx-auto shrink-0"
+          className="p-2 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg text-neutral-500 dark:text-neutral-400 transition-colors shrink-0"
         >
           <Menu size={20} />
         </button>
