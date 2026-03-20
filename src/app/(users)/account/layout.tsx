@@ -16,14 +16,13 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname()
 
   return (
-    // Removed the hardcoded bg-[#050505] here so it seamlessly uses the theme from the parent layout!
-    <div className="w-full min-h-screen p-6 md:p-8 font-sans overflow-x-hidden">
+    // 🚨 FIX: Removed `overflow-x-hidden` from this top div so sticky positioning works!
+    <div className="w-full min-h-screen p-6 md:p-8 font-sans">
       
       {/* TWO-COLUMN LAYOUT */}
       <div className="flex flex-col md:flex-row gap-8 lg:gap-12 items-start pt-2">
         
         {/* INNER LEFT SIDEBAR (Sticky Navigation) */}
-        {/* 🚨 FIX: Changed width to w-48 and added sticky/top-8/self-start */}
         <nav className="w-full md:w-48 shrink-0 flex flex-row md:flex-col gap-2 overflow-x-auto md:overflow-visible scrollbar-hide pb-4 md:pb-0 md:sticky md:top-8 self-start z-10">
           {ACCOUNT_LINKS.map((link) => {
             const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
