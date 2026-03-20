@@ -94,14 +94,14 @@ function VaultContent() {
     return true
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
-        <Activity className="animate-pulse text-amber-500" size={32} />
-        <span className="text-[10px] font-black tracking-widest uppercase text-neutral-500">Loading Saved Setups...</span>
-      </div>
-    )
-  }
+if (loading) return (
+  <div className="w-full h-[70vh] flex flex-col items-center justify-center space-y-4">
+    <Loader2 className="animate-spin text-neutral-400 dark:text-neutral-500" size={32} />
+    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-400 dark:text-neutral-500">
+      Authenticating...
+    </span>
+  </div>
+)
 
   const filteredItems = vaultItems.filter(item => {
     const matchesTab = activeTab === 'ALL' ? true : (item.category || 'FOREX').toUpperCase() === activeTab
