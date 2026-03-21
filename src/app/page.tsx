@@ -2,16 +2,50 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Brain, CheckCircle2, Shield, BarChart3 } from 'lucide-react'
+import { Brain, CheckCircle2, Shield } from 'lucide-react'
+import { createClient } from '@supabase/supabase-js'
+
+// ✅ Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false)
+  const [analyses, setAnalyses] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
+
+    fetchAnalyses()
+
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // ✅ Fetch delayed charts (7 days old)
+  const fetchAnalyses = async () => {
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+      const { data, error } = await supabase
+        .from('analyses')
+        .select('*')
+        .lte('created_at', sevenDaysAgo)
+        .order('created_at', { ascending: false })
+        .limit(4)
+
+      if (error) throw error
+
+      setAnalyses(data || [])
+    } catch (err) {
+      console.error('Error fetching analyses:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="bg-slate-50 text-slate-900 min-h-screen font-sans">
@@ -19,8 +53,8 @@ export default function Home() {
       {/* NAVBAR */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-white/80 backdrop-blur-xl border-b border-slate-200 py-4 shadow-sm' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <div className="font-black text-xl uppercase tracking-wide">MY TRADER DESK</div>
-          <Link href="/signup" className="px-6 py-2.5 text-sm font-bold bg-blue-600 text-white rounded-full hover:bg-blue-700 shadow">
+          <div className="font-black text-xl uppercase">MY TRADER DESK</div>
+          <Link href="/signup" className="px-6 py-2.5 text-sm font-bold bg-blue-600 text-white rounded-full">
             Get Instant Access
           </Link>
         </div>
@@ -28,11 +62,6 @@ export default function Home() {
 
       {/* HERO */}
       <section className="pt-40 pb-24 px-6 max-w-6xl mx-auto text-center">
-
-        <p className="text-sm uppercase tracking-widest text-blue-600 font-bold mb-4">
-          For traders stuck in hesitation
-        </p>
-
         <h1 className="text-5xl md:text-7xl font-black leading-tight">
           Stop Second Guessing.
           <br />
@@ -41,161 +70,84 @@ export default function Home() {
           </span>
         </h1>
 
-        <p className="mt-8 text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-          You already know how to analyze the market.
-          <br />
-          The problem is trusting your decisions.
-          <br /><br />
-          MyTraderDesk helps you validate your thinking so you can trade without hesitation.
+        <p className="mt-8 text-xl text-slate-600 max-w-2xl mx-auto">
+          You already know how to trade. The problem is trusting your decisions.
         </p>
 
-        <div className="mt-10 flex justify-center gap-4 flex-wrap">
-          <Link href="/signup" className="px-8 py-4 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 shadow-lg">
+        <div className="mt-10">
+          <Link href="/signup" className="px-8 py-4 bg-blue-600 text-white rounded-full font-bold">
             Start Trading With Clarity
           </Link>
-          <Link href="#proof" className="px-8 py-4 border border-slate-300 rounded-full font-bold hover:bg-slate-100">
-            See How It Works
-          </Link>
         </div>
-
-        <p className="mt-6 text-sm text-slate-500">
-          No signals • No hype • Just structured analysis
-        </p>
-
       </section>
 
-      {/* PROBLEM */}
-      <section className="max-w-5xl mx-auto py-20 px-6 text-center">
-        <h2 className="text-4xl font-black mb-6">You’re Not a Beginner Anymore</h2>
-
-        <p className="text-slate-600 text-lg max-w-2xl mx-auto">
-          You know entries. You know structure. You know risk.
-          <br /><br />
-          But when it’s time to execute...
+      {/* PROOF SECTION */}
+      <section className="max-w-6xl mx-auto py-24 px-6">
+        <h2 className="text-4xl font-black text-center mb-6">Real Analysis (7+ Days Old)</h2>
+        <p className="text-center text-slate-500 mb-12">
+          Showing past analysis — real thinking, not signals.
         </p>
 
-        <div className="mt-8 text-xl font-semibold space-y-3">
-          <p>“Is this actually right?”</p>
-          <p>“What if I’m wrong?”</p>
-        </div>
+        {loading ? (
+          <p className="text-center text-slate-400">Loading analysis...</p>
+        ) : (
+          <div className="grid md:grid-cols-2 gap-8">
+            {analyses.map((item) => (
+              <div key={item.id} className="bg-white p-6 rounded-xl border shadow-sm">
 
-        <p className="mt-8 text-slate-600 max-w-xl mx-auto">
-          That hesitation is what keeps you stuck — not your strategy.
-        </p>
+                <img
+                  src={item.image_url}
+                  alt="chart"
+                  className="rounded mb-4 w-full h-52 object-cover"
+                />
+
+                <p className="text-xs text-slate-500 mb-1">
+                  {new Date(item.created_at).toDateString()}
+                </p>
+
+                <p className="font-bold mb-1">{item.bias}</p>
+
+                <p className="text-sm text-slate-600">
+                  {item.description}
+                </p>
+
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* SOLUTION */}
       <section className="max-w-6xl mx-auto py-24 px-6">
-        <h2 className="text-4xl font-black text-center mb-16">A Structured Way To Validate Your Trades</h2>
+        <h2 className="text-4xl font-black text-center mb-16">Why This Works</h2>
 
         <div className="grid md:grid-cols-3 gap-8">
-
-          <div className="bg-white p-8 rounded-2xl border hover:shadow-md transition">
+          <div className="bg-white p-8 rounded-2xl border">
             <Brain className="mb-4 text-blue-600" />
-            <h3 className="font-bold mb-2">Clear Perspective</h3>
-            <p className="text-slate-600">
-              Understand the market bias before you enter.
-            </p>
+            <h3 className="font-bold mb-2">Perspective</h3>
+            <p className="text-slate-600">Understand market bias clearly.</p>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl border hover:shadow-md transition">
+          <div className="bg-white p-8 rounded-2xl border">
             <CheckCircle2 className="mb-4 text-green-600" />
-            <h3 className="font-bold mb-2">Trade Validation</h3>
-            <p className="text-slate-600">
-              Align your idea with structured analysis.
-            </p>
+            <h3 className="font-bold mb-2">Validation</h3>
+            <p className="text-slate-600">Confirm your trade ideas.</p>
           </div>
 
-          <div className="bg-white p-8 rounded-2xl border hover:shadow-md transition">
+          <div className="bg-white p-8 rounded-2xl border">
             <Shield className="mb-4 text-indigo-600" />
-            <h3 className="font-bold mb-2">Controlled Risk</h3>
-            <p className="text-slate-600">
-              Reduce risk when setups don’t align.
-            </p>
+            <h3 className="font-bold mb-2">Control</h3>
+            <p className="text-slate-600">Reduce risk when uncertain.</p>
           </div>
-
         </div>
       </section>
 
-      {/* PROOF */}
-      <section id="proof" className="max-w-6xl mx-auto py-24 px-6">
-        <h2 className="text-4xl font-black text-center mb-12">This Is How We Think</h2>
-
-        <div className="grid md:grid-cols-2 gap-8">
-
-          <div className="bg-white p-6 rounded-xl border">
-            <div className="h-52 bg-slate-100 rounded mb-4 flex items-center justify-center">
-              <BarChart3 className="text-slate-400" />
-            </div>
-            <p className="text-sm text-slate-600">
-              Market structure, liquidity zones, bias, and invalidation — everything defined before execution.
-            </p>
-          </div>
-
-          <div className="bg-white p-6 rounded-xl border">
-            <h3 className="font-bold mb-4">What Changes</h3>
-            <div className="space-y-2 text-slate-600">
-              <p>❌ Second guessing every entry</p>
-              <p>❌ Emotional decision making</p>
-              <p className="pt-3">✅ Clear directional bias</p>
-              <p>✅ Confident execution</p>
-              <p>✅ Defined risk on every trade</p>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* VISUAL */}
-      <section className="max-w-6xl mx-auto py-24 px-6 text-center">
-        <h2 className="text-4xl font-black mb-6">Inside The Desk</h2>
-        <p className="text-slate-600 mb-10">A clean, structured environment built for decision clarity.</p>
-
-        <div className="w-full h-72 bg-white border rounded-2xl flex items-center justify-center shadow-sm">
-          <p className="text-slate-400">Dashboard Preview</p>
-        </div>
-      </section>
-
-      {/* PRICING */}
-      <section className="max-w-6xl mx-auto py-24 px-6">
-        <h2 className="text-4xl font-black text-center mb-16">Choose Your Access Level</h2>
-
-        <div className="grid md:grid-cols-3 gap-6">
-
-          <div className="bg-white p-8 rounded-xl border">
-            <h3 className="font-bold">Starter</h3>
-            <p className="text-2xl font-black my-4">$5/mo</p>
-            <p className="text-slate-600">Basic structured analysis</p>
-          </div>
-
-          <div className="bg-white p-8 rounded-xl border-2 border-blue-600 relative shadow-lg">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-xs bg-blue-600 text-white px-3 py-1 rounded-full">
-              MOST POPULAR
-            </span>
-            <h3 className="font-bold">Pro</h3>
-            <p className="text-2xl font-black my-4">$10/mo</p>
-            <p className="text-slate-600">Full analysis + trade scenarios + priority updates</p>
-          </div>
-
-          <div className="bg-white p-8 rounded-xl border">
-            <h3 className="font-bold">Elite</h3>
-            <p className="text-2xl font-black my-4">$100/yr</p>
-            <p className="text-slate-600">All features + deeper insights</p>
-          </div>
-
-        </div>
-      </section>
-
-      {/* FINAL CTA */}
+      {/* CTA */}
       <section className="bg-slate-900 text-white text-center py-28 px-6">
         <h2 className="text-5xl font-black mb-6">Stop Guessing Your Trades</h2>
-        <p className="text-slate-400 mb-10">Start executing with structure and confidence.</p>
-
-        <Link href="/signup" className="px-10 py-5 bg-blue-600 rounded-full font-bold hover:bg-blue-500 shadow-lg">
-          Get Instant Access
+        <Link href="/signup" className="px-10 py-5 bg-blue-600 rounded-full font-bold">
+          Get Access
         </Link>
-
-        <p className="mt-6 text-xs text-slate-500">Trading involves risk. Not financial advice.</p>
       </section>
 
     </div>
