@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Brain, CheckCircle2, Shield, BarChart3, ArrowRight, XCircle, Activity } from 'lucide-react'
+import { Brain, CheckCircle2, Shield, BarChart3, ArrowRight, XCircle, Activity, Globe2, Target, Scale } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
 // Supabase client setup for the Live Proof section
@@ -121,7 +121,7 @@ export default function Home() {
         </p>
       </section>
 
-      {/* THE SOLUTION GRID (Dark Glassmorphism) */}
+      {/* THE SOLUTION GRID */}
       <section className="relative z-10 max-w-7xl mx-auto py-24 px-6 border-t border-neutral-900">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">A Structured Way To Validate</h2>
@@ -149,6 +149,69 @@ export default function Home() {
             <h3 className="text-2xl font-black mb-3 text-white uppercase tracking-tight">Controlled Risk</h3>
             <p className="text-neutral-400 leading-relaxed">Reduce risk when setups don’t align. Every analysis includes precise invalidation levels to protect capital.</p>
           </div>
+        </div>
+      </section>
+
+      {/* NEW: WHAT EXACTLY DO YOU GET? (Trust & Deliverables) */}
+      <section className="relative z-10 max-w-7xl mx-auto py-24 px-6 border-t border-neutral-900">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          
+          {/* Left Column: The Details */}
+          <div>
+            <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight mb-6">
+              What exactly do <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">you get?</span>
+            </h2>
+            <p className="text-neutral-400 text-lg leading-relaxed mb-10">
+              You are getting direct access to the analysis of a professional trading floor. Our philosophy is simple: <strong className="text-white">Analyze more. Execute less.</strong> We filter the noise so you only see the data that actually matters.
+            </p>
+            
+            <div className="space-y-8">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 mt-1 bg-blue-500/10 p-3 rounded-xl border border-blue-500/20">
+                  <Globe2 className="w-6 h-6 text-blue-400" />
+                </div>
+                <div className="ml-5">
+                  <h3 className="text-xl font-bold text-white tracking-wide">Complete Market Coverage</h3>
+                  <p className="mt-2 text-neutral-400 leading-relaxed">A clear, institutional Point of View (POV) across Forex, Crypto, Commodities, Stocks, and Indices. We map the entire board.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <div className="flex-shrink-0 mt-1 bg-emerald-500/10 p-3 rounded-xl border border-emerald-500/20">
+                  <Target className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div className="ml-5">
+                  <h3 className="text-xl font-bold text-white tracking-wide">High-Probability Setups</h3>
+                  <p className="mt-2 text-neutral-400 leading-relaxed">We only post instruments that have clear, highly-actionable setups. No forced trades, just high-quality charting.</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start">
+                <div className="flex-shrink-0 mt-1 bg-purple-500/10 p-3 rounded-xl border border-purple-500/20">
+                  <Scale className="w-6 h-6 text-purple-400" />
+                </div>
+                <div className="ml-5">
+                  <h3 className="text-xl font-bold text-white tracking-wide">Dynamic Risk Decisions</h3>
+                  <p className="mt-2 text-neutral-400 leading-relaxed">Use our POV to definitively decide when to size up, when to reduce your risk, or when the absolute smartest move is to simply skip the trade.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Right Column: The Core Philosophy Block */}
+          <div className="bg-gradient-to-br from-[#111] to-[#050505] p-12 rounded-[2.5rem] border border-neutral-800 relative overflow-hidden group shadow-2xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full group-hover:bg-blue-500/10 transition-colors" />
+            <div className="absolute -left-4 top-10 w-2 h-24 bg-blue-500 rounded-r-full opacity-50"></div>
+            
+            <h3 className="text-3xl md:text-4xl font-black text-white leading-tight mb-8">
+              "Amateurs execute constantly and analyze rarely. Professionals analyze deeply and execute selectively."
+            </h3>
+            <p className="text-neutral-500 font-bold uppercase tracking-widest text-sm flex items-center">
+              <span className="w-8 h-[1px] bg-neutral-600 mr-4"></span>
+              The Desk Philosophy
+            </p>
+          </div>
+
         </div>
       </section>
 
@@ -218,7 +281,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PRICING TIERS (Dark High-End Cards) */}
+      {/* PRICING TIERS */}
       <section className="relative z-10 max-w-6xl mx-auto py-32 px-6">
         <div className="text-center mb-20">
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">Choose Your Access</h2>
@@ -234,7 +297,7 @@ export default function Home() {
             <Link href="/signup" className="block w-full py-4 px-6 bg-[#111] text-white font-bold rounded-full border border-neutral-700 hover:bg-neutral-800 transition-colors uppercase tracking-widest text-sm">Select Starter</Link>
           </div>
 
-          {/* Pro (Highlighted Electric Card) */}
+          {/* Pro */}
           <div className="bg-gradient-to-b from-[#111] to-[#050505] p-10 rounded-3xl border border-blue-500/50 shadow-[0_0_40px_rgba(59,130,246,0.15)] relative text-center transform md:-translate-y-4">
             <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-black uppercase tracking-widest px-5 py-2 rounded-full shadow-lg">
               Most Popular
