@@ -2,7 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // 1. Move response OUTSIDE the try block so the catch block can see it
   let response = NextResponse.next({
     request: { headers: request.headers },
   })
@@ -32,12 +31,16 @@ export async function middleware(request: NextRequest) {
 
     // 1. Not logged in? Redirect to login
     if (!user && (isUserRoute || isAdminRoute)) {
-      return NextResponse.redirect(new URL('/login', request.url))
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/login'
+      return NextResponse.redirect(redirectUrl)
     }
 
-    // 2. Logged in? Don't show login page
+    // 2. Logged in? Don't show login/signup pages
     if (user && isAuthRoute) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/dashboard'
+      return NextResponse.redirect(redirectUrl)
     }
 
     // 3. ADMIN CHECK: Strictly enforce database role
@@ -45,14 +48,17 @@ export async function middleware(request: NextRequest) {
       const isRoleAdmin = user.app_metadata?.role === 'admin'
 
       if (!isRoleAdmin) {
-        // Kick them back to the user dashboard if they aren't a true admin
-        return NextResponse.redirect(new URL('/dashboard?error=AdminOnly', request.url))
+        // Kick them back out if they aren't a true admin
+        const redirectUrl = request.nextUrl.clone()
+        redirectUrl.pathname = '/dashboard'
+        redirectUrl.searchParams.set('error', 'AdminOnly')
+        return NextResponse.redirect(redirectUrl)
       }
     }
 
     return response
   } catch (err) {
-    // Now this will work safely if an error occurs!
+    // Failsafe execution
     return response;
   }
 }
