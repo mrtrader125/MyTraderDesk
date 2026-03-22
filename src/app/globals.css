@@ -69,3 +69,17 @@ body {
     --card-shadow: 0 10px 40px -10px rgba(168, 85, 247, 0.15);
   }
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Enable smooth scrolling for anchor tags like #pricing */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: #050505;
+  color: #e5e5e5;
+}
