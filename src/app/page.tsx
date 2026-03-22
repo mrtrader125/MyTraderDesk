@@ -55,16 +55,34 @@ export default function Home() {
       <div className="fixed top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[150px] rounded-full pointer-events-none z-0" />
       <div className="fixed bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-600/10 blur-[150px] rounded-full pointer-events-none z-0" />
 
-      {/* PREMIUM GLASS NAVBAR */}
+      {/* PREMIUM GLASS NAVBAR (Updated with SEO Routing) */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <div className="font-black tracking-tight text-xl uppercase flex items-center whitespace-nowrap text-white cursor-pointer group">
-            <span className="bg-gradient-to-br from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.4)] group-hover:drop-shadow-[0_0_20px_rgba(59,130,246,0.6)] transition-all duration-500">MY</span>
-            <span className="ml-1.5">TRADER DESK</span>
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Activity size={18} className="text-white" />
+            </div>
+            <span className="text-white font-black uppercase tracking-widest italic text-sm">
+              MyTrader<span className="text-blue-500">Desk</span>
+            </span>
+          </Link>
+
+          {/* Core Navigation - Pushing traffic to our new SEO pages */}
+          <div className="hidden md:flex items-center space-x-8">
+            <Link href="/community" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
+              Live Floor
+            </Link>
+            <Link href="/playbook" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
+              Playbook
+            </Link>
+            <Link href="/pricing" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
+              Pricing
+            </Link>
           </div>
+
           <div className="flex gap-4 items-center">
-            <Link href="/login" className="text-sm font-bold text-neutral-400 hover:text-white transition-colors hidden sm:block">Log In</Link>
-            <Link href="/signup" className="px-6 py-2.5 text-sm font-bold bg-white text-black rounded-full hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all">
+            <Link href="/login" className="text-xs font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors hidden sm:block">Log In</Link>
+            <Link href="/signup" className="px-6 py-2.5 text-[10px] uppercase tracking-widest font-black bg-white text-black rounded-xl hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all">
               Access Floor
             </Link>
           </div>
@@ -73,29 +91,29 @@ export default function Home() {
 
       {/* HERO SECTION */}
       <section className="relative z-10 pt-40 pb-20 px-6 max-w-6xl mx-auto text-center">
-        <div className="inline-flex items-center space-x-2 bg-white/5 border border-white/10 rounded-full px-5 py-2 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        <div className="inline-flex items-center space-x-2 bg-white/5 border border-white/10 rounded-full px-5 py-2 mb-8">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
           <span className="text-xs font-bold text-neutral-300 uppercase tracking-widest">For Traders Stuck in Hesitation</span>
         </div>
 
-        <h1 className="text-6xl md:text-8xl font-black leading-[1.1] tracking-tighter text-white animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-150">
+        <h1 className="text-6xl md:text-8xl font-black leading-[1.1] tracking-tighter text-white">
           STOP SECOND GUESSING.<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500">
             EXECUTE WITH CLARITY.
           </span>
         </h1>
 
-        <p className="mt-8 text-xl text-neutral-400 max-w-2xl mx-auto leading-relaxed animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-300">
+        <p className="mt-8 text-xl text-neutral-400 max-w-2xl mx-auto leading-relaxed">
           You already know how to analyze the market. The problem is trusting your decisions. Validate your thinking against professional floor analysis so you can trade without hesitation.
         </p>
 
-        <div className="mt-12 flex flex-col sm:flex-row justify-center gap-5 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-500">
-          <Link href="/signup" className="group flex items-center justify-center px-10 py-5 bg-white text-black rounded-full font-black uppercase tracking-widest hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all">
+        <div className="mt-12 flex flex-col sm:flex-row justify-center gap-5">
+          <Link href="/signup" className="group flex items-center justify-center px-10 py-5 bg-white text-black rounded-xl font-black uppercase tracking-widest text-sm hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.2)] transition-all">
             Enter The Desk <ArrowRight className="ml-3 w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 
-        <p className="mt-8 text-sm text-neutral-500 font-bold tracking-widest uppercase animate-in fade-in duration-1000 delay-700">
+        <p className="mt-8 text-sm text-neutral-500 font-bold tracking-widest uppercase">
           No signals • No hype • Pure Structured Analysis
         </p>
       </section>
@@ -152,11 +170,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* NEW: WHAT EXACTLY DO YOU GET? (Trust & Deliverables) */}
+      {/* WHAT EXACTLY DO YOU GET? */}
       <section className="relative z-10 max-w-7xl mx-auto py-24 px-6 border-t border-neutral-900">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          
-          {/* Left Column: The Details */}
           <div>
             <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-tight mb-6">
               What exactly do <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">you get?</span>
@@ -172,7 +188,7 @@ export default function Home() {
                 </div>
                 <div className="ml-5">
                   <h3 className="text-xl font-bold text-white tracking-wide">Complete Market Coverage</h3>
-                  <p className="mt-2 text-neutral-400 leading-relaxed">A clear, institutional Point of View (POV) across Forex, Crypto, Commodities, Stocks, and Indices. We map the entire board.</p>
+                  <p className="mt-2 text-neutral-400 leading-relaxed">A clear, institutional Point of View (POV) across Forex, Crypto, Commodities, Stocks, and Indices.</p>
                 </div>
               </div>
               
@@ -191,14 +207,13 @@ export default function Home() {
                   <Scale className="w-6 h-6 text-purple-400" />
                 </div>
                 <div className="ml-5">
-                  <h3 className="text-xl font-bold text-white tracking-wide">Dynamic Risk Decisions</h3>
-                  <p className="mt-2 text-neutral-400 leading-relaxed">Use our POV to definitively decide when to size up, when to reduce your risk, or when the absolute smartest move is to simply skip the trade.</p>
+                  <h3 className="text-xl font-bold text-white tracking-wide">Crowdsourced Sentiment</h3>
+                  <p className="mt-2 text-neutral-400 leading-relaxed">See what thousands of other intermediate traders are looking at. Validate your bias with community voting.</p>
                 </div>
               </div>
             </div>
           </div>
           
-          {/* Right Column: The Core Philosophy Block */}
           <div className="bg-gradient-to-br from-[#111] to-[#050505] p-12 rounded-[2.5rem] border border-neutral-800 relative overflow-hidden group shadow-2xl">
             <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full group-hover:bg-blue-500/10 transition-colors" />
             <div className="absolute -left-4 top-10 w-2 h-24 bg-blue-500 rounded-r-full opacity-50"></div>
@@ -211,11 +226,10 @@ export default function Home() {
               The Desk Philosophy
             </p>
           </div>
-
         </div>
       </section>
 
-      {/* LIVE PROOF SECTION (Supabase Integration) */}
+      {/* LIVE PROOF SECTION */}
       <section className="relative z-10 bg-[#0a0a0a]/50 py-32 px-6 border-y border-neutral-900 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -281,62 +295,104 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PRICING TIERS */}
-      <section className="relative z-10 max-w-6xl mx-auto py-32 px-6">
+      {/* PRICING TIERS (Updated for Strategy) */}
+      <section id="pricing" className="relative z-10 max-w-6xl mx-auto py-32 px-6">
         <div className="text-center mb-20">
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">Choose Your Access</h2>
-          <p className="text-neutral-500 mt-4 text-xl">Transparent pricing for serious operators.</p>
+          <p className="text-neutral-500 mt-4 text-xl">Transparent pricing for serious operators. No hidden add-ons.</p>
         </div>
         
         <div className="grid md:grid-cols-3 gap-8 items-center">
-          {/* Starter */}
+          
+          {/* Free Tier */}
           <div className="bg-[#0a0a0a] p-10 rounded-3xl border border-neutral-800 hover:border-neutral-600 transition-colors text-center">
-            <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Starter</h3>
-            <p className="text-5xl font-black text-white my-6">$5<span className="text-xl text-neutral-600 font-medium">/mo</span></p>
-            <p className="text-neutral-500 text-sm mb-10 h-10">Basic structured analysis to gauge market direction.</p>
-            <Link href="/signup" className="block w-full py-4 px-6 bg-[#111] text-white font-bold rounded-full border border-neutral-700 hover:bg-neutral-800 transition-colors uppercase tracking-widest text-sm">Select Starter</Link>
+            <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Free</h3>
+            <p className="text-5xl font-black text-white my-6">$0<span className="text-xl text-neutral-600 font-medium">/mo</span></p>
+            <p className="text-neutral-500 text-sm mb-10 h-10">Delayed analysis and read-only community access.</p>
+            <Link href="/signup" className="block w-full py-4 px-6 bg-[#111] text-white font-bold rounded-xl border border-neutral-700 hover:bg-neutral-800 transition-colors uppercase tracking-widest text-[10px]">Create Free Account</Link>
           </div>
 
-          {/* Pro */}
-          <div className="bg-gradient-to-b from-[#111] to-[#050505] p-10 rounded-3xl border border-blue-500/50 shadow-[0_0_40px_rgba(59,130,246,0.15)] relative text-center transform md:-translate-y-4">
-            <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-xs font-black uppercase tracking-widest px-5 py-2 rounded-full shadow-lg">
-              Most Popular
+          {/* Essential Tier */}
+          <div className="bg-[#0a0a0a] p-10 rounded-3xl border border-neutral-800 hover:border-blue-500/50 transition-colors text-center transform md:-translate-y-4 shadow-xl">
+            <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Essential</h3>
+            <p className="text-5xl font-black text-white my-6">$4.99<span className="text-xl text-neutral-500 font-medium">/mo</span></p>
+            <p className="text-neutral-400 text-sm mb-10 h-10">Real-time Forex analysis + Full community voting rights.</p>
+            <Link href="/signup" className="block w-full py-4 px-6 bg-[#111] text-white font-black rounded-xl border border-neutral-700 hover:border-blue-500 hover:text-blue-400 transition-all uppercase tracking-widest text-[10px]">Select Essential</Link>
+          </div>
+
+          {/* Pro Tier */}
+          <div className="bg-gradient-to-b from-[#111] to-[#050505] p-10 rounded-3xl border border-blue-500/50 shadow-[0_0_40px_rgba(59,130,246,0.15)] relative text-center">
+            <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-5 py-2 rounded-full shadow-lg">
+              All Access
             </span>
-            <h3 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Pro</h3>
-            <p className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 my-6">$10<span className="text-xl text-neutral-500 font-medium">/mo</span></p>
-            <p className="text-neutral-400 text-sm mb-10 h-10">Full access + daily trade scenarios + priority updates.</p>
-            <Link href="/signup" className="block w-full py-4 px-6 bg-white text-black font-black rounded-full hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-transform uppercase tracking-widest text-sm">Get Pro Access</Link>
+            <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Pro</h3>
+            <p className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 my-6">$9.99<span className="text-xl text-neutral-500 font-medium">/mo</span></p>
+            <p className="text-neutral-400 text-sm mb-10 h-10">Unlocks Crypto, Gold, Indices, and premium community badges.</p>
+            <Link href="/signup" className="block w-full py-4 px-6 bg-white text-black font-black rounded-xl hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-transform uppercase tracking-widest text-[10px]">Get Pro Access</Link>
           </div>
 
-          {/* Elite */}
-          <div className="bg-[#0a0a0a] p-10 rounded-3xl border border-neutral-800 hover:border-neutral-600 transition-colors text-center">
-            <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Elite</h3>
-            <p className="text-5xl font-black text-white my-6">$100<span className="text-xl text-neutral-600 font-medium">/yr</span></p>
-            <p className="text-neutral-500 text-sm mb-10 h-10">Save 15% annually. All features + deepest insights.</p>
-            <Link href="/signup" className="block w-full py-4 px-6 bg-[#111] text-white font-bold rounded-full border border-neutral-700 hover:bg-neutral-800 transition-colors uppercase tracking-widest text-sm">Select Elite</Link>
-          </div>
         </div>
       </section>
 
-      {/* MASSIVE GROUNDING FOOTER */}
-      <section className="relative z-10 bg-[#000] border-t border-neutral-900 overflow-hidden text-center pt-40 pb-16 px-6">
-        <div className="absolute inset-0 bg-blue-600/5 blur-[150px] z-0" />
-        <div className="relative z-10 max-w-4xl mx-auto">
-          <h2 className="text-5xl md:text-8xl font-black text-white tracking-tighter mb-8 leading-[1.1]">
-            TRADE WITH <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-neutral-400 to-neutral-600">CONFIDENCE.</span>
-          </h2>
-          <p className="text-neutral-500 text-xl mb-12 max-w-2xl mx-auto">Start executing with structure, clarity, and institutional confluence today.</p>
-          <Link href="/signup" className="inline-flex items-center justify-center px-12 py-6 bg-white text-black rounded-full font-black text-lg uppercase tracking-widest hover:scale-105 shadow-[0_0_40px_rgba(255,255,255,0.15)] transition-transform">
-            Join the Desk
-          </Link>
-          <p className="mt-12 text-xs text-neutral-600 font-bold uppercase tracking-widest">Trading involves risk. Not financial advice.</p>
+      {/* SEO FOOTER & TRUST DIRECTORY */}
+      <footer className="bg-[#020202] border-t border-neutral-900 pt-20 pb-10 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+          
+          {/* Brand Column */}
+          <div className="col-span-1 md:col-span-1">
+            <Link href="/" className="flex items-center space-x-2 mb-6">
+              <Activity size={24} className="text-blue-500" />
+              <span className="text-white font-black uppercase tracking-widest italic text-lg">
+                Sentinel<span className="text-blue-500">Vortex</span>
+              </span>
+            </Link>
+            <p className="text-xs font-medium text-neutral-500 leading-relaxed pr-4">
+              A dedicated digital trading floor providing intermediate operators with institutional-grade structural analysis and crowdsourced market confluence.
+            </p>
+          </div>
+
+          {/* Live Markets (SEO Hubs) */}
+          <div>
+            <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-6">Live Markets</h4>
+            <ul className="space-y-4">
+              <li><Link href="/analysis/eurusd" className="text-xs font-medium text-neutral-500 hover:text-blue-500 transition-colors">EUR/USD Analysis Today</Link></li>
+              <li><Link href="/analysis/xauusd" className="text-xs font-medium text-neutral-500 hover:text-blue-500 transition-colors">Gold (XAUUSD) Setups</Link></li>
+              <li><Link href="/analysis/btcusd" className="text-xs font-medium text-neutral-500 hover:text-blue-500 transition-colors">Bitcoin (BTC) Structure</Link></li>
+              <li><Link href="/community" className="text-xs font-medium text-neutral-500 hover:text-blue-500 transition-colors">Live Sentiment Floor</Link></li>
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-6">Resources</h4>
+            <ul className="space-y-4">
+              <li><Link href="/playbook" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">The Trading Playbook</Link></li>
+              <li><Link href="/faq" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">Frequently Asked Questions</Link></li>
+              <li><Link href="/about" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">About Sentinel Vortex</Link></li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-6">Legal</h4>
+            <ul className="space-y-4">
+              <li><Link href="/terms" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link href="/privacy" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/disclaimer" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">Risk Disclaimer</Link></li>
+            </ul>
+          </div>
+
         </div>
-        
-        <div className="mt-32 pt-8 text-neutral-700 text-[10px] font-bold uppercase tracking-widest">
-          <p>© 2026 MyTraderDesk. A Sentinel Vortex Product.</p>
+
+        <div className="max-w-7xl mx-auto border-t border-neutral-900 pt-8 flex flex-col md:flex-row items-center justify-between">
+          <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+            &copy; {new Date().getFullYear()} MyTraderDesk by Sentinel Vortex. All rights reserved.
+          </p>
+          <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest mt-4 md:mt-0">
+            Trading involves significant risk of loss.
+          </p>
         </div>
-      </section>
+      </footer>
       
     </div>
   )
