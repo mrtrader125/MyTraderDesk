@@ -55,7 +55,7 @@ export default function Home() {
       <div className="fixed top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/10 blur-[150px] rounded-full pointer-events-none z-0" />
       <div className="fixed bottom-[-20%] right-[-10%] w-[60%] h-[60%] bg-purple-600/10 blur-[150px] rounded-full pointer-events-none z-0" />
 
-      {/* PREMIUM GLASS NAVBAR (Updated with SEO Routing) */}
+      {/* PREMIUM GLASS NAVBAR */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2 group">
@@ -75,7 +75,7 @@ export default function Home() {
             <Link href="/playbook" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
               Playbook
             </Link>
-            <Link href="/pricing" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
+            <Link href="#pricing" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
               Pricing
             </Link>
           </div>
@@ -295,7 +295,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PRICING TIERS (Updated for Strategy) */}
+      {/* PRICING TIERS */}
       <section id="pricing" className="relative z-10 max-w-6xl mx-auto py-32 px-6">
         <div className="text-center mb-20">
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">Choose Your Access</h2>
