@@ -2,11 +2,12 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  try {
-    let response = NextResponse.next({
-      request: { headers: request.headers },
-    })
+  // 1. Move response OUTSIDE the try block so the catch block can see it
+  let response = NextResponse.next({
+    request: { headers: request.headers },
+  })
 
+  try {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -51,6 +52,7 @@ export async function middleware(request: NextRequest) {
 
     return response
   } catch (err) {
+    // Now this will work safely if an error occurs!
     return response;
   }
 }
