@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { 
   Plus, 
   Trash2, 
+  Edit2,
   Activity, 
   TrendingUp, 
   TrendingDown, 
@@ -118,9 +119,19 @@ export default function AdminAnalysisPage() {
                 >
                   <ExternalLink size={10} className="mr-1.5" /> Inspect
                 </button>
+                
+                <button 
+                  onClick={() => router.push(`/admin/analysis/${setup.id}/edit`)}
+                  className="p-2 text-neutral-500 hover:text-white hover:bg-blue-500 hover:border-blue-500 bg-neutral-900 border border-neutral-800 rounded-lg transition-all"
+                  title="Edit Setup"
+                >
+                  <Edit2 size={14} />
+                </button>
+
                 <button 
                   onClick={() => handleDelete(setup.id, setup.asset_symbol)}
                   className="p-2 text-neutral-500 hover:text-white hover:bg-red-500 hover:border-red-500 bg-neutral-900 border border-neutral-800 rounded-lg transition-all"
+                  title="Delete Setup"
                 >
                   <Trash2 size={14} />
                 </button>
