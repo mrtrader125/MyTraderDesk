@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Brain, CheckCircle2, Shield, BarChart3, ArrowRight, XCircle, Activity, Globe2, Target, Scale } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
@@ -242,12 +243,13 @@ export default function Home() {
               {analyses.map((item) => (
                 <div key={item.id} className="bg-[#050505] p-6 rounded-3xl border border-neutral-800 shadow-2xl flex flex-col group hover:border-neutral-700 transition-colors">
                   {item.image_url ? (
-                    <div className="relative overflow-hidden rounded-2xl mb-6 border border-neutral-800">
-                      {/* 🚨 SEO FIX: Dynamic Alt Text injected here */}
-                      <img 
+                    {/* 🚨 NEW: Added fixed height to the container so `fill` works properly */}
+                    <div className="relative overflow-hidden rounded-2xl mb-6 border border-neutral-800 w-full h-72">
+                      <Image 
                         src={item.image_url} 
                         alt={`${item.asset_symbol} Market Analysis Chart - MyTraderDesk`} 
-                        className="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-700" 
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-700" 
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent opacity-60"></div>
                     </div>
