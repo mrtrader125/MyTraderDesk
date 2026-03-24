@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabaseServer'
 import { Users, TrendingUp, TrendingDown, Minus, MessageSquare, Lock, Activity, ShieldAlert, CheckCircle2 } from 'lucide-react'
 
-// MOCK DATA: Later we will connect this to a 'polls' table
+// MOCK DATA
 const ACTIVE_POLL = {
   asset: 'DXY',
   question: 'US Dollar Index is tapping the daily bearish breaker block. What is your fundamental and technical bias for the week?',
@@ -17,15 +17,14 @@ const RECENT_DISCUSSIONS = [
   { asset: 'BTCUSD', topic: 'Weekend CME gap narrative', comments: 24, bias: 'NEUTRAL' }
 ]
 
-export default async function PrivateCommunityFloor() {
+export default async function PrivateLiveFloorPage() {
   const supabase = await createClient()
   
-  // 1. Get the current user
+  // 1. Secure Authentication Check
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // 2. Fetch their subscription tier from your profiles/users table
-  // Note: Adjust 'profiles' and 'subscription_tier' to match your exact database schema
+  // 2. Fetch User's Subscription Tier
   const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_tier')
