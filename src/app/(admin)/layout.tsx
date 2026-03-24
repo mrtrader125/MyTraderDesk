@@ -47,6 +47,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Publish Setup', path: '/admin/analysis', icon: Send },
     { name: 'Publish Playbook', path: '/admin/playbook/new', icon: BookOpen }, 
+    { name: 'Manage Floor', path: '/admin/floor/new', icon: Activity }, // 🚨 NEW LINK
     { name: 'User Directory', path: '/admin/users', icon: Users },
     { name: 'Broadcast', path: '/admin/notifications', icon: Radio },
     { name: 'System Logs', path: '/admin/logs', icon: Activity },
