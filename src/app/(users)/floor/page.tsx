@@ -17,8 +17,9 @@ export default async function PrivateLiveFloorPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase.from('profiles').select('subscription_tier').eq('id', user.id).single()
-  const userPlan = profile?.subscription_tier?.toLowerCase() || 'free'
+  // 🚨 FIXED: Now selecting 'plan' to match your Supabase database exactly
+  const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+  const userPlan = profile?.plan?.toLowerCase() || 'free'
   const isFreeUser = userPlan === 'free'
 
   // 2. Fetch the Active Poll from Database
