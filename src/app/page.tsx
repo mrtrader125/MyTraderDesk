@@ -89,7 +89,6 @@ export default function Home() {
           <span className="text-xs font-bold text-neutral-300 uppercase tracking-widest">For Traders Stuck in Hesitation</span>
         </div>
 
-        {/* 🚨 SEO FIX: Hidden H1 for Google, H2 for visual styling */}
         <h1 className="sr-only">MyTraderDesk: Professional Trading Floor and Market Analysis Platform</h1>
 
         <h2 className="text-6xl md:text-8xl font-black leading-[1.1] tracking-tighter text-white">
@@ -243,7 +242,6 @@ export default function Home() {
               {analyses.map((item) => (
                 <div key={item.id} className="bg-[#050505] p-6 rounded-3xl border border-neutral-800 shadow-2xl flex flex-col group hover:border-neutral-700 transition-colors">
                   {item.image_url ? (
-                    {/* 🚨 NEW: Added fixed height to the container so `fill` works properly */}
                     <div className="relative overflow-hidden rounded-2xl mb-6 border border-neutral-800 w-full h-72">
                       <Image 
                         src={item.image_url} 
