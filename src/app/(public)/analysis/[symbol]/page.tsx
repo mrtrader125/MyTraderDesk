@@ -1,7 +1,11 @@
 import { Metadata, ResolvingMetadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Lock, TrendingUp, TrendingDown, Minus, Shield, Users } from 'lucide-react'
+
+// 🚨 NEW: Cache this page for 1 hour (3600 seconds) so it loads instantly for the next 10,000 visitors
+export const revalidate = 3600;
 
 // 1. EXPECTED PARAMETERS
 type Props = {
@@ -18,7 +22,7 @@ export async function generateMetadata(
 
   const { data: setup } = await supabase
     .from('analyses')
-    .select('bias, timeframe, created_at, image_url') // Added image_url here
+    .select('bias, timeframe, created_at, image_url') 
     .eq('asset_symbol', symbol)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -44,7 +48,6 @@ export async function generateMetadata(
       `Sentinel Vortex`,
       `Forex confluence`
     ],
-    // 🚨 NEW: Added OpenGraph for rich social sharing previews
     openGraph: {
       title: `${symbol} Institutional Setup | MyTraderDesk`,
       description: description,
@@ -54,7 +57,7 @@ export async function generateMetadata(
       publishedTime: setup?.created_at,
       images: [
         {
-          url: setup?.image_url || '/og-image.jpg', // Dynamically uses the chart image!
+          url: setup?.image_url || '/og-image.jpg', 
           width: 1200,
           height: 630,
           alt: `${symbol} Technical Analysis Chart`,
@@ -131,10 +134,12 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
 
               {/* The Chart (Blurred for public) */}
               <div className="relative aspect-video bg-[#111] overflow-hidden">
-                <img 
+                {/* 🚨 NEW: Next.js Optimized Image */}
+                <Image 
                   src={setup.image_url} 
                   alt={`${symbol} Technical Analysis`}
-                  className="w-full h-full object-cover filter blur-md opacity-40 scale-105"
+                  fill
+                  className="object-cover filter blur-md opacity-40 scale-105"
                 />
                 
                 {/* The Paywall Overlay */}
