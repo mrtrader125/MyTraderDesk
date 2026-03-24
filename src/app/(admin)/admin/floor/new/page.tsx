@@ -31,6 +31,11 @@ export default function AdminFloorBroadcast() {
       setAsset('')
       setQuestion('')
       setTimeout(() => setStatus('idle'), 3000)
+    } else {
+      // 🚨 ADDED: Reset the button if there is a network error
+      console.error("Transmission Error:", error)
+      alert("Failed to broadcast. Check console.")
+      setStatus('idle')
     }
   }
 
@@ -78,7 +83,7 @@ export default function AdminFloorBroadcast() {
         </button>
 
         {status === 'success' && (
-          <div className="bg-emerald-500/10 text-emerald-500 p-4 rounded-xl flex items-center text-sm font-bold">
+          <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 rounded-xl flex items-center text-sm font-bold">
             <CheckCircle2 className="mr-3" size={20} /> Transmission sent to the community successfully!
           </div>
         )}
