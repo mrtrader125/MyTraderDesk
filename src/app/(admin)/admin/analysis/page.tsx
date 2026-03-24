@@ -15,7 +15,8 @@ import {
   ExternalLink, 
   Image as ImageIcon, 
   Minus, 
-  Radio 
+  Radio,
+  Target
 } from 'lucide-react'
 
 export default function AdminAnalysisPage() {
@@ -46,6 +47,28 @@ export default function AdminAnalysisPage() {
     await supabase.from('analyses').delete().eq('id', id)
   }
 
+  // NEW: Toggle the 'is_featured' status
+  const togglePrimeStatus = async (id: string, symbol: string, currentStatus: boolean) => {
+    const action = currentStatus ? "remove" : "mark";
+    const confirmed = window.confirm(`Are you sure you want to ${action} ${symbol} as a Prime setup?`);
+    if (!confirmed) return;
+
+    // Optimistically update UI
+    setSetups(prev => prev.map(s => s.id === id ? { ...s, is_featured: !currentStatus } : s));
+
+    // Update Database
+    const { error } = await supabase
+      .from('analyses')
+      .update({ is_featured: !currentStatus })
+      .eq('id', id);
+
+    if (error) {
+      alert("Failed to update status. Please try again.");
+      // Revert UI if it fails
+      setSetups(prev => prev.map(s => s.id === id ? { ...s, is_featured: currentStatus } : s));
+    }
+  }
+
   const filteredSetups = setups.filter(s => 
     (s.asset_symbol || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (s.category || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -70,9 +93,10 @@ export default function AdminAnalysisPage() {
       {setupList.map((setup) => {
         const isBull = setup.bias?.toUpperCase() === 'BULLISH'
         const isBear = setup.bias?.toUpperCase() === 'BEARISH'
+        const isPrime = setup.is_featured === true
 
         return (
-          <div key={setup.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden group hover:border-neutral-600 transition-colors shadow-lg flex flex-col">
+          <div key={setup.id} className={`bg-[#0a0a0a] border rounded-2xl overflow-hidden group transition-all shadow-lg flex flex-col ${isPrime ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : 'border-neutral-800 hover:border-neutral-600'}`}>
             
             <div className="h-32 w-full bg-black relative overflow-hidden border-b border-neutral-800/50">
               {setup.image_url ? (
@@ -94,6 +118,7 @@ export default function AdminAnalysisPage() {
                 </span>
               </div>
 
+              {/* Bias Pill */}
               <div className={`absolute bottom-2 right-2 p-1 rounded-md backdrop-blur-md border shadow-lg ${isBull ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-500' : isBear ? 'bg-red-500/20 border-red-500/30 text-red-500' : 'bg-neutral-800/80 border-neutral-700 text-neutral-400'}`}>
                 {isBull ? <TrendingUp size={12} /> : isBear ? <TrendingDown size={12} /> : <Minus size={12} />}
               </div>
@@ -112,17 +137,36 @@ export default function AdminAnalysisPage() {
                 {setup.title || setup.content || "No analysis notes."}
               </p>
 
+              {/* ACTION BUTTONS */}
               <div className="flex items-center gap-2 mt-auto">
+                
+                {/* NEW: PRIME TOGGLE BUTTON */}
+                <button 
+                  onClick={() => togglePrimeStatus(setup.id, setup.asset_symbol, isPrime)}
+                  className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center transition-all border
+                    ${isPrime 
+                      ? 'bg-amber-500/20 text-amber-500 border-amber-500/30 hover:bg-amber-500 hover:text-black' 
+                      : 'bg-neutral-900 text-neutral-500 border-neutral-800 hover:text-amber-500 hover:border-amber-500/50 hover:bg-amber-500/10'
+                    }
+                  `}
+                  title={isPrime ? "Remove Prime Status" : "Mark as Prime"}
+                >
+                  <Target size={12} className="mr-1.5" /> 
+                  {isPrime ? 'Unmark Prime' : 'Mark Prime'}
+                </button>
+                
+                {/* Inspect Button (Made smaller to fit the new layout) */}
                 <button 
                   onClick={() => router.push(`/admin/analysis/viewport?id=${setup.id}`)}
-                  className="flex-1 py-2 bg-brand-primary/10 text-brand-primary text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-brand-primary hover:text-black transition-colors flex items-center justify-center"
+                  className="p-2 text-blue-500 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center"
+                  title="Inspect Setup"
                 >
-                  <ExternalLink size={10} className="mr-1.5" /> Inspect
+                  <ExternalLink size={14} />
                 </button>
                 
                 <button 
                   onClick={() => router.push(`/admin/analysis/${setup.id}/edit`)}
-                  className="p-2 text-neutral-500 hover:text-white hover:bg-blue-500 hover:border-blue-500 bg-neutral-900 border border-neutral-800 rounded-lg transition-all"
+                  className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-700 bg-neutral-900 border border-neutral-800 rounded-lg transition-all"
                   title="Edit Setup"
                 >
                   <Edit2 size={14} />
