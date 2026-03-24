@@ -1,251 +1,275 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
-import { Send, Activity, CheckCircle2, MessageSquare, Trash2, Edit2, X } from 'lucide-react'
+import { useState } from 'react'
+import { createBrowserClient } from '@supabase/ssr'
+import { Send, Image as ImageIcon, Activity, Zap, Shield, Loader2, Target } from 'lucide-react'
+import Image from 'next/image'
 
-export default function AdminFloorBroadcast() {
-  // --- POLL STATE ---
-  const [pollAsset, setPollAsset] = useState('')
-  const [pollQuestion, setPollQuestion] = useState('')
-  const [pollStatus, setPollStatus] = useState<'idle' | 'loading' | 'success'>('idle')
-  const [editingPollId, setEditingPollId] = useState<string | null>(null)
-  const [activePoll, setActivePoll] = useState<any>(null)
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-  // --- CHATTER STATE ---
-  const [chatAsset, setChatAsset] = useState('')
-  const [chatTopic, setChatTopic] = useState('')
-  const [chatBias, setChatBias] = useState('NEUTRAL')
-  const [chatStatus, setChatStatus] = useState<'idle' | 'loading' | 'success'>('idle')
-  const [editingChatId, setEditingChatId] = useState<string | null>(null)
-  const [recentChats, setRecentChats] = useState<any[]>([])
+export default function AdminFloorControl() {
+  // --- TERMINAL POST STATE ---
+  const [ticker, setTicker] = useState('')
+  const [timeframe, setTimeframe] = useState('1D')
+  const [thesis, setThesis] = useState('')
+  const [tier, setTier] = useState('essential')
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [isPostingTerminal, setIsPostingTerminal] = useState(false)
 
-  // --- FETCH EXISTING DATA ---
-  const fetchData = async () => {
-    // Get Active Poll
-    const { data: pollData } = await supabase.from('desk_polls').select('*').eq('is_active', true).order('created_at', { ascending: false }).limit(1).single()
-    setActivePoll(pollData || null)
+  // --- SQUAWK STATE ---
+  const [squawkMessage, setSquawkMessage] = useState('')
+  const [squawkTag, setSquawkTag] = useState('')
+  const [isPostingSquawk, setIsPostingSquawk] = useState(false)
 
-    // Get Recent Chatter
-    const { data: chatData } = await supabase.from('desk_discussions').select('*').order('created_at', { ascending: false }).limit(5)
-    setRecentChats(chatData || [])
-  }
-
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  // ==========================================
-  // 1. POLL HANDLERS
-  // ==========================================
-  const handlePollSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setPollStatus('loading')
-
-    if (editingPollId) {
-      // UPDATE EXISTING
-      const { error } = await supabase.from('desk_polls').update({ asset: pollAsset.toUpperCase(), question: pollQuestion }).eq('id', editingPollId)
-      if (!error) resetPollForm()
-      else alert("Failed to update poll.")
-    } else {
-      // CREATE NEW
-      await supabase.from('desk_polls').update({ is_active: false }).neq('id', '00000000-0000-0000-0000-000000000000')
-      const { error } = await supabase.from('desk_polls').insert([{ asset: pollAsset.toUpperCase(), question: pollQuestion, is_active: true }])
-      if (!error) resetPollForm()
-      else alert("Failed to broadcast poll.")
+  // Handle Image Selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setImageFile(file)
+      setImagePreview(URL.createObjectURL(file))
     }
   }
 
-  const handleDeletePoll = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this poll?")) return
-    await supabase.from('desk_polls').delete().eq('id', id)
-    fetchData()
-  }
-
-  const handleEditPoll = (poll: any) => {
-    setEditingPollId(poll.id)
-    setPollAsset(poll.asset)
-    setPollQuestion(poll.question)
-  }
-
-  const resetPollForm = () => {
-    setPollStatus('success')
-    setPollAsset('')
-    setPollQuestion('')
-    setEditingPollId(null)
-    fetchData()
-    setTimeout(() => setPollStatus('idle'), 3000)
-  }
-
-  // ==========================================
-  // 2. CHATTER HANDLERS
-  // ==========================================
-  const handleChatSubmit = async (e: React.FormEvent) => {
+  // Submit Terminal Post
+  const handleTerminalSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setChatStatus('loading')
+    if (!ticker || !thesis) return alert('Ticker and Thesis are required.')
+    setIsPostingTerminal(true)
 
-    if (editingChatId) {
-      // UPDATE EXISTING
-      const { error } = await supabase.from('desk_discussions').update({ asset: chatAsset.toUpperCase(), topic: chatTopic, bias: chatBias }).eq('id', editingChatId)
-      if (!error) resetChatForm()
-      else alert("Failed to update chatter.")
-    } else {
-      // CREATE NEW
-      const { error } = await supabase.from('desk_discussions').insert([{ asset: chatAsset.toUpperCase(), topic: chatTopic, bias: chatBias }])
-      if (!error) resetChatForm()
-      else alert("Failed to post chatter.")
+    try {
+      let imageUrl = null
+
+      // Upload image to Supabase Storage if one was selected
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop()
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
+        
+        const { error: uploadError } = await supabase.storage
+          .from('analysis-images') 
+          .upload(fileName, imageFile)
+
+        if (uploadError) throw uploadError
+
+        const { data: publicUrlData } = supabase.storage
+          .from('analysis-images')
+          .getPublicUrl(fileName)
+        
+        imageUrl = publicUrlData.publicUrl
+      }
+
+      // Insert the post data into the database
+      const { error } = await supabase.from('terminal_posts').insert({
+        ticker: ticker.toUpperCase(),
+        timeframe,
+        thesis,
+        image_url: imageUrl,
+        tier_access: tier
+      })
+
+      if (error) throw error
+
+      // Reset Form on Success
+      setTicker('')
+      setThesis('')
+      setImageFile(null)
+      setImagePreview(null)
+      alert('Terminal Post pushed to the Live Floor successfully.')
+
+    } catch (error: any) {
+      console.error('Error posting to terminal:', error)
+      alert(`Failed to post: ${error.message}`)
+    } finally {
+      setIsPostingTerminal(false)
     }
   }
 
-  const handleDeleteChat = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this discussion?")) return
-    await supabase.from('desk_discussions').delete().eq('id', id)
-    fetchData()
-  }
+  // Submit Live Squawk
+  const handleSquawkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!squawkMessage) return
+    setIsPostingSquawk(true)
 
-  const handleEditChat = (chat: any) => {
-    setEditingChatId(chat.id)
-    setChatAsset(chat.asset)
-    setChatTopic(chat.topic)
-    setChatBias(chat.bias)
-  }
+    try {
+      const { error } = await supabase.from('live_squawk').insert({
+        message: squawkMessage,
+        tag: squawkTag || null
+      })
 
-  const resetChatForm = () => {
-    setChatStatus('success')
-    setChatAsset('')
-    setChatTopic('')
-    setChatBias('NEUTRAL')
-    setEditingChatId(null)
-    fetchData()
-    setTimeout(() => setChatStatus('idle'), 3000)
+      if (error) throw error
+
+      // Reset Squawk Input
+      setSquawkMessage('')
+      setSquawkTag('')
+    } catch (error: any) {
+      console.error('Error sending squawk:', error)
+      alert(`Failed to send squawk: ${error.message}`)
+    } finally {
+      setIsPostingSquawk(false)
+    }
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-8 font-sans text-white">
-      
-      {/* Header */}
-      <div className="flex items-center space-x-4 mb-10 border-b border-neutral-800 pb-6">
-        <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center border border-blue-500/20">
-          <Activity className="text-blue-500" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-black uppercase tracking-tight">Floor Management</h1>
-          <p className="text-neutral-500 font-bold uppercase tracking-widest text-xs mt-1">Control, edit, and moderate the live community feeds</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="min-h-screen bg-[#050505] text-neutral-200 p-6 md:p-10 font-sans">
+      <div className="max-w-7xl mx-auto">
         
-        {/* --- LEFT: DAILY POLL MANAGEMENT --- */}
-        <div className="space-y-6">
-          <div className="bg-[#0a0a0a] border border-neutral-800 p-8 rounded-3xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-black uppercase flex items-center tracking-tight">
-                <Activity size={18} className="mr-3 text-blue-500" /> 1. Daily Bias Poll
-              </h2>
-              {editingPollId && (
-                <button onClick={resetPollForm} className="text-[10px] font-bold uppercase tracking-widest text-red-500 flex items-center hover:text-red-400">
-                  <X size={14} className="mr-1" /> Cancel Edit
-                </button>
-              )}
-            </div>
-            
-            <form onSubmit={handlePollSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Asset Symbol</label>
-                <input required type="text" value={pollAsset} onChange={(e) => setPollAsset(e.target.value)} className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-blue-500 uppercase" placeholder="e.g., DXY" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Poll Question</label>
-                <textarea required value={pollQuestion} onChange={(e) => setPollQuestion(e.target.value)} rows={3} className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-blue-500" placeholder="e.g., What is your bias?" />
-              </div>
-              <button type="submit" disabled={pollStatus === 'loading'} className={`w-full py-4 text-white font-black uppercase tracking-widest text-sm rounded-xl transition-colors flex items-center justify-center ${editingPollId ? 'bg-amber-600 hover:bg-amber-500' : 'bg-blue-600 hover:bg-blue-500'}`}>
-                {pollStatus === 'loading' ? 'Processing...' : <><Send size={18} className="mr-2" /> {editingPollId ? 'Update Poll' : 'Launch New Poll'}</>}
-              </button>
-              {pollStatus === 'success' && <div className="text-emerald-500 text-xs font-bold flex items-center justify-center"><CheckCircle2 className="mr-2" size={14} /> Success</div>}
-            </form>
+        {/* Header */}
+        <div className="mb-10 pb-6 border-b border-neutral-900 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-black text-white flex items-center gap-3 tracking-tight">
+              <Shield className="text-blue-500 w-8 h-8" /> Desk Command Center
+            </h1>
+            <p className="text-neutral-500 mt-2 font-bold uppercase tracking-widest text-xs">
+              Push data directly to the user terminal
+            </p>
           </div>
-
-          {/* Active Poll Display */}
-          {activePoll && (
-            <div className="bg-[#111] border border-blue-500/20 rounded-2xl p-5">
-              <h3 className="text-[10px] font-black uppercase tracking-widest text-blue-500 mb-3">Currently Active Poll</h3>
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="text-xs font-black bg-white/10 px-2 py-1 rounded uppercase">{activePoll.asset}</span>
-                  <p className="text-sm text-neutral-300 mt-2 font-medium">{activePoll.question}</p>
-                </div>
-                <div className="flex space-x-2 shrink-0 ml-4">
-                  <button onClick={() => handleEditPoll(activePoll)} className="p-2 bg-neutral-800 hover:bg-amber-500/20 hover:text-amber-500 rounded-lg transition-colors text-neutral-400"><Edit2 size={16} /></button>
-                  <button onClick={() => handleDeletePoll(activePoll.id)} className="p-2 bg-neutral-800 hover:bg-red-500/20 hover:text-red-500 rounded-lg transition-colors text-neutral-400"><Trash2 size={16} /></button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* --- RIGHT: CHATTER FEED MANAGEMENT --- */}
-        <div className="space-y-6">
-          <div className="bg-[#0a0a0a] border border-neutral-800 p-8 rounded-3xl">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-black uppercase flex items-center tracking-tight">
-                <MessageSquare size={18} className="mr-3 text-emerald-500" /> 2. Post Floor Chatter
-              </h2>
-              {editingChatId && (
-                <button onClick={resetChatForm} className="text-[10px] font-bold uppercase tracking-widest text-red-500 flex items-center hover:text-red-400">
-                  <X size={14} className="mr-1" /> Cancel Edit
-                </button>
-              )}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* LEFT: TERMINAL POST BUILDER (Spans 2 columns) */}
+          <div className="lg:col-span-2 bg-[#0a0a0a] rounded-3xl border border-neutral-800 p-8 shadow-2xl">
+            <div className="flex items-center gap-3 mb-8">
+              <Target className="text-emerald-500 w-6 h-6" />
+              <h2 className="text-xl font-black text-white uppercase tracking-widest">Deploy Terminal Setup</h2>
             </div>
-            
-            <form onSubmit={handleChatSubmit} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Asset Symbol</label>
-                  <input required type="text" value={chatAsset} onChange={(e) => setChatAsset(e.target.value)} className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-emerald-500 uppercase" placeholder="e.g., XAUUSD" />
+
+            <form onSubmit={handleTerminalSubmit} className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Ticker</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. $XAUUSD" 
+                    value={ticker}
+                    onChange={(e) => setTicker(e.target.value)}
+                    className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors uppercase"
+                    required
+                  />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Your Bias</label>
-                  <select value={chatBias} onChange={(e) => setChatBias(e.target.value)} className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-emerald-500 text-sm font-bold">
-                    <option value="BULLISH">Bullish</option>
-                    <option value="BEARISH">Bearish</option>
-                    <option value="NEUTRAL">Neutral</option>
+                <div className="col-span-2 md:col-span-1">
+                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Timeframe</label>
+                  <select 
+                    value={timeframe}
+                    onChange={(e) => setTimeframe(e.target.value)}
+                    className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none"
+                  >
+                    <option value="15M">15M</option>
+                    <option value="1H">1H</option>
+                    <option value="4H">4H</option>
+                    <option value="1D">1D</option>
+                    <option value="1W">1W</option>
                   </select>
                 </div>
+                <div className="col-span-2">
+                  <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Access Tier</label>
+                  <div className="flex bg-[#111] rounded-xl border border-neutral-800 p-1">
+                    <button type="button" onClick={() => setTier('essential')} className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${tier === 'essential' ? 'bg-blue-600 text-white' : 'text-neutral-500 hover:text-white'}`}>Essential</button>
+                    <button type="button" onClick={() => setTier('pro')} className={`flex-1 py-2 text-xs font-black uppercase tracking-widest rounded-lg transition-all ${tier === 'pro' ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg' : 'text-neutral-500 hover:text-white'}`}>Pro Only</button>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Discussion Topic / Note</label>
-                <textarea required value={chatTopic} onChange={(e) => setChatTopic(e.target.value)} rows={3} className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:border-emerald-500" placeholder="e.g., Liquidity sweep validated at 2040..." />
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Chart Image</label>
+                <div className="border-2 border-dashed border-neutral-800 rounded-2xl p-6 text-center hover:border-blue-500/50 transition-colors relative bg-[#050505]">
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  />
+                  {imagePreview ? (
+                    <div className="relative w-full h-48 rounded-xl overflow-hidden border border-neutral-800">
+                      <Image src={imagePreview} alt="Preview" fill className="object-cover" />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                        <span className="text-white font-bold text-sm tracking-widest uppercase">Click to Change</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-8">
+                      <ImageIcon className="text-neutral-600 w-10 h-10 mb-3" />
+                      <p className="text-neutral-400 font-bold tracking-wide">Upload TradingView Screenshot</p>
+                      <p className="text-neutral-600 text-xs mt-1 uppercase tracking-widest">PNG, JPG up to 5MB</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <button type="submit" disabled={chatStatus === 'loading'} className={`w-full py-4 text-black font-black uppercase tracking-widest text-sm rounded-xl transition-colors flex items-center justify-center ${editingChatId ? 'bg-amber-500 hover:bg-amber-400' : 'bg-white hover:bg-neutral-200'}`}>
-                {chatStatus === 'loading' ? 'Processing...' : <><Send size={18} className="mr-2" /> {editingChatId ? 'Update Chatter' : 'Push to History'}</>}
+
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Execution Thesis</label>
+                <textarea 
+                  rows={4}
+                  placeholder="Explain the structure, liquidity sweeps, and your entry logic..."
+                  value={thesis}
+                  onChange={(e) => setThesis(e.target.value)}
+                  className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors custom-scrollbar"
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isPostingTerminal}
+                className="w-full py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-[0_0_30px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPostingTerminal ? <Loader2 className="w-5 h-5 animate-spin" /> : <Activity className="w-5 h-5" />}
+                {isPostingTerminal ? 'Deploying to Floor...' : 'Push to Terminal'}
               </button>
-              {chatStatus === 'success' && <div className="text-emerald-500 text-xs font-bold flex items-center justify-center"><CheckCircle2 className="mr-2" size={14} /> Success</div>}
             </form>
           </div>
 
-          {/* Recent Chatter List */}
-          <div className="bg-[#111] border border-neutral-800 rounded-2xl p-5 space-y-3">
-            <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-4">Manage Recent Feed</h3>
-            {recentChats.map((chat) => (
-              <div key={chat.id} className="flex justify-between items-center bg-[#050505] p-3 rounded-xl border border-neutral-800">
-                <div className="overflow-hidden pr-4">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <span className="text-[9px] font-black uppercase bg-white/10 px-1.5 py-0.5 rounded text-white">{chat.asset}</span>
-                    <span className={`text-[8px] font-bold uppercase tracking-widest ${chat.bias === 'BULLISH' ? 'text-emerald-500' : chat.bias === 'BEARISH' ? 'text-red-500' : 'text-neutral-500'}`}>{chat.bias}</span>
-                  </div>
-                  <p className="text-xs text-neutral-400 truncate">{chat.topic}</p>
-                </div>
-                <div className="flex space-x-1 shrink-0">
-                  <button onClick={() => handleEditChat(chat)} className="p-2 hover:bg-amber-500/20 hover:text-amber-500 rounded-lg transition-colors text-neutral-500"><Edit2 size={14} /></button>
-                  <button onClick={() => handleDeleteChat(chat.id)} className="p-2 hover:bg-red-500/20 hover:text-red-500 rounded-lg transition-colors text-neutral-500"><Trash2 size={14} /></button>
-                </div>
-              </div>
-            ))}
-            {recentChats.length === 0 && <p className="text-xs text-neutral-600 text-center py-4">No recent chatter found.</p>}
-          </div>
-        </div>
+          {/* RIGHT: LIVE SQUAWK TRANSMITTER */}
+          <div className="lg:col-span-1 bg-[#0a0a0a] rounded-3xl border border-neutral-800 p-8 shadow-2xl flex flex-col h-fit sticky top-10">
+            <div className="flex items-center gap-3 mb-8">
+              <Zap className="text-amber-500 w-6 h-6" />
+              <h2 className="text-xl font-black text-white uppercase tracking-widest">Live Squawk</h2>
+            </div>
 
+            <form onSubmit={handleSquawkSubmit} className="space-y-6 flex-1 flex flex-col">
+              
+              <div>
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Category Tag (Optional)</label>
+                <select 
+                  value={squawkTag}
+                  onChange={(e) => setSquawkTag(e.target.value)}
+                  className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors appearance-none"
+                >
+                  <option value="">No Tag</option>
+                  <option value="Update">Update</option>
+                  <option value="Alert">Alert</option>
+                  <option value="Execution">Execution</option>
+                  <option value="News">Macro News</option>
+                </select>
+              </div>
+
+              <div className="flex-1">
+                <label className="block text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2">Broadcast Message</label>
+                <textarea 
+                  rows={6}
+                  placeholder="Rapid market updates..."
+                  value={squawkMessage}
+                  onChange={(e) => setSquawkMessage(e.target.value)}
+                  className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-amber-500 transition-colors custom-scrollbar resize-none"
+                  required
+                />
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={isPostingSquawk}
+                className="w-full py-4 bg-[#111] text-amber-500 border border-amber-500/30 font-black uppercase tracking-widest rounded-xl hover:bg-amber-500/10 transition-all flex items-center justify-center gap-2 mt-auto disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isPostingSquawk ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-4 h-4" />}
+                {isPostingSquawk ? 'Transmitting...' : 'Transmit Alert'}
+              </button>
+            </form>
+          </div>
+
+        </div>
       </div>
     </div>
   )
