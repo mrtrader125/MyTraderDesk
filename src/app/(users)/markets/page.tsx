@@ -21,12 +21,94 @@ const CATEGORIES = [
   })
 ]
 
+// --- THE TRADINGVIEW-STYLE LOGO ENGINE ---
+const FLAG_MAP: Record<string, string> = {
+  EUR: '🇪🇺', USD: '🇺🇸', GBP: '🇬🇧', JPY: '🇯🇵',
+  AUD: '🇦🇺', CAD: '🇨🇦', CHF: '🇨🇭', NZD: '🇳🇿',
+}
+
+const AssetIcon = ({ symbol, category }: { symbol: string, category: string }) => {
+  const upperSymbol = symbol.toUpperCase();
+
+  // 1. FOREX: Overlapping TradingView Style Flags
+  if (category === 'FOREX' && upperSymbol.length >= 6) {
+    const base = upperSymbol.substring(0, 3);
+    const quote = upperSymbol.substring(3, 6);
+    const flag1 = FLAG_MAP[base] || '🏳️';
+    const flag2 = FLAG_MAP[quote] || '🏳️';
+    
+    return (
+      <div className="flex -space-x-3 shrink-0">
+        <div className="w-10 h-10 rounded-full bg-[#111] border border-neutral-700 flex items-center justify-center text-xl z-10 shadow-[2px_0_8px_rgba(0,0,0,0.5)] overflow-hidden">
+          <span className="scale-[1.8]">{flag1}</span>
+        </div>
+        <div className="w-10 h-10 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center text-xl z-0 overflow-hidden opacity-90">
+          <span className="scale-[1.8]">{flag2}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. METALS / COMMODITIES
+  if (upperSymbol.includes('XAU') || upperSymbol.includes('GOLD')) {
+    return (
+      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-300 via-amber-500 to-orange-600 flex items-center justify-center text-white font-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.2)] shrink-0 border border-amber-400/30">
+        Au
+      </div>
+    );
+  }
+  if (upperSymbol.includes('XAG') || upperSymbol.includes('SILVER')) {
+    return (
+      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-200 via-slate-400 to-slate-600 flex items-center justify-center text-white font-black text-lg shadow-[0_0_15px_rgba(148,163,184,0.2)] shrink-0 border border-slate-300/30">
+        Ag
+      </div>
+    );
+  }
+  if (upperSymbol.includes('WTI') || upperSymbol.includes('OIL')) {
+    return (
+      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-neutral-700 to-black flex items-center justify-center text-xl border border-neutral-600 shrink-0">
+        🛢️
+      </div>
+    );
+  }
+
+  // 3. CRYPTO
+  if (upperSymbol.includes('BTC')) {
+    return (
+      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-2xl shadow-[0_0_15px_rgba(249,115,22,0.2)] shrink-0 border border-orange-400/30">
+        ₿
+      </div>
+    );
+  }
+  if (upperSymbol.includes('ETH')) {
+    return (
+      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-blue-700 flex items-center justify-center text-white font-black text-2xl shadow-[0_0_15px_rgba(79,70,229,0.2)] shrink-0 border border-indigo-400/30">
+        Ξ
+      </div>
+    );
+  }
+  if (upperSymbol.includes('SOL')) {
+    return (
+      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 flex items-center justify-center text-white font-black text-xl shadow-[0_0_15px_rgba(16,185,129,0.2)] shrink-0">
+        ◎
+      </div>
+    );
+  }
+
+  // 4. FALLBACK (Indices or Unknowns)
+  return (
+    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-[0_0_15px_rgba(59,130,246,0.3)] shrink-0 border border-blue-400/30">
+      {upperSymbol.substring(0, 1)}
+    </div>
+  );
+}
+// ------------------------------------------
+
 function MarketsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
-  
   const [groupedAnalyses, setGroupedAnalyses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('ALL')
@@ -104,25 +186,18 @@ function MarketsContent() {
 
   if (loading) return (
     <div className="w-full min-h-screen bg-neutral-50 dark:bg-[#050505] p-6 md:p-8 overflow-x-hidden">
-      {/* Skeleton Top Nav Bar */}
       <div className="flex flex-col items-center mb-10 mt-2">
         <div className="h-10 w-full max-w-xl bg-neutral-200 dark:bg-[#0a0a0a] border border-neutral-300 dark:border-neutral-800 rounded-2xl animate-pulse"></div>
       </div>
-
-      {/* Skeleton Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {[...Array(8)].map((_, i) => (
           <div key={i} className="bg-white dark:bg-card-bg border border-neutral-200 dark:border-card-border shadow-md dark:shadow-card rounded-2xl p-5 min-h-[140px] flex flex-col justify-between animate-pulse">
             <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 rounded-xl bg-neutral-200 dark:bg-neutral-800/50 shrink-0"></div>
+              <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-800/50 shrink-0"></div>
               <div className="space-y-2 w-full pt-1">
                 <div className="h-5 w-24 bg-neutral-200 dark:bg-neutral-800/50 rounded-md"></div>
                 <div className="h-3 w-12 bg-neutral-200 dark:bg-neutral-800/50 rounded-md"></div>
               </div>
-            </div>
-            <div className="mt-auto pt-4 border-t border-neutral-100 dark:border-neutral-800/50 flex items-center justify-between">
-              <div className="h-5 w-16 bg-neutral-200 dark:bg-neutral-800/50 rounded"></div>
-              <div className="w-8 h-8 rounded-full bg-neutral-200 dark:bg-neutral-800/50"></div>
             </div>
           </div>
         ))}
@@ -181,24 +256,18 @@ function MarketsContent() {
                 onClick={() => router.push(`/markets/viewport?asset=${market.symbol}&from=markets`)}
                 className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.05)] transition-all duration-300 cursor-pointer group flex flex-col min-h-[140px]"
               >
-                {/* NEW TOP SECTION: Ticker Badge & Bias Pill */}
                 <div className="flex justify-between items-start mb-4">
                   
                   <div className="flex items-center space-x-4">
-                    {/* The Premium Ticker Badge */}
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-neutral-800 to-[#0a0a0a] border border-neutral-700/50 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(255,255,255,0.05)] group-hover:border-blue-500/30 transition-colors duration-500 shrink-0">
-                      <span className="font-black text-white tracking-tighter text-sm md:text-base">
-                        {market.symbol.length > 6 ? market.symbol.substring(0, 6) : market.symbol}
-                      </span>
-                    </div>
-                    {/* Category Label */}
+                    {/* NEW: Dynamic Logo Component */}
+                    <AssetIcon symbol={market.symbol} category={market.category} />
+                    
                     <div>
                       <h3 className="text-xl font-black text-white tracking-tight">{market.symbol}</h3>
                       <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">{market.category}</span>
                     </div>
                   </div>
 
-                  {/* High-End Bias Pill */}
                   {market.latestBias && (
                     <div className={`flex items-center px-2 py-1 rounded-md border ${market.latestBias === 'BULLISH' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
                       {market.latestBias === 'BULLISH' ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
@@ -208,7 +277,6 @@ function MarketsContent() {
                   
                 </div>
 
-                {/* BOTTOM SECTION: Setup Count & Arrow */}
                 <div className="mt-auto pt-4 border-t border-neutral-800/50 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-bold text-white bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">
