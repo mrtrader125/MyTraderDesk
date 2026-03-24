@@ -55,6 +55,24 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+
+      <script
+  type="application/ld+json"
+  dangerouslySetInnerHTML={{
+    __html: JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Sentinel Vortex",
+      "alternateName": "MyTraderDesk",
+      "url": "https://mytraderdesk.com",
+      "logo": "https://mytraderdesk.com/og-image.jpg",
+      "description": "A professional digital trading floor providing institutional-grade structural analysis and market confluence.",
+      "sameAs": [
+        "https://instagram.com/your_sentinel_vortex_handle" // Add your Instagram URL here
+      ]
+    })
+  }}
+/>
       </body>
     </html>
   );
