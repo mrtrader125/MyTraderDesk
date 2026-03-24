@@ -21,84 +21,45 @@ const CATEGORIES = [
   })
 ]
 
-// --- THE TRADINGVIEW-STYLE LOGO ENGINE ---
-const FLAG_MAP: Record<string, string> = {
-  EUR: '🇪🇺', USD: '🇺🇸', GBP: '🇬🇧', JPY: '🇯🇵',
-  AUD: '🇦🇺', CAD: '🇨🇦', CHF: '🇨🇭', NZD: '🇳🇿',
-}
-
+// --- THE PREMIUM ASSET LOGO ENGINE ---
 const AssetIcon = ({ symbol, category }: { symbol: string, category: string }) => {
-  const upperSymbol = symbol.toUpperCase();
+  const [imgError, setImgError] = useState(false);
+  const cleanSymbol = symbol.toUpperCase().trim();
 
-  // 1. FOREX: Overlapping TradingView Style Flags
-  if (category === 'FOREX' && upperSymbol.length >= 6) {
-    const base = upperSymbol.substring(0, 3);
-    const quote = upperSymbol.substring(3, 6);
-    const flag1 = FLAG_MAP[base] || '🏳️';
-    const flag2 = FLAG_MAP[quote] || '🏳️';
-    
+  // 1. INSTITUTIONAL FOREX BADGE (No images needed - Generates Split Text)
+  if (category === 'FOREX' && cleanSymbol.length >= 6) {
+    const base = cleanSymbol.substring(0, 3);
+    const quote = cleanSymbol.substring(3, 6);
     return (
-      <div className="flex -space-x-3 shrink-0">
-        <div className="w-10 h-10 rounded-full bg-[#111] border border-neutral-700 flex items-center justify-center text-xl z-10 shadow-[2px_0_8px_rgba(0,0,0,0.5)] overflow-hidden">
-          <span className="scale-[1.8]">{flag1}</span>
-        </div>
-        <div className="w-10 h-10 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center text-xl z-0 overflow-hidden opacity-90">
-          <span className="scale-[1.8]">{flag2}</span>
-        </div>
+      <div className="w-14 h-14 rounded-2xl bg-[#0a0a0a] border border-neutral-800 flex flex-col items-center justify-center shrink-0 shadow-[inset_0_2px_10px_rgba(255,255,255,0.05)] group-hover:border-blue-500/30 transition-colors duration-500">
+        <span className="text-[11px] font-black text-white leading-none tracking-widest mt-1">{base}</span>
+        <div className="w-6 h-[1px] bg-neutral-800 my-[4px]"></div>
+        <span className="text-[11px] font-bold text-neutral-500 leading-none tracking-widest mb-1">{quote}</span>
       </div>
     );
   }
 
-  // 2. METALS / COMMODITIES
-  if (upperSymbol.includes('XAU') || upperSymbol.includes('GOLD')) {
+  // 2. REAL SVG IMAGES (Crypto / Commodities / Stocks)
+  if (!imgError) {
     return (
-      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-300 via-amber-500 to-orange-600 flex items-center justify-center text-white font-black text-lg shadow-[0_0_15px_rgba(245,158,11,0.2)] shrink-0 border border-amber-400/30">
-        Au
-      </div>
-    );
-  }
-  if (upperSymbol.includes('XAG') || upperSymbol.includes('SILVER')) {
-    return (
-      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-200 via-slate-400 to-slate-600 flex items-center justify-center text-white font-black text-lg shadow-[0_0_15px_rgba(148,163,184,0.2)] shrink-0 border border-slate-300/30">
-        Ag
-      </div>
-    );
-  }
-  if (upperSymbol.includes('WTI') || upperSymbol.includes('OIL')) {
-    return (
-      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-neutral-700 to-black flex items-center justify-center text-xl border border-neutral-600 shrink-0">
-        🛢️
+      <div className="w-14 h-14 rounded-2xl bg-[#0a0a0a] border border-neutral-800 flex items-center justify-center shrink-0 p-3 shadow-[inset_0_2px_10px_rgba(255,255,255,0.05)] group-hover:border-blue-500/30 transition-colors duration-500">
+        {/* Looks for files like /icons/btc.svg or /icons/xau.svg */}
+        <img
+          src={`/icons/${cleanSymbol.toLowerCase()}.svg`}
+          alt={cleanSymbol}
+          className="w-full h-full object-contain drop-shadow-[0_0_8px_rgba(255,255,255,0.1)]"
+          onError={() => setImgError(true)}
+        />
       </div>
     );
   }
 
-  // 3. CRYPTO
-  if (upperSymbol.includes('BTC')) {
-    return (
-      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white font-black text-2xl shadow-[0_0_15px_rgba(249,115,22,0.2)] shrink-0 border border-orange-400/30">
-        ₿
-      </div>
-    );
-  }
-  if (upperSymbol.includes('ETH')) {
-    return (
-      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-blue-700 flex items-center justify-center text-white font-black text-2xl shadow-[0_0_15px_rgba(79,70,229,0.2)] shrink-0 border border-indigo-400/30">
-        Ξ
-      </div>
-    );
-  }
-  if (upperSymbol.includes('SOL')) {
-    return (
-      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 flex items-center justify-center text-white font-black text-xl shadow-[0_0_15px_rgba(16,185,129,0.2)] shrink-0">
-        ◎
-      </div>
-    );
-  }
-
-  // 4. FALLBACK (Indices or Unknowns)
+  // 3. PREMIUM FALLBACK (If you haven't uploaded the SVG yet)
   return (
-    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-black text-lg shadow-[0_0_15px_rgba(59,130,246,0.3)] shrink-0 border border-blue-400/30">
-      {upperSymbol.substring(0, 1)}
+    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-neutral-800 to-[#0a0a0a] border border-neutral-700/50 flex items-center justify-center shrink-0 shadow-[inset_0_2px_10px_rgba(255,255,255,0.05)] group-hover:border-blue-500/30 transition-colors duration-500">
+      <span className="font-black text-white text-base tracking-tighter">
+        {cleanSymbol.substring(0, 3)}
+      </span>
     </div>
   );
 }
@@ -109,6 +70,7 @@ function MarketsContent() {
   const searchParams = useSearchParams()
   
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
+  
   const [groupedAnalyses, setGroupedAnalyses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('ALL')
@@ -184,6 +146,7 @@ function MarketsContent() {
     return matchesTab && matchesSearch
   })
 
+  // SKELETON LOADING (The Tier-1 Upgrade)
   if (loading) return (
     <div className="w-full min-h-screen bg-neutral-50 dark:bg-[#050505] p-6 md:p-8 overflow-x-hidden">
       <div className="flex flex-col items-center mb-10 mt-2">
@@ -193,8 +156,8 @@ function MarketsContent() {
         {[...Array(8)].map((_, i) => (
           <div key={i} className="bg-white dark:bg-card-bg border border-neutral-200 dark:border-card-border shadow-md dark:shadow-card rounded-2xl p-5 min-h-[140px] flex flex-col justify-between animate-pulse">
             <div className="flex items-start space-x-4">
-              <div className="w-12 h-12 rounded-full bg-neutral-200 dark:bg-neutral-800/50 shrink-0"></div>
-              <div className="space-y-2 w-full pt-1">
+              <div className="w-14 h-14 rounded-2xl bg-neutral-200 dark:bg-neutral-800/50 shrink-0"></div>
+              <div className="space-y-2 w-full pt-2">
                 <div className="h-5 w-24 bg-neutral-200 dark:bg-neutral-800/50 rounded-md"></div>
                 <div className="h-3 w-12 bg-neutral-200 dark:bg-neutral-800/50 rounded-md"></div>
               </div>
@@ -207,8 +170,10 @@ function MarketsContent() {
 
   return (
     <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden">
+      
+      {/* CATEGORY TABS */}
       <div className="flex flex-col items-center mb-10 mt-2">
-        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-800">
+        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1.5 rounded-2xl border border-neutral-800 overflow-x-auto max-w-full scrollbar-hide">
           {CATEGORIES.map((cat, idx) => {
             const locked = isLocked(cat.req)
             const active = activeTab === cat.id
@@ -216,7 +181,7 @@ function MarketsContent() {
               <button 
                 key={cat.id}
                 onClick={() => !locked && handleTabChange(cat.id, idx)}
-                className={`relative flex items-center px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] transition-all
+                className={`relative flex items-center px-5 py-2 rounded-xl text-[11px] font-black uppercase tracking-[0.15em] transition-all whitespace-nowrap
                   ${active ? 'bg-white text-black shadow-xl scale-105' : 
                     locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-500 hover:text-white'}`}
               >
@@ -228,6 +193,7 @@ function MarketsContent() {
         </div>
       </div>
 
+      {/* MARKET CARDS GRID */}
       <div 
         key={`${activeTab}-${searchQuery}`}
         className={`animate-in duration-500 fill-mode-both 
@@ -240,7 +206,7 @@ function MarketsContent() {
                <>
                  <Lock size={32} className="text-blue-500 mb-4" />
                  <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Access Restricted</h3>
-                 <button onClick={() => router.push('/account/subscription')} className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors">Upgrade</button>
+                 <button onClick={() => router.push('/account/subscription')} className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors">Upgrade Plan</button>
                </>
             ) : (
               <span className="text-xs font-bold text-neutral-600 uppercase tracking-widest">
@@ -254,12 +220,13 @@ function MarketsContent() {
               <div 
                 key={market.symbol}
                 onClick={() => router.push(`/markets/viewport?asset=${market.symbol}&from=markets`)}
-                className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.05)] transition-all duration-300 cursor-pointer group flex flex-col min-h-[140px]"
+                className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-5 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.05)] transition-all duration-300 cursor-pointer group flex flex-col min-h-[140px]"
               >
+                
                 <div className="flex justify-between items-start mb-4">
-                  
                   <div className="flex items-center space-x-4">
-                    {/* NEW: Dynamic Logo Component */}
+                    
+                    {/* THE DYNAMIC ASSET ICON */}
                     <AssetIcon symbol={market.symbol} category={market.category} />
                     
                     <div>
@@ -268,24 +235,24 @@ function MarketsContent() {
                     </div>
                   </div>
 
+                  {/* BIAS PILL */}
                   {market.latestBias && (
-                    <div className={`flex items-center px-2 py-1 rounded-md border ${market.latestBias === 'BULLISH' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
-                      {market.latestBias === 'BULLISH' ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
+                    <div className={`flex items-center px-2.5 py-1.5 rounded-lg border ${market.latestBias === 'BULLISH' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                      {market.latestBias === 'BULLISH' ? <TrendingUp size={12} className="mr-1.5" /> : <TrendingDown size={12} className="mr-1.5" />}
                       <span className="text-[9px] font-black uppercase tracking-widest">{market.latestBias}</span>
                     </div>
                   )}
-                  
                 </div>
 
-                <div className="mt-auto pt-4 border-t border-neutral-800/50 flex items-center justify-between">
+                <div className="mt-auto pt-5 border-t border-neutral-800/50 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-bold text-white bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">
+                    <span className="text-[10px] font-bold text-neutral-400 bg-neutral-900 px-3 py-1.5 rounded-lg border border-neutral-800">
                       {market.count} Setup{market.count > 1 ? 's' : ''}
                     </span>
                   </div>
                   <button 
                     onClick={(e) => { e.stopPropagation(); router.push(`/markets/archive?asset=${market.symbol}&from=markets`); }}
-                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-blue-600 transition-all group-hover:bg-blue-600 group-hover:text-white"
+                    className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-blue-600 hover:border-blue-500 transition-all group-hover:bg-blue-600 group-hover:border-blue-500 group-hover:text-white"
                   >
                     <ArrowRight size={14} />
                   </button>
