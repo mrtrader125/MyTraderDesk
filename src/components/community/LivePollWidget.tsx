@@ -23,7 +23,6 @@ export default function LivePollWidget({ poll, initialVotes, userPlan, userVote,
     if (isFreeUser || myVote || loading) return
     setLoading(true)
 
-    // Optimistic UI update
     setMyVote(bias)
     setVotes(prev => ({
       ...prev,
@@ -31,7 +30,6 @@ export default function LivePollWidget({ poll, initialVotes, userPlan, userVote,
       total: prev.total + 1
     }))
 
-    // Save to Database
     await supabase.from('desk_votes').insert([{
       poll_id: poll.id,
       user_id: userId,
@@ -41,10 +39,8 @@ export default function LivePollWidget({ poll, initialVotes, userPlan, userVote,
     setLoading(false)
   }
 
-  // Calculate Percentages
   const getPct = (count: number) => votes.total === 0 ? 0 : Math.round((count / votes.total) * 100)
 
-  // If Free User OR If Paid User has already voted, show the results
   if (isFreeUser || myVote) {
     return (
       <div className="relative z-10">
@@ -75,7 +71,6 @@ export default function LivePollWidget({ poll, initialVotes, userPlan, userVote,
     )
   }
 
-  // If Paid User has NOT voted, show voting buttons
   return (
     <div className="space-y-4 relative z-10">
       <button onClick={() => handleVote('BULLISH')} disabled={loading} className="w-full py-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors flex justify-between px-6 items-center group">
