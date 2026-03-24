@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Lock, Clock, Shield, Crown, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { ArrowLeft, Lock, Clock, Shield, Crown, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react'
 import { getSetupAccess } from '@/lib/access'
 
 function ArchiveContent() {
@@ -61,13 +61,18 @@ function ArchiveContent() {
     
     const isBull = setup.bias?.toUpperCase() === 'BULLISH'
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
+    
+    // NEW: Check if the setup is marked as featured by the admin
+    const isPrime = setup.is_featured === true;
 
     const { hasAccess, requiredTier } = getSetupAccess(setup, userPlan)
 
     return (
       <div 
         onClick={() => router.push(`/markets/viewport?asset=${asset}&from=archive`)}
-        className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group cursor-pointer hover:border-neutral-600 transition-all duration-300 shadow-sm relative min-h-[220px]"
+        className={`bg-[#0a0a0a] border rounded-2xl overflow-hidden flex flex-col group cursor-pointer transition-all duration-300 relative min-h-[220px]
+          ${isPrime ? 'border-amber-500/30 hover:border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.05)]' : 'border-neutral-800 hover:border-neutral-600 shadow-sm'}
+        `}
       >
         <div className="h-32 w-full bg-black relative overflow-hidden border-b border-neutral-800/50">
           <img src={setup.image_url} alt="Setup" className={`w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-40 group-hover:opacity-100' : 'opacity-10 blur-md grayscale'}`} />
@@ -83,9 +88,20 @@ function ArchiveContent() {
 
           {hasAccess && (
             <>
+              {/* TIMEFRAME */}
               <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-2 py-1 rounded-md text-[9px] font-black text-white uppercase tracking-widest border border-white/10">
                 {setup.timeframe || '-'}
               </div>
+
+              {/* NEW: PRIME BADGE (Top Right) */}
+              {isPrime && (
+                <div className="absolute top-3 right-3 flex items-center px-2 py-1 rounded-md border bg-amber-500/20 border-amber-500/30 text-amber-500 backdrop-blur-md shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+                  <Target size={10} className="mr-1.5" />
+                  <span className="text-[9px] font-black uppercase tracking-widest">Prime</span>
+                </div>
+              )}
+
+              {/* BIAS PILL (Bottom Right) */}
               <div className={`absolute bottom-3 right-3 p-1.5 rounded-lg backdrop-blur-md border ${isBull ? 'bg-emerald-500/20 border-emerald-500/20 text-emerald-500' : isBear ? 'bg-red-500/20 border-red-500/20 text-red-500' : 'bg-neutral-800/80 border-neutral-700 text-neutral-400'}`}>
                 {isBull ? <TrendingUp size={12} /> : isBear ? <TrendingDown size={12} /> : <Minus size={12} />}
               </div>
@@ -116,7 +132,7 @@ function ArchiveContent() {
           <ArrowLeft size={18} />
         </button>
         <div className="flex flex-col">
-          <h1 className="text-2xl font-black text-white tracking-tighter uppercase italic">{asset} <span className="text-brand-primary">Archive</span></h1>
+          <h1 className="text-2xl font-black text-white tracking-tighter uppercase italic">{asset} <span className="text-blue-500">Archive</span></h1>
           <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Historical Asset Records</p>
         </div>
       </div>
