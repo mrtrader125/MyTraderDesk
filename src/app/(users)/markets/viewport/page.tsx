@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin } from 'lucide-react'
+import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin, Target } from 'lucide-react'
 import { getSetupAccess } from '@/lib/access'
 
 const getTfWeight = (tf: string) => {
@@ -27,7 +27,6 @@ function ViewportContent() {
   const asset = searchParams.get('asset')
   const tfParam = searchParams.get('tf')
   
-  // 🚨 NEW: Grab the origin parameter from the URL
   const fromParam = searchParams.get('from')
 
   const [allHistory, setAllHistory] = useState<any[]>([])
@@ -45,7 +44,6 @@ function ViewportContent() {
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
 
-  // 🚨 NEW: Dynamic routing logic
   let backPath = '/markets'
   let backLabel = 'Markets'
 
@@ -240,15 +238,28 @@ function ViewportContent() {
        <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
          <div className="absolute top-5 left-5 flex items-start space-x-3 pointer-events-none z-50">
            
-           {/* 🚨 UPDATED BACK BUTTON */}
-<button 
-  onClick={() => router.push(backPath)} 
-  className="w-10 h-10 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"
->
-  <ArrowLeft size={16} />
-</button>           
+           {/* BACK BUTTON */}
+           <button 
+             onClick={() => router.push(backPath)} 
+             className="w-10 h-10 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors pointer-events-auto shadow-lg shrink-0"
+           >
+             <ArrowLeft size={16} />
+           </button>           
+           
            <div className="h-10 bg-[#0a0a0a] border border-neutral-800 px-4 rounded-xl flex items-center space-x-3 shadow-lg pointer-events-auto">
              <span className="text-sm font-black uppercase tracking-widest text-white">{asset}</span>
+             
+             {/* NEW: PRIME BADGE IN VIEWPORT */}
+             {currentSetup.is_featured && (
+               <>
+                 <div className="w-px h-4 bg-neutral-800"></div>
+                 <div className="flex items-center px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.1)]">
+                   <Target size={12} className="mr-1.5" />
+                   <span className="text-[9px] font-black uppercase tracking-widest">Prime</span>
+                 </div>
+               </>
+             )}
+
              <div className="w-px h-4 bg-neutral-800"></div>
              <button onClick={(e) => toggleBookmark(e, currentSetup)} className="text-neutral-500 hover:text-white transition-colors">
                 <Bookmark size={14} className={isCurrentBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
@@ -262,6 +273,7 @@ function ViewportContent() {
                </>
              )}
            </div>
+           
            {showInfo && access.hasAccess && (
              <div className="absolute top-12 left-[125px] w-[300px] max-h-[60vh] overflow-y-auto bg-[#0a0a0a]/95 backdrop-blur-xl border border-neutral-800 rounded-2xl p-5 shadow-2xl pointer-events-auto animate-in fade-in slide-in-from-top-4">
                <h3 className="text-xs font-black text-white mb-2 uppercase tracking-wider">{currentSetup.title || 'Analysis Notes'}</h3>
@@ -336,6 +348,10 @@ function ViewportContent() {
                        <span className="text-[8px] font-bold text-neutral-600">{new Date(item.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                      </div>
                      <div className="flex items-center space-x-1.5 shrink-0">
+                       
+                       {/* NEW: PRIME BADGE IN SIDEBAR HISTORY */}
+                       {item.is_featured && <Target size={10} className="text-amber-500 drop-shadow-[0_0_5px_rgba(245,158,11,0.5)]" />}
+                       
                        {isItemBookmarked && <Bookmark size={10} className="fill-amber-500 text-amber-500" />}
                        {!historyAccess.hasAccess && <Lock size={10} className="text-neutral-500" />}
                      </div>
@@ -351,7 +367,6 @@ function ViewportContent() {
   )
 }
 
-// Next.js 15 Suspense Wrapper
 export default function ViewportPage() {
   return (
     <Suspense fallback={<div className="h-screen bg-[#050505] flex items-center justify-center"><Activity className="animate-pulse text-blue-500" size={32} /></div>}>
