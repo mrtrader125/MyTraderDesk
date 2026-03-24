@@ -2,9 +2,17 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { HelpCircle } from 'lucide-react'
 
+// 🚨 NEW: Added OpenGraph tags
 export const metadata: Metadata = {
-  title: 'FAQ | MyTraderDesk',
-  description: 'Frequently asked questions about Sentinel Vortex, our subscription tiers, and how our trading desk operates.',
+  title: 'Frequently Asked Questions | MyTraderDesk',
+  description: 'Everything you need to know about Sentinel Vortex, our subscription tiers, and how our trading desk operates.',
+  openGraph: {
+    title: 'FAQ | MyTraderDesk',
+    description: 'Learn how the MyTraderDesk platform operates and find the right tier for your trading style.',
+    url: 'https://mytraderdesk.com/faq',
+    siteName: 'Sentinel Vortex',
+    type: 'website',
+  }
 }
 
 const FAQS = [
@@ -31,10 +39,29 @@ const FAQS = [
 ]
 
 export default function FAQPage() {
+  // 🚨 NEW: Dynamic SEO Schema Generation
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": FAQS.map(faq => ({
+      "@type": "Question",
+      "name": faq.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.a
+      }
+    }))
+  }
+
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans pt-24 pb-20 px-6">
+      {/* 🚨 NEW: Injecting the Schema directly into the HTML */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       <div className="max-w-3xl mx-auto space-y-12">
-        
         <div className="text-center">
           <HelpCircle className="mx-auto text-neutral-600 mb-6" size={48} />
           <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4">
@@ -61,7 +88,6 @@ export default function FAQPage() {
             Start for Free
           </Link>
         </div>
-
       </div>
     </div>
   )
