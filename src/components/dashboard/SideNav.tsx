@@ -25,7 +25,7 @@ export default function SideNav() {
   // 🚨 NEW: Added "Live Floor" to the main user navigation
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Live Floor', href: '/community', icon: Users }, 
+    { name: 'Live Floor', href: '/floor', icon: Users }, 
     { name: 'Markets', href: '/markets', icon: LineChart },
     { name: 'The Vault', href: '/vault', icon: Bookmark }, 
     { name: 'Account', href: '/account/profile', icon: Settings },
