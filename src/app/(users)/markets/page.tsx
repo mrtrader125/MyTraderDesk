@@ -163,9 +163,9 @@ function MarketsContent() {
           <div className="max-w-md mx-auto border border-dashed border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
             {userPlan === 'free' && activeTab !== 'ALL' && activeTab !== 'FOREX' ? (
                <>
-                 <Lock size={32} className="text-brand-primary mb-4" />
+                 <Lock size={32} className="text-blue-500 mb-4" />
                  <h3 className="text-sm font-black text-white uppercase tracking-widest mb-2">Access Restricted</h3>
-                 <button onClick={() => router.push('/account/subscription')} className="mt-4 px-6 py-2 bg-brand-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg">Upgrade</button>
+                 <button onClick={() => router.push('/account/subscription')} className="mt-4 px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors">Upgrade</button>
                </>
             ) : (
               <span className="text-xs font-bold text-neutral-600 uppercase tracking-widest">
@@ -179,30 +179,45 @@ function MarketsContent() {
               <div 
                 key={market.symbol}
                 onClick={() => router.push(`/markets/viewport?asset=${market.symbol}&from=markets`)}
-                className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-neutral-600 transition-all cursor-pointer group flex flex-col min-h-[140px]"
+                className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.05)] transition-all duration-300 cursor-pointer group flex flex-col min-h-[140px]"
               >
+                {/* NEW TOP SECTION: Ticker Badge & Bias Pill */}
                 <div className="flex justify-between items-start mb-4">
+                  
                   <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 rounded-xl bg-black border border-neutral-800 flex items-center justify-center overflow-hidden relative shrink-0">
-                      <img src={market.latestImage} className="w-full h-full object-cover opacity-40 group-hover:opacity-100 transition-opacity duration-500" alt="" />
-                      <div className={`absolute bottom-0 right-0 p-1 backdrop-blur-md ${market.latestBias === 'BULLISH' ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {market.latestBias === 'BULLISH' ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
-                      </div>
+                    {/* The Premium Ticker Badge */}
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-neutral-800 to-[#0a0a0a] border border-neutral-700/50 flex items-center justify-center shadow-[inset_0_2px_10px_rgba(255,255,255,0.05)] group-hover:border-blue-500/30 transition-colors duration-500 shrink-0">
+                      <span className="font-black text-white tracking-tighter text-sm md:text-base">
+                        {market.symbol.length > 6 ? market.symbol.substring(0, 6) : market.symbol}
+                      </span>
                     </div>
+                    {/* Category Label */}
                     <div>
-                      <h3 className="text-xl font-black text-white">{market.symbol}</h3>
+                      <h3 className="text-xl font-black text-white tracking-tight">{market.symbol}</h3>
                       <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">{market.category}</span>
                     </div>
                   </div>
+
+                  {/* High-End Bias Pill */}
+                  {market.latestBias && (
+                    <div className={`flex items-center px-2 py-1 rounded-md border ${market.latestBias === 'BULLISH' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border-red-500/20 text-red-400'}`}>
+                      {market.latestBias === 'BULLISH' ? <TrendingUp size={12} className="mr-1" /> : <TrendingDown size={12} className="mr-1" />}
+                      <span className="text-[9px] font-black uppercase tracking-widest">{market.latestBias}</span>
+                    </div>
+                  )}
+                  
                 </div>
 
+                {/* BOTTOM SECTION: Setup Count & Arrow */}
                 <div className="mt-auto pt-4 border-t border-neutral-800/50 flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] font-bold text-white bg-white/5 px-2 py-1 rounded">{market.count} Setup{market.count > 1 ? 's' : ''}</span>
+                    <span className="text-[10px] font-bold text-white bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">
+                      {market.count} Setup{market.count > 1 ? 's' : ''}
+                    </span>
                   </div>
                   <button 
                     onClick={(e) => { e.stopPropagation(); router.push(`/markets/archive?asset=${market.symbol}&from=markets`); }}
-                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/10 transition-all"
+                    className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-neutral-500 hover:text-white hover:bg-blue-600 transition-all group-hover:bg-blue-600 group-hover:text-white"
                   >
                     <ArrowRight size={14} />
                   </button>
