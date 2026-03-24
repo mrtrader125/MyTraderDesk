@@ -10,16 +10,10 @@ export const metadata: Metadata = {
   description: 'See real-time crowdsourced market sentiment, bias polling, and structured confluence from the MyTraderDesk trading floor.',
 }
 
-const RECENT_DISCUSSIONS = [
-  { asset: 'XAUUSD', topic: 'Liquidity sweep at 2040 validated?', comments: 12, bias: 'BULLISH' },
-  { asset: 'EURUSD', topic: 'ECB rate decision structural impact', comments: 8, bias: 'BEARISH' },
-  { asset: 'BTCUSD', topic: 'Weekend CME gap narrative', comments: 24, bias: 'NEUTRAL' }
-]
-
 export default async function PublicCommunityPage() {
   const supabase = await createClient()
 
-  // Fetch Real Poll
+  // 1. Fetch Real Poll
   const { data: activePoll } = await supabase
     .from('desk_polls')
     .select('*')
@@ -28,7 +22,7 @@ export default async function PublicCommunityPage() {
     .limit(1)
     .single()
 
-  // Fetch Real Votes for the teaser
+  // 2. Fetch Real Poll Votes
   let initialVotes = { bullish: 0, bearish: 0, neutral: 0, total: 0 }
   if (activePoll) {
     const { data: allVotes } = await supabase.from('desk_votes').select('bias').eq('poll_id', activePoll.id)
@@ -39,6 +33,13 @@ export default async function PublicCommunityPage() {
       initialVotes.total = allVotes.length
     }
   }
+
+  // 3. Fetch Real Chatter History (New!)
+  const { data: recentDiscussions } = await supabase
+    .from('desk_discussions')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(5)
 
   const getPct = (count: number) => initialVotes.total === 0 ? 0 : Math.round((count / initialVotes.total) * 100)
 
@@ -128,25 +129,36 @@ export default async function PublicCommunityPage() {
             <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-500 flex items-center">
               <MessageSquare size={14} className="mr-2" /> Recent Desk Activity
             </h3>
+            
+            {/* DYNAMIC CHATTER FEED */}
             <div className="space-y-4">
-              {RECENT_DISCUSSIONS.map((disc, i) => (
-                <div key={i} className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-neutral-700 transition-colors cursor-pointer group">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[10px] font-black text-white bg-white/5 border border-white/10 px-2 py-1 rounded uppercase tracking-widest">
-                      {disc.asset}
-                    </span>
-                    {disc.bias === 'BULLISH' ? <TrendingUp size={14} className="text-emerald-500" /> : 
-                     disc.bias === 'BEARISH' ? <TrendingDown size={14} className="text-red-500" /> : 
-                     <Minus size={14} className="text-neutral-500" />}
+              {recentDiscussions && recentDiscussions.length > 0 ? (
+                recentDiscussions.map((disc) => (
+                  <div key={disc.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 hover:border-neutral-700 transition-colors cursor-pointer group">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-black text-white bg-white/5 border border-white/10 px-2 py-1 rounded uppercase tracking-widest">
+                        {disc.asset}
+                      </span>
+                      {disc.bias === 'BULLISH' ? <TrendingUp size={14} className="text-emerald-500" /> : 
+                       disc.bias === 'BEARISH' ? <TrendingDown size={14} className="text-red-500" /> : 
+                       <Minus size={14} className="text-neutral-500" />}
+                    </div>
+                    <p className="text-sm font-bold text-neutral-300 mb-4 group-hover:text-white transition-colors">
+                      {disc.topic}
+                    </p>
+                    <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                      <span className="flex items-center"><Users size={12} className="mr-1.5" /> Operators discussing</span>
+                      <span className="text-blue-500 group-hover:text-blue-400">View</span>
+                    </div>
                   </div>
-                  <p className="text-sm font-bold text-neutral-300 mb-4 group-hover:text-white transition-colors">{disc.topic}</p>
-                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-600">
-                    <span className="flex items-center"><Users size={12} className="mr-1.5" /> {disc.comments} Operators</span>
-                    <span className="text-blue-500 group-hover:text-blue-400">View</span>
-                  </div>
+                ))
+              ) : (
+                <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-6 text-center">
+                   <p className="text-xs text-neutral-600 font-bold uppercase tracking-widest">No recent chatter found.</p>
                 </div>
-              ))}
+              )}
             </div>
+
             <div className="bg-gradient-to-b from-[#111] to-[#050505] border border-blue-500/20 rounded-2xl p-6 text-center mt-6">
               <h4 className="text-white font-black uppercase tracking-tight text-lg mb-2">Want to speak up?</h4>
               <p className="text-xs text-neutral-400 mb-6">Essential & Pro members get full voting and commenting rights on the floor.</p>
