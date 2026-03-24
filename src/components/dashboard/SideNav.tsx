@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { 
   LayoutDashboard, LineChart, Bookmark, 
-  Award, Settings, LogOut, Menu 
+  Award, Settings, LogOut, Menu, Users // 🚨 NEW: Added Users icon
 } from 'lucide-react'
 
 export default function SideNav() {
@@ -22,8 +22,10 @@ export default function SideNav() {
   // Do not render sidebar on full-screen chart pages
   if (pathname?.includes('/viewport')) return null;
 
+  // 🚨 NEW: Added "Live Floor" to the main user navigation
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Live Floor', href: '/community', icon: Users }, 
     { name: 'Markets', href: '/markets', icon: LineChart },
     { name: 'The Vault', href: '/vault', icon: Bookmark }, 
     { name: 'Account', href: '/account/profile', icon: Settings },
