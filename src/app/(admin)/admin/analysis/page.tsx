@@ -182,7 +182,7 @@ export default function AdminAnalysisPage() {
                   title={isPrime ? "Remove Prime Status" : "Mark as Prime"}
                 >
                   <Target size={12} className="mr-1.5" /> 
-                  {isPrime ? 'Unmark Prime' : 'Mark Prime'}
+                  {isPrime ? 'Unmark Prime' : 'Prime'}
                 </button>
                 
                 {/* Inspect Button */}
