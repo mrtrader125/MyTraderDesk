@@ -7,7 +7,17 @@ const nextConfig: NextConfig = {
   typescript: {
     // This keeps our strict-mode bypass active
     ignoreBuildErrors: true,
-  }
+  },
+  
+  // 🚨 NEW: Allow Next.js to optimize images from Supabase
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+      },
+    ],
+  },
 };
 
 export default nextConfig;
