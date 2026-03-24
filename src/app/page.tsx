@@ -297,14 +297,64 @@ export default function Home() {
         </div>
       </section>
 
-      {/* SEO FOOTER - UNCHANGED */}
+      {/* SEO FOOTER & TRUST DIRECTORY */}
       <footer className="bg-[#020202] border-t border-neutral-900 pt-20 pb-10 px-6">
-         {/* ... (Keep your exact footer code here) ... */}
-         <div className="max-w-7xl mx-auto border-t border-neutral-900 pt-8 flex flex-col md:flex-row items-center justify-between">
-           <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
-             &copy; {new Date().getFullYear()} MyTraderDesk by Sentinel Vortex. All rights reserved.
-           </p>
-         </div>
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
+          
+          {/* Brand Column */}
+          <div className="col-span-1 md:col-span-1">
+            <Link href="/" className="flex items-center space-x-2 mb-6">
+               <Activity size={24} className="text-blue-500" />
+              <span className="text-white font-black uppercase tracking-widest italic text-lg">
+                Sentinel<span className="text-blue-500">Vortex</span>
+              </span>
+            </Link>
+            <p className="text-xs font-medium text-neutral-500 leading-relaxed pr-4">
+              A dedicated digital trading floor providing intermediate operators with institutional-grade structural analysis and crowdsourced market confluence.
+            </p>
+          </div>
+
+          {/* Live Markets (SEO Hubs) */}
+          <div>
+            <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-6">Live Markets</h4>
+            <ul className="space-y-4">
+              <li><Link href="/analysis/eurusd" className="text-xs font-medium text-neutral-500 hover:text-blue-500 transition-colors">EUR/USD Analysis Today</Link></li>
+              <li><Link href="/analysis/xauusd" className="text-xs font-medium text-neutral-500 hover:text-blue-500 transition-colors">Gold (XAUUSD) Setups</Link></li>
+              <li><Link href="/analysis/btcusd" className="text-xs font-medium text-neutral-500 hover:text-blue-500 transition-colors">Bitcoin (BTC) Structure</Link></li>
+              <li><Link href="/community" className="text-xs font-medium text-neutral-500 hover:text-blue-500 transition-colors">Live Sentiment Floor</Link></li>
+            </ul>
+          </div>
+
+          {/* Resources */}
+          <div>
+            <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-6">Resources</h4>
+            <ul className="space-y-4">
+              <li><Link href="/playbook" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">The Trading Playbook</Link></li>
+              <li><Link href="/faq" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">Frequently Asked Questions</Link></li>
+              <li><Link href="/about" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">About Sentinel Vortex</Link></li>
+            </ul>
+          </div>
+
+          {/* Legal */}
+          <div>
+            <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-6">Legal</h4>
+            <ul className="space-y-4">
+              <li><Link href="/terms" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link href="/privacy" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/disclaimer" className="text-xs font-medium text-neutral-500 hover:text-white transition-colors">Risk Disclaimer</Link></li>
+            </ul>
+          </div>
+
+        </div>
+
+        <div className="max-w-7xl mx-auto border-t border-neutral-900 pt-8 flex flex-col md:flex-row items-center justify-between">
+          <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest">
+            &copy; {new Date().getFullYear()} MyTraderDesk by Sentinel Vortex. All rights reserved.
+          </p>
+          <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest mt-4 md:mt-0">
+            Trading involves significant risk of loss.
+          </p>
+        </div>
       </footer>
       
     </div>
