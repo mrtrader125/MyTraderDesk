@@ -1,13 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase' // 🚨 Fixed import to stop GoTrue warnings
 import { Send, Activity, CheckCircle2 } from 'lucide-react'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
 
 export default function AdminFloorBroadcast() {
   const [asset, setAsset] = useState('')
@@ -18,10 +13,10 @@ export default function AdminFloorBroadcast() {
     e.preventDefault()
     setStatus('loading')
 
-    // First, set all other polls to inactive so only ONE poll is active at a time
+    // 1. Deactivate old polls
     await supabase.from('desk_polls').update({ is_active: false }).neq('id', '00000000-0000-0000-0000-000000000000')
 
-    // Insert the new active poll
+    // 2. Publish new poll
     const { error } = await supabase
       .from('desk_polls')
       .insert([{ asset: asset.toUpperCase(), question, is_active: true }])
@@ -32,9 +27,8 @@ export default function AdminFloorBroadcast() {
       setQuestion('')
       setTimeout(() => setStatus('idle'), 3000)
     } else {
-      // 🚨 ADDED: Reset the button if there is a network error
       console.error("Transmission Error:", error)
-      alert("Failed to broadcast. Check console.")
+      alert("Failed to broadcast. Ensure you ran the SQL RLS script.")
       setStatus('idle')
     }
   }
