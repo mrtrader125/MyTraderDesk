@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { Users, TrendingUp, TrendingDown, Minus, MessageSquare, Lock, Activity, ShieldAlert } from 'lucide-react'
 
-// 🚨 Cache for speed
+// 🚨 Cache for maximum SEO speed
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
@@ -14,13 +14,8 @@ export const metadata: Metadata = {
 const ACTIVE_POLL = {
   asset: 'DXY',
   question: 'US Dollar Index is tapping the daily bearish breaker block. What is your fundamental and technical bias for the week?',
-  votes: {
-    bullish: 68, // These represent percentages for the UI
-    bearish: 22,
-    neutral: 10
-  },
-  totalVotes: 142, // You can fake this number initially to create social proof, or hide it!
-  status: 'ACTIVE'
+  votes: { bullish: 68, bearish: 22, neutral: 10 },
+  totalVotes: 142,
 }
 
 const RECENT_DISCUSSIONS = [
@@ -29,7 +24,7 @@ const RECENT_DISCUSSIONS = [
   { asset: 'BTCUSD', topic: 'Weekend CME gap narrative', comments: 24, bias: 'NEUTRAL' }
 ]
 
-export default function CommunityFloorPage() {
+export default function PublicCommunityPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans pt-24 pb-20 px-6">
       <div className="max-w-5xl mx-auto">
@@ -69,7 +64,6 @@ export default function CommunityFloorPage() {
               {/* The Blurred Results / Paywall */}
               <div className="relative z-10 mb-8">
                 <div className="space-y-4 filter blur-[8px] opacity-40 select-none pointer-events-none">
-                  {/* Fake Visual Bars */}
                   <div>
                     <div className="flex justify-between text-xs font-bold mb-2 uppercase tracking-widest"><span className="text-emerald-500">Bullish</span><span>68%</span></div>
                     <div className="h-3 bg-neutral-900 rounded-full overflow-hidden"><div className="h-full bg-emerald-500 w-[68%]"></div></div>
