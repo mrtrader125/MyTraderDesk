@@ -1,10 +1,18 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { BookOpen, ArrowRight } from 'lucide-react'
+import { BookOpen, ArrowRight, Zap } from 'lucide-react'
 
+// 🚨 NEW: Added OpenGraph tags
 export const metadata: Metadata = {
   title: 'The Playbook | Trading Strategies & Confluence',
   description: 'Master multi-timeframe analysis, liquidity concepts, and market sentiment with the official Sentinel Vortex trading playbook.',
+  openGraph: {
+    title: 'The Playbook | MyTraderDesk',
+    description: 'Master multi-timeframe analysis, liquidity concepts, and market sentiment.',
+    url: 'https://mytraderdesk.com/playbook',
+    siteName: 'Sentinel Vortex',
+    type: 'website',
+  }
 }
 
 const ARTICLES = [
@@ -43,6 +51,27 @@ export default function PlaybookPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          
+          {/* 🚨 NEW: The Inline Lead-Gen Banner */}
+          <div className="col-span-1 md:col-span-2 bg-gradient-to-br from-[#111] to-[#050505] border border-blue-500/30 rounded-[2rem] p-8 md:p-12 mb-4 flex flex-col md:flex-row items-center justify-between group overflow-hidden relative shadow-2xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none"></div>
+            
+            <div className="relative z-10 mb-8 md:mb-0 md:pr-8 text-center md:text-left">
+              <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight flex items-center justify-center md:justify-start">
+                <Zap className="text-blue-500 mr-3 hidden sm:block" size={28} />
+                Stop reading theory.
+              </h3>
+              <p className="text-neutral-400 mt-3 text-sm md:text-base font-medium max-w-lg">
+                Create a free account to access our live digital trading floor and see how we apply these exact concepts to today's live markets.
+              </p>
+            </div>
+            
+            <Link href="/signup" className="relative z-10 px-8 py-5 bg-white text-black text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform shadow-[0_0_30px_rgba(255,255,255,0.2)] shrink-0 w-full md:w-auto text-center">
+              Join The Floor Free
+            </Link>
+          </div>
+
+          {/* Existing Articles */}
           {ARTICLES.map((article, i) => (
             <Link key={i} href={`/playbook/${article.slug}`} className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8 hover:border-neutral-600 transition-colors group flex flex-col justify-between min-h-[250px]">
               <div>
