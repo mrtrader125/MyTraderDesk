@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { Brain, CheckCircle2, Shield, BarChart3, ArrowRight, XCircle, Activity, Globe2, Target, Scale } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
-// Supabase client setup for the Live Proof section
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -16,21 +15,16 @@ export default function Home() {
   const [analyses, setAnalyses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Handle Scroll & Fetch Supabase Data
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
-
     fetchAnalyses()
-
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Fetch delayed charts (7 days old) for the "Proof" section
   const fetchAnalyses = async () => {
     try {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-
       const { data, error } = await supabase
         .from('analyses')
         .select('*')
@@ -39,7 +33,6 @@ export default function Home() {
         .limit(2)
 
       if (error) throw error
-
       setAnalyses(data || [])
     } catch (err) {
       console.error('Error fetching analyses:', err)
@@ -67,7 +60,6 @@ export default function Home() {
             </span>
           </Link>
 
-          {/* Core Navigation - Pushing traffic to our new SEO pages */}
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/community" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">
               Live Floor
@@ -96,12 +88,15 @@ export default function Home() {
           <span className="text-xs font-bold text-neutral-300 uppercase tracking-widest">For Traders Stuck in Hesitation</span>
         </div>
 
-        <h1 className="text-6xl md:text-8xl font-black leading-[1.1] tracking-tighter text-white">
+        {/* 🚨 SEO FIX: Hidden H1 for Google, H2 for visual styling */}
+        <h1 className="sr-only">MyTraderDesk: Professional Trading Floor and Market Analysis Platform</h1>
+
+        <h2 className="text-6xl md:text-8xl font-black leading-[1.1] tracking-tighter text-white">
           STOP SECOND GUESSING.<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-500">
             EXECUTE WITH CLARITY.
           </span>
-        </h1>
+        </h2>
 
         <p className="mt-8 text-xl text-neutral-400 max-w-2xl mx-auto leading-relaxed">
           You already know how to analyze the market. The problem is trusting your decisions. Validate your thinking against professional floor analysis so you can trade without hesitation.
@@ -248,7 +243,12 @@ export default function Home() {
                 <div key={item.id} className="bg-[#050505] p-6 rounded-3xl border border-neutral-800 shadow-2xl flex flex-col group hover:border-neutral-700 transition-colors">
                   {item.image_url ? (
                     <div className="relative overflow-hidden rounded-2xl mb-6 border border-neutral-800">
-                      <img src={item.image_url} alt="chart" className="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-700" />
+                      {/* 🚨 SEO FIX: Dynamic Alt Text injected here */}
+                      <img 
+                        src={item.image_url} 
+                        alt={`${item.asset_symbol} Market Analysis Chart - MyTraderDesk`} 
+                        className="w-full h-72 object-cover group-hover:scale-105 transition-transform duration-700" 
+                      />
                       <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent opacity-60"></div>
                     </div>
                   ) : (
@@ -256,6 +256,7 @@ export default function Home() {
                       <BarChart3 className="text-neutral-700 w-16 h-16" />
                     </div>
                   )}
+  
                   <div className="flex items-center justify-between mb-4">
                     <span className="px-4 py-1.5 bg-blue-500/10 text-blue-400 text-xs font-black uppercase tracking-widest rounded-full border border-blue-500/20">{item.bias || 'Analysis'}</span>
                     <span className="text-xs text-neutral-500 font-bold uppercase tracking-widest">{new Date(item.created_at).toLocaleDateString()}</span>
@@ -341,7 +342,7 @@ export default function Home() {
           {/* Brand Column */}
           <div className="col-span-1 md:col-span-1">
             <Link href="/" className="flex items-center space-x-2 mb-6">
-              <Activity size={24} className="text-blue-500" />
+               <Activity size={24} className="text-blue-500" />
               <span className="text-white font-black uppercase tracking-widest italic text-lg">
                 Sentinel<span className="text-blue-500">Vortex</span>
               </span>
