@@ -18,7 +18,7 @@ export async function generateMetadata(
 
   const { data: setup } = await supabase
     .from('analyses')
-    .select('bias, timeframe, created_at')
+    .select('bias, timeframe, created_at, image_url') // Added image_url here
     .eq('asset_symbol', symbol)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -43,7 +43,30 @@ export async function generateMetadata(
       `Trade ${symbol}`,
       `Sentinel Vortex`,
       `Forex confluence`
-    ]
+    ],
+    // 🚨 NEW: Added OpenGraph for rich social sharing previews
+    openGraph: {
+      title: `${symbol} Institutional Setup | MyTraderDesk`,
+      description: description,
+      url: `https://mytraderdesk.com/analysis/${symbol.toLowerCase()}`,
+      siteName: 'Sentinel Vortex',
+      type: 'article',
+      publishedTime: setup?.created_at,
+      images: [
+        {
+          url: setup?.image_url || '/og-image.jpg', // Dynamically uses the chart image!
+          width: 1200,
+          height: 630,
+          alt: `${symbol} Technical Analysis Chart`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${symbol} Live Setup | MyTraderDesk`,
+      description: description,
+      images: [setup?.image_url || '/og-image.jpg'],
+    },
   }
 }
 
