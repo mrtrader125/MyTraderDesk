@@ -1,9 +1,8 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabaseServer'
 import { Activity, ShieldAlert, CheckCircle2, Lock, MessageSquare, TrendingUp, TrendingDown, Minus, Users } from 'lucide-react'
-import LivePollWidget from '@/components/community/LivePollWidget' // 🚨 Imports the interactive widget!
+import LivePollWidget from '@/components/community/LivePollWidget' 
 
-// MOCK DATA for discussions (we will make this real later)
 const RECENT_DISCUSSIONS = [
   { asset: 'XAUUSD', topic: 'Liquidity sweep at 2040 validated?', comments: 12, bias: 'BULLISH' },
   { asset: 'EURUSD', topic: 'ECB rate decision structural impact', comments: 8, bias: 'BEARISH' },
@@ -13,16 +12,13 @@ const RECENT_DISCUSSIONS = [
 export default async function PrivateLiveFloorPage() {
   const supabase = await createClient()
   
-  // 1. Auth & Profile Check
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // 🚨 FIXED: Now selecting 'plan' to match your Supabase database exactly
   const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
   const userPlan = profile?.plan?.toLowerCase() || 'free'
   const isFreeUser = userPlan === 'free'
 
-  // 2. Fetch the Active Poll from Database
   const { data: activePoll } = await supabase
     .from('desk_polls')
     .select('*')
@@ -31,7 +27,6 @@ export default async function PrivateLiveFloorPage() {
     .limit(1)
     .single()
 
-  // 3. Fetch Votes for this poll
   let initialVotes = { bullish: 0, bearish: 0, neutral: 0, total: 0 }
   let userVote = null
 
@@ -52,7 +47,6 @@ export default async function PrivateLiveFloorPage() {
     <div className="min-h-screen bg-[#050505] text-white font-sans p-6 md:p-10">
       <div className="max-w-5xl mx-auto">
         
-        {/* Header */}
         <div className="mb-10 border-b border-neutral-900 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div>
             <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-3 py-1.5 mb-4">
@@ -76,9 +70,7 @@ export default async function PrivateLiveFloorPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
           <div className="lg:col-span-2 space-y-6">
-            {/* REAL DATABASE POLL */}
             {activePoll ? (
               <div className="bg-gradient-to-br from-[#111] to-[#050505] border border-neutral-800 rounded-3xl p-8 relative overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full"></div>
@@ -95,7 +87,6 @@ export default async function PrivateLiveFloorPage() {
                 <h2 className="text-2xl font-black leading-tight mb-2 relative z-10">{activePoll.asset} Sentiment</h2>
                 <p className="text-neutral-400 text-sm font-medium mb-8 relative z-10">{activePoll.question}</p>
 
-                {/* THE INTERACTIVE COMPONENT */}
                 <LivePollWidget 
                   poll={activePoll} 
                   initialVotes={initialVotes} 
@@ -125,12 +116,10 @@ export default async function PrivateLiveFloorPage() {
             <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-500 flex items-center">
               <MessageSquare size={14} className="mr-2" /> Recent Floor Chatter
             </h3>
-            {/* Leaving the static chatter here for now until we build the comments table! */}
             <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-6 text-center">
                <p className="text-xs text-neutral-600 font-bold uppercase tracking-widest">Chatter module initializing...</p>
             </div>
           </div>
-
         </div>
       </div>
     </div>
