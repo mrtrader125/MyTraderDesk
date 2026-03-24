@@ -11,7 +11,8 @@ import {
   LogOut, 
   ShieldAlert, 
   ChevronRight,
-  Radio 
+  Radio,
+  BookOpen // 🚨 NEW: Added BookOpen icon for the Playbook
 } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -41,9 +42,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     router.push('/login')
   }
 
+  // 🚨 NEW: Added 'Publish Playbook' to the navigation links
   const navLinks = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Publish Setup', path: '/admin/analysis', icon: Send },
+    { name: 'Publish Playbook', path: '/admin/playbook/new', icon: BookOpen }, 
     { name: 'User Directory', path: '/admin/users', icon: Users },
     { name: 'Broadcast', path: '/admin/notifications', icon: Radio },
     { name: 'System Logs', path: '/admin/logs', icon: Activity },
@@ -72,6 +75,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Navigation */}
         <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto scrollbar-hide">
           {navLinks.map((link) => {
+            // Updated to highlight if we are on the new playbook route
             const isActive = pathname === link.path
             return (
               <button
