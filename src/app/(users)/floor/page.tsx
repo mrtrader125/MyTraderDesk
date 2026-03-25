@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
@@ -18,31 +18,46 @@ export default function LiveFloorPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
 
+  // Auto-scroll references
+  const floorEndRef = useRef<HTMLDivElement>(null)
+  const squawkEndRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     fetchInitialData()
     setupRealtime()
   }, [])
+
+  // Auto-scroll to bottom when new posts/squawks arrive
+  useEffect(() => {
+    floorEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [posts])
+
+  useEffect(() => {
+    squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [squawks])
 
   const fetchInitialData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) setUserId(user.id)
 
+      // Fetch latest 10, then reverse so the oldest is at the top (Chat style)
       const { data: postsData } = await supabase
         .from('terminal_posts')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(10)
       
-      if (postsData) setPosts(postsData)
+      if (postsData) setPosts(postsData.reverse())
 
+      // Fetch latest 15, then reverse
       const { data: squawkData } = await supabase
         .from('live_squawk')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(15)
       
-      if (squawkData) setSquawks(squawkData)
+      if (squawkData) setSquawks(squawkData.reverse())
 
       if (user && postsData && postsData.length > 0) {
         const postIds = postsData.map(p => p.id)
@@ -74,10 +89,12 @@ export default function LiveFloorPage() {
     const channel = supabase
       .channel('public:desk_feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (payload) => {
-        setSquawks((current) => [payload.new, ...current])
+        // Drop new messages at the BOTTOM of the array
+        setSquawks((current) => [...current, payload.new])
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'terminal_posts' }, (payload) => {
-        setPosts((current) => [payload.new, ...current])
+        // Drop new setups at the BOTTOM of the array
+        setPosts((current) => [...current, payload.new])
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_votes' }, (payload) => {
         setPollResults((prev) => {
@@ -121,37 +138,41 @@ export default function LiveFloorPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center">
+      <div className="h-screen bg-[#050505] flex flex-col items-center justify-center">
         <Activity className="w-8 h-8 text-blue-500 mb-4 animate-pulse" />
         <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 animate-pulse">
-          Loading Terminal...
+          Connecting to Desk...
         </p>
       </div>
     )
   }
 
   return (
-    // Hard-locked outer screen container to prevent page scrolling
-    <div className="h-[100dvh] bg-[#050505] text-neutral-200 p-4 md:p-6 flex flex-col overflow-hidden">
-      <div className="max-w-[1600px] mx-auto w-full flex-1 flex flex-col min-h-0 pt-16 lg:pt-0">
+    // STRICT LOCK: calc height ensures it fits exactly under your navbar without scrolling the body
+    <div className="h-[calc(100vh-80px)] md:h-[calc(100vh-2rem)] bg-[#050505] text-neutral-200 p-3 md:p-5 flex flex-col overflow-hidden">
+      
+      {/* Container is locked to 100% of available height */}
+      <div className="max-w-[1600px] mx-auto w-full h-full flex flex-col min-h-0">
         
         {/* --- DUAL PANE WORKSPACE --- */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden h-full">
           
           {/* ========================================= */}
           {/* LEFT PANE: LIVE FLOOR (Main Setups)         */}
           {/* ========================================= */}
           <div className="lg:col-span-2 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex flex-col h-full shadow-2xl overflow-hidden">
             
-            {/* Header integrated into the pane itself */}
-            <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Activity className="text-blue-500 w-4 h-4" />
-                <h3 className="text-xs font-black text-white uppercase tracking-widest">Live Floor</h3>
+            {/* Contact/Chat Header */}
+            <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 shadow-sm z-10">
+              <div className="flex items-center gap-3">
+                <div className="bg-blue-500/10 p-2 rounded-lg border border-blue-500/20">
+                  <Activity className="text-blue-500 w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest">Live Floor</h3>
+                  <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Structural Analysis</p>
+                </div>
               </div>
-              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">
-                Structural Analysis
-              </span>
             </div>
 
             {/* Independent scrollable feed */}
@@ -279,6 +300,8 @@ export default function LiveFloorPage() {
                   )
                 })
               )}
+              {/* Invisible anchor to auto-scroll to the bottom */}
+              <div ref={floorEndRef} />
             </div>
           </div>
 
@@ -287,15 +310,17 @@ export default function LiveFloorPage() {
           {/* ========================================= */}
           <div className="lg:col-span-1 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex flex-col h-full shadow-2xl overflow-hidden">
             
-            {/* Header integrated into the pane itself */}
-            <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-2">
-                <Radio className="text-amber-500 w-4 h-4 animate-pulse" />
-                <h3 className="text-xs font-black text-white uppercase tracking-widest">Live Squawk</h3>
+            {/* Contact/Chat Header */}
+            <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 shadow-sm z-10">
+              <div className="flex items-center gap-3">
+                <div className="bg-amber-500/10 p-2 rounded-lg border border-amber-500/20">
+                  <Radio className="text-amber-500 w-4 h-4 animate-pulse" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-black text-white uppercase tracking-widest">Live Squawk</h3>
+                  <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Rapid Comms</p>
+                </div>
               </div>
-              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">
-                Rapid Comms
-              </span>
             </div>
 
             {/* Independent scrollable feed */}
@@ -308,7 +333,7 @@ export default function LiveFloorPage() {
               ) : (
                 squawks.map((squawk, index) => (
                   <div key={squawk.id} className="relative pl-5 border-l border-neutral-800 hover:border-amber-500/50 transition-colors group">
-                    <div className={`absolute -left-[4px] top-1.5 w-1.5 h-1.5 rounded-full ${index === 0 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-neutral-700'}`}></div>
+                    <div className={`absolute -left-[4px] top-1.5 w-1.5 h-1.5 rounded-full ${index === squawks.length - 1 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-neutral-700'}`}></div>
                     
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-[9px] text-neutral-500 font-black tracking-widest uppercase">
@@ -326,10 +351,12 @@ export default function LiveFloorPage() {
                   </div>
                 ))
               )}
+              {/* Invisible anchor to auto-scroll to the bottom */}
+              <div ref={squawkEndRef} />
             </div>
             
             {/* Footer attached to the bottom of the pane */}
-            <div className="p-3 border-t border-neutral-900 bg-[#0a0a0a] shrink-0 text-center">
+            <div className="p-3 border-t border-neutral-900 bg-[#0d0d0d] shrink-0 text-center shadow-md">
                <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest flex items-center justify-center gap-1.5">
                  <Shield size={10}/> Official Admin Feed
                </p>
