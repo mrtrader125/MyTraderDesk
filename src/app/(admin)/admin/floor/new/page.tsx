@@ -83,22 +83,38 @@ export default function AdminFloorControl() {
     if (squawks) setActiveSquawks(squawks)
   }
 
-  // --- EDIT & DELETE HANDLERS ---
+  // 🚨 STRICT EDIT & DELETE HANDLERS 🚨
   const handleDeletePost = async (id: string) => {
     if (!confirm('Delete this Terminal Setup permanently?')) return
-    await supabase.from('terminal_posts').delete().eq('id', id)
-    setActivePosts(prev => prev.filter(p => p.id !== id))
+    
+    const { error } = await supabase.from('terminal_posts').delete().eq('id', id)
+    
+    if (error) {
+      console.error("Delete Error:", error)
+      alert(`Database Error: ${error.message}\n\nMake sure your Supabase table has a DELETE RLS policy allowed for authenticated users.`)
+    } else {
+      // Only remove from UI if the DB confirms it was deleted
+      setActivePosts(prev => prev.filter(p => p.id !== id))
+    }
   }
 
   const handleDeleteSquawk = async (id: string) => {
     if (!confirm('Delete this Squawk permanently?')) return
-    await supabase.from('live_squawk').delete().eq('id', id)
-    setActiveSquawks(prev => prev.filter(s => s.id !== id))
+    
+    const { error } = await supabase.from('live_squawk').delete().eq('id', id)
+    
+    if (error) {
+      console.error("Delete Error:", error)
+      alert(`Database Error: ${error.message}\n\nMake sure your Supabase table has a DELETE RLS policy allowed for authenticated users.`)
+    } else {
+      setActiveSquawks(prev => prev.filter(s => s.id !== id))
+    }
   }
 
   const handleUpdatePost = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsUpdating(true)
+    
     const { error } = await supabase.from('terminal_posts').update({
       ticker: editingPost.ticker.toUpperCase(),
       timeframe: editingPost.timeframe,
@@ -107,25 +123,30 @@ export default function AdminFloorControl() {
     }).eq('id', editingPost.id)
     
     setIsUpdating(false)
-    if (!error) {
+    if (error) {
+      alert(`Update failed: ${error.message}\n\nMake sure your Supabase table has an UPDATE RLS policy.`)
+    } else {
       setEditingPost(null)
       fetchActiveFloorData()
-    } else alert(`Update failed: ${error.message}`)
+    }
   }
 
   const handleUpdateSquawk = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsUpdating(true)
+    
     const { error } = await supabase.from('live_squawk').update({
       message: editingSquawk.message,
       tag: editingSquawk.tag
     }).eq('id', editingSquawk.id)
     
     setIsUpdating(false)
-    if (!error) {
+    if (error) {
+      alert(`Update failed: ${error.message}\n\nMake sure your Supabase table has an UPDATE RLS policy.`)
+    } else {
       setEditingSquawk(null)
       fetchActiveFloorData()
-    } else alert(`Update failed: ${error.message}`)
+    }
   }
 
   // --- DEPLOY HANDLERS ---
@@ -214,7 +235,6 @@ export default function AdminFloorControl() {
           </h1>
           
           <div className="flex items-center gap-4">
-            {/* View Toggle */}
             <div className="flex bg-[#111] rounded-lg border border-neutral-800 p-1">
               <button 
                 onClick={() => setActiveTab('deploy')} 
@@ -477,7 +497,7 @@ export default function AdminFloorControl() {
       )}
 
       {/* ========================================= */}
-      {/* LIBRARY MODAL (Unchanged)                   */}
+      {/* LIBRARY MODAL                               */}
       {/* ========================================= */}
       {isLibraryOpen && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8">
