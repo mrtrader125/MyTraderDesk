@@ -125,25 +125,26 @@ export default function LiveFloorPage() {
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center">
         <Activity className="w-8 h-8 text-blue-500 mb-4 animate-pulse" />
         <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 animate-pulse">
-          Connecting to Terminal...
+          Loading Live Floor...
         </p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-neutral-200 pt-20 pb-12 px-4 md:px-6">
+    // Reduced padding top (pt-8 instead of pt-20)
+    <div className="min-h-screen bg-[#050505] text-neutral-200 pt-8 pb-12 px-4 md:px-6">
       <div className="max-w-7xl mx-auto">
         
         {/* --- COMPACT PROFESSIONAL HEADER --- */}
-        <div className="mb-6 pb-4 border-b border-neutral-900 flex items-center justify-between">
+        <div className="mb-4 pb-3 border-b border-neutral-900 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-black text-white tracking-tight uppercase flex items-center gap-2">
-              <Activity className="text-blue-500 w-5 h-5" /> The Desk
+              <Activity className="text-blue-500 w-5 h-5" /> Live Floor
             </h1>
             <span className="hidden sm:inline-block w-[1px] h-4 bg-neutral-800"></span>
             <p className="hidden sm:block text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-              Live Structural Intelligence
+              Market Analysis & Setups
             </p>
           </div>
           <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
@@ -154,14 +155,14 @@ export default function LiveFloorPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           
-          {/* --- LEFT COLUMN: TERMINAL FEED --- */}
+          {/* --- LEFT COLUMN: LIVE SETUPS FEED --- */}
           <div className="lg:col-span-2 space-y-5">
             {posts.length === 0 ? (
               <div className="bg-[#0a0a0a] p-12 rounded-xl border border-neutral-800 flex flex-col items-center justify-center text-center shadow-2xl">
                 <Target className="w-10 h-10 text-neutral-700 mb-4" />
-                <h3 className="text-sm font-black uppercase tracking-widest text-white mb-2">Awaiting Transmissions</h3>
+                <h3 className="text-sm font-black uppercase tracking-widest text-white mb-2">Awaiting Setups</h3>
                 <p className="text-neutral-500 text-xs font-bold tracking-wide">
-                  Initial structural setups will appear here shortly.
+                  Today's market analysis and trade setups will appear here shortly.
                 </p>
               </div>
             ) : (
@@ -215,7 +216,7 @@ export default function LiveFloorPage() {
                       {!hasVoted ? (
                         <div className="animate-in fade-in duration-300">
                           <p className="text-[9px] text-neutral-500 font-black uppercase tracking-widest mb-3">
-                            Establish Bias to Reveal Data
+                            Vote to Reveal Community Sentiment
                           </p>
                           <div className="grid grid-cols-3 gap-3">
                             <button onClick={() => handleVote(post.id, 'aligned')} className="flex items-center justify-center gap-2 p-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group">
@@ -235,7 +236,7 @@ export default function LiveFloorPage() {
                       ) : results ? (
                         <div className="space-y-4 animate-in fade-in zoom-in-95 duration-300">
                           <div className="flex justify-between items-end mb-2">
-                            <span className="text-[9px] font-black text-white uppercase tracking-widest">{results.totalVotes} Operators Voted</span>
+                            <span className="text-[9px] font-black text-white uppercase tracking-widest">{results.totalVotes} Traders Voted</span>
                             <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
                               Your Bias: <span className={userVotes[post.id] === 'aligned' ? 'text-blue-400' : userVotes[post.id] === 'counter' ? 'text-red-400' : 'text-neutral-300'}>{userVotes[post.id].replace('_', ' ')}</span>
                             </div>
@@ -286,7 +287,7 @@ export default function LiveFloorPage() {
                 {squawks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full opacity-50">
                     <Zap className="w-6 h-6 text-neutral-600 mb-3" />
-                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest text-center">Radar is quiet</p>
+                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest text-center">No recent updates</p>
                   </div>
                 ) : (
                   squawks.map((squawk, index) => (
@@ -313,7 +314,7 @@ export default function LiveFloorPage() {
               
               <div className="p-3 border-t border-neutral-900 bg-[#050505] shrink-0 text-center">
                  <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest flex items-center justify-center gap-1.5">
-                   <Shield size={10}/> Encrypted Connection
+                   <Shield size={10}/> Official Admin Feed
                  </p>
               </div>
 
