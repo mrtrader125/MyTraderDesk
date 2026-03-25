@@ -83,15 +83,17 @@ export default function AdminFloorControl() {
     if (squawks) setActiveSquawks(squawks)
   }
 
-  // 🚨 STRICT EDIT & DELETE HANDLERS 🚨
+  // 🚨 STRICT EDIT & DELETE HANDLERS (with .select() to catch silent failures) 🚨
   const handleDeletePost = async (id: string) => {
     if (!confirm('Delete this Terminal Setup permanently?')) return
     
-    const { error } = await supabase.from('terminal_posts').delete().eq('id', id)
+    const { data, error } = await supabase.from('terminal_posts').delete().eq('id', id).select()
     
     if (error) {
       console.error("Delete Error:", error)
-      alert(`Database Error: ${error.message}\n\nMake sure your Supabase table has a DELETE RLS policy allowed for authenticated users.`)
+      alert(`Database Error: ${error.message}`)
+    } else if (!data || data.length === 0) {
+      alert(`Silent Block: The database refused to delete the item. Please run the SQL policy fix in Supabase.`)
     } else {
       // Only remove from UI if the DB confirms it was deleted
       setActivePosts(prev => prev.filter(p => p.id !== id))
@@ -101,11 +103,13 @@ export default function AdminFloorControl() {
   const handleDeleteSquawk = async (id: string) => {
     if (!confirm('Delete this Squawk permanently?')) return
     
-    const { error } = await supabase.from('live_squawk').delete().eq('id', id)
+    const { data, error } = await supabase.from('live_squawk').delete().eq('id', id).select()
     
     if (error) {
       console.error("Delete Error:", error)
-      alert(`Database Error: ${error.message}\n\nMake sure your Supabase table has a DELETE RLS policy allowed for authenticated users.`)
+      alert(`Database Error: ${error.message}`)
+    } else if (!data || data.length === 0) {
+      alert(`Silent Block: The database refused to delete the item. Please run the SQL policy fix in Supabase.`)
     } else {
       setActiveSquawks(prev => prev.filter(s => s.id !== id))
     }
@@ -115,16 +119,18 @@ export default function AdminFloorControl() {
     e.preventDefault()
     setIsUpdating(true)
     
-    const { error } = await supabase.from('terminal_posts').update({
+    const { data, error } = await supabase.from('terminal_posts').update({
       ticker: editingPost.ticker.toUpperCase(),
       timeframe: editingPost.timeframe,
       thesis: editingPost.thesis,
       tier_access: editingPost.tier_access
-    }).eq('id', editingPost.id)
+    }).eq('id', editingPost.id).select()
     
     setIsUpdating(false)
     if (error) {
-      alert(`Update failed: ${error.message}\n\nMake sure your Supabase table has an UPDATE RLS policy.`)
+      alert(`Update failed: ${error.message}`)
+    } else if (!data || data.length === 0) {
+      alert(`Silent Block: The database refused to update the item. Please run the SQL policy fix in Supabase.`)
     } else {
       setEditingPost(null)
       fetchActiveFloorData()
@@ -135,14 +141,16 @@ export default function AdminFloorControl() {
     e.preventDefault()
     setIsUpdating(true)
     
-    const { error } = await supabase.from('live_squawk').update({
+    const { data, error } = await supabase.from('live_squawk').update({
       message: editingSquawk.message,
       tag: editingSquawk.tag
-    }).eq('id', editingSquawk.id)
+    }).eq('id', editingSquawk.id).select()
     
     setIsUpdating(false)
     if (error) {
-      alert(`Update failed: ${error.message}\n\nMake sure your Supabase table has an UPDATE RLS policy.`)
+      alert(`Update failed: ${error.message}`)
+    } else if (!data || data.length === 0) {
+      alert(`Silent Block: The database refused to update the item. Please run the SQL policy fix in Supabase.`)
     } else {
       setEditingSquawk(null)
       fetchActiveFloorData()
