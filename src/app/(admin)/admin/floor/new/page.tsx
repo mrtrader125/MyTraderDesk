@@ -36,16 +36,16 @@ export default function AdminFloorControl() {
   useEffect(() => {
     const fetchMasterAnalysisImages = async () => {
       
-      // 🚨 CHANGED 'setups' TO 'analysis' 🚨
+      // 🚨 FIXED: Table is 'analyses' and Column is 'asset_symbol' 🚨
       const { data, error } = await supabase
-        .from('analysis') 
-        .select('ticker, image_url')
+        .from('analyses') 
+        .select('asset_symbol, image_url')
         .not('image_url', 'is', null)
         .order('created_at', { ascending: false })
         .limit(40) 
 
       if (error) {
-        console.error("Failed to fetch from analysis table:", error.message)
+        console.error("Failed to fetch from analyses table:", error.message)
       }
 
       if (data) {
@@ -67,7 +67,7 @@ export default function AdminFloorControl() {
 
           // Ensure we have a valid string URL and no duplicates
           if (extractedUrl && typeof extractedUrl === 'string' && !unique.has(extractedUrl)) {
-            unique.set(extractedUrl, item.ticker || 'UNKNOWN')
+            unique.set(extractedUrl, item.asset_symbol || 'UNKNOWN')
           }
         })
         
@@ -80,6 +80,7 @@ export default function AdminFloorControl() {
       fetchMasterAnalysisImages()
     }
   }, [supabase, isLibraryOpen])
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
