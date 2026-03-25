@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabaseServer' // Adjust path if needed
-import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield } from 'lucide-react'
-
-// You'll likely want to use the browser client here since it's a 'use client' component
+import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 
 const supabase = createBrowserClient(
@@ -16,8 +13,8 @@ const supabase = createBrowserClient(
 export default function LiveFloorPage() {
   const [posts, setPosts] = useState<any[]>([])
   const [squawks, setSquawks] = useState<any[]>([])
-  const [userVotes, setUserVotes] = useState<Record<string, string>>({}) // Track what the current user voted
-  const [pollResults, setPollResults] = useState<Record<string, any>>({}) // Track the percentages
+  const [userVotes, setUserVotes] = useState<Record<string, string>>({})
+  const [pollResults, setPollResults] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
 
@@ -28,11 +25,9 @@ export default function LiveFloorPage() {
 
   const fetchInitialData = async () => {
     try {
-      // 1. Get Current User
       const { data: { user } } = await supabase.auth.getUser()
       if (user) setUserId(user.id)
 
-      // 2. Fetch Terminal Posts
       const { data: postsData } = await supabase
         .from('terminal_posts')
         .select('*')
@@ -41,7 +36,6 @@ export default function LiveFloorPage() {
       
       if (postsData) setPosts(postsData)
 
-      // 3. Fetch Live Squawk
       const { data: squawkData } = await supabase
         .from('live_squawk')
         .select('*')
@@ -50,8 +44,7 @@ export default function LiveFloorPage() {
       
       if (squawkData) setSquawks(squawkData)
 
-      // 4. If user exists, fetch their previous votes to show the results
-      if (user && postsData) {
+      if (user && postsData && postsData.length > 0) {
         const postIds = postsData.map(p => p.id)
         const { data: votesData } = await supabase
           .from('user_votes')
@@ -64,7 +57,6 @@ export default function LiveFloorPage() {
           votesData.forEach(v => { voteMap[v.post_id] = v.vote_type })
           setUserVotes(voteMap)
 
-          // Fetch aggregate results ONLY for posts the user has voted on
           const votedPostIds = Object.keys(voteMap)
           if (votedPostIds.length > 0) {
             fetchPollResults(votedPostIds)
@@ -78,7 +70,6 @@ export default function LiveFloorPage() {
     }
   }
 
-  // Realtime listener for the right-side Squawk feed
   const setupRealtimeSquawk = () => {
     const channel = supabase
       .channel('public:live_squawk')
@@ -90,10 +81,7 @@ export default function LiveFloorPage() {
     return () => { supabase.removeChannel(channel) }
   }
 
-  // Calculate percentages for posts the user has unlocked
   const fetchPollResults = async (postIds: string[]) => {
-    // In a production app, this should be a Supabase RPC (Stored Procedure) 
-    // to calculate counts efficiently on the server. For now, we fetch raw votes.
     const { data } = await supabase
       .from('user_votes')
       .select('post_id, vote_type')
@@ -103,7 +91,7 @@ export default function LiveFloorPage() {
       const results: Record<string, any> = {}
       postIds.forEach(id => {
         const postVotes = data.filter(v => v.post_id === id)
-        const total = postVotes.length || 1 // prevent divide by zero
+        const total = postVotes.length || 1 
         results[id] = {
           aligned: Math.round((postVotes.filter(v => v.vote_type === 'aligned').length / total) * 100),
           counter: Math.round((postVotes.filter(v => v.vote_type === 'counter').length / total) * 100),
@@ -118,56 +106,71 @@ export default function LiveFloorPage() {
   const handleVote = async (postId: string, voteType: 'aligned' | 'counter' | 'sitting_out') => {
     if (!userId) return
 
-    // Optimistic UI update
     setUserVotes(prev => ({ ...prev, [postId]: voteType }))
 
-    // Insert into DB
     const { error } = await supabase
       .from('user_votes')
       .insert({ post_id: postId, user_id: userId, vote_type: voteType })
 
     if (!error) {
-      // Fetch the new aggregate results to reveal the bars to the user
       fetchPollResults([postId])
     }
   }
 
+  // --- PREMIUM LOADING STATE ---
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <Activity className="w-10 h-10 animate-pulse text-blue-500" />
+      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(59,130,246,0.05)_0,transparent_50%)]"></div>
+        <Activity className="w-12 h-12 text-blue-500 mb-6 animate-pulse relative z-10" />
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-500 relative z-10 animate-pulse">
+          Initializing Terminal...
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-neutral-200 pt-24 pb-12 px-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-[#050505] text-neutral-200 pt-24 pb-20 px-6 relative overflow-hidden">
+      {/* Subtle Background Glow */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none"></div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
         
-        {/* Page Header */}
-        <div className="mb-10 flex items-center justify-between border-b border-neutral-900 pb-6">
+        {/* --- HEADER --- */}
+        <div className="mb-12 flex flex-col sm:flex-row sm:items-end justify-between border-b border-neutral-800/60 pb-8 gap-6">
           <div>
-            <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <Activity className="text-blue-500" /> The Live Floor
+            <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-3 py-1.5 mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+              <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">Execution Terminal</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter flex items-center gap-3 italic">
+              The Live Floor
             </h1>
-            <p className="text-neutral-500 mt-2 text-sm font-medium uppercase tracking-widest">
-              Institutional Intelligence & Execution Terminal
+            <p className="text-neutral-500 mt-3 text-xs font-bold uppercase tracking-[0.2em]">
+              Institutional Intelligence & Market Sentiment
             </p>
           </div>
-          <div className="hidden sm:flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-4 py-2 rounded-full">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Market Open</span>
+          <div className="flex items-center gap-3 bg-emerald-500/5 border border-emerald-500/20 px-5 py-2.5 rounded-xl backdrop-blur-sm shrink-0">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)] animate-pulse"></span>
+            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Market Open</span>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 xl:gap-12">
           
-          {/* LEFT COLUMN: THE TERMINAL FEED */}
+          {/* --- LEFT COLUMN: TERMINAL FEED --- */}
           <div className="lg:col-span-2 space-y-8">
             {posts.length === 0 ? (
-              <div className="bg-[#0a0a0a] p-12 rounded-3xl border border-neutral-800 text-center">
-                <Target className="w-12 h-12 mx-auto text-neutral-700 mb-4" />
-                <p className="text-neutral-400 font-bold tracking-wide">Awaiting initial setups from the Desk.</p>
+              // PREMIUM EMPTY STATE
+              <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] p-16 rounded-3xl border border-neutral-800/50 flex flex-col items-center justify-center text-center shadow-2xl relative overflow-hidden">
+                <div className="w-20 h-20 bg-blue-500/5 rounded-full flex items-center justify-center border border-blue-500/10 mb-6">
+                  <Target className="w-8 h-8 text-blue-500/50" />
+                </div>
+                <h3 className="text-xl font-black uppercase tracking-widest text-white mb-3">Awaiting Transmissions</h3>
+                <p className="text-neutral-500 text-sm font-medium tracking-wide max-w-sm leading-relaxed">
+                  The desk is currently analyzing markets. Initial structural setups will appear here shortly.
+                </p>
               </div>
             ) : (
               posts.map((post) => {
@@ -175,94 +178,103 @@ export default function LiveFloorPage() {
                 const results = pollResults[post.id]
 
                 return (
-                  <div key={post.id} className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 overflow-hidden shadow-2xl">
-                    {/* Header */}
-                    <div className="p-6 border-b border-neutral-900 flex justify-between items-center bg-[#0d0d0d]">
+                  <div key={post.id} className="bg-gradient-to-br from-[#0c0c0c] to-[#050505] rounded-3xl border border-neutral-800/60 overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.8)] transition-all duration-300 hover:border-neutral-700">
+                    
+                    {/* Post Header */}
+                    <div className="p-6 border-b border-neutral-900 flex flex-wrap justify-between items-center gap-4 bg-[#0a0a0a]">
                       <div className="flex items-center gap-3">
-                        <span className="px-3 py-1 bg-blue-500/10 text-blue-400 text-sm font-black uppercase tracking-widest rounded-lg border border-blue-500/20">
+                        <span className="px-4 py-1.5 bg-blue-500/10 text-blue-400 text-xs font-black uppercase tracking-[0.2em] rounded-lg border border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.1)]">
                           {post.ticker}
                         </span>
-                        <span className="text-xs font-bold text-neutral-500 bg-neutral-900 px-2 py-1 rounded-md">
+                        <span className="text-[10px] font-black text-neutral-400 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-lg uppercase tracking-widest">
                           {post.timeframe}
                         </span>
                       </div>
-                      <span className="text-xs text-neutral-500 font-bold uppercase tracking-widest flex items-center gap-1">
-                        <Clock size={12} />
+                      <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-[0.2em] flex items-center gap-2">
+                        <Clock size={12} className="text-neutral-600" />
                         {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
 
                     {/* Chart Image */}
                     {post.image_url && (
-                      <div className="relative w-full h-[400px] border-b border-neutral-900 bg-[#111]">
+                      <div className="relative w-full h-[300px] sm:h-[450px] border-b border-neutral-900 bg-[#000]">
                         <Image 
                           src={post.image_url} 
                           alt={`${post.ticker} Setup`} 
                           fill
-                          className="object-cover"
+                          className="object-contain"
+                          unoptimized // Remove if using Next.js image optimization
                         />
                       </div>
                     )}
 
                     {/* Thesis */}
-                    <div className="p-6">
-                      <p className="text-neutral-300 leading-relaxed text-sm">
-                        {post.thesis}
-                      </p>
+                    <div className="p-8 bg-[#050505]">
+                      <div className="border-l-2 border-blue-500/50 pl-5 py-1 mb-2">
+                        <p className="text-neutral-300 leading-loose text-sm font-medium">
+                          {post.thesis}
+                        </p>
+                      </div>
                     </div>
 
-                    {/* BLIND VOTING MODULE */}
-                    <div className="p-6 bg-[#050505] border-t border-neutral-900">
+                    {/* Voting Module */}
+                    <div className="p-8 bg-[#080808] border-t border-neutral-900">
                       {!hasVoted ? (
-                        <div>
-                          <p className="text-xs text-center text-neutral-500 font-bold uppercase tracking-widest mb-4">
-                            Establish Your Bias to Reveal Data
+                        <div className="animate-in fade-in duration-500">
+                          <p className="text-[10px] text-center text-neutral-500 font-black uppercase tracking-[0.2em] mb-6">
+                            Establish Your Bias to Reveal Desk Data
                           </p>
-                          <div className="grid grid-cols-3 gap-3">
-                            <button onClick={() => handleVote(post.id, 'aligned')} className="flex flex-col items-center justify-center p-4 rounded-xl bg-blue-500/5 border border-blue-500/20 hover:bg-blue-500/10 hover:border-blue-500/40 transition-colors group">
-                              <TrendingUp className="text-blue-500 mb-2 group-hover:scale-110 transition-transform" size={20} />
-                              <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Aligned</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <button onClick={() => handleVote(post.id, 'aligned')} className="relative overflow-hidden flex flex-col items-center justify-center p-5 rounded-2xl bg-gradient-to-b from-[#111] to-[#0a0a0a] border border-neutral-800 hover:border-blue-500/50 transition-all group shadow-lg">
+                              <TrendingUp className="text-neutral-600 group-hover:text-blue-500 mb-3 transition-colors duration-300" size={24} />
+                              <span className="text-[10px] font-black text-neutral-500 group-hover:text-blue-400 uppercase tracking-widest transition-colors duration-300">Aligned</span>
                             </button>
-                            <button onClick={() => handleVote(post.id, 'counter')} className="flex flex-col items-center justify-center p-4 rounded-xl bg-red-500/5 border border-red-500/20 hover:bg-red-500/10 hover:border-red-500/40 transition-colors group">
-                              <TrendingDown className="text-red-500 mb-2 group-hover:scale-110 transition-transform" size={20} />
-                              <span className="text-[10px] font-black text-red-400 uppercase tracking-widest">Counter</span>
+                            <button onClick={() => handleVote(post.id, 'counter')} className="relative overflow-hidden flex flex-col items-center justify-center p-5 rounded-2xl bg-gradient-to-b from-[#111] to-[#0a0a0a] border border-neutral-800 hover:border-red-500/50 transition-all group shadow-lg">
+                              <TrendingDown className="text-neutral-600 group-hover:text-red-500 mb-3 transition-colors duration-300" size={24} />
+                              <span className="text-[10px] font-black text-neutral-500 group-hover:text-red-400 uppercase tracking-widest transition-colors duration-300">Counter</span>
                             </button>
-                            <button onClick={() => handleVote(post.id, 'sitting_out')} className="flex flex-col items-center justify-center p-4 rounded-xl bg-neutral-800/50 border border-neutral-700 hover:bg-neutral-800 transition-colors group">
-                              <Eye className="text-neutral-400 mb-2 group-hover:scale-110 transition-transform" size={20} />
-                              <span className="text-[10px] font-black text-neutral-400 uppercase tracking-widest">Sitting Out</span>
+                            <button onClick={() => handleVote(post.id, 'sitting_out')} className="relative overflow-hidden flex flex-col items-center justify-center p-5 rounded-2xl bg-gradient-to-b from-[#111] to-[#0a0a0a] border border-neutral-800 hover:border-neutral-500 transition-all group shadow-lg">
+                              <Eye className="text-neutral-600 group-hover:text-neutral-300 mb-3 transition-colors duration-300" size={24} />
+                              <span className="text-[10px] font-black text-neutral-500 group-hover:text-neutral-300 uppercase tracking-widest transition-colors duration-300">Sitting Out</span>
                             </button>
                           </div>
                         </div>
                       ) : results ? (
-                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                          <div className="flex justify-between items-center mb-2">
-                            <span className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Community Confluence</span>
-                            <span className="text-[10px] font-bold text-neutral-600 uppercase">{results.totalVotes} Operators Voted</span>
+                        <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                          <div className="flex justify-between items-end mb-4 border-b border-neutral-800/50 pb-4">
+                            <div>
+                              <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em] block mb-1">Confluence Matrix</span>
+                              <span className="text-xs font-bold text-white uppercase tracking-wider">{results.totalVotes} Operators Voted</span>
+                            </div>
+                            <div className="text-[10px] font-black uppercase tracking-widest text-neutral-600 bg-neutral-900 px-3 py-1.5 rounded-lg border border-neutral-800">
+                              Your Bias: <span className={userVotes[post.id] === 'aligned' ? 'text-blue-400' : userVotes[post.id] === 'counter' ? 'text-red-400' : 'text-neutral-300'}>{userVotes[post.id].replace('_', ' ')}</span>
+                            </div>
                           </div>
                           
                           {/* Aligned Bar */}
-                          <div className="relative h-10 bg-neutral-900 rounded-xl overflow-hidden flex items-center px-4">
-                            <div className="absolute top-0 left-0 h-full bg-blue-500/20 transition-all duration-1000" style={{ width: `${results.aligned}%` }}></div>
-                            <div className="absolute top-0 left-0 h-full border-l-2 border-blue-500 transition-all duration-1000" style={{ left: `${results.aligned}%` }}></div>
-                            <span className="relative z-10 text-xs font-black text-blue-400 tracking-widest uppercase flex items-center gap-2">
-                              {userVotes[post.id] === 'aligned' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>} Aligned
+                          <div className="relative h-12 bg-[#000] rounded-xl overflow-hidden flex items-center px-5 border border-neutral-900">
+                            <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-600/20 to-blue-500/40 transition-all duration-1000 ease-out" style={{ width: `${results.aligned}%` }}></div>
+                            <div className="absolute top-0 left-0 h-full border-l-[3px] border-blue-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(59,130,246,0.8)]" style={{ left: `${results.aligned}%` }}></div>
+                            <span className="relative z-10 text-[10px] font-black text-blue-400 tracking-[0.2em] uppercase flex items-center gap-3">
+                              Aligned
                             </span>
                             <span className="relative z-10 ml-auto text-sm font-black text-white">{results.aligned}%</span>
                           </div>
 
                           {/* Counter Bar */}
-                          <div className="relative h-10 bg-neutral-900 rounded-xl overflow-hidden flex items-center px-4">
-                            <div className="absolute top-0 left-0 h-full bg-red-500/20 transition-all duration-1000" style={{ width: `${results.counter}%` }}></div>
-                            <div className="absolute top-0 left-0 h-full border-l-2 border-red-500 transition-all duration-1000" style={{ left: `${results.counter}%` }}></div>
-                            <span className="relative z-10 text-xs font-black text-red-400 tracking-widest uppercase flex items-center gap-2">
-                              {userVotes[post.id] === 'counter' && <div className="w-1.5 h-1.5 rounded-full bg-white"></div>} Counter
+                          <div className="relative h-12 bg-[#000] rounded-xl overflow-hidden flex items-center px-5 border border-neutral-900">
+                            <div className="absolute top-0 left-0 h-full bg-gradient-to-r from-red-600/20 to-red-500/40 transition-all duration-1000 ease-out" style={{ width: `${results.counter}%` }}></div>
+                            <div className="absolute top-0 left-0 h-full border-l-[3px] border-red-500 transition-all duration-1000 ease-out shadow-[0_0_15px_rgba(239,68,68,0.8)]" style={{ left: `${results.counter}%` }}></div>
+                            <span className="relative z-10 text-[10px] font-black text-red-400 tracking-[0.2em] uppercase flex items-center gap-3">
+                              Counter
                             </span>
                             <span className="relative z-10 ml-auto text-sm font-black text-white">{results.counter}%</span>
                           </div>
                         </div>
                       ) : (
-                        <div className="flex justify-center py-4">
-                          <Activity className="w-5 h-5 animate-pulse text-neutral-600" />
+                        <div className="flex justify-center py-8">
+                          <Activity className="w-6 h-6 animate-spin text-neutral-700" />
                         </div>
                       )}
                     </div>
@@ -272,33 +284,41 @@ export default function LiveFloorPage() {
             )}
           </div>
 
-          {/* RIGHT COLUMN: LIVE SQUAWK */}
+          {/* --- RIGHT COLUMN: LIVE SQUAWK --- */}
           <div className="lg:col-span-1">
-            <div className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 sticky top-28 overflow-hidden flex flex-col h-[700px]">
+            <div className="bg-gradient-to-b from-[#0c0c0c] to-[#050505] rounded-3xl border border-neutral-800/60 sticky top-28 overflow-hidden flex flex-col h-[700px] shadow-[0_8px_30px_rgb(0,0,0,0.8)]">
               
-              <div className="p-5 border-b border-neutral-900 bg-[#0d0d0d] flex items-center gap-3 shrink-0">
-                <Zap className="text-amber-500 w-5 h-5" />
-                <h3 className="text-sm font-black text-white uppercase tracking-widest">Live Squawk</h3>
+              <div className="p-6 border-b border-neutral-900 bg-[#0a0a0a] flex items-center justify-between shrink-0 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-amber-500/20 to-transparent"></div>
+                <div className="flex items-center gap-3 relative z-10">
+                  <Radio className="text-amber-500 w-5 h-5 animate-pulse" />
+                  <h3 className="text-sm font-black text-white uppercase tracking-[0.2em]">Live Squawk</h3>
+                </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar relative">
                 {squawks.length === 0 ? (
-                  <p className="text-xs text-neutral-600 font-bold uppercase text-center mt-10">Radar is quiet.</p>
+                  <div className="flex flex-col items-center justify-center h-full opacity-40">
+                    <Zap className="w-8 h-8 text-neutral-600 mb-4" />
+                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-[0.2em] text-center">Radar is quiet.<br/>Awaiting broadcasts.</p>
+                  </div>
                 ) : (
-                  squawks.map((squawk) => (
-                    <div key={squawk.id} className="relative pl-4 border-l-2 border-neutral-800 hover:border-neutral-600 transition-colors">
-                      <div className="absolute -left-[5px] top-1.5 w-2 h-2 rounded-full bg-neutral-700"></div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] text-neutral-500 font-bold tracking-widest uppercase">
+                  squawks.map((squawk, index) => (
+                    <div key={squawk.id} className="relative pl-6 border-l border-neutral-800/80 hover:border-amber-500/30 transition-colors group">
+                      {/* Pulse dot for the newest item */}
+                      <div className={`absolute -left-[5px] top-1.5 w-2 h-2 rounded-full ${index === 0 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-neutral-700'}`}></div>
+                      
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-[10px] text-neutral-500 font-black tracking-widest uppercase">
                           {new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                         {squawk.tag && (
-                          <span className="text-[9px] px-2 py-0.5 bg-neutral-800 text-neutral-300 rounded font-black uppercase tracking-widest">
+                          <span className="text-[9px] px-2 py-0.5 bg-neutral-900 border border-neutral-800 text-neutral-300 rounded-md font-black uppercase tracking-widest group-hover:border-amber-500/20 transition-colors">
                             {squawk.tag}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-neutral-300 leading-relaxed">
+                      <p className="text-sm text-neutral-300 leading-relaxed font-medium">
                         {squawk.message}
                       </p>
                     </div>
@@ -306,9 +326,9 @@ export default function LiveFloorPage() {
                 )}
               </div>
               
-              <div className="p-4 border-t border-neutral-900 bg-[#050505] shrink-0 text-center">
-                 <p className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest flex items-center justify-center gap-2">
-                   <Shield size={12}/> Admin Feed Secured
+              <div className="p-5 border-t border-neutral-900 bg-[#050505] shrink-0 text-center">
+                 <p className="text-[9px] font-black text-neutral-600 uppercase tracking-[0.3em] flex items-center justify-center gap-2">
+                   <Shield size={12}/> Encrypted Admin Feed
                  </p>
               </div>
 
