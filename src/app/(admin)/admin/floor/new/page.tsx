@@ -24,8 +24,6 @@ export default function AdminFloorControl() {
   const [imagePreview, setImagePreview] = useState<string | null>(null) 
 
   const [isLibraryOpen, setIsLibraryOpen] = useState(false)
-  
-  // Updated state to hold both the URL and the Ticker for the UI
   const [recentImages, setRecentImages] = useState<{url: string, ticker: string}[]>([])
   const [modalPreview, setModalPreview] = useState<{url: string, ticker: string} | null>(null)
 
@@ -34,11 +32,9 @@ export default function AdminFloorControl() {
   const [squawkTag, setSquawkTag] = useState('')
   const [isPostingSquawk, setIsPostingSquawk] = useState(false)
 
-  // 1. Fetch from the MASTER ANALYSIS database (Based on your project files)
+  // 1. Fetch & Parse from the MASTER ANALYSIS database
   useEffect(() => {
     const fetchMasterAnalysisImages = async () => {
-      // NOTE: Make sure 'setups' matches your exact table name for published setups! 
-      // If it's 'market_setups' or 'playbook', just change the string below.
       const { data } = await supabase
         .from('setups') 
         .select('ticker, image_url')
@@ -47,11 +43,25 @@ export default function AdminFloorControl() {
         .limit(40) 
 
       if (data) {
-        // Filter out duplicates but keep the ticker attached
         const unique = new Map()
+        
         data.forEach(item => {
-          if (!unique.has(item.image_url)) {
-            unique.set(item.image_url, item.ticker || 'UNKNOWN')
+          let extractedUrl = item.image_url
+
+          // SMART PARSER: Handle JSON Arrays from your database
+          if (Array.isArray(item.image_url)) {
+            extractedUrl = item.image_url[0]
+          } else if (typeof item.image_url === 'string' && item.image_url.startsWith('[')) {
+            try {
+              extractedUrl = JSON.parse(item.image_url)[0]
+            } catch (err) {
+              extractedUrl = item.image_url
+            }
+          }
+
+          // Ensure we have a valid string URL and no duplicates
+          if (extractedUrl && typeof extractedUrl === 'string' && !unique.has(extractedUrl)) {
+            unique.set(extractedUrl, item.ticker || 'UNKNOWN')
           }
         })
         
@@ -59,8 +69,11 @@ export default function AdminFloorControl() {
         setRecentImages(formatted)
       }
     }
-    fetchMasterAnalysisImages()
-  }, [supabase])
+    
+    if (isLibraryOpen) {
+      fetchMasterAnalysisImages()
+    }
+  }, [supabase, isLibraryOpen]) // Only fetches when modal opens to save bandwidth
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -77,7 +90,7 @@ export default function AdminFloorControl() {
       setImageFile(null) 
       setImagePreview(modalPreview.url) 
       
-      // MAGIC UX: Auto-fill the ticker in the main form if it's empty!
+      // Auto-fill ticker
       if (modalPreview.ticker && modalPreview.ticker !== 'UNKNOWN' && !ticker) {
         setTicker(modalPreview.ticker)
       }
@@ -162,10 +175,12 @@ export default function AdminFloorControl() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-neutral-200 p-4 md:p-6 font-sans relative">
-      <div className="max-w-7xl mx-auto relative z-10">
+    // Outer container locked to viewport height
+    <div className="w-full bg-[#050505] text-neutral-200 p-4 md:p-5 flex flex-col overflow-hidden relative" style={{ height: 'calc(100vh - 65px)' }}>
+      <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0">
         
-        <div className="mb-6 pb-4 border-b border-neutral-900 flex items-center justify-between">
+        {/* HEADER */}
+        <div className="mb-5 pb-4 border-b border-neutral-900 flex items-center justify-between shrink-0">
           <h1 className="text-lg font-bold text-white flex items-center gap-2 tracking-tight uppercase">
             <Shield className="text-blue-500 w-5 h-5" /> Sentinel Command
           </h1>
@@ -175,9 +190,11 @@ export default function AdminFloorControl() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* DUAL PANE GRID */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden h-full">
           
-          <div className="lg:col-span-2 bg-[#0a0a0a] rounded-xl border border-neutral-800 p-6 shadow-2xl flex flex-col">
+          {/* LEFT: TERMINAL BUILDER */}
+          <div className="lg:col-span-2 bg-[#0a0a0a] rounded-xl border border-neutral-800 p-6 shadow-2xl flex flex-col h-full overflow-y-auto custom-scrollbar">
             <div className="flex items-center gap-2 mb-6">
               <Target className="text-emerald-500 w-4 h-4" />
               <h2 className="text-xs font-black text-neutral-400 uppercase tracking-widest">Deploy Terminal Setup</h2>
@@ -223,7 +240,6 @@ export default function AdminFloorControl() {
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Chart Image</label>
-                  {/* THE LIBRARY BUTTON */}
                   <button 
                     type="button" 
                     onClick={() => setIsLibraryOpen(true)} 
@@ -280,7 +296,8 @@ export default function AdminFloorControl() {
             </form>
           </div>
 
-          <div className="lg:col-span-1 bg-[#0a0a0a] rounded-xl border border-neutral-800 p-6 shadow-2xl flex flex-col h-[calc(100vh-120px)] sticky top-6">
+          {/* RIGHT: LIVE SQUAWK */}
+          <div className="lg:col-span-1 bg-[#0a0a0a] rounded-xl border border-neutral-800 p-6 shadow-2xl flex flex-col h-full overflow-y-auto custom-scrollbar">
             <div className="flex items-center gap-2 mb-6">
               <Zap className="text-amber-500 w-4 h-4" />
               <h2 className="text-xs font-black text-neutral-400 uppercase tracking-widest">Live Squawk</h2>
@@ -329,10 +346,10 @@ export default function AdminFloorControl() {
       </div>
 
       {/* ========================================= */}
-      {/* FULL-SCREEN MASTER ANALYSIS MODAL           */}
+      {/* ABSOLUTE MODAL TO ESCAPE GRID LAYOUT        */}
       {/* ========================================= */}
       {isLibraryOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8">
           <div 
             className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
             onClick={() => setIsLibraryOpen(false)} 
@@ -372,7 +389,6 @@ export default function AdminFloorControl() {
                       >
                         <Image src={item.url} alt="Library Item" fill className="object-cover" unoptimized />
                         
-                        {/* TICKER OVERLAY ON THUMBNAIL */}
                         <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest border border-white/10">
                           {item.ticker}
                         </div>
