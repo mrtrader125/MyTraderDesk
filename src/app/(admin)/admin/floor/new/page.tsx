@@ -24,8 +24,6 @@ export default function AdminFloorControl() {
   const [imagePreview, setImagePreview] = useState<string | null>(null) 
 
   const [isLibraryOpen, setIsLibraryOpen] = useState(false)
-  
-  // 🚨 UPGRADED: State now holds url, ticker, AND timeframe
   const [recentImages, setRecentImages] = useState<{url: string, ticker: string, timeframe: string}[]>([])
   const [modalPreview, setModalPreview] = useState<{url: string, ticker: string, timeframe: string} | null>(null)
 
@@ -37,8 +35,6 @@ export default function AdminFloorControl() {
   // 1. Fetch & Parse from the MASTER ANALYSIS database
   useEffect(() => {
     const fetchMasterAnalysisImages = async () => {
-      
-      // 🚨 UPGRADED: Now selecting 'timeframe' as well
       const { data, error } = await supabase
         .from('analyses') 
         .select('asset_symbol, timeframe, image_url')
@@ -69,15 +65,13 @@ export default function AdminFloorControl() {
 
           // Ensure we have a valid string URL and no duplicates
           if (extractedUrl && typeof extractedUrl === 'string' && !unique.has(extractedUrl)) {
-            // Save both the ticker and timeframe into the map
             unique.set(extractedUrl, {
               ticker: item.asset_symbol || 'UNKNOWN',
-              timeframe: item.timeframe || '1D' // Default to 1D if missing
+              timeframe: item.timeframe || '1D'
             })
           }
         })
         
-        // Format for our state
         const formatted = Array.from(unique, ([url, data]) => ({ 
           url, 
           ticker: data.ticker, 
@@ -92,30 +86,50 @@ export default function AdminFloorControl() {
     }
   }, [supabase, isLibraryOpen])
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setImageFile(file)
-      setLibraryImageUrl(null) 
-      setImagePreview(URL.createObjectURL(file))
-    }
-  }
-
+  // SMART AUTO-FILL PARSER
   const handleAttachFromLibrary = () => {
     if (modalPreview) {
       setLibraryImageUrl(modalPreview.url)
       setImageFile(null) 
       setImagePreview(modalPreview.url) 
       
-      // 🚨 MAGIC UX: Auto-fill BOTH the ticker and timeframe!
-      if (modalPreview.ticker && modalPreview.ticker !== 'UNKNOWN') {
-        setTicker(modalPreview.ticker)
+      // 1. Clean the Ticker (Strips accidentally merged timeframes like "BTCUSD 4H" -> "BTCUSD")
+      let cleanTicker = modalPreview.ticker.trim()
+      const tfRegex = /\s+(15M|1H|4H|1D|1W|DAILY|WEEKLY|15m|1h|4h|1d|1w)$/i
+      
+      if (tfRegex.test(cleanTicker)) {
+        cleanTicker = cleanTicker.replace(tfRegex, '').trim()
       }
+
+      // Only auto-fill if the user hasn't already typed a ticker
+      if (cleanTicker && cleanTicker !== 'UNKNOWN' && !ticker) {
+        setTicker(cleanTicker.toUpperCase())
+      }
+      
+      // 2. Clean the Timeframe (Snaps weird formats to match our dropdown options)
       if (modalPreview.timeframe) {
-        setTimeframe(modalPreview.timeframe)
+        let safeTf = modalPreview.timeframe.toString().toUpperCase().trim()
+        
+        // Normalize common weird database entries
+        if (safeTf === 'D' || safeTf === 'DAILY') safeTf = '1D'
+        if (safeTf === 'W' || safeTf === 'WEEKLY') safeTf = '1W'
+        if (safeTf === 'H' || safeTf === '1 HOUR') safeTf = '1H'
+        if (safeTf === '4 HOUR') safeTf = '4H'
+        if (safeTf === '15') safeTf = '15M'
+        
+        setTimeframe(safeTf)
       }
       
       setIsLibraryOpen(false) 
+    }
+  }
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0]
+      setImageFile(file)
+      setLibraryImageUrl(null) 
+      setImagePreview(URL.createObjectURL(file))
     }
   }
 
@@ -245,6 +259,10 @@ export default function AdminFloorControl() {
                     <option value="4H">4H</option>
                     <option value="1D">1D</option>
                     <option value="1W">1W</option>
+                    {/* Fallback Option: If the DB pulls a weird timeframe not in the list above, render it dynamically so the select doesn't break */}
+                    {!['15M', '1H', '4H', '1D', '1W'].includes(timeframe) && (
+                      <option value={timeframe}>{timeframe}</option>
+                    )}
                   </select>
                 </div>
                 <div className="col-span-2">
@@ -409,7 +427,6 @@ export default function AdminFloorControl() {
                       >
                         <Image src={item.url} alt="Library Item" fill className="object-cover" unoptimized />
                         
-                        {/* 🚨 UPGRADED: Ticker & Timeframe overlay on the thumbnail */}
                         <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest border border-white/10 flex items-center gap-1.5 shadow-lg">
                           <span>{item.ticker}</span>
                           <span className="text-neutral-500">|</span>
@@ -429,8 +446,6 @@ export default function AdminFloorControl() {
                   <div className="flex-1 flex flex-col gap-6">
                     <div className="relative w-full flex-1 rounded-xl overflow-hidden border border-neutral-800 bg-black min-h-[200px]">
                       <Image src={modalPreview.url} alt="Large Preview" fill className="object-contain" unoptimized />
-                      
-                      {/* 🚨 UPGRADED: Ticker & Timeframe overlay on the large preview */}
                       <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-black text-white uppercase tracking-widest border border-white/20 flex items-center gap-2 shadow-xl">
                         <span>{modalPreview.ticker}</span>
                         <span className="text-neutral-500">|</span>
