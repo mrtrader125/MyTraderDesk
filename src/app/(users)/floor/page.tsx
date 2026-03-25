@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
 import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
@@ -17,11 +17,21 @@ export default function LiveFloorPage() {
   const [pollResults, setPollResults] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  
+  // Ref for WhatsApp-style auto-scrolling
+  const squawkEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchInitialData()
     setupRealtime()
   }, [])
+
+  // Auto-scroll to bottom whenever a new squawk arrives
+  useEffect(() => {
+    if (squawkEndRef.current) {
+      squawkEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [squawks])
 
   const fetchInitialData = async () => {
     try {
@@ -36,13 +46,17 @@ export default function LiveFloorPage() {
       
       if (postsData) setPosts(postsData)
 
+      // Fetch the last 50 messages, but display them oldest->newest (WhatsApp style)
       const { data: squawkData } = await supabase
         .from('live_squawk')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(15)
+        .limit(50)
       
-      if (squawkData) setSquawks(squawkData)
+      if (squawkData) {
+        // Reverse the array so the oldest is at the top, and newest is at the bottom
+        setSquawks(squawkData.reverse())
+      }
 
       if (user && postsData && postsData.length > 0) {
         const postIds = postsData.map(p => p.id)
@@ -74,7 +88,8 @@ export default function LiveFloorPage() {
     const channel = supabase
       .channel('public:desk_feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (payload) => {
-        setSquawks((current) => [payload.new, ...current])
+        // APPEND to the bottom of the array (WhatsApp style)
+        setSquawks((current) => [...current, payload.new])
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'terminal_posts' }, (payload) => {
         setPosts((current) => [payload.new, ...current])
@@ -153,7 +168,7 @@ export default function LiveFloorPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           
-          {/* --- LEFT COLUMN: COMPACT SETUPS FEED --- */}
+          {/* --- LEFT COLUMN: COMPACT SETUPS DASHBOARD --- */}
           <div className="lg:col-span-2 space-y-4">
             {posts.length === 0 ? (
               <div className="bg-[#0a0a0a] p-8 rounded-xl border border-neutral-800 flex flex-col items-center justify-center text-center shadow-xl">
@@ -187,10 +202,10 @@ export default function LiveFloorPage() {
                       </span>
                     </div>
 
-                    {/* Side-by-Side Body Layout */}
+                    {/* SIDE-BY-SIDE LAYOUT: Image (Left) & Voting (Right) */}
                     <div className="flex flex-col md:flex-row p-4 gap-5">
                       
-                      {/* Left Side: Image & Thesis */}
+                      {/* Left Side: Scaled Down Image & Thesis (60% Width) */}
                       <div className="w-full md:w-[60%] flex flex-col gap-3 shrink-0">
                         {post.image_url && (
                           <div className="relative w-full aspect-video rounded-lg border border-neutral-800 bg-[#000] overflow-hidden">
@@ -210,7 +225,7 @@ export default function LiveFloorPage() {
                         </div>
                       </div>
 
-                      {/* Right Side: Voting & Sentiment Panel */}
+                      {/* Right Side: Stacked Voting Terminal (40% Width) */}
                       <div className="w-full md:w-[40%] flex flex-col">
                         <div className="h-full bg-[#0d0d0d] rounded-lg border border-neutral-900 p-4 flex flex-col justify-center">
                           {!hasVoted ? (
@@ -281,15 +296,16 @@ export default function LiveFloorPage() {
             )}
           </div>
 
-          {/* --- RIGHT COLUMN: LIVE SQUAWK --- */}
+          {/* --- RIGHT COLUMN: WHATSAPP-STYLE LIVE SQUAWK --- */}
           <div className="lg:col-span-1">
             <div className="bg-[#0a0a0a] rounded-xl border border-neutral-800 sticky top-4 overflow-hidden flex flex-col h-[calc(100vh-80px)] shadow-xl">
               
-              <div className="px-4 py-3 border-b border-neutral-900 bg-[#0d0d0d] flex items-center gap-2 shrink-0">
+              <div className="px-4 py-3 border-b border-neutral-900 bg-[#0d0d0d] flex items-center gap-2 shrink-0 z-10">
                 <Radio className="text-amber-500 w-3.5 h-3.5 animate-pulse" />
                 <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Live Squawk</h3>
               </div>
 
+              {/* Chat Container (Scrolls automatically) */}
               <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar relative">
                 {squawks.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full opacity-50">
@@ -297,29 +313,34 @@ export default function LiveFloorPage() {
                     <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest text-center">No recent updates</p>
                   </div>
                 ) : (
-                  squawks.map((squawk, index) => (
-                    <div key={squawk.id} className="relative pl-4 border-l border-neutral-800 hover:border-amber-500/50 transition-colors group">
-                      <div className={`absolute -left-[3px] top-1.5 w-1.5 h-1.5 rounded-full ${index === 0 ? 'bg-amber-500' : 'bg-neutral-700'}`}></div>
-                      
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[8px] text-neutral-500 font-black tracking-widest uppercase">
-                          {new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {squawk.tag && (
-                          <span className="text-[7px] px-1.5 py-0.5 bg-neutral-900 border border-neutral-800 text-neutral-400 rounded font-black uppercase tracking-widest">
-                            {squawk.tag}
+                  squawks.map((squawk, index) => {
+                    const isNewest = index === squawks.length - 1; // Highlight the absolute newest message
+                    return (
+                      <div key={squawk.id} className={`relative pl-4 border-l ${isNewest ? 'border-amber-500/50 bg-amber-500/5 py-2 pr-2 rounded-r-lg' : 'border-neutral-800'} transition-all`}>
+                        <div className={`absolute -left-[3px] top-2.5 w-1.5 h-1.5 rounded-full ${isNewest ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-neutral-700'}`}></div>
+                        
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[8px] text-neutral-500 font-black tracking-widest uppercase">
+                            {new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
-                        )}
+                          {squawk.tag && (
+                            <span className="text-[7px] px-1.5 py-0.5 bg-neutral-900 border border-neutral-800 text-neutral-400 rounded font-black uppercase tracking-widest">
+                              {squawk.tag}
+                            </span>
+                          )}
+                        </div>
+                        <p className={`text-[11px] leading-relaxed font-medium ${isNewest ? 'text-white' : 'text-neutral-400'}`}>
+                          {squawk.message}
+                        </p>
                       </div>
-                      <p className="text-[11px] text-neutral-300 leading-relaxed font-medium">
-                        {squawk.message}
-                      </p>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
+                {/* Auto-scroll target */}
+                <div ref={squawkEndRef} />
               </div>
               
-              <div className="p-2.5 border-t border-neutral-900 bg-[#050505] shrink-0 text-center">
+              <div className="p-2.5 border-t border-neutral-900 bg-[#050505] shrink-0 text-center z-10">
                  <p className="text-[8px] font-black text-neutral-600 uppercase tracking-widest flex items-center justify-center gap-1.5">
                    <Shield size={9}/> Official Admin Feed
                  </p>
