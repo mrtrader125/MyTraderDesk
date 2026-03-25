@@ -35,12 +35,18 @@ export default function AdminFloorControl() {
   // 1. Fetch & Parse from the MASTER ANALYSIS database
   useEffect(() => {
     const fetchMasterAnalysisImages = async () => {
-      const { data } = await supabase
-        .from('setups') 
+      
+      // 🚨 CHANGED 'setups' TO 'analysis' 🚨
+      const { data, error } = await supabase
+        .from('analysis') 
         .select('ticker, image_url')
         .not('image_url', 'is', null)
         .order('created_at', { ascending: false })
         .limit(40) 
+
+      if (error) {
+        console.error("Failed to fetch from analysis table:", error.message)
+      }
 
       if (data) {
         const unique = new Map()
@@ -73,8 +79,7 @@ export default function AdminFloorControl() {
     if (isLibraryOpen) {
       fetchMasterAnalysisImages()
     }
-  }, [supabase, isLibraryOpen]) // Only fetches when modal opens to save bandwidth
-
+  }, [supabase, isLibraryOpen])
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
