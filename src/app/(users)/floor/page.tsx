@@ -52,7 +52,7 @@ export default function LiveFloorPage() {
         .from('terminal_posts')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(10)
+        .limit(20)
       
       if (postsData) setPosts(postsData.reverse())
 
@@ -60,7 +60,7 @@ export default function LiveFloorPage() {
         .from('live_squawk')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(20)
+        .limit(30)
       
       if (squawkData) setSquawks(squawkData.reverse())
 
@@ -93,14 +93,30 @@ export default function LiveFloorPage() {
   const setupRealtime = () => {
     const channel = supabase
       .channel('public:desk_feed')
+      
+      // --- LIVE SQUAWK REALTIME SYNC ---
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (payload) => {
-        // Drop new messages at the BOTTOM of the feed
         setSquawks((current) => [...current, payload.new])
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'live_squawk' }, (payload) => {
+        setSquawks((current) => current.map(s => s.id === payload.new.id ? payload.new : s))
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_squawk' }, (payload) => {
+        setSquawks((current) => current.filter(s => s.id !== payload.old.id))
+      })
+      
+      // --- TERMINAL POST REALTIME SYNC ---
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'terminal_posts' }, (payload) => {
-        // Drop new setups at the BOTTOM of the feed
         setPosts((current) => [...current, payload.new])
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'terminal_posts' }, (payload) => {
+        setPosts((current) => current.map(p => p.id === payload.new.id ? payload.new : p))
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'terminal_posts' }, (payload) => {
+        setPosts((current) => current.filter(p => p.id !== payload.old.id))
+      })
+      
+      // --- VOTES SYNC ---
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_votes' }, (payload) => {
         setPollResults((prev) => {
           fetchPollResults([payload.new.post_id])
@@ -143,7 +159,7 @@ export default function LiveFloorPage() {
 
   if (loading) {
     return (
-      <div className="h-full w-full bg-[#050505] flex flex-col items-center justify-center">
+      <div className="h-full w-full bg-[#050505] flex flex-col items-center justify-center" style={{ height: 'calc(100vh - 65px)' }}>
         <Activity className="w-8 h-8 text-blue-500 mb-4 animate-pulse" />
         <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 animate-pulse">
           Connecting to Terminal...
@@ -338,7 +354,7 @@ export default function LiveFloorPage() {
                 </div>
               ) : (
                 squawks.map((squawk, index) => (
-                  <div key={squawk.id} className="relative pl-5 border-l border-neutral-800 hover:border-amber-500/50 transition-colors group">
+                  <div key={squawk.id} className="relative pl-5 border-l border-neutral-800 hover:border-amber-500/50 transition-colors group animate-in fade-in slide-in-from-bottom-2">
                     <div className={`absolute -left-[4px] top-1.5 w-1.5 h-1.5 rounded-full ${index === squawks.length - 1 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-neutral-700'}`}></div>
                     
                     <div className="flex items-center gap-2 mb-1.5">
