@@ -24,7 +24,12 @@ export default function LiveFloorPage() {
 
   useEffect(() => {
     fetchInitialData()
-    setupRealtime()
+    const cleanup = setupRealtime() 
+    
+    // This tells React to kill the WebSocket connection if the user leaves the page
+    return () => {
+      cleanup()
+    }
   }, [])
 
   // Instantly scroll to the newest message when data updates
