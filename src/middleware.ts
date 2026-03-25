@@ -27,30 +27,35 @@ export async function middleware(request: NextRequest) {
 
     const isAuthRoute = path === '/login' || path === '/signup'
     const isAdminRoute = path.startsWith('/admin')
-    const isUserRoute = path.startsWith('/dashboard') || path.startsWith('/markets') || path.startsWith('/settings') || path.startsWith('/profile')
+    
+    // 🚨 ADDED: /floor is now officially protected as a User Route
+    const isUserRoute = path.startsWith('/floor') || path.startsWith('/dashboard') || path.startsWith('/markets') || path.startsWith('/settings') || path.startsWith('/profile')
 
-    // 1. Not logged in? Redirect to login
+    // 1. Not logged in? Redirect to login (or community teaser)
     if (!user && (isUserRoute || isAdminRoute)) {
       const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/login'
+      // If they tried to sneak into the floor, route them to the public teaser page
+      redirectUrl.pathname = path.startsWith('/floor') ? '/community' : '/login'
       return NextResponse.redirect(redirectUrl)
     }
 
     // 2. Logged in? Don't show login/signup pages
     if (user && isAuthRoute) {
       const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/dashboard'
+      // Send them straight to the action
+      redirectUrl.pathname = '/floor' 
       return NextResponse.redirect(redirectUrl)
     }
 
-    // 3. ADMIN CHECK: Strictly enforce database role
+    // 3. ADMIN CHECK: Strictly enforce database role OR your specific email
     if (user && isAdminRoute) {
       const isRoleAdmin = user.app_metadata?.role === 'admin'
+      const isEmailAdmin = user.email === 'mrtrader125@gmail.com' // Absolute failsafe
 
-      if (!isRoleAdmin) {
-        // Kick them back out if they aren't a true admin
+      if (!isRoleAdmin && !isEmailAdmin) {
+        // Kick them back to the floor if they aren't a true admin
         const redirectUrl = request.nextUrl.clone()
-        redirectUrl.pathname = '/dashboard'
+        redirectUrl.pathname = '/floor'
         redirectUrl.searchParams.set('error', 'AdminOnly')
         return NextResponse.redirect(redirectUrl)
       }
@@ -63,9 +68,11 @@ export async function middleware(request: NextRequest) {
   }
 }
 
+// 4. Tell Next.js to run the bouncer on these paths
 export const config = {
   matcher: [
     '/admin/:path*', 
+    '/floor/:path*', // <-- ADDED
     '/dashboard/:path*', 
     '/markets/:path*', 
     '/settings/:path*', 
