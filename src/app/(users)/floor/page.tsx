@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
-import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio } from 'lucide-react'
+import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio, X, ZoomIn } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 
 export default function LiveFloorPage() {
@@ -18,6 +18,9 @@ export default function LiveFloorPage() {
   const [pollResults, setPollResults] = useState<Record<string, any>>({})
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
+  
+  // --- LIGHTBOX STATE ---
+  const [expandedImage, setExpandedImage] = useState<string | null>(null)
 
   // Auto-scroll references to keep the "Chat" stuck to the bottom
   const floorEndRef = useRef<HTMLDivElement>(null)
@@ -41,6 +44,15 @@ export default function LiveFloorPage() {
   useEffect(() => {
     squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [squawks])
+
+  // Handle ESC key to close the image modal
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setExpandedImage(null)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   const fetchInitialData = async () => {
     try {
@@ -171,10 +183,10 @@ export default function LiveFloorPage() {
   return (
     // STRICT LOCK: Uses calc to subtract the top navbar height, ensuring NO global scroll
     <div 
-      className="w-full bg-[#050505] text-neutral-200 p-4 md:p-5 flex flex-col overflow-hidden"
+      className="w-full bg-[#050505] text-neutral-200 p-4 md:p-5 flex flex-col overflow-hidden relative"
       style={{ height: 'calc(100vh - 65px)' }} // Assuming top navbar is roughly 65px
     >
-      <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0">
+      <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
         
         {/* --- DUAL PANE WORKSPACE --- */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden h-full">
@@ -182,7 +194,7 @@ export default function LiveFloorPage() {
           {/* ========================================= */}
           {/* LEFT PANE: LIVE FLOOR (Main Setups)         */}
           {/* ========================================= */}
-          <div className="lg:col-span-2 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex flex-col h-full shadow-2xl overflow-hidden">
+          <div className="lg:col-span-2 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex flex-col h-full shadow-2xl overflow-hidden relative">
             
             {/* Contact/Chat Header */}
             <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 shadow-sm z-10">
@@ -236,18 +248,27 @@ export default function LiveFloorPage() {
                         {/* Image & Thesis */}
                         <div className="w-full xl:w-[60%] flex flex-col gap-4">
                           {post.image_url && (
-                            <div className="relative w-full aspect-video rounded-xl border border-neutral-800 bg-[#000] overflow-hidden shadow-inner">
+                            // 🚨 THE HOVER/EXPAND IMAGE WRAPPER 🚨
+                            <div 
+                              className="relative w-full aspect-video rounded-xl border border-neutral-800 bg-[#000] overflow-hidden shadow-inner group cursor-zoom-in"
+                              onClick={() => setExpandedImage(post.image_url)}
+                            >
                               <Image 
                                 src={post.image_url} 
                                 alt={`${post.ticker} Setup`} 
                                 fill
-                                className="object-contain"
+                                className="object-contain transition-transform duration-500 group-hover:scale-[1.02]"
                                 unoptimized
                               />
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity backdrop-blur-[1px]">
+                                <span className="bg-black/80 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-lg flex items-center gap-2 border border-white/10 shadow-2xl transform scale-95 group-hover:scale-100 transition-transform">
+                                  <ZoomIn size={14} className="text-blue-400" /> Expand Chart
+                                </span>
+                              </div>
                             </div>
                           )}
                           <div className="pl-4 border-l-2 border-blue-500/50">
-                            <p className="text-neutral-300 text-sm leading-relaxed font-medium">
+                            <p className="text-neutral-300 text-sm leading-relaxed font-medium whitespace-pre-wrap">
                               {post.thesis}
                             </p>
                           </div>
@@ -330,7 +351,7 @@ export default function LiveFloorPage() {
           {/* ========================================= */}
           {/* RIGHT PANE: LIVE SQUAWK                     */}
           {/* ========================================= */}
-          <div className="lg:col-span-1 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex flex-col h-full shadow-2xl overflow-hidden">
+          <div className="lg:col-span-1 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex flex-col h-full shadow-2xl overflow-hidden relative">
             
             {/* Contact/Chat Header */}
             <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 shadow-sm z-10">
@@ -367,7 +388,7 @@ export default function LiveFloorPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-neutral-300 leading-relaxed font-medium">
+                    <p className="text-xs text-neutral-300 leading-relaxed font-medium whitespace-pre-wrap">
                       {squawk.message}
                     </p>
                   </div>
@@ -388,6 +409,43 @@ export default function LiveFloorPage() {
 
         </div>
       </div>
+
+      {/* ========================================= */}
+      {/* 🚨 FULL-SCREEN IMAGE LIGHTBOX MODAL 🚨      */}
+      {/* ========================================= */}
+      {expandedImage && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-200">
+          
+          {/* Invisible click-away backdrop */}
+          <div className="absolute inset-0 cursor-zoom-out" onClick={() => setExpandedImage(null)}></div>
+          
+          {/* Close Button */}
+          <button 
+            onClick={() => setExpandedImage(null)}
+            className="absolute top-6 right-6 p-3 bg-black/50 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-white transition-colors border border-neutral-800 hover:border-neutral-600 z-50 shadow-2xl"
+          >
+            <X size={24} />
+          </button>
+
+          {/* The Image Container (Overflow auto allows moving around if the image scales massive) */}
+          <div className="relative w-[95vw] h-[90vh] flex items-center justify-center overflow-auto custom-scrollbar rounded-xl border border-neutral-800/50 shadow-[0_0_100px_rgba(0,0,0,1)] bg-[#050505] p-2">
+             <Image 
+                src={expandedImage} 
+                alt="Expanded Chart" 
+                fill
+                className="object-contain pointer-events-none"
+                unoptimized
+              />
+          </div>
+
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-4 py-2 bg-neutral-900/80 backdrop-blur-md rounded-full border border-neutral-800 flex items-center gap-2">
+             <p className="text-[10px] text-neutral-400 font-black uppercase tracking-widest">
+                Press <kbd className="font-sans px-1.5 py-0.5 bg-neutral-800 rounded text-white mx-1 border border-neutral-700">ESC</kbd> or click anywhere to close
+             </p>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
