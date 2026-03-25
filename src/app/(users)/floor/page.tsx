@@ -132,11 +132,12 @@ export default function LiveFloorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-neutral-200 pt-8 pb-12 px-4 md:px-6">
-      <div className="max-w-7xl mx-auto">
+    // Locked the outer container so it doesn't expand infinitely
+    <div className="h-screen bg-[#050505] text-neutral-200 pt-8 pb-6 px-4 md:px-6 flex flex-col overflow-hidden">
+      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0">
         
-        {/* --- COMPACT PROFESSIONAL HEADER --- */}
-        <div className="mb-4 pb-3 border-b border-neutral-900 flex items-center justify-between">
+        {/* --- COMPACT PROFESSIONAL HEADER (Does not scroll) --- */}
+        <div className="mb-4 pb-3 border-b border-neutral-900 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-black text-white tracking-tight uppercase flex items-center gap-2">
               <Activity className="text-blue-500 w-5 h-5" /> Live Floor
@@ -152,10 +153,12 @@ export default function LiveFloorPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* --- INDEPENDENT SCROLL GRID --- */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden">
           
-          {/* --- LEFT COLUMN: COMPACT SETUPS FEED --- */}
-          <div className="lg:col-span-2 space-y-5">
+          {/* --- LEFT COLUMN: LIVE SETUPS FEED (Scrolls independently) --- */}
+          {/* Added overflow-y-auto and custom-scrollbar here */}
+          <div className="lg:col-span-2 space-y-5 overflow-y-auto custom-scrollbar pr-2 pb-10">
             {posts.length === 0 ? (
               <div className="bg-[#0a0a0a] p-12 rounded-xl border border-neutral-800 flex flex-col items-center justify-center text-center shadow-2xl">
                 <Target className="w-10 h-10 text-neutral-700 mb-4" />
@@ -282,9 +285,10 @@ export default function LiveFloorPage() {
             )}
           </div>
 
-          {/* --- RIGHT COLUMN: LIVE SQUAWK --- */}
-          <div className="lg:col-span-1">
-            <div className="bg-[#0a0a0a] rounded-xl border border-neutral-800 sticky top-6 overflow-hidden flex flex-col h-[calc(100vh-100px)] shadow-2xl">
+          {/* --- RIGHT COLUMN: LIVE SQUAWK (Scrolls independently) --- */}
+          {/* Removed sticky styles, made it h-full, keep internal scrolling */}
+          <div className="lg:col-span-1 h-full">
+            <div className="bg-[#0a0a0a] rounded-xl border border-neutral-800 overflow-hidden flex flex-col h-full shadow-2xl">
               
               <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center gap-2 shrink-0">
                 <Radio className="text-amber-500 w-4 h-4 animate-pulse" />
