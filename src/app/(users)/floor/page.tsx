@@ -5,12 +5,13 @@ import Image from 'next/image'
 import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export default function LiveFloorPage() {
+  // Lock the Supabase client specifically to this user's render cycle
+  const [supabase] = useState(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ))
+
   const [posts, setPosts] = useState<any[]>([])
   const [squawks, setSquawks] = useState<any[]>([])
   const [userVotes, setUserVotes] = useState<Record<string, string>>({})
