@@ -5,13 +5,13 @@ import { createBrowserClient } from '@supabase/ssr'
 import { Send, Image as ImageIcon, Activity, Zap, Shield, Loader2, Target } from 'lucide-react'
 import Image from 'next/image'
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export default function AdminFloorControl() {
-  // --- TERMINAL POST STATE ---
+  // Lock the Supabase client specifically to your Admin session
+  const [supabase] = useState(() => createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  ))
+
   const [ticker, setTicker] = useState('')
   const [timeframe, setTimeframe] = useState('1D')
   const [thesis, setThesis] = useState('')
