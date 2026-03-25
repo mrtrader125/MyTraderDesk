@@ -18,7 +18,7 @@ export default function LiveFloorPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
 
-  // Auto-scroll references
+  // Auto-scroll references to keep the "Chat" stuck to the bottom
   const floorEndRef = useRef<HTMLDivElement>(null)
   const squawkEndRef = useRef<HTMLDivElement>(null)
 
@@ -27,7 +27,7 @@ export default function LiveFloorPage() {
     setupRealtime()
   }, [])
 
-  // Auto-scroll to bottom when new posts/squawks arrive
+  // Instantly scroll to the newest message when data updates
   useEffect(() => {
     floorEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [posts])
@@ -41,7 +41,7 @@ export default function LiveFloorPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) setUserId(user.id)
 
-      // Fetch latest 10, then reverse so the oldest is at the top (Chat style)
+      // Fetch latest and reverse so oldest is at the top (WhatsApp style)
       const { data: postsData } = await supabase
         .from('terminal_posts')
         .select('*')
@@ -50,12 +50,11 @@ export default function LiveFloorPage() {
       
       if (postsData) setPosts(postsData.reverse())
 
-      // Fetch latest 15, then reverse
       const { data: squawkData } = await supabase
         .from('live_squawk')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(15)
+        .limit(20)
       
       if (squawkData) setSquawks(squawkData.reverse())
 
@@ -89,11 +88,11 @@ export default function LiveFloorPage() {
     const channel = supabase
       .channel('public:desk_feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (payload) => {
-        // Drop new messages at the BOTTOM of the array
+        // Drop new messages at the BOTTOM of the feed
         setSquawks((current) => [...current, payload.new])
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'terminal_posts' }, (payload) => {
-        // Drop new setups at the BOTTOM of the array
+        // Drop new setups at the BOTTOM of the feed
         setPosts((current) => [...current, payload.new])
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_votes' }, (payload) => {
@@ -138,21 +137,22 @@ export default function LiveFloorPage() {
 
   if (loading) {
     return (
-      <div className="h-screen bg-[#050505] flex flex-col items-center justify-center">
+      <div className="h-full w-full bg-[#050505] flex flex-col items-center justify-center">
         <Activity className="w-8 h-8 text-blue-500 mb-4 animate-pulse" />
         <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 animate-pulse">
-          Connecting to Desk...
+          Connecting to Terminal...
         </p>
       </div>
     )
   }
 
   return (
-    // STRICT LOCK: calc height ensures it fits exactly under your navbar without scrolling the body
-    <div className="h-[calc(100vh-80px)] md:h-[calc(100vh-2rem)] bg-[#050505] text-neutral-200 p-3 md:p-5 flex flex-col overflow-hidden">
-      
-      {/* Container is locked to 100% of available height */}
-      <div className="max-w-[1600px] mx-auto w-full h-full flex flex-col min-h-0">
+    // STRICT LOCK: Uses calc to subtract the top navbar height, ensuring NO global scroll
+    <div 
+      className="w-full bg-[#050505] text-neutral-200 p-4 md:p-5 flex flex-col overflow-hidden"
+      style={{ height: 'calc(100vh - 65px)' }} // Assuming top navbar is roughly 65px
+    >
+      <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0">
         
         {/* --- DUAL PANE WORKSPACE --- */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden h-full">
@@ -301,7 +301,7 @@ export default function LiveFloorPage() {
                 })
               )}
               {/* Invisible anchor to auto-scroll to the bottom */}
-              <div ref={floorEndRef} />
+              <div ref={floorEndRef} className="h-1" />
             </div>
           </div>
 
@@ -352,7 +352,7 @@ export default function LiveFloorPage() {
                 ))
               )}
               {/* Invisible anchor to auto-scroll to the bottom */}
-              <div ref={squawkEndRef} />
+              <div ref={squawkEndRef} className="h-1" />
             </div>
             
             {/* Footer attached to the bottom of the pane */}
