@@ -24,8 +24,10 @@ export default function AdminFloorControl() {
   const [imagePreview, setImagePreview] = useState<string | null>(null) 
 
   const [isLibraryOpen, setIsLibraryOpen] = useState(false)
-  const [recentImages, setRecentImages] = useState<{url: string, ticker: string}[]>([])
-  const [modalPreview, setModalPreview] = useState<{url: string, ticker: string} | null>(null)
+  
+  // 🚨 UPGRADED: State now holds url, ticker, AND timeframe
+  const [recentImages, setRecentImages] = useState<{url: string, ticker: string, timeframe: string}[]>([])
+  const [modalPreview, setModalPreview] = useState<{url: string, ticker: string, timeframe: string} | null>(null)
 
   // --- SQUAWK STATE ---
   const [squawkMessage, setSquawkMessage] = useState('')
@@ -36,10 +38,10 @@ export default function AdminFloorControl() {
   useEffect(() => {
     const fetchMasterAnalysisImages = async () => {
       
-      // 🚨 FIXED: Table is 'analyses' and Column is 'asset_symbol' 🚨
+      // 🚨 UPGRADED: Now selecting 'timeframe' as well
       const { data, error } = await supabase
         .from('analyses') 
-        .select('asset_symbol, image_url')
+        .select('asset_symbol, timeframe, image_url')
         .not('image_url', 'is', null)
         .order('created_at', { ascending: false })
         .limit(40) 
@@ -67,11 +69,20 @@ export default function AdminFloorControl() {
 
           // Ensure we have a valid string URL and no duplicates
           if (extractedUrl && typeof extractedUrl === 'string' && !unique.has(extractedUrl)) {
-            unique.set(extractedUrl, item.asset_symbol || 'UNKNOWN')
+            // Save both the ticker and timeframe into the map
+            unique.set(extractedUrl, {
+              ticker: item.asset_symbol || 'UNKNOWN',
+              timeframe: item.timeframe || '1D' // Default to 1D if missing
+            })
           }
         })
         
-        const formatted = Array.from(unique, ([url, ticker]) => ({ url, ticker }))
+        // Format for our state
+        const formatted = Array.from(unique, ([url, data]) => ({ 
+          url, 
+          ticker: data.ticker, 
+          timeframe: data.timeframe 
+        }))
         setRecentImages(formatted)
       }
     }
@@ -96,9 +107,12 @@ export default function AdminFloorControl() {
       setImageFile(null) 
       setImagePreview(modalPreview.url) 
       
-      // Auto-fill ticker
-      if (modalPreview.ticker && modalPreview.ticker !== 'UNKNOWN' && !ticker) {
+      // 🚨 MAGIC UX: Auto-fill BOTH the ticker and timeframe!
+      if (modalPreview.ticker && modalPreview.ticker !== 'UNKNOWN') {
         setTicker(modalPreview.ticker)
+      }
+      if (modalPreview.timeframe) {
+        setTimeframe(modalPreview.timeframe)
       }
       
       setIsLibraryOpen(false) 
@@ -395,8 +409,11 @@ export default function AdminFloorControl() {
                       >
                         <Image src={item.url} alt="Library Item" fill className="object-cover" unoptimized />
                         
-                        <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest border border-white/10">
-                          {item.ticker}
+                        {/* 🚨 UPGRADED: Ticker & Timeframe overlay on the thumbnail */}
+                        <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest border border-white/10 flex items-center gap-1.5 shadow-lg">
+                          <span>{item.ticker}</span>
+                          <span className="text-neutral-500">|</span>
+                          <span className="text-blue-400">{item.timeframe}</span>
                         </div>
                       </div>
                     ))}
@@ -412,8 +429,12 @@ export default function AdminFloorControl() {
                   <div className="flex-1 flex flex-col gap-6">
                     <div className="relative w-full flex-1 rounded-xl overflow-hidden border border-neutral-800 bg-black min-h-[200px]">
                       <Image src={modalPreview.url} alt="Large Preview" fill className="object-contain" unoptimized />
-                      <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-black text-blue-400 uppercase tracking-widest border border-blue-500/20">
-                        {modalPreview.ticker}
+                      
+                      {/* 🚨 UPGRADED: Ticker & Timeframe overlay on the large preview */}
+                      <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-black text-white uppercase tracking-widest border border-white/20 flex items-center gap-2 shadow-xl">
+                        <span>{modalPreview.ticker}</span>
+                        <span className="text-neutral-500">|</span>
+                        <span className="text-blue-400">{modalPreview.timeframe}</span>
                       </div>
                     </div>
                     
@@ -428,7 +449,7 @@ export default function AdminFloorControl() {
                   <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-neutral-800 rounded-xl bg-[#080808]">
                     <Target className="w-8 h-8 text-neutral-700 mb-3" />
                     <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest px-8 text-center leading-relaxed">
-                      Select an analysis from the grid to preview.<br/>Attaching it will automatically fill your ticker.
+                      Select an analysis from the grid to preview.<br/>Attaching it will automatically fill your ticker and timeframe.
                     </p>
                   </div>
                 )}
