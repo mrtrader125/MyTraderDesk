@@ -9,12 +9,12 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   
-  // 🚨 FIXED: Allow Next.js to optimize images from Supabase
+  // 🚨 FIXED: Using your EXACT Supabase project URL
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.supabase.co',
+        hostname: 'uvnfftzndnchylavsckn.supabase.co',
         port: '',
         pathname: '/**',
       },
