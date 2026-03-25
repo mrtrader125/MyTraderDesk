@@ -19,59 +19,73 @@ export default function AdminFloorControl() {
   const [isPostingTerminal, setIsPostingTerminal] = useState(false)
 
   // --- IMAGE & MODAL STATE ---
-  const [imageFile, setImageFile] = useState<File | null>(null) // For new uploads
-  const [libraryImageUrl, setLibraryImageUrl] = useState<string | null>(null) // For reused charts
-  const [imagePreview, setImagePreview] = useState<string | null>(null) // For displaying in the form
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [libraryImageUrl, setLibraryImageUrl] = useState<string | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null) 
 
   const [isLibraryOpen, setIsLibraryOpen] = useState(false)
-  const [recentImages, setRecentImages] = useState<string[]>([])
-  const [modalPreviewImg, setModalPreviewImg] = useState<string | null>(null)
+  
+  // Updated state to hold both the URL and the Ticker for the UI
+  const [recentImages, setRecentImages] = useState<{url: string, ticker: string}[]>([])
+  const [modalPreview, setModalPreview] = useState<{url: string, ticker: string} | null>(null)
 
   // --- SQUAWK STATE ---
   const [squawkMessage, setSquawkMessage] = useState('')
   const [squawkTag, setSquawkTag] = useState('')
   const [isPostingSquawk, setIsPostingSquawk] = useState(false)
 
-  // 1. Fetch library images silently in the background
+  // 1. Fetch from the MASTER ANALYSIS database (Based on your project files)
   useEffect(() => {
-    const fetchRecentImages = async () => {
+    const fetchMasterAnalysisImages = async () => {
+      // NOTE: Make sure 'setups' matches your exact table name for published setups! 
+      // If it's 'market_setups' or 'playbook', just change the string below.
       const { data } = await supabase
-        .from('terminal_posts')
-        .select('image_url')
+        .from('setups') 
+        .select('ticker, image_url')
         .not('image_url', 'is', null)
         .order('created_at', { ascending: false })
-        .limit(30) // Bumped up limit since it's a modal now
+        .limit(40) 
 
       if (data) {
-        // Filter out duplicates
-        const uniqueImages = Array.from(new Set(data.map(post => post.image_url)))
-        setRecentImages(uniqueImages)
+        // Filter out duplicates but keep the ticker attached
+        const unique = new Map()
+        data.forEach(item => {
+          if (!unique.has(item.image_url)) {
+            unique.set(item.image_url, item.ticker || 'UNKNOWN')
+          }
+        })
+        
+        const formatted = Array.from(unique, ([url, ticker]) => ({ url, ticker }))
+        setRecentImages(formatted)
       }
     }
-    fetchRecentImages()
+    fetchMasterAnalysisImages()
   }, [supabase])
 
-  // 2. Handle dragging/dropping a NEW file
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0]
       setImageFile(file)
-      setLibraryImageUrl(null) // Wipe out any library selection
+      setLibraryImageUrl(null) 
       setImagePreview(URL.createObjectURL(file))
     }
   }
 
-  // 3. Handle attaching an EXISTING image from the Modal
   const handleAttachFromLibrary = () => {
-    if (modalPreviewImg) {
-      setLibraryImageUrl(modalPreviewImg)
-      setImageFile(null) // Wipe out any pending file uploads
-      setImagePreview(modalPreviewImg) // Show it in the main form
-      setIsLibraryOpen(false) // Close the modal
+    if (modalPreview) {
+      setLibraryImageUrl(modalPreview.url)
+      setImageFile(null) 
+      setImagePreview(modalPreview.url) 
+      
+      // MAGIC UX: Auto-fill the ticker in the main form if it's empty!
+      if (modalPreview.ticker && modalPreview.ticker !== 'UNKNOWN' && !ticker) {
+        setTicker(modalPreview.ticker)
+      }
+      
+      setIsLibraryOpen(false) 
     }
   }
 
-  // 4. Submit the Post
   const handleTerminalSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!ticker || !thesis) return alert('Ticker and Thesis are required.')
@@ -80,7 +94,6 @@ export default function AdminFloorControl() {
     try {
       let finalImageUrl = null
 
-      // If they uploaded a new file, push to bucket
       if (imageFile) {
         const fileExt = imageFile.name.split('.').pop()
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
@@ -96,13 +109,10 @@ export default function AdminFloorControl() {
           .getPublicUrl(fileName)
         
         finalImageUrl = publicUrlData.publicUrl
-      } 
-      // Else if they picked from library, just reuse the URL
-      else if (libraryImageUrl) {
+      } else if (libraryImageUrl) {
         finalImageUrl = libraryImageUrl
       }
 
-      // Write to database
       const { error } = await supabase.from('terminal_posts').insert({
         ticker: ticker.toUpperCase(),
         timeframe,
@@ -113,13 +123,12 @@ export default function AdminFloorControl() {
 
       if (error) throw error
 
-      // Reset form on success
       setTicker('')
       setThesis('')
       setImageFile(null)
       setLibraryImageUrl(null)
       setImagePreview(null)
-      setModalPreviewImg(null)
+      setModalPreview(null)
       alert('Terminal Post pushed to the Live Floor successfully.')
 
     } catch (error: any) {
@@ -130,7 +139,6 @@ export default function AdminFloorControl() {
     }
   }
 
-  // Submit Squawk
   const handleSquawkSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!squawkMessage) return
@@ -157,7 +165,6 @@ export default function AdminFloorControl() {
     <div className="min-h-screen bg-[#050505] text-neutral-200 p-4 md:p-6 font-sans relative">
       <div className="max-w-7xl mx-auto relative z-10">
         
-        {/* COMPACT PROFESSIONAL HEADER */}
         <div className="mb-6 pb-4 border-b border-neutral-900 flex items-center justify-between">
           <h1 className="text-lg font-bold text-white flex items-center gap-2 tracking-tight uppercase">
             <Shield className="text-blue-500 w-5 h-5" /> Sentinel Command
@@ -170,7 +177,6 @@ export default function AdminFloorControl() {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           
-          {/* LEFT: TERMINAL POST BUILDER */}
           <div className="lg:col-span-2 bg-[#0a0a0a] rounded-xl border border-neutral-800 p-6 shadow-2xl flex flex-col">
             <div className="flex items-center gap-2 mb-6">
               <Target className="text-emerald-500 w-4 h-4" />
@@ -223,7 +229,7 @@ export default function AdminFloorControl() {
                     onClick={() => setIsLibraryOpen(true)} 
                     className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest bg-[#111] hover:bg-blue-500/10 hover:text-blue-400 text-neutral-400 border border-neutral-800 hover:border-blue-500/30 px-3 py-1.5 rounded transition-all"
                   >
-                    <FolderSearch size={12} /> Browse Library
+                    <FolderSearch size={12} /> Master Analysis
                   </button>
                 </div>
 
@@ -239,14 +245,14 @@ export default function AdminFloorControl() {
                       <Image src={imagePreview} alt="Preview" fill className="object-contain" unoptimized />
                       <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                         <span className="text-white font-bold text-xs tracking-widest uppercase">Click to Replace Upload</span>
-                        {libraryImageUrl && <span className="text-blue-400 text-[9px] mt-2 font-black uppercase tracking-widest bg-blue-500/10 px-2 py-1 rounded">Attached from Library</span>}
+                        {libraryImageUrl && <span className="text-blue-400 text-[9px] mt-2 font-black uppercase tracking-widest bg-blue-500/10 px-2 py-1 rounded">Linked from Playbook</span>}
                       </div>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center py-8">
                       <ImageIcon className="text-neutral-600 w-8 h-8 mb-3" />
                       <p className="text-neutral-400 font-bold text-sm tracking-wide mb-1">Upload New Screenshot</p>
-                      <p className="text-neutral-600 text-[10px] uppercase font-bold tracking-widest">or browse library above</p>
+                      <p className="text-neutral-600 text-[10px] uppercase font-bold tracking-widest">or browse master analysis above</p>
                     </div>
                   )}
                 </div>
@@ -274,7 +280,6 @@ export default function AdminFloorControl() {
             </form>
           </div>
 
-          {/* RIGHT: LIVE SQUAWK TRANSMITTER */}
           <div className="lg:col-span-1 bg-[#0a0a0a] rounded-xl border border-neutral-800 p-6 shadow-2xl flex flex-col h-[calc(100vh-120px)] sticky top-6">
             <div className="flex items-center gap-2 mb-6">
               <Zap className="text-amber-500 w-4 h-4" />
@@ -324,24 +329,21 @@ export default function AdminFloorControl() {
       </div>
 
       {/* ========================================= */}
-      {/* FULL-SCREEN MEDIA LIBRARY MODAL             */}
+      {/* FULL-SCREEN MASTER ANALYSIS MODAL           */}
       {/* ========================================= */}
       {isLibraryOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 md:p-8">
-          {/* Blurred Backdrop */}
           <div 
             className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
             onClick={() => setIsLibraryOpen(false)} 
           ></div>
 
-          {/* Modal Container */}
           <div className="relative w-full max-w-6xl h-full max-h-[85vh] bg-[#0a0a0a] rounded-2xl border border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             
-            {/* Modal Header */}
             <div className="px-6 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <FolderSearch className="text-blue-500 w-5 h-5" />
-                <h2 className="text-sm font-black text-white uppercase tracking-widest">Media Library</h2>
+                <h2 className="text-sm font-black text-white uppercase tracking-widest">Master Analysis Library</h2>
               </div>
               <button 
                 onClick={() => setIsLibraryOpen(false)}
@@ -351,10 +353,9 @@ export default function AdminFloorControl() {
               </button>
             </div>
 
-            {/* Modal Split-Pane Body */}
             <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
               
-              {/* Left Side: Thumbnail Grid */}
+              {/* Left: Thumbnail Grid */}
               <div className="w-full md:w-1/2 lg:w-3/5 p-6 overflow-y-auto custom-scrollbar border-b md:border-b-0 md:border-r border-neutral-900 bg-[#050505]">
                 {recentImages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full opacity-50">
@@ -363,41 +364,49 @@ export default function AdminFloorControl() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    {recentImages.map((imgUrl, i) => (
+                    {recentImages.map((item, i) => (
                       <div 
                         key={i} 
-                        onClick={() => setModalPreviewImg(imgUrl)}
-                        className={`relative aspect-video rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${modalPreviewImg === imgUrl ? 'border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[0.98]' : 'border-neutral-800 hover:border-neutral-600 hover:scale-105'}`}
+                        onClick={() => setModalPreview(item)}
+                        className={`relative aspect-video rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${modalPreview?.url === item.url ? 'border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[0.98]' : 'border-neutral-800 hover:border-neutral-600 hover:scale-105'}`}
                       >
-                        <Image src={imgUrl} alt="Library Item" fill className="object-cover" unoptimized />
+                        <Image src={item.url} alt="Library Item" fill className="object-cover" unoptimized />
+                        
+                        {/* TICKER OVERLAY ON THUMBNAIL */}
+                        <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest border border-white/10">
+                          {item.ticker}
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Right Side: Big Preview & Action Button */}
+              {/* Right: Big Preview */}
               <div className="w-full md:w-1/2 lg:w-2/5 p-6 bg-[#0a0a0a] flex flex-col">
                 <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4">Selected Preview</h3>
                 
-                {modalPreviewImg ? (
+                {modalPreview ? (
                   <div className="flex-1 flex flex-col gap-6">
                     <div className="relative w-full flex-1 rounded-xl overflow-hidden border border-neutral-800 bg-black min-h-[200px]">
-                      <Image src={modalPreviewImg} alt="Large Preview" fill className="object-contain" unoptimized />
+                      <Image src={modalPreview.url} alt="Large Preview" fill className="object-contain" unoptimized />
+                      <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-black text-blue-400 uppercase tracking-widest border border-blue-500/20">
+                        {modalPreview.ticker}
+                      </div>
                     </div>
                     
                     <button 
                       onClick={handleAttachFromLibrary}
                       className="w-full py-4 bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
                     >
-                      <PlusCircle size={18} /> Add To Setup
+                      <PlusCircle size={18} /> Attach To Broadcast
                     </button>
                   </div>
                 ) : (
                   <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-neutral-800 rounded-xl bg-[#080808]">
                     <Target className="w-8 h-8 text-neutral-700 mb-3" />
-                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest px-8 text-center">
-                      Select an image from the grid to preview and attach it
+                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest px-8 text-center leading-relaxed">
+                      Select an analysis from the grid to preview.<br/>Attaching it will automatically fill your ticker.
                     </p>
                   </div>
                 )}
