@@ -2,475 +2,402 @@
 
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { Send, Image as ImageIcon, Activity, Zap, Shield, Loader2, Target, FolderSearch, X, PlusCircle } from 'lucide-react'
-import Image from 'next/image'
+import { Shield, Target, Zap, Edit3, Trash2, X, Save, Clock, Activity } from 'lucide-react'
 
-export default function AdminFloorControl() {
+export default function ManageFloorPage() {
   const [supabase] = useState(() => createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   ))
 
-  // --- FORM STATE ---
-  const [ticker, setTicker] = useState('')
-  const [timeframe, setTimeframe] = useState('1D')
-  const [thesis, setThesis] = useState('')
-  const [tier, setTier] = useState('essential')
-  const [isPostingTerminal, setIsPostingTerminal] = useState(false)
+  const [activeTab, setActiveTab] = useState<'terminal' | 'squawk'>('terminal')
+  const [loading, setLoading] = useState(true)
 
-  // --- IMAGE & MODAL STATE ---
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [libraryImageUrl, setLibraryImageUrl] = useState<string | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null) 
+  // --- DATA STATE ---
+  const [terminalPosts, setTerminalPosts] = useState<any[]>([])
+  const [squawks, setSquawks] = useState<any[]>([])
 
-  const [isLibraryOpen, setIsLibraryOpen] = useState(false)
-  const [recentImages, setRecentImages] = useState<{url: string, ticker: string, timeframe: string}[]>([])
-  const [modalPreview, setModalPreview] = useState<{url: string, ticker: string, timeframe: string} | null>(null)
+  // --- EDIT STATE ---
+  const [editingTerminal, setEditingTerminal] = useState<any | null>(null)
+  const [editingSquawk, setEditingSquawk] = useState<any | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
 
-  // --- SQUAWK STATE ---
-  const [squawkMessage, setSquawkMessage] = useState('')
-  const [squawkTag, setSquawkTag] = useState('')
-  const [isPostingSquawk, setIsPostingSquawk] = useState(false)
-
-  // 1. Fetch & Parse from the MASTER ANALYSIS database
   useEffect(() => {
-    const fetchMasterAnalysisImages = async () => {
-      const { data, error } = await supabase
-        .from('analyses') 
-        .select('asset_symbol, timeframe, image_url')
-        .not('image_url', 'is', null)
+    fetchData()
+  }, [supabase])
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      // Fetch recent terminal posts
+      const { data: postsData } = await supabase
+        .from('terminal_posts')
+        .select('*')
         .order('created_at', { ascending: false })
-        .limit(40) 
+        .limit(50)
+      if (postsData) setTerminalPosts(postsData)
 
-      if (error) {
-        console.error("Failed to fetch from analyses table:", error.message)
-      }
-
-      if (data) {
-        const unique = new Map()
-        
-        data.forEach(item => {
-          let extractedUrl = item.image_url
-
-          // SMART PARSER: Handle JSON Arrays from your database
-          if (Array.isArray(item.image_url)) {
-            extractedUrl = item.image_url[0]
-          } else if (typeof item.image_url === 'string' && item.image_url.startsWith('[')) {
-            try {
-              extractedUrl = JSON.parse(item.image_url)[0]
-            } catch (err) {
-              extractedUrl = item.image_url
-            }
-          }
-
-          // Ensure we have a valid string URL and no duplicates
-          if (extractedUrl && typeof extractedUrl === 'string' && !unique.has(extractedUrl)) {
-            unique.set(extractedUrl, {
-              ticker: item.asset_symbol || 'UNKNOWN',
-              timeframe: item.timeframe || '1D'
-            })
-          }
-        })
-        
-        const formatted = Array.from(unique, ([url, data]) => ({ 
-          url, 
-          ticker: data.ticker, 
-          timeframe: data.timeframe 
-        }))
-        setRecentImages(formatted)
-      }
+      // Fetch recent squawks
+      const { data: squawkData } = await supabase
+        .from('live_squawk')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50)
+      if (squawkData) setSquawks(squawkData)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  // ==========================================
+  // DELETE HANDLERS
+  // ==========================================
+  const handleDeleteTerminal = async (id: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this terminal setup?')) return
     
-    if (isLibraryOpen) {
-      fetchMasterAnalysisImages()
-    }
-  }, [supabase, isLibraryOpen])
-
-  // SMART AUTO-FILL PARSER
-  const handleAttachFromLibrary = () => {
-    if (modalPreview) {
-      setLibraryImageUrl(modalPreview.url)
-      setImageFile(null) 
-      setImagePreview(modalPreview.url) 
-      
-      // 1. Clean the Ticker (Strips accidentally merged timeframes like "BTCUSD 4H" -> "BTCUSD")
-      let cleanTicker = modalPreview.ticker.trim()
-      const tfRegex = /\s+(15M|1H|4H|1D|1W|DAILY|WEEKLY|15m|1h|4h|1d|1w)$/i
-      
-      if (tfRegex.test(cleanTicker)) {
-        cleanTicker = cleanTicker.replace(tfRegex, '').trim()
-      }
-
-      // Only auto-fill if the user hasn't already typed a ticker
-      if (cleanTicker && cleanTicker !== 'UNKNOWN' && !ticker) {
-        setTicker(cleanTicker.toUpperCase())
-      }
-      
-      // 2. Clean the Timeframe (Snaps weird formats to match our dropdown options)
-      if (modalPreview.timeframe) {
-        let safeTf = modalPreview.timeframe.toString().toUpperCase().trim()
-        
-        // Normalize common weird database entries
-        if (safeTf === 'D' || safeTf === 'DAILY') safeTf = '1D'
-        if (safeTf === 'W' || safeTf === 'WEEKLY') safeTf = '1W'
-        if (safeTf === 'H' || safeTf === '1 HOUR') safeTf = '1H'
-        if (safeTf === '4 HOUR') safeTf = '4H'
-        if (safeTf === '15') safeTf = '15M'
-        
-        setTimeframe(safeTf)
-      }
-      
-      setIsLibraryOpen(false) 
+    try {
+      const { error } = await supabase.from('terminal_posts').delete().eq('id', id)
+      if (error) throw error
+      setTerminalPosts(prev => prev.filter(p => p.id !== id))
+    } catch (error: any) {
+      alert(`Error deleting post: ${error.message}`)
     }
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0]
-      setImageFile(file)
-      setLibraryImageUrl(null) 
-      setImagePreview(URL.createObjectURL(file))
+  const handleDeleteSquawk = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this squawk alert?')) return
+    
+    try {
+      const { error } = await supabase.from('live_squawk').delete().eq('id', id)
+      if (error) throw error
+      setSquawks(prev => prev.filter(s => s.id !== id))
+    } catch (error: any) {
+      alert(`Error deleting squawk: ${error.message}`)
     }
   }
 
-  const handleTerminalSubmit = async (e: React.FormEvent) => {
+  // ==========================================
+  // UPDATE HANDLERS
+  // ==========================================
+  const handleUpdateTerminal = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!ticker || !thesis) return alert('Ticker and Thesis are required.')
-    setIsPostingTerminal(true)
+    if (!editingTerminal) return
+    setIsSaving(true)
 
     try {
-      let finalImageUrl = null
-
-      if (imageFile) {
-        const fileExt = imageFile.name.split('.').pop()
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
-        
-        const { error: uploadError } = await supabase.storage
-          .from('analysis-images') 
-          .upload(fileName, imageFile)
-
-        if (uploadError) throw uploadError
-
-        const { data: publicUrlData } = supabase.storage
-          .from('analysis-images')
-          .getPublicUrl(fileName)
-        
-        finalImageUrl = publicUrlData.publicUrl
-      } else if (libraryImageUrl) {
-        finalImageUrl = libraryImageUrl
-      }
-
-      const { error } = await supabase.from('terminal_posts').insert({
-        ticker: ticker.toUpperCase(),
-        timeframe,
-        thesis,
-        image_url: finalImageUrl,
-        tier_access: tier
-      })
+      const { error } = await supabase
+        .from('terminal_posts')
+        .update({
+          ticker: editingTerminal.ticker.toUpperCase(),
+          timeframe: editingTerminal.timeframe,
+          thesis: editingTerminal.thesis,
+          tier_access: editingTerminal.tier_access
+        })
+        .eq('id', editingTerminal.id)
 
       if (error) throw error
-
-      setTicker('')
-      setThesis('')
-      setImageFile(null)
-      setLibraryImageUrl(null)
-      setImagePreview(null)
-      setModalPreview(null)
-      alert('Terminal Post pushed to the Live Floor successfully.')
-
+      
+      // Update local state so UI reflects instantly
+      setTerminalPosts(prev => prev.map(p => p.id === editingTerminal.id ? editingTerminal : p))
+      setEditingTerminal(null)
     } catch (error: any) {
-      console.error('Error posting to terminal:', error)
-      alert(`Failed to post: ${error.message}`)
+      alert(`Update failed: ${error.message}`)
     } finally {
-      setIsPostingTerminal(false)
+      setIsSaving(false)
     }
   }
 
-  const handleSquawkSubmit = async (e: React.FormEvent) => {
+  const handleUpdateSquawk = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!squawkMessage) return
-    setIsPostingSquawk(true)
+    if (!editingSquawk) return
+    setIsSaving(true)
 
     try {
-      const { error } = await supabase.from('live_squawk').insert({
-        message: squawkMessage,
-        tag: squawkTag || null
-      })
+      const { error } = await supabase
+        .from('live_squawk')
+        .update({
+          tag: editingSquawk.tag,
+          message: editingSquawk.message
+        })
+        .eq('id', editingSquawk.id)
 
       if (error) throw error
-      setSquawkMessage('')
-      setSquawkTag('')
+      
+      // Update local state
+      setSquawks(prev => prev.map(s => s.id === editingSquawk.id ? editingSquawk : s))
+      setEditingSquawk(null)
     } catch (error: any) {
-      console.error('Error sending squawk:', error)
-      alert(`Failed to send squawk: ${error.message}`)
+      alert(`Update failed: ${error.message}`)
     } finally {
-      setIsPostingSquawk(false)
+      setIsSaving(false)
     }
   }
 
   return (
-    // Outer container locked to viewport height
-    <div className="w-full bg-[#050505] text-neutral-200 p-4 md:p-5 flex flex-col overflow-hidden relative" style={{ height: 'calc(100vh - 65px)' }}>
-      <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0">
+    <div className="min-h-screen bg-[#050505] text-neutral-200 p-4 md:p-6 font-sans relative">
+      <div className="max-w-[1400px] mx-auto relative z-10">
         
         {/* HEADER */}
-        <div className="mb-5 pb-4 border-b border-neutral-900 flex items-center justify-between shrink-0">
-          <h1 className="text-lg font-bold text-white flex items-center gap-2 tracking-tight uppercase">
-            <Shield className="text-blue-500 w-5 h-5" /> Sentinel Command
-          </h1>
-          <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            System Active
+        <div className="mb-6 pb-4 border-b border-neutral-900 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-bold text-white flex items-center gap-2 tracking-tight uppercase">
+              <Shield className="text-blue-500 w-5 h-5" /> Sentinel Command
+            </h1>
+            <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mt-1">
+              Active Floor Management
+            </p>
+          </div>
+
+          {/* TAB NAVIGATION */}
+          <div className="flex bg-[#111] border border-neutral-800 rounded-lg p-1 w-full md:w-auto">
+            <button 
+              onClick={() => setActiveTab('terminal')}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'terminal' ? 'bg-blue-600 text-white shadow-lg' : 'text-neutral-500 hover:text-white'}`}
+            >
+              <Target size={14} /> Terminal Posts
+            </button>
+            <button 
+              onClick={() => setActiveTab('squawk')}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'squawk' ? 'bg-amber-500 text-black shadow-lg' : 'text-neutral-500 hover:text-white'}`}
+            >
+              <Zap size={14} /> Live Squawks
+            </button>
           </div>
         </div>
 
-        {/* DUAL PANE GRID */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden h-full">
-          
-          {/* LEFT: TERMINAL BUILDER */}
-          <div className="lg:col-span-2 bg-[#0a0a0a] rounded-xl border border-neutral-800 p-6 shadow-2xl flex flex-col h-full overflow-y-auto custom-scrollbar">
-            <div className="flex items-center gap-2 mb-6">
-              <Target className="text-emerald-500 w-4 h-4" />
-              <h2 className="text-xs font-black text-neutral-400 uppercase tracking-widest">Deploy Terminal Setup</h2>
-            </div>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <Activity className="w-8 h-8 text-neutral-600 animate-spin mb-4" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Loading Floor Data...</p>
+          </div>
+        ) : (
+          <div className="bg-[#0a0a0a] rounded-xl border border-neutral-800 shadow-2xl overflow-hidden">
+            
+            {/* ========================================== */}
+            {/* TERMINAL POSTS TABLE                       */}
+            {/* ========================================== */}
+            {activeTab === 'terminal' && (
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#0d0d0d] border-b border-neutral-900">
+                      <th className="px-4 py-3 text-[9px] font-black text-neutral-500 uppercase tracking-widest w-[120px]">Time</th>
+                      <th className="px-4 py-3 text-[9px] font-black text-neutral-500 uppercase tracking-widest w-[100px]">Asset</th>
+                      <th className="px-4 py-3 text-[9px] font-black text-neutral-500 uppercase tracking-widest min-w-[300px]">Thesis Snippet</th>
+                      <th className="px-4 py-3 text-[9px] font-black text-neutral-500 uppercase tracking-widest w-[100px]">Tier</th>
+                      <th className="px-4 py-3 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-right w-[120px]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-900">
+                    {terminalPosts.length === 0 && (
+                      <tr><td colSpan={5} className="py-8 text-center text-xs text-neutral-600 font-bold uppercase tracking-widest">No Terminal Posts Active</td></tr>
+                    )}
+                    {terminalPosts.map(post => (
+                      <tr key={post.id} className="hover:bg-[#111] transition-colors group">
+                        <td className="px-4 py-3 text-[10px] text-neutral-500 font-bold tracking-widest">
+                          {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-blue-400 tracking-widest">{post.ticker}</span>
+                            <span className="text-[8px] text-neutral-500 bg-neutral-900 px-1 py-0.5 rounded uppercase">{post.timeframe}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-neutral-300 truncate max-w-[300px]">
+                          {post.thesis}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded ${post.tier_access === 'pro' ? 'bg-blue-500/10 text-blue-400' : 'bg-neutral-800 text-neutral-400'}`}>
+                            {post.tier_access}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-right space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setEditingTerminal(post)} className="p-1.5 text-neutral-500 hover:text-blue-400 hover:bg-blue-500/10 rounded transition-all">
+                            <Edit3 size={14} />
+                          </button>
+                          <button onClick={() => handleDeleteTerminal(post.id)} className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-all">
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-            <form onSubmit={handleTerminalSubmit} className="space-y-5 flex-1 flex flex-col">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="col-span-2 md:col-span-1">
+            {/* ========================================== */}
+            {/* LIVE SQUAWKS TABLE                         */}
+            {/* ========================================== */}
+            {activeTab === 'squawk' && (
+              <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-[#0d0d0d] border-b border-neutral-900">
+                      <th className="px-4 py-3 text-[9px] font-black text-neutral-500 uppercase tracking-widest w-[120px]">Time</th>
+                      <th className="px-4 py-3 text-[9px] font-black text-neutral-500 uppercase tracking-widest w-[150px]">Tag</th>
+                      <th className="px-4 py-3 text-[9px] font-black text-neutral-500 uppercase tracking-widest min-w-[300px]">Message</th>
+                      <th className="px-4 py-3 text-[9px] font-black text-neutral-500 uppercase tracking-widest text-right w-[120px]">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-900">
+                    {squawks.length === 0 && (
+                      <tr><td colSpan={4} className="py-8 text-center text-xs text-neutral-600 font-bold uppercase tracking-widest">No Squawks Active</td></tr>
+                    )}
+                    {squawks.map(squawk => (
+                      <tr key={squawk.id} className="hover:bg-[#111] transition-colors group">
+                        <td className="px-4 py-3 text-[10px] text-neutral-500 font-bold tracking-widest">
+                          {new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="px-4 py-3">
+                          {squawk.tag ? (
+                            <span className="text-[9px] font-black text-amber-500 bg-amber-500/10 px-2 py-1 rounded uppercase tracking-widest">
+                              {squawk.tag}
+                            </span>
+                          ) : (
+                            <span className="text-[9px] text-neutral-600 uppercase tracking-widest">-</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-neutral-300">
+                          {squawk.message}
+                        </td>
+                        <td className="px-4 py-3 text-right space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => setEditingSquawk(squawk)} className="p-1.5 text-neutral-500 hover:text-amber-400 hover:bg-amber-500/10 rounded transition-all">
+                            <Edit3 size={14} />
+                          </button>
+                          <button onClick={() => handleDeleteSquawk(squawk.id)} className="p-1.5 text-neutral-500 hover:text-red-400 hover:bg-red-500/10 rounded transition-all">
+                            <Trash2 size={14} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ========================================== */}
+      {/* TERMINAL EDIT MODAL                        */}
+      {/* ========================================== */}
+      {editingTerminal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setEditingTerminal(null)}></div>
+          <div className="relative w-full max-w-xl bg-[#0a0a0a] rounded-xl border border-neutral-800 shadow-2xl p-6 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                <Target className="text-blue-500 w-4 h-4" /> Edit Terminal Post
+              </h2>
+              <button onClick={() => setEditingTerminal(null)} className="text-neutral-500 hover:text-white"><X size={18} /></button>
+            </div>
+            
+            <form onSubmit={handleUpdateTerminal} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
                   <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Ticker</label>
                   <input 
                     type="text" 
-                    placeholder="$XAUUSD" 
-                    value={ticker}
-                    onChange={(e) => setTicker(e.target.value)}
-                    className="w-full bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 outline-none transition-all uppercase placeholder:normal-case"
+                    value={editingTerminal.ticker}
+                    onChange={(e) => setEditingTerminal({...editingTerminal, ticker: e.target.value})}
+                    className="w-full bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none uppercase"
                     required
                   />
                 </div>
-                <div className="col-span-2 md:col-span-1">
+                <div>
                   <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Timeframe</label>
-                  <select 
-                    value={timeframe}
-                    onChange={(e) => setTimeframe(e.target.value)}
-                    className="w-full bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 outline-none transition-all appearance-none"
-                  >
-                    <option value="15M">15M</option>
-                    <option value="1H">1H</option>
-                    <option value="4H">4H</option>
-                    <option value="1D">1D</option>
-                    <option value="1W">1W</option>
-                    {/* Fallback Option: If the DB pulls a weird timeframe not in the list above, render it dynamically so the select doesn't break */}
-                    {!['15M', '1H', '4H', '1D', '1W'].includes(timeframe) && (
-                      <option value={timeframe}>{timeframe}</option>
-                    )}
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Access Tier</label>
-                  <div className="flex bg-[#111] rounded-lg border border-neutral-800 p-1">
-                    <button type="button" onClick={() => setTier('essential')} className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${tier === 'essential' ? 'bg-neutral-800 text-white shadow' : 'text-neutral-500 hover:text-white'}`}>Essential</button>
-                    <button type="button" onClick={() => setTier('pro')} className={`flex-1 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${tier === 'pro' ? 'bg-blue-600 text-white shadow-lg' : 'text-neutral-500 hover:text-white'}`}>Pro Only</button>
-                  </div>
-                </div>
-              </div>
-
-              {/* UPLOAD / LIBRARY UI */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Chart Image</label>
-                  <button 
-                    type="button" 
-                    onClick={() => setIsLibraryOpen(true)} 
-                    className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest bg-[#111] hover:bg-blue-500/10 hover:text-blue-400 text-neutral-400 border border-neutral-800 hover:border-blue-500/30 px-3 py-1.5 rounded transition-all"
-                  >
-                    <FolderSearch size={12} /> Master Analysis
-                  </button>
-                </div>
-
-                <div className="border border-dashed border-neutral-700 rounded-lg p-4 text-center hover:border-blue-500/50 transition-colors relative bg-[#111]">
                   <input 
-                    type="file" 
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                    type="text" 
+                    value={editingTerminal.timeframe}
+                    onChange={(e) => setEditingTerminal({...editingTerminal, timeframe: e.target.value})}
+                    className="w-full bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none uppercase"
                   />
-                  {imagePreview ? (
-                    <div className="relative w-full h-[180px] rounded-md overflow-hidden border border-neutral-800 bg-black">
-                      <Image src={imagePreview} alt="Preview" fill className="object-contain" unoptimized />
-                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                        <span className="text-white font-bold text-xs tracking-widest uppercase">Click to Replace Upload</span>
-                        {libraryImageUrl && <span className="text-blue-400 text-[9px] mt-2 font-black uppercase tracking-widest bg-blue-500/10 px-2 py-1 rounded">Linked from Playbook</span>}
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-8">
-                      <ImageIcon className="text-neutral-600 w-8 h-8 mb-3" />
-                      <p className="text-neutral-400 font-bold text-sm tracking-wide mb-1">Upload New Screenshot</p>
-                      <p className="text-neutral-600 text-[10px] uppercase font-bold tracking-widest">or browse master analysis above</p>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              <div className="flex-1 flex flex-col">
-                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Execution Thesis</label>
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Execution Thesis (Text Only)</label>
                 <textarea 
-                  placeholder="Structure, liquidity sweeps, and entry logic..."
-                  value={thesis}
-                  onChange={(e) => setThesis(e.target.value)}
-                  className="w-full flex-1 min-h-[120px] bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500/50 outline-none transition-all custom-scrollbar resize-none"
+                  value={editingTerminal.thesis}
+                  onChange={(e) => setEditingTerminal({...editingTerminal, thesis: e.target.value})}
+                  className="w-full h-32 bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none custom-scrollbar resize-none"
                   required
                 />
               </div>
 
-              <button 
-                type="submit" 
-                disabled={isPostingTerminal}
-                className="w-full py-3 bg-white text-black text-xs font-black uppercase tracking-widest rounded-lg hover:bg-neutral-200 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)] disabled:opacity-50 disabled:cursor-not-allowed mt-auto"
-              >
-                {isPostingTerminal ? <Loader2 className="w-4 h-4 animate-spin" /> : <Activity className="w-4 h-4" />}
-                {isPostingTerminal ? 'Deploying...' : 'Push to Terminal'}
-              </button>
-            </form>
-          </div>
-
-          {/* RIGHT: LIVE SQUAWK */}
-          <div className="lg:col-span-1 bg-[#0a0a0a] rounded-xl border border-neutral-800 p-6 shadow-2xl flex flex-col h-full overflow-y-auto custom-scrollbar">
-            <div className="flex items-center gap-2 mb-6">
-              <Zap className="text-amber-500 w-4 h-4" />
-              <h2 className="text-xs font-black text-neutral-400 uppercase tracking-widest">Live Squawk</h2>
-            </div>
-
-            <form onSubmit={handleSquawkSubmit} className="space-y-5 flex-1 flex flex-col">
-              
               <div>
-                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Category Tag</label>
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Access Tier</label>
                 <select 
-                  value={squawkTag}
-                  onChange={(e) => setSquawkTag(e.target.value)}
-                  className="w-full bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all appearance-none"
+                  value={editingTerminal.tier_access}
+                  onChange={(e) => setEditingTerminal({...editingTerminal, tier_access: e.target.value})}
+                  className="w-full bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-blue-500 outline-none"
                 >
-                  <option value="">Standard Broadcast</option>
-                  <option value="Update">Trade Update</option>
-                  <option value="Alert">Critical Alert</option>
-                  <option value="Execution">Live Execution</option>
-                  <option value="News">Macro News</option>
+                  <option value="essential">Essential</option>
+                  <option value="pro">Pro Only</option>
                 </select>
               </div>
 
-              <div className="flex-1 flex flex-col">
+              <button 
+                type="submit" 
+                disabled={isSaving}
+                className="w-full py-3 mt-4 bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-blue-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSaving ? <Activity className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {isSaving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================== */}
+      {/* SQUAWK EDIT MODAL                          */}
+      {/* ========================================== */}
+      {editingSquawk && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setEditingSquawk(null)}></div>
+          <div className="relative w-full max-w-xl bg-[#0a0a0a] rounded-xl border border-neutral-800 shadow-2xl p-6 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                <Zap className="text-amber-500 w-4 h-4" /> Edit Live Squawk
+              </h2>
+              <button onClick={() => setEditingSquawk(null)} className="text-neutral-500 hover:text-white"><X size={18} /></button>
+            </div>
+            
+            <form onSubmit={handleUpdateSquawk} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Category Tag</label>
+                <input 
+                  type="text" 
+                  value={editingSquawk.tag || ''}
+                  onChange={(e) => setEditingSquawk({...editingSquawk, tag: e.target.value})}
+                  className="w-full bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none"
+                  placeholder="Leave blank for no tag"
+                />
+              </div>
+
+              <div>
                 <label className="block text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5">Message</label>
                 <textarea 
-                  placeholder="Rapid market updates..."
-                  value={squawkMessage}
-                  onChange={(e) => setSquawkMessage(e.target.value)}
-                  className="w-full flex-1 bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all custom-scrollbar resize-none"
+                  value={editingSquawk.message}
+                  onChange={(e) => setEditingSquawk({...editingSquawk, message: e.target.value})}
+                  className="w-full h-32 bg-[#111] border border-neutral-800 rounded-lg px-3 py-2 text-sm text-white focus:border-amber-500 outline-none custom-scrollbar resize-none"
                   required
                 />
               </div>
 
               <button 
                 type="submit" 
-                disabled={isPostingSquawk}
-                className="w-full py-3 bg-[#111] text-amber-500 border border-amber-500/30 text-xs font-black uppercase tracking-widest rounded-lg hover:bg-amber-500 hover:text-black active:scale-[0.99] transition-all flex items-center justify-center gap-2 mt-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isSaving}
+                className="w-full py-3 mt-4 bg-amber-500 text-black text-xs font-black uppercase tracking-widest rounded-lg hover:bg-amber-400 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {isPostingSquawk ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                {isPostingSquawk ? 'Transmitting...' : 'Transmit Alert'}
+                {isSaving ? <Activity className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                {isSaving ? 'Saving...' : 'Save Squawk'}
               </button>
             </form>
-          </div>
-
-        </div>
-      </div>
-
-      {/* ========================================= */}
-      {/* ABSOLUTE MODAL TO ESCAPE GRID LAYOUT        */}
-      {/* ========================================= */}
-      {isLibraryOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8">
-          <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
-            onClick={() => setIsLibraryOpen(false)} 
-          ></div>
-
-          <div className="relative w-full max-w-6xl h-full max-h-[85vh] bg-[#0a0a0a] rounded-2xl border border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            
-            <div className="px-6 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0">
-              <div className="flex items-center gap-3">
-                <FolderSearch className="text-blue-500 w-5 h-5" />
-                <h2 className="text-sm font-black text-white uppercase tracking-widest">Master Analysis Library</h2>
-              </div>
-              <button 
-                onClick={() => setIsLibraryOpen(false)}
-                className="p-2 hover:bg-neutral-800 rounded-lg transition-colors text-neutral-400 hover:text-white"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="flex-1 flex flex-col md:flex-row min-h-0 overflow-hidden">
-              
-              {/* Left: Thumbnail Grid */}
-              <div className="w-full md:w-1/2 lg:w-3/5 p-6 overflow-y-auto custom-scrollbar border-b md:border-b-0 md:border-r border-neutral-900 bg-[#050505]">
-                {recentImages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full opacity-50">
-                    <ImageIcon className="w-10 h-10 text-neutral-700 mb-3" />
-                    <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest">No previous analysis found</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    {recentImages.map((item, i) => (
-                      <div 
-                        key={i} 
-                        onClick={() => setModalPreview(item)}
-                        className={`relative aspect-video rounded-lg overflow-hidden border-2 cursor-pointer transition-all ${modalPreview?.url === item.url ? 'border-blue-500 shadow-[0_0_20px_rgba(59,130,246,0.2)] scale-[0.98]' : 'border-neutral-800 hover:border-neutral-600 hover:scale-105'}`}
-                      >
-                        <Image src={item.url} alt="Library Item" fill className="object-cover" unoptimized />
-                        
-                        <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-2 py-1 rounded text-[9px] font-black text-white uppercase tracking-widest border border-white/10 flex items-center gap-1.5 shadow-lg">
-                          <span>{item.ticker}</span>
-                          <span className="text-neutral-500">|</span>
-                          <span className="text-blue-400">{item.timeframe}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Right: Big Preview */}
-              <div className="w-full md:w-1/2 lg:w-2/5 p-6 bg-[#0a0a0a] flex flex-col">
-                <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4">Selected Preview</h3>
-                
-                {modalPreview ? (
-                  <div className="flex-1 flex flex-col gap-6">
-                    <div className="relative w-full flex-1 rounded-xl overflow-hidden border border-neutral-800 bg-black min-h-[200px]">
-                      <Image src={modalPreview.url} alt="Large Preview" fill className="object-contain" unoptimized />
-                      <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-black text-white uppercase tracking-widest border border-white/20 flex items-center gap-2 shadow-xl">
-                        <span>{modalPreview.ticker}</span>
-                        <span className="text-neutral-500">|</span>
-                        <span className="text-blue-400">{modalPreview.timeframe}</span>
-                      </div>
-                    </div>
-                    
-                    <button 
-                      onClick={handleAttachFromLibrary}
-                      className="w-full py-4 bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.3)]"
-                    >
-                      <PlusCircle size={18} /> Attach To Broadcast
-                    </button>
-                  </div>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-neutral-800 rounded-xl bg-[#080808]">
-                    <Target className="w-8 h-8 text-neutral-700 mb-3" />
-                    <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest px-8 text-center leading-relaxed">
-                      Select an analysis from the grid to preview.<br/>Attaching it will automatically fill your ticker and timeframe.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-            </div>
           </div>
         </div>
       )}
