@@ -70,7 +70,6 @@ export default function LiveFloorPage() {
     }
   }
 
-  // --- FULL REALTIME LISTENER ---
   const setupRealtime = () => {
     const channel = supabase
       .channel('public:desk_feed')
@@ -125,212 +124,217 @@ export default function LiveFloorPage() {
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center">
         <Activity className="w-8 h-8 text-blue-500 mb-4 animate-pulse" />
         <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 animate-pulse">
-          Loading Live Floor...
+          Loading Terminal...
         </p>
       </div>
     )
   }
 
   return (
-    // Locked the outer container so it doesn't expand infinitely
-    <div className="h-screen bg-[#050505] text-neutral-200 pt-8 pb-6 px-4 md:px-6 flex flex-col overflow-hidden">
-      <div className="max-w-7xl mx-auto w-full flex-1 flex flex-col min-h-0">
+    // Hard-locked outer screen container to prevent page scrolling
+    <div className="h-[100dvh] bg-[#050505] text-neutral-200 p-4 md:p-6 flex flex-col overflow-hidden">
+      <div className="max-w-[1600px] mx-auto w-full flex-1 flex flex-col min-h-0 pt-16 lg:pt-0">
         
-        {/* --- COMPACT PROFESSIONAL HEADER (Does not scroll) --- */}
-        <div className="mb-4 pb-3 border-b border-neutral-900 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-black text-white tracking-tight uppercase flex items-center gap-2">
-              <Activity className="text-blue-500 w-5 h-5" /> Live Floor
-            </h1>
-            <span className="hidden sm:inline-block w-[1px] h-4 bg-neutral-800"></span>
-            <p className="hidden sm:block text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-              Market Analysis & Setups
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded border border-emerald-500/20">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-            Market Open
-          </div>
-        </div>
-
-        {/* --- INDEPENDENT SCROLL GRID --- */}
+        {/* --- DUAL PANE WORKSPACE --- */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden">
           
-          {/* --- LEFT COLUMN: LIVE SETUPS FEED (Scrolls independently) --- */}
-          {/* Added overflow-y-auto and custom-scrollbar here */}
-          <div className="lg:col-span-2 space-y-5 overflow-y-auto custom-scrollbar pr-2 pb-10">
-            {posts.length === 0 ? (
-              <div className="bg-[#0a0a0a] p-12 rounded-xl border border-neutral-800 flex flex-col items-center justify-center text-center shadow-2xl">
-                <Target className="w-10 h-10 text-neutral-700 mb-4" />
-                <h3 className="text-sm font-black uppercase tracking-widest text-white mb-2">Awaiting Setups</h3>
-                <p className="text-neutral-500 text-xs font-bold tracking-wide">
-                  Today's market analysis and trade setups will appear here shortly.
-                </p>
+          {/* ========================================= */}
+          {/* LEFT PANE: LIVE FLOOR (Main Setups)         */}
+          {/* ========================================= */}
+          <div className="lg:col-span-2 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex flex-col h-full shadow-2xl overflow-hidden">
+            
+            {/* Header integrated into the pane itself */}
+            <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <Activity className="text-blue-500 w-4 h-4" />
+                <h3 className="text-xs font-black text-white uppercase tracking-widest">Live Floor</h3>
               </div>
-            ) : (
-              posts.map((post) => {
-                const hasVoted = !!userVotes[post.id]
-                const results = pollResults[post.id]
+              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">
+                Structural Analysis
+              </span>
+            </div>
 
-                return (
-                  <div key={post.id} className="bg-[#0a0a0a] rounded-xl border border-neutral-800 overflow-hidden shadow-2xl transition-all duration-300">
-                    
-                    {/* Post Header */}
-                    <div className="px-5 py-3 border-b border-neutral-900 flex justify-between items-center bg-[#0d0d0d]">
-                      <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-md border border-blue-500/20">
-                          {post.ticker}
-                        </span>
-                        <span className="text-[9px] font-black text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-1 rounded-md uppercase tracking-widest">
-                          {post.timeframe}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
-                        <Clock size={10} className="text-neutral-600" />
-                        {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
+            {/* Independent scrollable feed */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-[#050505]">
+              {posts.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center opacity-50">
+                  <Target className="w-10 h-10 text-neutral-600 mb-4" />
+                  <h3 className="text-xs font-black uppercase tracking-widest text-neutral-400 mb-2">Awaiting Setups</h3>
+                  <p className="text-neutral-500 text-[10px] font-bold tracking-wide">
+                    The desk is currently analyzing markets.
+                  </p>
+                </div>
+              ) : (
+                posts.map((post) => {
+                  const hasVoted = !!userVotes[post.id]
+                  const results = pollResults[post.id]
 
-                    {/* SIDE-BY-SIDE LAYOUT */}
-                    <div className="flex flex-col md:flex-row p-5 gap-6">
+                  return (
+                    <div key={post.id} className="bg-[#0a0a0a] rounded-xl border border-neutral-800 overflow-hidden shadow-lg transition-all duration-300">
                       
-                      {/* Left: Image & Thesis (60% width) */}
-                      <div className="w-full md:w-[60%] flex flex-col gap-4">
-                        {post.image_url && (
-                          <div className="relative w-full aspect-video rounded-xl border border-neutral-800 bg-[#000] overflow-hidden shadow-inner">
-                            <Image 
-                              src={post.image_url} 
-                              alt={`${post.ticker} Setup`} 
-                              fill
-                              className="object-contain"
-                              unoptimized
-                            />
-                          </div>
-                        )}
-                        <div className="pl-4 border-l-2 border-blue-500/50">
-                          <p className="text-neutral-300 text-sm leading-relaxed font-medium">
-                            {post.thesis}
-                          </p>
+                      {/* Setup Header */}
+                      <div className="px-5 py-3 border-b border-neutral-900 flex justify-between items-center bg-[#0d0d0d]">
+                        <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-md border border-blue-500/20">
+                            {post.ticker}
+                          </span>
+                          <span className="text-[9px] font-black text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-1 rounded-md uppercase tracking-widest">
+                            {post.timeframe}
+                          </span>
                         </div>
+                        <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                          <Clock size={10} className="text-neutral-600" />
+                          {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
 
-                      {/* Right: Voting Module (40% width) */}
-                      <div className="w-full md:w-[40%] flex flex-col">
-                        <div className="h-full bg-[#050505] rounded-xl border border-neutral-900 p-5 flex flex-col justify-center shadow-inner">
-                          {!hasVoted ? (
-                            <div className="animate-in fade-in duration-300 space-y-3">
-                              <p className="text-[9px] text-center text-neutral-500 font-black uppercase tracking-widest mb-4">
-                                Establish Bias
-                              </p>
-                              <div className="flex flex-col gap-3">
-                                <button onClick={() => handleVote(post.id, 'aligned')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group">
-                                  <span className="text-[10px] font-black text-neutral-400 group-hover:text-blue-400 uppercase tracking-widest">Aligned</span>
-                                  <TrendingUp className="text-neutral-600 group-hover:text-blue-500 transition-colors" size={16} />
-                                </button>
-                                <button onClick={() => handleVote(post.id, 'counter')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-red-500/50 hover:bg-red-500/5 transition-all group">
-                                  <span className="text-[10px] font-black text-neutral-400 group-hover:text-red-400 uppercase tracking-widest">Counter</span>
-                                  <TrendingDown className="text-neutral-600 group-hover:text-red-500 transition-colors" size={16} />
-                                </button>
-                                <button onClick={() => handleVote(post.id, 'sitting_out')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-neutral-500 hover:bg-neutral-800 transition-all group">
-                                  <span className="text-[10px] font-black text-neutral-500 group-hover:text-neutral-300 uppercase tracking-widest">Sitting Out</span>
-                                  <Eye className="text-neutral-600 group-hover:text-neutral-300 transition-colors" size={16} />
-                                </button>
-                              </div>
-                            </div>
-                          ) : results ? (
-                            <div className="space-y-5 animate-in fade-in zoom-in-95 duration-300">
-                              <div className="flex flex-col gap-1.5 border-b border-neutral-800 pb-4 mb-2">
-                                <span className="text-[10px] font-black text-white uppercase tracking-widest">{results.totalVotes} Traders Voted</span>
-                                <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
-                                  Your Bias: <span className={userVotes[post.id] === 'aligned' ? 'text-blue-400' : userVotes[post.id] === 'counter' ? 'text-red-400' : 'text-neutral-300'}>{userVotes[post.id].replace('_', ' ')}</span>
-                                </div>
-                              </div>
-                              
-                              <div className="space-y-4">
-                                {/* Aligned Bar */}
-                                <div>
-                                  <div className="flex justify-between items-center mb-2">
-                                    <span className="text-[10px] font-black text-blue-400 tracking-widest uppercase">Aligned</span>
-                                    <span className="text-[11px] font-black text-white">{results.aligned}%</span>
-                                  </div>
-                                  <div className="h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800">
-                                    <div className="h-full bg-blue-500 transition-all duration-1000 ease-out" style={{ width: `${results.aligned}%` }}></div>
-                                  </div>
-                                </div>
-
-                                {/* Counter Bar */}
-                                <div>
-                                  <div className="flex justify-between items-center mb-2">
-                                    <span className="text-[10px] font-black text-red-400 tracking-widest uppercase">Counter</span>
-                                    <span className="text-[11px] font-black text-white">{results.counter}%</span>
-                                  </div>
-                                  <div className="h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800">
-                                    <div className="h-full bg-red-500 transition-all duration-1000 ease-out" style={{ width: `${results.counter}%` }}></div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex justify-center py-4">
-                              <Activity className="w-5 h-5 animate-spin text-neutral-700" />
+                      <div className="flex flex-col xl:flex-row p-5 gap-6">
+                        
+                        {/* Image & Thesis */}
+                        <div className="w-full xl:w-[60%] flex flex-col gap-4">
+                          {post.image_url && (
+                            <div className="relative w-full aspect-video rounded-xl border border-neutral-800 bg-[#000] overflow-hidden shadow-inner">
+                              <Image 
+                                src={post.image_url} 
+                                alt={`${post.ticker} Setup`} 
+                                fill
+                                className="object-contain"
+                                unoptimized
+                              />
                             </div>
                           )}
+                          <div className="pl-4 border-l-2 border-blue-500/50">
+                            <p className="text-neutral-300 text-sm leading-relaxed font-medium">
+                              {post.thesis}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Voting Panel */}
+                        <div className="w-full xl:w-[40%] flex flex-col">
+                          <div className="h-full bg-[#050505] rounded-xl border border-neutral-900 p-5 flex flex-col justify-center shadow-inner">
+                            {!hasVoted ? (
+                              <div className="animate-in fade-in duration-300 space-y-3">
+                                <p className="text-[9px] text-center text-neutral-500 font-black uppercase tracking-widest mb-4">
+                                  Establish Bias
+                                </p>
+                                <div className="flex flex-col gap-3">
+                                  <button onClick={() => handleVote(post.id, 'aligned')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all group">
+                                    <span className="text-[10px] font-black text-neutral-400 group-hover:text-blue-400 uppercase tracking-widest">Aligned</span>
+                                    <TrendingUp className="text-neutral-600 group-hover:text-blue-500 transition-colors" size={16} />
+                                  </button>
+                                  <button onClick={() => handleVote(post.id, 'counter')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-red-500/50 hover:bg-red-500/5 transition-all group">
+                                    <span className="text-[10px] font-black text-neutral-400 group-hover:text-red-400 uppercase tracking-widest">Counter</span>
+                                    <TrendingDown className="text-neutral-600 group-hover:text-red-500 transition-colors" size={16} />
+                                  </button>
+                                  <button onClick={() => handleVote(post.id, 'sitting_out')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-neutral-500 hover:bg-neutral-800 transition-all group">
+                                    <span className="text-[10px] font-black text-neutral-500 group-hover:text-neutral-300 uppercase tracking-widest">Sitting Out</span>
+                                    <Eye className="text-neutral-600 group-hover:text-neutral-300 transition-colors" size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            ) : results ? (
+                              <div className="space-y-5 animate-in fade-in zoom-in-95 duration-300">
+                                <div className="flex flex-col gap-1.5 border-b border-neutral-800 pb-4 mb-2">
+                                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{results.totalVotes} Traders Voted</span>
+                                  <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500">
+                                    Your Bias: <span className={userVotes[post.id] === 'aligned' ? 'text-blue-400' : userVotes[post.id] === 'counter' ? 'text-red-400' : 'text-neutral-300'}>{userVotes[post.id].replace('_', ' ')}</span>
+                                  </div>
+                                </div>
+                                
+                                <div className="space-y-4">
+                                  {/* Aligned Bar */}
+                                  <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                      <span className="text-[10px] font-black text-blue-400 tracking-widest uppercase">Aligned</span>
+                                      <span className="text-[11px] font-black text-white">{results.aligned}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800">
+                                      <div className="h-full bg-blue-500 transition-all duration-1000 ease-out" style={{ width: `${results.aligned}%` }}></div>
+                                    </div>
+                                  </div>
+
+                                  {/* Counter Bar */}
+                                  <div>
+                                    <div className="flex justify-between items-center mb-2">
+                                      <span className="text-[10px] font-black text-red-400 tracking-widest uppercase">Counter</span>
+                                      <span className="text-[11px] font-black text-white">{results.counter}%</span>
+                                    </div>
+                                    <div className="h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800">
+                                      <div className="h-full bg-red-500 transition-all duration-1000 ease-out" style={{ width: `${results.counter}%` }}></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex justify-center py-4">
+                                <Activity className="w-5 h-5 animate-spin text-neutral-700" />
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                  </div>
-                )
-              })
-            )}
+                    </div>
+                  )
+                })
+              )}
+            </div>
           </div>
 
-          {/* --- RIGHT COLUMN: LIVE SQUAWK (Scrolls independently) --- */}
-          {/* Removed sticky styles, made it h-full, keep internal scrolling */}
-          <div className="lg:col-span-1 h-full">
-            <div className="bg-[#0a0a0a] rounded-xl border border-neutral-800 overflow-hidden flex flex-col h-full shadow-2xl">
-              
-              <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center gap-2 shrink-0">
+          {/* ========================================= */}
+          {/* RIGHT PANE: LIVE SQUAWK                     */}
+          {/* ========================================= */}
+          <div className="lg:col-span-1 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex flex-col h-full shadow-2xl overflow-hidden">
+            
+            {/* Header integrated into the pane itself */}
+            <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
                 <Radio className="text-amber-500 w-4 h-4 animate-pulse" />
                 <h3 className="text-xs font-black text-white uppercase tracking-widest">Live Squawk</h3>
               </div>
-
-              <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar relative">
-                {squawks.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full opacity-50">
-                    <Zap className="w-6 h-6 text-neutral-600 mb-3" />
-                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest text-center">No recent updates</p>
-                  </div>
-                ) : (
-                  squawks.map((squawk, index) => (
-                    <div key={squawk.id} className="relative pl-5 border-l border-neutral-800 hover:border-amber-500/50 transition-colors group">
-                      <div className={`absolute -left-[4px] top-1.5 w-1.5 h-1.5 rounded-full ${index === 0 ? 'bg-amber-500' : 'bg-neutral-700'}`}></div>
-                      
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[9px] text-neutral-500 font-black tracking-widest uppercase">
-                          {new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                        {squawk.tag && (
-                          <span className="text-[8px] px-1.5 py-0.5 bg-neutral-900 border border-neutral-800 text-neutral-400 rounded font-black uppercase tracking-widest">
-                            {squawk.tag}
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-neutral-300 leading-relaxed font-medium">
-                        {squawk.message}
-                      </p>
-                    </div>
-                  ))
-                )}
-              </div>
-              
-              <div className="p-3 border-t border-neutral-900 bg-[#050505] shrink-0 text-center">
-                 <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest flex items-center justify-center gap-1.5">
-                   <Shield size={10}/> Official Admin Feed
-                 </p>
-              </div>
-
+              <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">
+                Rapid Comms
+              </span>
             </div>
+
+            {/* Independent scrollable feed */}
+            <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar bg-[#050505]">
+              {squawks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full opacity-50">
+                  <Zap className="w-6 h-6 text-neutral-600 mb-3" />
+                  <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest text-center">No recent updates</p>
+                </div>
+              ) : (
+                squawks.map((squawk, index) => (
+                  <div key={squawk.id} className="relative pl-5 border-l border-neutral-800 hover:border-amber-500/50 transition-colors group">
+                    <div className={`absolute -left-[4px] top-1.5 w-1.5 h-1.5 rounded-full ${index === 0 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-neutral-700'}`}></div>
+                    
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[9px] text-neutral-500 font-black tracking-widest uppercase">
+                        {new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      {squawk.tag && (
+                        <span className="text-[8px] px-1.5 py-0.5 bg-neutral-900 border border-neutral-800 text-neutral-400 rounded font-black uppercase tracking-widest">
+                          {squawk.tag}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-neutral-300 leading-relaxed font-medium">
+                      {squawk.message}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+            
+            {/* Footer attached to the bottom of the pane */}
+            <div className="p-3 border-t border-neutral-900 bg-[#0a0a0a] shrink-0 text-center">
+               <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest flex items-center justify-center gap-1.5">
+                 <Shield size={10}/> Official Admin Feed
+               </p>
+            </div>
+
           </div>
 
         </div>
