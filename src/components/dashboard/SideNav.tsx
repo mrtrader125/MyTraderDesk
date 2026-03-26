@@ -2,32 +2,29 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image' // 🚨 NEW: Imported Image from next/image
 import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { 
   LayoutDashboard, LineChart, Bookmark, 
-  Award, Settings, LogOut, Menu, Users // 🚨 NEW: Added Users icon
+  Award, Settings, LogOut, Menu, Users 
 } from 'lucide-react'
 
 export default function SideNav() {
-  // 1. Starts collapsed by default (false instead of true)
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
 
-  // 2. Auto-collapses the sidebar whenever the route changes
   useEffect(() => {
     setIsOpen(false)
   }, [pathname])
 
-  // Do not render sidebar on full-screen chart pages
   if (pathname?.includes('/viewport')) return null;
 
-  // 🚨 NEW: Added "Live Floor" to the main user navigation
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Live Floor', href: '/floor', icon: Users }, 
     { name: 'Markets', href: '/markets', icon: LineChart },
     { name: 'The Vault', href: '/vault', icon: Bookmark }, 
+    { name: 'Live Floor', href: '/floor', icon: Users }, 
     { name: 'Account', href: '/account/profile', icon: Settings },
   ]
 
@@ -42,13 +39,17 @@ export default function SideNav() {
       {/* BRANDING & TOGGLE */}
       <div className="h-16 flex items-center px-4 border-b border-neutral-200 dark:border-neutral-800 justify-between overflow-hidden">
         {isOpen && (
-          <span className="font-black tracking-tight text-lg uppercase flex items-center whitespace-nowrap text-neutral-900 dark:text-white">
-            <span className="bg-gradient-to-br from-purple-600 via-blue-500 to-cyan-400 bg-clip-text text-transparent drop-shadow-[0_0_12px_rgba(168,85,247,0.4)]">
-              MY
-            </span>
-            {/* The ml-1.5 adds the exact perfect space! Change to ml-1 or ml-2 to adjust. */}
-            <span className="ml-1.5">TRADER DESK</span>
-          </span>
+          // 🚨 NEW: Image wrapper instead of text
+          <div className="relative h-10 w-50 flex items-center">
+            <Image 
+              src="/logo.png" // 🚨 IMPORTANT: Change this to match your file name in the public folder
+              alt="My Trader Desk"
+              fill
+              className="object-contain object-left"
+              priority
+              unoptimized
+            />
+          </div>
         )}
         <button 
           onClick={() => setIsOpen(!isOpen)} 
@@ -59,9 +60,8 @@ export default function SideNav() {
       </div>
 
       {/* NAVIGATION LINKS */}
-      <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto scrollbar-hide">
+      <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
         {navItems.map((item) => {
-          // Check if active (handles sub-paths too)
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href.split('/')[1] ? `/${item.href.split('/')[1]}` : item.href))
           
           return (
