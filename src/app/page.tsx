@@ -87,9 +87,9 @@ export default function Home() {
         <h1 className="sr-only">MyTraderDesk by Sentinel Vortex</h1>
 
         <h2 className="text-5xl md:text-7xl lg:text-8xl font-black leading-[1.1] tracking-tighter text-white">
-          MASTER STRUCTURE.<br />
+          MASTER STRUCTURE<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-600">
-            REMOVE FATIGUE.
+            REMOVE FATIGUE
           </span>
         </h2>
 
