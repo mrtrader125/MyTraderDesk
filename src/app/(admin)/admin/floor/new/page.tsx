@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { createBrowserClient } from '@supabase/ssr'
 import { Send, Image as ImageIcon, Activity, Zap, Shield, Loader2, Target, FolderSearch, X, PlusCircle, Edit2, Trash2, Save, LayoutDashboard, Settings2 } from 'lucide-react'
 import Image from 'next/image'
@@ -10,6 +11,10 @@ export default function AdminFloorControl() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   ))
+
+  // --- PORTAL MOUNT STATE ---
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   // --- APP STATE ---
   const [activeTab, setActiveTab] = useState<'deploy' | 'manage'>('deploy')
@@ -95,7 +100,6 @@ export default function AdminFloorControl() {
     } else if (!data || data.length === 0) {
       alert(`Silent Block: The database refused to delete the item. Please run the SQL policy fix in Supabase.`)
     } else {
-      // Only remove from UI if the DB confirms it was deleted
       setActivePosts(prev => prev.filter(p => p.id !== id))
     }
   }
@@ -443,10 +447,10 @@ export default function AdminFloorControl() {
       </div>
 
       {/* ========================================= */}
-      {/* EDIT POST MODAL                             */}
+      {/* EDIT POST MODAL (PORTAL)                    */}
       {/* ========================================= */}
-      {editingPost && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      {mounted && editingPost && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setEditingPost(null)}></div>
           <div className="relative w-full max-w-lg bg-[#0a0a0a] rounded-2xl border border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] p-6">
             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-5 flex items-center gap-2"><Edit2 size={16} className="text-blue-500"/> Edit Terminal Setup</h3>
@@ -473,14 +477,15 @@ export default function AdminFloorControl() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================= */}
-      {/* EDIT SQUAWK MODAL                           */}
+      {/* EDIT SQUAWK MODAL (PORTAL)                  */}
       {/* ========================================= */}
-      {editingSquawk && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      {mounted && editingSquawk && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setEditingSquawk(null)}></div>
           <div className="relative w-full max-w-lg bg-[#0a0a0a] rounded-2xl border border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] p-6">
             <h3 className="text-sm font-black text-white uppercase tracking-widest mb-5 flex items-center gap-2"><Edit2 size={16} className="text-amber-500"/> Edit Squawk</h3>
@@ -501,14 +506,15 @@ export default function AdminFloorControl() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================= */}
-      {/* LIBRARY MODAL                               */}
+      {/* LIBRARY MODAL (PORTAL)                      */}
       {/* ========================================= */}
-      {isLibraryOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8">
+      {mounted && isLibraryOpen && createPortal(
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-8">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setIsLibraryOpen(false)}></div>
           <div className="relative w-full max-w-6xl h-full max-h-[85vh] bg-[#0a0a0a] rounded-2xl border border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0">
@@ -565,7 +571,8 @@ export default function AdminFloorControl() {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
