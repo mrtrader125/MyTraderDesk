@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
-import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio, X, ZoomIn, RefreshCw, Lock, Plus, MessageSquare } from 'lucide-react'
+import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio, X, ZoomIn, RefreshCw, Lock, MessageSquare, Send } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 
 // --- TYPES ---
@@ -29,7 +29,7 @@ interface PollResult {
   totalVotes: number
 }
 
-// --- LIGHTBOX SUB-COMPONENT (Unchanged) ---
+// --- LIGHTBOX SUB-COMPONENT ---
 function ChartLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () => void }) {
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -104,10 +104,11 @@ export default function LiveFloorPage() {
   const [pollResults, setPollResults] = useState<Record<string, PollResult>>({})
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
-  const [expandedImage, setExpandedImage] = useState<string | null>(null)
   
-  // 🚨 NEW STATE: Playbook Verification Gate
+  // UI States
+  const [expandedImage, setExpandedImage] = useState<string | null>(null)
   const [isPlaybookVerified, setIsPlaybookVerified] = useState(false) 
+  const [activeDiscussion, setActiveDiscussion] = useState<Post | null>(null)
 
   const floorEndRef = useRef<HTMLDivElement>(null)
   const squawkEndRef = useRef<HTMLDivElement>(null)
@@ -126,12 +127,8 @@ export default function LiveFloorPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUserId(user.id)
-        // 🚨 NEW: Fetch user profile to check if Playbook is completed
-        // const { data: profile } = await supabase.from('user_profiles').select('playbook_completed').eq('id', user.id).single()
-        // if (profile) setIsPlaybookVerified(profile.playbook_completed)
-        
-        // Simulating that the user has NOT finished the playbook yet to show the UI lock:
-        setIsPlaybookVerified(false) 
+        // Hardcoded for testing UI - change to fetch from user profile
+        setIsPlaybookVerified(true) 
       }
 
       const [postsRes, squawksRes] = await Promise.all([
@@ -191,7 +188,7 @@ export default function LiveFloorPage() {
   }
 
   const handleVote = async (postId: string, voteType: 'aligned' | 'counter' | 'sitting_out') => {
-    if (!userId || !isPlaybookVerified) return // Prevent vote if not verified
+    if (!userId || !isPlaybookVerified) return 
     setUserVotes(prev => ({ ...prev, [postId]: voteType }))
     const { error } = await supabase.from('user_votes').insert({ post_id: postId, user_id: userId, vote_type: voteType })
     if (!error) fetchPollResults([postId])
@@ -221,19 +218,6 @@ export default function LiveFloorPage() {
                   <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Structural Analysis</p>
                 </div>
               </div>
-              
-              {/* 🚨 NEW: Submit Setup Button */}
-              <button 
-                className={`flex items-center gap-2 px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
-                  isPlaybookVerified 
-                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]' 
-                    : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700'
-                }`}
-                disabled={!isPlaybookVerified}
-              >
-                {isPlaybookVerified ? <Plus size={14} /> : <Lock size={12} />}
-                Post Setup
-              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-[#050505]">
@@ -274,10 +258,13 @@ export default function LiveFloorPage() {
                             <p className="text-neutral-300 text-sm leading-relaxed font-medium whitespace-pre-wrap">{post.thesis}</p>
                           </div>
                           
-                          {/* 🚨 NEW: Threaded Context Button */}
+                          {/* 🚨 UPDATED: Threaded Context Button (Now Functional) */}
                           <div className="pt-2">
-                             <button className="flex items-center gap-2 px-3 py-1.5 bg-[#111] hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 text-neutral-400 hover:text-white rounded-md transition-all text-[10px] font-black uppercase tracking-widest">
-                               <MessageSquare size={12} /> Discuss Context (0)
+                             <button 
+                               onClick={() => setActiveDiscussion(post)}
+                               className="flex items-center gap-2 px-3 py-1.5 bg-[#111] hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 text-neutral-400 hover:text-white rounded-md transition-all text-[10px] font-black uppercase tracking-widest"
+                             >
+                               <MessageSquare size={12} /> Discuss Context
                              </button>
                           </div>
 
@@ -286,21 +273,16 @@ export default function LiveFloorPage() {
                         <div className="w-full xl:w-[40%] flex flex-col">
                           <div className="h-full bg-[#050505] rounded-xl border border-neutral-900 p-5 flex flex-col justify-center shadow-inner relative">
                             
-                            {/* 🚨 NEW: The Playbook Lock UI */}
                             {!isPlaybookVerified ? (
                                <div className="absolute inset-0 z-10 bg-[#050505]/80 backdrop-blur-[2px] rounded-xl flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-300 border border-neutral-800/50">
                                  <div className="bg-neutral-900 p-3 rounded-full mb-3 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
                                    <Lock size={20} className="text-neutral-500" />
                                  </div>
                                  <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Access Denied</p>
-                                 <p className="text-[9px] font-bold text-neutral-500 tracking-wide mb-4">You must complete the Playbook to unlock Floor voting and posting.</p>
-                                 <button className="px-4 py-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded text-[9px] font-black uppercase tracking-widest hover:bg-blue-500/20 transition-all">
-                                   Open Playbook
-                                 </button>
+                                 <p className="text-[9px] font-bold text-neutral-500 tracking-wide mb-4">You must complete the Playbook to unlock Floor voting.</p>
                                </div>
                             ) : null}
 
-                            {/* Existing Voting UI */}
                             <div className={!isPlaybookVerified ? 'opacity-30 pointer-events-none filter blur-[1px]' : ''}>
                               {!hasVoted ? (
                                 <div className="space-y-3">
@@ -386,6 +368,62 @@ export default function LiveFloorPage() {
       </div>
 
       {expandedImage && <ChartLightbox imageUrl={expandedImage} onClose={() => setExpandedImage(null)} />}
+
+      {/* 🚨 NEW: Threaded Discussion Modal Overlay */}
+      {activeDiscussion && (
+        <div className="fixed inset-0 z-[90000] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="absolute inset-0 cursor-pointer" onClick={() => setActiveDiscussion(null)}></div>
+          
+          <div className="relative w-full max-w-3xl bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col h-[75vh] max-h-[700px] overflow-hidden z-10 animate-in zoom-in-95 duration-200 mx-4">
+            
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-neutral-900 bg-[#0d0d0d]">
+              <div>
+                <h3 className="text-white text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                  <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[10px]">{activeDiscussion.ticker}</span>
+                  Context Debate
+                </h3>
+                <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-1">Isolating noise. Focus strictly on structure.</p>
+              </div>
+              <button 
+                onClick={() => setActiveDiscussion(null)} 
+                className="p-2 text-neutral-500 hover:text-red-400 transition-colors bg-[#111] hover:bg-neutral-800 rounded-lg border border-neutral-800"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Chat History Area (Mocked for UI preview) */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-[#050505] flex flex-col items-center justify-center text-center">
+               <MessageSquare className="w-10 h-10 text-neutral-800 mb-3" />
+               <p className="text-[11px] font-black uppercase tracking-widest text-neutral-500">No context submitted yet</p>
+               <p className="text-[10px] text-neutral-600 font-bold max-w-xs mt-2 leading-relaxed">
+                 Be the first to debate this structure. Remember to keep the discussion strictly to invalidation levels and price action.
+               </p>
+            </div>
+
+            {/* Input Area */}
+            <div className="p-4 border-t border-neutral-900 bg-[#0d0d0d]">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Draft your structural argument..."
+                  className="w-full bg-[#050505] border border-neutral-800 rounded-lg pl-4 pr-12 py-3 text-[11px] text-white focus:outline-none focus:border-blue-500/50 transition-colors placeholder:text-neutral-700"
+                  disabled={!isPlaybookVerified}
+                />
+                <button 
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${isPlaybookVerified ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'}`}
+                  disabled={!isPlaybookVerified}
+                >
+                  <Send size={14} />
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
