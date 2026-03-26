@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
-import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio, X, ZoomIn, RefreshCw, Lock, MessageSquare, Send } from 'lucide-react'
+import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio, X, ZoomIn, RefreshCw, Lock, MessageSquare, Send, Loader2 } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 
 // --- TYPES ---
@@ -27,6 +27,15 @@ interface PollResult {
   counter: number
   sitting_out: number
   totalVotes: number
+}
+
+// 🚨 NEW TYPE
+interface PostComment {
+  id: string
+  post_id: string
+  user_id: string
+  content: string
+  created_at: string
 }
 
 // --- LIGHTBOX SUB-COMPONENT ---
@@ -79,14 +88,6 @@ function ChartLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () =>
           <Image src={imageUrl} alt="Expanded Chart" fill className="object-contain pointer-events-none" unoptimized />
         </div>
       </div>
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 bg-neutral-900/80 backdrop-blur-md rounded-full border border-neutral-800 flex items-center gap-3 shadow-2xl">
-        <p className="text-[10px] text-neutral-400 font-black uppercase tracking-widest flex items-center">
-          <span className="text-blue-400 mx-2">{Math.round(scale * 100)}% Zoom</span> |
-          <span className="mx-2">Scroll to Zoom</span> |
-          <span className="mx-2">Drag to Pan</span> |
-          <span className="mx-2">Double Click to Reset</span>
-        </p>
-      </div>
     </div>
   )
 }
@@ -108,10 +109,16 @@ export default function LiveFloorPage() {
   // UI States
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
   const [isPlaybookVerified, setIsPlaybookVerified] = useState(false) 
+  
+  // 🚨 NEW: Thread States
   const [activeDiscussion, setActiveDiscussion] = useState<Post | null>(null)
+  const [comments, setComments] = useState<PostComment[]>([])
+  const [newComment, setNewComment] = useState('')
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
 
   const floorEndRef = useRef<HTMLDivElement>(null)
   const squawkEndRef = useRef<HTMLDivElement>(null)
+  const commentsEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     fetchInitialData()
@@ -121,13 +128,46 @@ export default function LiveFloorPage() {
 
   useEffect(() => { floorEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [posts])
   useEffect(() => { squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [squawks])
+  useEffect(() => { commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [comments])
+
+  // 🚨 NEW: Fetch and listen to comments specifically when a discussion is opened
+  useEffect(() => {
+    if (!activeDiscussion) {
+      setComments([]) // clear when modal closes
+      return
+    }
+
+    const fetchComments = async () => {
+      const { data } = await supabase
+        .from('post_comments')
+        .select('*')
+        .eq('post_id', activeDiscussion.id)
+        .order('created_at', { ascending: true })
+      if (data) setComments(data)
+    }
+
+    fetchComments()
+
+    // Realtime listener strictly for THIS post's comments
+    const commentChannel = supabase.channel(`comments:${activeDiscussion.id}`)
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'post_comments',
+        filter: `post_id=eq.${activeDiscussion.id}` 
+      }, (payload) => {
+        setComments((prev) => [...prev, payload.new as PostComment])
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(commentChannel) }
+  }, [activeDiscussion, supabase])
 
   const fetchInitialData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUserId(user.id)
-        // Hardcoded for testing UI - change to fetch from user profile
         setIsPlaybookVerified(true) 
       }
 
@@ -194,6 +234,26 @@ export default function LiveFloorPage() {
     if (!error) fetchPollResults([postId])
   }
 
+  // 🚨 NEW: Submit Comment Function
+  const handleSubmitComment = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (!newComment.trim() || !userId || !activeDiscussion || !isPlaybookVerified || isSubmittingComment) return
+
+    setIsSubmittingComment(true)
+    const { error } = await supabase.from('post_comments').insert({
+      post_id: activeDiscussion.id,
+      user_id: userId,
+      content: newComment.trim()
+    })
+
+    if (!error) {
+      setNewComment('')
+    } else {
+      console.error("Failed to post comment:", error)
+    }
+    setIsSubmittingComment(false)
+  }
+
   if (loading) {
     return (
       <div className="h-full w-full bg-[#050505] flex flex-col items-center justify-center min-h-[calc(100vh-65px)]">
@@ -258,7 +318,6 @@ export default function LiveFloorPage() {
                             <p className="text-neutral-300 text-sm leading-relaxed font-medium whitespace-pre-wrap">{post.thesis}</p>
                           </div>
                           
-                          {/* 🚨 UPDATED: Threaded Context Button (Now Functional) */}
                           <div className="pt-2">
                              <button 
                                onClick={() => setActiveDiscussion(post)}
@@ -267,7 +326,6 @@ export default function LiveFloorPage() {
                                <MessageSquare size={12} /> Discuss Context
                              </button>
                           </div>
-
                         </div>
 
                         <div className="w-full xl:w-[40%] flex flex-col">
@@ -363,13 +421,12 @@ export default function LiveFloorPage() {
                <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest flex items-center justify-center gap-1.5"><Shield size={10}/> Official Admin Feed</p>
             </div>
           </div>
-
         </div>
       </div>
 
       {expandedImage && <ChartLightbox imageUrl={expandedImage} onClose={() => setExpandedImage(null)} />}
 
-      {/* 🚨 NEW: Threaded Discussion Modal Overlay */}
+      {/* 🚨 NEW: Functional Threaded Discussion Modal */}
       {activeDiscussion && (
         <div className="fixed inset-0 z-[90000] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="absolute inset-0 cursor-pointer" onClick={() => setActiveDiscussion(null)}></div>
@@ -377,7 +434,7 @@ export default function LiveFloorPage() {
           <div className="relative w-full max-w-3xl bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col h-[75vh] max-h-[700px] overflow-hidden z-10 animate-in zoom-in-95 duration-200 mx-4">
             
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-neutral-900 bg-[#0d0d0d]">
+            <div className="flex items-center justify-between p-4 border-b border-neutral-900 bg-[#0d0d0d] shrink-0">
               <div>
                 <h3 className="text-white text-sm font-black uppercase tracking-widest flex items-center gap-2">
                   <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[10px]">{activeDiscussion.ticker}</span>
@@ -393,32 +450,70 @@ export default function LiveFloorPage() {
               </button>
             </div>
 
-            {/* Chat History Area (Mocked for UI preview) */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-[#050505] flex flex-col items-center justify-center text-center">
-               <MessageSquare className="w-10 h-10 text-neutral-800 mb-3" />
-               <p className="text-[11px] font-black uppercase tracking-widest text-neutral-500">No context submitted yet</p>
-               <p className="text-[10px] text-neutral-600 font-bold max-w-xs mt-2 leading-relaxed">
-                 Be the first to debate this structure. Remember to keep the discussion strictly to invalidation levels and price action.
-               </p>
+            {/* Chat History Area */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 custom-scrollbar bg-[#050505]">
+               {comments.length === 0 ? (
+                 <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
+                   <MessageSquare className="w-10 h-10 text-neutral-600 mb-3" />
+                   <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400">No context submitted yet</p>
+                   <p className="text-[10px] text-neutral-500 font-bold max-w-xs mt-2 leading-relaxed">
+                     Be the first to debate this structure. Remember to keep the discussion strictly to invalidation levels and price action.
+                   </p>
+                 </div>
+               ) : (
+                 comments.map((comment) => {
+                   const isMe = comment.user_id === userId
+                   // Temporary mock username until a profiles table is built
+                   const displayName = `Trader_${comment.user_id.substring(0, 4).toUpperCase()}` 
+                   
+                   return (
+                     <div key={comment.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2`}>
+                        <div className="flex items-baseline gap-2 mb-1">
+                          <span className={`text-[10px] font-black uppercase tracking-widest ${isMe ? 'text-blue-400' : 'text-neutral-500'}`}>
+                            {isMe ? 'You' : displayName}
+                          </span>
+                          <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest">
+                            {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div className={`px-4 py-2.5 rounded-xl max-w-[85%] text-xs font-medium leading-relaxed ${
+                          isMe 
+                            ? 'bg-blue-600 text-white rounded-tr-sm' 
+                            : 'bg-neutral-900 border border-neutral-800 text-neutral-300 rounded-tl-sm'
+                        }`}>
+                          {comment.content}
+                        </div>
+                     </div>
+                   )
+                 })
+               )}
+               <div ref={commentsEndRef} className="h-1" />
             </div>
 
             {/* Input Area */}
-            <div className="p-4 border-t border-neutral-900 bg-[#0d0d0d]">
+            <form onSubmit={handleSubmitComment} className="p-4 border-t border-neutral-900 bg-[#0d0d0d] shrink-0">
               <div className="relative">
                 <input
                   type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Draft your structural argument..."
-                  className="w-full bg-[#050505] border border-neutral-800 rounded-lg pl-4 pr-12 py-3 text-[11px] text-white focus:outline-none focus:border-blue-500/50 transition-colors placeholder:text-neutral-700"
-                  disabled={!isPlaybookVerified}
+                  className="w-full bg-[#050505] border border-neutral-800 rounded-lg pl-4 pr-12 py-3 text-[11px] text-white focus:outline-none focus:border-blue-500/50 transition-colors placeholder:text-neutral-700 disabled:opacity-50"
+                  disabled={!isPlaybookVerified || isSubmittingComment}
                 />
                 <button 
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${isPlaybookVerified ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'}`}
-                  disabled={!isPlaybookVerified}
+                  type="submit"
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${
+                    isPlaybookVerified && newComment.trim() 
+                      ? 'bg-blue-600 text-white hover:bg-blue-500' 
+                      : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
+                  }`}
+                  disabled={!isPlaybookVerified || isSubmittingComment || !newComment.trim()}
                 >
-                  <Send size={14} />
+                  {isSubmittingComment ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                 </button>
               </div>
-            </div>
+            </form>
 
           </div>
         </div>
