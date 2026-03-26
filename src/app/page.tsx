@@ -77,11 +77,11 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* HERO SECTION - REPOSITIONED FOR OPERATORS */}
+      {/* HERO SECTION - REPOSITIONED FOR TRADERS */}
       <section className="relative z-10 pt-40 pb-20 px-6 max-w-6xl mx-auto text-center">
         <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-5 py-2 mb-8 backdrop-blur-sm">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-          <span className="text-xs font-bold text-blue-300 uppercase tracking-widest">Built for Serious Operators</span>
+          <span className="text-xs font-bold text-blue-300 uppercase tracking-widest">Built for Serious Traders</span>
         </div>
 
         <h1 className="sr-only">MyTraderDesk by Sentinel Vortex</h1>
@@ -220,7 +220,7 @@ export default function Home() {
             <ul className="space-y-6 text-neutral-300 font-medium">
               <li className="flex items-start"><span className="text-emerald-500 mr-4 font-bold">✓</span> You treat trading as a business, not a casino.</li>
               <li className="flex items-start"><span className="text-emerald-500 mr-4 font-bold">✓</span> You know basic mechanics but need structural clarity.</li>
-              <li className="flex items-start"><span className="text-emerald-500 mr-4 font-bold">✓</span> You want to crowdsource sentiment with other serious operators.</li>
+              <li className="flex items-start"><span className="text-emerald-500 mr-4 font-bold">✓</span> You want to crowdsource sentiment with other serious traders.</li>
             </ul>
           </div>
           <div className="bg-[#050505] p-10 rounded-3xl border border-red-500/10">
@@ -310,7 +310,7 @@ export default function Home() {
               </span>
             </Link>
             <p className="text-xs font-medium text-neutral-500 leading-relaxed pr-4">
-              A dedicated digital trading floor providing intermediate operators with institutional-grade structural analysis and crowdsourced market confluence.
+              A dedicated digital trading floor providing intermediate traders with institutional-grade structural analysis and crowdsourced market confluence.
             </p>
           </div>
 
