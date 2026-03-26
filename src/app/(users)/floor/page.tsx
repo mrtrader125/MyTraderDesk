@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
-import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio, X, ZoomIn, RefreshCw } from 'lucide-react'
+import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio, X, ZoomIn, RefreshCw, Lock, Plus, MessageSquare } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 
 // --- TYPES ---
@@ -29,7 +29,7 @@ interface PollResult {
   totalVotes: number
 }
 
-// --- LIGHTBOX SUB-COMPONENT ---
+// --- LIGHTBOX SUB-COMPONENT (Unchanged) ---
 function ChartLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () => void }) {
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
@@ -66,16 +66,10 @@ function ChartLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () =>
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-200">
       <div className="absolute inset-0 cursor-zoom-out" onClick={onClose} />
-      
       <div className="absolute top-6 right-6 flex gap-3 z-50">
-        <button onClick={handleDoubleClick} className="p-3 bg-neutral-900/80 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-blue-400 transition-colors border border-neutral-800 shadow-2xl" title="Reset Zoom">
-          <RefreshCw size={20} />
-        </button>
-        <button onClick={onClose} className="p-3 bg-neutral-900/80 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-red-400 transition-colors border border-neutral-800 shadow-2xl">
-          <X size={20} />
-        </button>
+        <button onClick={handleDoubleClick} className="p-3 bg-neutral-900/80 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-blue-400 transition-colors border border-neutral-800 shadow-2xl" title="Reset Zoom"><RefreshCw size={20} /></button>
+        <button onClick={onClose} className="p-3 bg-neutral-900/80 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-red-400 transition-colors border border-neutral-800 shadow-2xl"><X size={20} /></button>
       </div>
-
       <div 
         className="relative w-[95vw] h-[90vh] flex items-center justify-center overflow-hidden rounded-xl border border-neutral-800/50 shadow-[0_0_100px_rgba(0,0,0,1)] bg-[#050505] p-2"
         onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onDoubleClick={handleDoubleClick}
@@ -85,7 +79,6 @@ function ChartLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () =>
           <Image src={imageUrl} alt="Expanded Chart" fill className="object-contain pointer-events-none" unoptimized />
         </div>
       </div>
-
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-5 py-3 bg-neutral-900/80 backdrop-blur-md rounded-full border border-neutral-800 flex items-center gap-3 shadow-2xl">
         <p className="text-[10px] text-neutral-400 font-black uppercase tracking-widest flex items-center">
           <span className="text-blue-400 mx-2">{Math.round(scale * 100)}% Zoom</span> |
@@ -112,6 +105,9 @@ export default function LiveFloorPage() {
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
+  
+  // 🚨 NEW STATE: Playbook Verification Gate
+  const [isPlaybookVerified, setIsPlaybookVerified] = useState(false) 
 
   const floorEndRef = useRef<HTMLDivElement>(null)
   const squawkEndRef = useRef<HTMLDivElement>(null)
@@ -128,7 +124,15 @@ export default function LiveFloorPage() {
   const fetchInitialData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) setUserId(user.id)
+      if (user) {
+        setUserId(user.id)
+        // 🚨 NEW: Fetch user profile to check if Playbook is completed
+        // const { data: profile } = await supabase.from('user_profiles').select('playbook_completed').eq('id', user.id).single()
+        // if (profile) setIsPlaybookVerified(profile.playbook_completed)
+        
+        // Simulating that the user has NOT finished the playbook yet to show the UI lock:
+        setIsPlaybookVerified(false) 
+      }
 
       const [postsRes, squawksRes] = await Promise.all([
         supabase.from('terminal_posts').select('*').order('created_at', { ascending: false }).limit(20),
@@ -187,7 +191,7 @@ export default function LiveFloorPage() {
   }
 
   const handleVote = async (postId: string, voteType: 'aligned' | 'counter' | 'sitting_out') => {
-    if (!userId) return
+    if (!userId || !isPlaybookVerified) return // Prevent vote if not verified
     setUserVotes(prev => ({ ...prev, [postId]: voteType }))
     const { error } = await supabase.from('user_votes').insert({ post_id: postId, user_id: userId, vote_type: voteType })
     if (!error) fetchPollResults([postId])
@@ -217,6 +221,19 @@ export default function LiveFloorPage() {
                   <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Structural Analysis</p>
                 </div>
               </div>
+              
+              {/* 🚨 NEW: Submit Setup Button */}
+              <button 
+                className={`flex items-center gap-2 px-4 py-2 rounded-md text-[10px] font-black uppercase tracking-widest transition-all ${
+                  isPlaybookVerified 
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]' 
+                    : 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700'
+                }`}
+                disabled={!isPlaybookVerified}
+              >
+                {isPlaybookVerified ? <Plus size={14} /> : <Lock size={12} />}
+                Post Setup
+              </button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-[#050505]">
@@ -256,39 +273,66 @@ export default function LiveFloorPage() {
                           <div className="pl-4 border-l-2 border-blue-500/50">
                             <p className="text-neutral-300 text-sm leading-relaxed font-medium whitespace-pre-wrap">{post.thesis}</p>
                           </div>
+                          
+                          {/* 🚨 NEW: Threaded Context Button */}
+                          <div className="pt-2">
+                             <button className="flex items-center gap-2 px-3 py-1.5 bg-[#111] hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 text-neutral-400 hover:text-white rounded-md transition-all text-[10px] font-black uppercase tracking-widest">
+                               <MessageSquare size={12} /> Discuss Context (0)
+                             </button>
+                          </div>
+
                         </div>
 
                         <div className="w-full xl:w-[40%] flex flex-col">
-                          <div className="h-full bg-[#050505] rounded-xl border border-neutral-900 p-5 flex flex-col justify-center shadow-inner">
-                            {!hasVoted ? (
-                              <div className="animate-in fade-in duration-300 space-y-3">
-                                <p className="text-[9px] text-center text-neutral-500 font-black uppercase tracking-widest mb-4">Establish Bias</p>
-                                <div className="flex flex-col gap-3">
-                                  <button onClick={() => handleVote(post.id, 'aligned')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-blue-500/50 hover:bg-blue-500/5 group"><span className="text-[10px] font-black text-neutral-400 group-hover:text-blue-400 uppercase tracking-widest">Aligned</span><TrendingUp className="text-neutral-600 group-hover:text-blue-500" size={16} /></button>
-                                  <button onClick={() => handleVote(post.id, 'counter')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-red-500/50 hover:bg-red-500/5 group"><span className="text-[10px] font-black text-neutral-400 group-hover:text-red-400 uppercase tracking-widest">Counter</span><TrendingDown className="text-neutral-600 group-hover:text-red-500" size={16} /></button>
-                                  <button onClick={() => handleVote(post.id, 'sitting_out')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-neutral-500 hover:bg-neutral-800 group"><span className="text-[10px] font-black text-neutral-500 group-hover:text-neutral-300 uppercase tracking-widest">Sitting Out</span><Eye className="text-neutral-600 group-hover:text-neutral-300" size={16} /></button>
-                                </div>
-                              </div>
-                            ) : results ? (
-                              <div className="space-y-5 animate-in fade-in zoom-in-95 duration-300">
-                                <div className="flex flex-col gap-1.5 border-b border-neutral-800 pb-4 mb-2">
-                                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{results.totalVotes} Traders Voted</span>
-                                  <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500">Your Bias: <span className={userVotes[post.id] === 'aligned' ? 'text-blue-400' : userVotes[post.id] === 'counter' ? 'text-red-400' : 'text-neutral-300'}>{userVotes[post.id].replace('_', ' ')}</span></div>
-                                </div>
-                                <div className="space-y-4">
-                                  <div>
-                                    <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-black text-blue-400 tracking-widest uppercase">Aligned</span><span className="text-[11px] font-black text-white">{results.aligned}%</span></div>
-                                    <div className="h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800"><div className="h-full bg-blue-500 transition-all duration-1000 ease-out" style={{ width: `${results.aligned}%` }} /></div>
+                          <div className="h-full bg-[#050505] rounded-xl border border-neutral-900 p-5 flex flex-col justify-center shadow-inner relative">
+                            
+                            {/* 🚨 NEW: The Playbook Lock UI */}
+                            {!isPlaybookVerified ? (
+                               <div className="absolute inset-0 z-10 bg-[#050505]/80 backdrop-blur-[2px] rounded-xl flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-300 border border-neutral-800/50">
+                                 <div className="bg-neutral-900 p-3 rounded-full mb-3 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                                   <Lock size={20} className="text-neutral-500" />
+                                 </div>
+                                 <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Access Denied</p>
+                                 <p className="text-[9px] font-bold text-neutral-500 tracking-wide mb-4">You must complete the Playbook to unlock Floor voting and posting.</p>
+                                 <button className="px-4 py-2 bg-blue-500/10 border border-blue-500/30 text-blue-400 rounded text-[9px] font-black uppercase tracking-widest hover:bg-blue-500/20 transition-all">
+                                   Open Playbook
+                                 </button>
+                               </div>
+                            ) : null}
+
+                            {/* Existing Voting UI */}
+                            <div className={!isPlaybookVerified ? 'opacity-30 pointer-events-none filter blur-[1px]' : ''}>
+                              {!hasVoted ? (
+                                <div className="space-y-3">
+                                  <p className="text-[9px] text-center text-neutral-500 font-black uppercase tracking-widest mb-4">Establish Bias</p>
+                                  <div className="flex flex-col gap-3">
+                                    <button onClick={() => handleVote(post.id, 'aligned')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-blue-500/50 hover:bg-blue-500/5 group"><span className="text-[10px] font-black text-neutral-400 group-hover:text-blue-400 uppercase tracking-widest">Aligned</span><TrendingUp className="text-neutral-600 group-hover:text-blue-500" size={16} /></button>
+                                    <button onClick={() => handleVote(post.id, 'counter')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-red-500/50 hover:bg-red-500/5 group"><span className="text-[10px] font-black text-neutral-400 group-hover:text-red-400 uppercase tracking-widest">Counter</span><TrendingDown className="text-neutral-600 group-hover:text-red-500" size={16} /></button>
+                                    <button onClick={() => handleVote(post.id, 'sitting_out')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-neutral-500 hover:bg-neutral-800 group"><span className="text-[10px] font-black text-neutral-500 group-hover:text-neutral-300 uppercase tracking-widest">Sitting Out</span><Eye className="text-neutral-600 group-hover:text-neutral-300" size={16} /></button>
                                   </div>
-                                  <div>
-                                    <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-black text-red-400 tracking-widest uppercase">Counter</span><span className="text-[11px] font-black text-white">{results.counter}%</span></div>
-                                    <div className="h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800"><div className="h-full bg-red-500 transition-all duration-1000 ease-out" style={{ width: `${results.counter}%` }} /></div>
+                                </div>
+                              ) : results ? (
+                                <div className="space-y-5 animate-in fade-in zoom-in-95 duration-300">
+                                  <div className="flex flex-col gap-1.5 border-b border-neutral-800 pb-4 mb-2">
+                                    <span className="text-[10px] font-black text-white uppercase tracking-widest">{results.totalVotes} Traders Voted</span>
+                                    <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500">Your Bias: <span className={userVotes[post.id] === 'aligned' ? 'text-blue-400' : userVotes[post.id] === 'counter' ? 'text-red-400' : 'text-neutral-300'}>{userVotes[post.id].replace('_', ' ')}</span></div>
+                                  </div>
+                                  <div className="space-y-4">
+                                    <div>
+                                      <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-black text-blue-400 tracking-widest uppercase">Aligned</span><span className="text-[11px] font-black text-white">{results.aligned}%</span></div>
+                                      <div className="h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800"><div className="h-full bg-blue-500 transition-all duration-1000 ease-out" style={{ width: `${results.aligned}%` }} /></div>
+                                    </div>
+                                    <div>
+                                      <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-black text-red-400 tracking-widest uppercase">Counter</span><span className="text-[11px] font-black text-white">{results.counter}%</span></div>
+                                      <div className="h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800"><div className="h-full bg-red-500 transition-all duration-1000 ease-out" style={{ width: `${results.counter}%` }} /></div>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ) : (
-                              <div className="flex justify-center py-4"><Activity className="w-5 h-5 animate-spin text-neutral-700" /></div>
-                            )}
+                              ) : (
+                                <div className="flex justify-center py-4"><Activity className="w-5 h-5 animate-spin text-neutral-700" /></div>
+                              )}
+                            </div>
+
                           </div>
                         </div>
                       </div>
