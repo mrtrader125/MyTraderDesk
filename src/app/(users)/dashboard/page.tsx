@@ -297,7 +297,7 @@ function DashboardContent() {
             </div>
             
             <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden shadow-sm">
-              <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate">Current Tier</div>
+              <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate">Active Plan</div>
               <div className={`text-xl font-black uppercase tracking-widest truncate ${userPlan === 'premium' ? 'text-amber-500' : userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
                 {userPlan === 'premium' ? 'Gold Premium' : userPlan}
               </div>
@@ -333,7 +333,7 @@ function DashboardContent() {
             {/* Feed Header */}
             <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 z-10 shadow-sm">
               <h3 className="text-xs font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-                <Target size={14} className="text-blue-500" /> Market Analysis Feed
+                <Target size={14} className="text-blue-500" /> Analysis Feed
               </h3>
               {/* PERMANENT FILTER BUTTON */}
               <button 
@@ -372,7 +372,7 @@ function DashboardContent() {
             <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
               <div className="flex items-center">
                 <Activity size={16} className="text-blue-500 mr-2 animate-pulse" />
-                <h3 className="text-sm font-black text-white uppercase tracking-widest">System Updates</h3>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Updates</h3>
               </div>
               <BellRing size={14} className="text-neutral-500" />
             </div>
@@ -396,7 +396,7 @@ function DashboardContent() {
               
               <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between">
                 <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">System Status</span>
-                <span className="text-[10px] font-bold text-emerald-500 flex items-center"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></div> Operational</span>
+                <span className="text-[10px] font-bold text-emerald-500 flex items-center"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></div> Live</span>
               </div>
             </div>
           </div>
@@ -405,7 +405,7 @@ function DashboardContent() {
             <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
               <div className="flex items-center">
                 <Bookmark size={16} className="text-amber-500 mr-2" />
-                <h3 className="text-sm font-black text-white uppercase tracking-widest">The Vault</h3>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Vault</h3>
               </div>
               <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Saved Setups</span>
             </div>
