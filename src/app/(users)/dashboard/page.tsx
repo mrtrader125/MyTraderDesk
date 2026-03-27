@@ -1,30 +1,32 @@
 'use client'
 
-import { useState, useEffect, useMemo, Suspense, useRef } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, Bookmark, ChevronRight, ListFilter, Check } from 'lucide-react'
+import { Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, Bookmark, ChevronRight, Filter, CheckSquare, Square, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ASSET_CATEGORIES, PLAN_CONFIG } from '@/lib/platformConfig'
+import Image from 'next/image'
 
 function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams() 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
   const [mounted, setMounted] = useState(false)
+  const [activeFilter, setActiveFilter] = useState('All')
   const [userPlan, setUserPlan] = useState('free') 
   const [setups, setSetups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [watchlist, setWatchlist] = useState<any[]>([])
+  const [userId, setUserId] = useState<string | null>(null)
   
   // Broadcast State
   const [activeBroadcast, setActiveBroadcast] = useState<any>(null)
 
-  // FILTER STATE (Persistent)
-  const [activeFilter, setActiveFilter] = useState('All')
-  const [isFilterOpen, setIsFilterOpen] = useState(false)
-  const filterRef = useRef<HTMLDivElement>(null)
+  // --- PERMANENT FILTER STATE ---
+  const [showFilterModal, setShowFilterModal] = useState(false)
+  const [savedCategories, setSavedCategories] = useState<string[]>([]) // Empty means show ALL
 
-  // DYNAMIC FILTERS
+  // DYNAMIC FILTERS (Top Tabs)
   const FILTERS = useMemo(() => {
     return [
       { name: 'All', req: 'free' },
@@ -42,23 +44,6 @@ function DashboardContent() {
     ]
   }, [])
 
-  // Load saved filter preference
-  useEffect(() => {
-    const savedFilter = localStorage.getItem('mtd_dashboard_filter')
-    if (savedFilter) setActiveFilter(savedFilter)
-  }, [])
-
-  // Click outside to close filter dropdown
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
-        setIsFilterOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   useEffect(() => {
     const handleSearch = (e: any) => setSearchQuery(e.detail?.toLowerCase() || '')
     window.addEventListener('globalSearch', handleSearch)
@@ -71,10 +56,15 @@ function DashboardContent() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
+          setUserId(user.id)
+          
+          // Load permanent filters from LocalStorage
+          const localFilters = localStorage.getItem(`mtd_filters_${user.id}`)
+          if (localFilters) setSavedCategories(JSON.parse(localFilters))
+
           const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
           if (profile?.plan) setUserPlan(profile.plan.toLowerCase())
 
-          // Fetch Active Broadcasts targeting this user's tier (or ALL)
           const { data: broadcasts } = await supabase
             .from('notifications')
             .select('*')
@@ -84,9 +74,7 @@ function DashboardContent() {
             .order('created_at', { ascending: false })
             .limit(1)
 
-          if (broadcasts && broadcasts.length > 0) {
-            setActiveBroadcast(broadcasts[0])
-          }
+          if (broadcasts && broadcasts.length > 0) setActiveBroadcast(broadcasts[0])
 
           const { data: vaultData } = await supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe)').eq('user_id', user.id)
           if (vaultData) {
@@ -107,69 +95,56 @@ function DashboardContent() {
     fetchDashboardData()
   }, [])
 
-  // Lock logic
-  const isLocked = (reqTier: string) => {
-    if (userPlan === 'premium') return false
-    if (userPlan === 'pro' && reqTier !== 'premium') return false
-    if (userPlan === 'essential' && (reqTier === 'essential' || reqTier === 'free')) return false
-    if (userPlan === 'free' && reqTier === 'free') return false
-    return true
-  }
-
-  const handleFilterSelect = async (filterName: string, locked: boolean) => {
-    if (locked) return
-    setActiveFilter(filterName)
-    localStorage.setItem('mtd_dashboard_filter', filterName)
-    setIsFilterOpen(false)
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (user) supabase.from('activity_logs').insert([{ user_id: user.id, action: 'FILTER_CLICK', search_query: filterName }]).then()
-  }
-
-  // --- FEED GROUPING LOGIC ---
+  // --- CORE FILTERING & GROUPING LOGIC ---
   const groupedSetups = useMemo(() => {
+    // 1. Apply Filters
     const filtered = setups.filter(setup => {
-      const matchesTab = activeFilter === 'All' ? true : (setup.category || 'Forex').toLowerCase() === activeFilter.toLowerCase()
-      const matchesSearch = (setup.asset_symbol || '').toLowerCase().includes(searchQuery)
-      return matchesTab && matchesSearch
+      const cat = (setup.category || 'Forex').toLowerCase()
+      
+      // Check Permanent Filter (LocalStorage)
+      const passesPermanent = savedCategories.length === 0 || savedCategories.map(c => c.toLowerCase()).includes(cat)
+      
+      // Check Top Tab Filter
+      const passesTab = activeFilter === 'All' ? true : cat === activeFilter.toLowerCase()
+      
+      // Check Search
+      const passesSearch = (setup.asset_symbol || '').toLowerCase().includes(searchQuery)
+      
+      return passesPermanent && passesTab && passesSearch
     })
 
-    const todayDate = new Date()
-    todayDate.setHours(0, 0, 0, 0)
-    
-    const yesterdayDate = new Date(todayDate)
-    yesterdayDate.setDate(yesterdayDate.getDate() - 1)
-    
-    const startOfWeek = new Date(todayDate)
-    startOfWeek.setDate(startOfWeek.getDate() - todayDate.getDay()) // Sunday start
+    // 2. Time-Based Grouping
+    const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
+    const yesterdayDate = new Date(todayDate); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+    const weekDate = new Date(todayDate); weekDate.setDate(todayDate.getDate() - 7);
 
-    const groups: Record<string, any[]> = {
-      'Today': [],
-      'Yesterday': [],
-      'This Week': [],
-      'Older': []
+    const groups = {
+      today: [] as any[],
+      yesterday: [] as any[],
+      thisWeek: [] as any[],
+      older: [] as any[]
     }
 
     filtered.forEach(setup => {
       const d = new Date(setup.created_at)
-      if (d >= todayDate) groups['Today'].push(setup)
-      else if (d >= yesterdayDate) groups['Yesterday'].push(setup)
-      else if (d >= startOfWeek) groups['This Week'].push(setup)
-      else groups['Older'].push(setup)
+      if (d >= todayDate) groups.today.push(setup)
+      else if (d >= yesterdayDate) groups.yesterday.push(setup)
+      else if (d >= weekDate) groups.thisWeek.push(setup)
+      else groups.older.push(setup)
     })
 
     return groups
-  }, [setups, activeFilter, searchQuery])
+  }, [setups, activeFilter, searchQuery, savedCategories])
 
-  const totalFilteredCount = useMemo(() => {
-    return Object.values(groupedSetups).reduce((acc, arr) => acc + arr.length, 0)
-  }, [groupedSetups])
+  const savePermanentFilters = (newFilters: string[]) => {
+    setSavedCategories(newFilters)
+    if (userId) localStorage.setItem(`mtd_filters_${userId}`, JSON.stringify(newFilters))
+    setShowFilterModal(false)
+  }
 
   const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
     e.stopPropagation() 
-    if (!setup) return
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!setup || !userId) return
 
     const exists = watchlist.find(item => item.id === setup.id)
     let updated = [...watchlist]
@@ -177,12 +152,20 @@ function DashboardContent() {
     if (exists) {
       updated = updated.filter(item => item.id !== setup.id)
       setWatchlist(updated)
-      await supabase.from('user_vault').delete().match({ user_id: user.id, analysis_id: setup.id })
+      await supabase.from('user_vault').delete().match({ user_id: userId, analysis_id: setup.id })
     } else {
       updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe }) 
       setWatchlist(updated)
-      await supabase.from('user_vault').insert([{ user_id: user.id, analysis_id: setup.id }])
+      await supabase.from('user_vault').insert([{ user_id: userId, analysis_id: setup.id }])
     }
+  }
+
+  const isLocked = (reqTier: string) => {
+    if (userPlan === 'premium') return false
+    if (userPlan === 'pro' && reqTier !== 'premium') return false
+    if (userPlan === 'essential' && (reqTier === 'essential' || reqTier === 'free')) return false
+    if (userPlan === 'free' && reqTier === 'free') return false
+    return true
   }
 
   const getActiveSession = () => {
@@ -196,42 +179,79 @@ function DashboardContent() {
 
   const { setupCount, setupLabel } = useMemo(() => {
     if (setups.length === 0) return { setupCount: 0, setupLabel: 'Total Setups' }
-    const today = new Date(); today.setHours(0, 0, 0, 0)
-    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
-    
-    const todayCount = setups.filter(s => new Date(s.created_at) >= today).length
+    const todayCount = setups.filter(s => new Date(s.created_at) >= new Date(new Date().setHours(0,0,0,0))).length
     if (todayCount > 0) return { setupCount: todayCount, setupLabel: "Published Today" }
-    
-    const yesterdayCount = setups.filter(s => new Date(s.created_at) >= yesterday && new Date(s.created_at) < today).length
-    return { setupCount: yesterdayCount || setups.length, setupLabel: yesterdayCount > 0 ? "Published Yesterday" : "Active Setups" }
+    return { setupCount: setups.length, setupLabel: "Active Setups" }
   }, [setups])
 
-if (!mounted || loading) {
+  // Helper to render the grid sections
+  const renderSetupGrid = (items: any[], title: string) => {
+    if (items.length === 0) return null;
     return (
-      <div className="w-full min-h-[80vh] p-6 md:p-8 font-sans space-y-8">
-        <div className="w-full h-32 bg-[#0a0a0a] border border-neutral-800 rounded-2xl animate-pulse"></div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-24 bg-[#0a0a0a] border border-neutral-800 rounded-2xl animate-pulse"></div>
-          ))}
+      <div className="mb-8">
+        <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3 border-b border-neutral-800 pb-2">
+          {title} <span className="text-neutral-700 ml-1">({items.length})</span>
+        </h4>
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
+          {items.map(setup => {
+            const isBull = setup.bias?.toUpperCase() === 'BULLISH'
+            const isBear = setup.bias?.toUpperCase() === 'BEARISH'
+            const isBookmarked = watchlist.some(item => item.id === setup.id)
+
+            return (
+              <div 
+                key={setup.id} 
+                onClick={async () => {
+                  if (userId) supabase.from('activity_logs').insert([{ user_id: userId, action: 'FEED_CLICK', asset_symbol: setup.asset_symbol, timeframe: setup.timeframe }]).then()
+                  router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=dashboard`)
+                }}
+                className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
+              >
+                <div className="flex flex-col min-w-0 pr-2">
+                  <span className="text-sm font-black text-white tracking-tight truncate">{setup.asset_symbol || 'UNKNOWN'}</span>
+                  <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5 truncate">{setup.timeframe || '-'}</span>
+                </div>
+                <div className="flex items-center space-x-1.5 shrink-0">
+                  <button onClick={(e) => toggleBookmark(e, setup)} className="text-neutral-600 hover:text-white transition-colors p-1">
+                    <Bookmark size={14} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
+                  </button>
+                  <div className={`p-1.5 rounded-lg shrink-0 ${isBull ? 'bg-emerald-500/10 text-emerald-500' : isBear ? 'bg-red-500/10 text-red-500' : 'bg-neutral-800 text-neutral-400'}`}>
+                    {isBull ? <TrendingUp size={14} /> : isBear ? <TrendingDown size={14} /> : <Minus size={14} />}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
-        <div className="w-full h-64 bg-[#0a0a0a] border border-neutral-800 rounded-2xl animate-pulse"></div>
       </div>
     )
   }
 
+  if (!mounted || loading) {
+    return (
+      <div className="w-full min-h-[80vh] p-6 md:p-8 font-sans space-y-8">
+        <div className="w-full h-32 bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] animate-pulse"></div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => <div key={i} className="h-24 bg-[#0a0a0a] border border-neutral-800 rounded-2xl animate-pulse"></div>)}
+        </div>
+        <div className="w-full h-64 bg-[#0a0a0a] border border-neutral-800 rounded-3xl animate-pulse"></div>
+      </div>
+    )
+  }
+
+  const totalFiltered = groupedSetups.today.length + groupedSetups.yesterday.length + groupedSetups.thisWeek.length + groupedSetups.older.length
+
   return (
-    // 🚨 STRICT VIEWPORT LOCK: flex-col and overflow-hidden ensures the main page NEVER scrolls
-    <div className="w-full bg-[#050505] text-white p-4 md:p-6 font-sans flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 65px)' }}>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full min-h-0">
+    // 🚨 STRICT LAYOUT LOCK: Prevents whole page scroll, enforcing internal scrolling
+    <div className="w-full bg-[#050505] text-white p-4 md:p-6 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100vh - 65px)' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start h-full min-h-0 max-w-[1800px] mx-auto w-full">
         
-        {/* --- LEFT COLUMN: MAIN DASHBOARD & FEED --- */}
-        <div className="lg:col-span-8 xl:col-span-9 flex flex-col h-full min-h-0 space-y-6">
+        {/* --- LEFT COLUMN: MAIN CONTENT --- */}
+        <div className="lg:col-span-8 xl:col-span-9 flex flex-col h-full min-h-0 space-y-4">
           
-          {/* Top Metric Cards (Fixed at top) */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 shrink-0">
-            <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
+          {/* STATS ROW (Shrink-0 prevents it from shrinking) */}
+          <div className="shrink-0 grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden shadow-sm">
               <div className="min-w-0 pr-2">
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">{setupLabel}</div>
                 <div className="text-3xl font-black text-white tracking-tighter truncate">{setupCount}</div>
@@ -239,16 +259,16 @@ if (!mounted || loading) {
               <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors shrink-0"><Zap size={20} /></div>
             </div>
 
-            <div className="md:col-span-4 xl:col-span-6 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden">
-              <div className="min-w-0 pr-2">
-                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">Trading Session</div>
-                {/* 🚨 FIXED CROPPING: Reduced from text-2xl to text-xl xl:text-2xl so "NY / London" fits perfectly */}
-                <div className="text-xl xl:text-2xl font-black text-white tracking-tight uppercase italic truncate">{getActiveSession()}</div>
+            <div className="md:col-span-4 xl:col-span-6 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden shadow-sm">
+              <div className="pr-2 flex flex-col justify-center">
+                <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Trading Session</div>
+                {/* 🚨 FIXED: Removed truncate, adjusted text sizing and line-height so it naturally wraps/fits */}
+                <div className="text-lg xl:text-xl font-black text-white tracking-tight uppercase italic leading-none">{getActiveSession()}</div>
               </div>
               <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors animate-pulse shrink-0"><Globe size={20} /></div>
             </div>
             
-            <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden">
+            <div className="md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden shadow-sm">
               <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1 truncate">Current Tier</div>
               <div className={`text-xl font-black uppercase tracking-widest truncate ${userPlan === 'premium' ? 'text-amber-500' : userPlan === 'pro' ? 'text-brand-primary' : userPlan === 'essential' ? 'text-blue-500' : 'text-neutral-400'}`}>
                 {userPlan === 'premium' ? 'Gold Premium' : userPlan}
@@ -256,126 +276,71 @@ if (!mounted || loading) {
             </div>
           </div>
 
-          {/* 🚨 THE SCROLLABLE FEED SECTION 🚨 */}
-          <div className="flex-1 flex flex-col min-h-0 bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl">
-            
-            {/* Feed Header with Permanent Filter */}
-            <div className="p-5 border-b border-neutral-900 flex items-center justify-between shrink-0 bg-[#0d0d0d] z-10">
-              <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                <Activity size={16} className="text-blue-500" /> Market Analysis Feed
-              </h3>
-              
-              {/* Dropdown Filter */}
-              <div className="relative" ref={filterRef}>
+          {/* TEMPORARY FILTER TABS */}
+          <div className="shrink-0 flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800">
+            {FILTERS.map(f => {
+              const locked = isLocked(f.req)
+              return (
                 <button 
-                  onClick={() => setIsFilterOpen(!isFilterOpen)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all ${isFilterOpen ? 'bg-neutral-800 border-neutral-600 text-white' : 'bg-[#111] border-neutral-800 text-neutral-400 hover:text-white hover:border-neutral-700'}`}
+                  key={f.name}
+                  onClick={async () => {
+                    if (!locked) {
+                      setActiveFilter(f.name)
+                      if (userId) supabase.from('activity_logs').insert([{ user_id: userId, action: 'FILTER_CLICK', search_query: f.name }]).then()
+                    }
+                  }}
+                  className={`flex items-center px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap
+                    ${activeFilter === f.name ? 'bg-white text-black shadow-sm' : locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
                 >
-                  <ListFilter size={14} className={isFilterOpen ? 'text-blue-400' : 'text-neutral-500'} />
-                  {activeFilter}
+                  {locked && <Lock size={10} className="mr-1.5" />}
+                  {f.name}
                 </button>
+              )
+            })}
+          </div>
 
-                {isFilterOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-[0_0_40px_rgba(0,0,0,1)] overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200">
-                    <div className="p-2 border-b border-neutral-900 bg-[#0d0d0d]">
-                      <p className="text-[9px] font-black text-neutral-500 uppercase tracking-widest px-2">Filter Categories</p>
-                    </div>
-                    <div className="p-1 max-h-[300px] overflow-y-auto custom-scrollbar">
-                      {FILTERS.map(f => {
-                        const locked = isLocked(f.req)
-                        const isActive = activeFilter === f.name
-                        return (
-                          <button 
-                            key={f.name}
-                            onClick={() => handleFilterSelect(f.name, locked)}
-                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${isActive ? 'bg-blue-500/10 text-blue-400' : locked ? 'text-neutral-600 cursor-not-allowed opacity-50' : 'text-neutral-300 hover:bg-white/5 hover:text-white'}`}
-                          >
-                            <span className="flex items-center gap-2">
-                              {locked && <Lock size={12} className="text-neutral-600" />}
-                              {f.name}
-                            </span>
-                            {isActive && <Check size={14} className="text-blue-500" />}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
+          {/* --- SCROLLABLE FEED ENGINE --- */}
+          <div className="flex-1 bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col min-h-0 overflow-hidden shadow-2xl relative">
+            
+            {/* Feed Header */}
+            <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 z-10 shadow-sm">
+              <h3 className="text-xs font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
+                <Target size={14} className="text-blue-500" /> Market Analysis Feed
+              </h3>
+              {/* 🚨 PERMANENT FILTER BUTTON 🚨 */}
+              <button 
+                onClick={() => setShowFilterModal(true)}
+                className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded transition-all border ${savedCategories.length > 0 ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-[#111] text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600'}`}
+              >
+                <Filter size={12} /> Preferences
+              </button>
             </div>
 
-            {/* Scrollable List of Setups grouped by Time */}
+            {/* Scrollable Grid Content */}
             <div className="flex-1 overflow-y-auto p-5 custom-scrollbar bg-[#050505]">
-              {totalFilteredCount === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
-                  <Target className="w-10 h-10 text-neutral-700 mb-3" />
-                  <p className="text-xs font-black uppercase tracking-widest text-neutral-500">
-                    {searchQuery ? `No setups matching "${searchQuery}"` : `No active setups in ${activeFilter}`}
-                  </p>
+              {totalFiltered === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full py-12 opacity-50">
+                  <Activity className="w-10 h-10 text-neutral-700 mb-3" />
+                  <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">No Setups Found</p>
+                  {savedCategories.length > 0 && <p className="text-[9px] font-bold text-neutral-600 mt-2">Check your permanent preferences</p>}
                 </div>
               ) : (
-                Object.entries(groupedSetups).map(([groupName, items]) => {
-                  if (items.length === 0) return null;
-                  
-                  return (
-                    <div key={groupName} className="mb-8 last:mb-0">
-                      <div className="flex items-center gap-3 mb-4">
-                        <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest bg-neutral-900/50 px-3 py-1 rounded-full border border-neutral-800/50">
-                          {groupName}
-                        </h4>
-                        <div className="flex-1 h-px bg-neutral-800/50"></div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-                        {items.map(setup => {
-                          const isBull = setup.bias?.toUpperCase() === 'BULLISH'
-                          const isBear = setup.bias?.toUpperCase() === 'BEARISH'
-                          const isBookmarked = watchlist.some(item => item.id === setup.id)
-
-                          return (
-                            <div 
-                              key={setup.id} 
-                              onClick={async () => {
-                                const { data: { user } } = await supabase.auth.getUser()
-                                if (user) supabase.from('activity_logs').insert([{ user_id: user.id, action: 'FEED_CLICK', asset_symbol: setup.asset_symbol, timeframe: setup.timeframe }]).then()
-                                router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=dashboard`)
-                              }}
-                              className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-3 cursor-pointer group flex flex-col shadow-sm overflow-hidden"
-                            >
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest bg-[#111] px-1.5 py-0.5 rounded border border-neutral-800 truncate">
-                                  {setup.timeframe || '-'}
-                                </span>
-                                <button onClick={(e) => toggleBookmark(e, setup)} className="text-neutral-600 hover:text-white transition-colors">
-                                  <Bookmark size={14} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
-                                </button>
-                              </div>
-                              
-                              <div className="flex items-center justify-between mt-auto">
-                                <span className="text-sm font-black text-white tracking-tight truncate pr-2">
-                                  {setup.asset_symbol || 'UNKNOWN'}
-                                </span>
-                                <div className={`p-1.5 rounded-lg shrink-0 ${isBull ? 'bg-emerald-500/10 text-emerald-500' : isBear ? 'bg-red-500/10 text-red-500' : 'bg-neutral-800 text-neutral-400'}`}>
-                                  {isBull ? <TrendingUp size={14} /> : isBear ? <TrendingDown size={14} /> : <Minus size={14} />}
-                                </div>
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )
-                })
+                <>
+                  {renderSetupGrid(groupedSetups.today, "Today")}
+                  {renderSetupGrid(groupedSetups.yesterday, "Yesterday")}
+                  {renderSetupGrid(groupedSetups.thisWeek, "This Week")}
+                  {renderSetupGrid(groupedSetups.older, "Older History")}
+                </>
               )}
             </div>
+
           </div>
         </div>
 
         {/* --- RIGHT COLUMN: WIDGETS --- */}
-        {/* 🚨 independent scroll on the right side if the user adds lots of widgets */}
-        <div className="lg:col-span-4 xl:col-span-3 flex flex-col h-full overflow-y-auto custom-scrollbar space-y-6 pr-2">
+        <div className="hidden lg:flex lg:col-span-4 xl:col-span-3 flex-col h-full min-h-0 overflow-y-auto custom-scrollbar space-y-5 pb-6">
           
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shrink-0 shadow-xl">
+          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
               <div className="flex items-center">
                 <Activity size={16} className="text-blue-500 mr-2 animate-pulse" />
@@ -396,19 +361,19 @@ if (!mounted || loading) {
                   </p>
                 </div>
               ) : (
-                <div className="p-4 bg-[#111] border border-neutral-800/50 rounded-xl text-center">
+                <div className="p-4 bg-neutral-900/30 border border-neutral-800/50 rounded-xl text-center">
                   <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">No Active Broadcasts</span>
                 </div>
               )}
               
-              <div className="p-3 bg-[#111] border border-neutral-800 rounded-xl flex items-center justify-between">
+              <div className="p-3 bg-white/[0.02] border border-white/5 rounded-xl flex items-center justify-between">
                 <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">System Status</span>
                 <span className="text-[10px] font-bold text-emerald-500 flex items-center"><div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5 animate-pulse"></div> Operational</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shrink-0 shadow-xl">
+          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shadow-sm">
             <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
               <div className="flex items-center">
                 <Bookmark size={16} className="text-amber-500 mr-2" />
@@ -420,9 +385,9 @@ if (!mounted || loading) {
             <div className="space-y-2">
               {watchlist.length > 0 ? (
                 watchlist.slice(0, 6).map((item) => (
-                  <div key={item.id} onClick={() => router.push(`/markets/viewport?asset=${item.symbol}&tf=${item.timeframe}&from=dashboard`)} className="flex items-center justify-between p-3 bg-[#111] hover:bg-neutral-800 border border-neutral-800 rounded-xl cursor-pointer transition-colors group">
-                    <div className="flex items-center min-w-0 pr-2">
-                      <span className="text-xs font-bold text-white tracking-widest truncate">{item.symbol}</span>
+                  <div key={item.id} onClick={() => router.push(`/markets/viewport?asset=${item.symbol}&tf=${item.timeframe}&from=dashboard`)} className="flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl cursor-pointer transition-colors group">
+                    <div className="flex items-center">
+                      <span className="text-xs font-bold text-white tracking-widest truncate max-w-[100px]">{item.symbol}</span>
                       {item.timeframe && <span className="text-[9px] font-bold text-neutral-500 ml-2 uppercase truncate">{item.timeframe}</span>}
                     </div>
                     <ChevronRight size={14} className="text-neutral-600 group-hover:text-white transition-colors shrink-0" />
@@ -431,11 +396,85 @@ if (!mounted || loading) {
               ) : <div className="py-6 text-center text-neutral-600 text-xs italic font-medium">No saved setups.</div>}
             </div>
             
-            {watchlist.length > 6 && <button onClick={() => router.push('/vault')} className="w-full mt-3 py-3 bg-[#111] rounded-xl text-[10px] font-black text-neutral-500 hover:text-white hover:bg-neutral-800 uppercase tracking-widest transition-colors border border-neutral-800">View All {watchlist.length} Targets</button>}
+            {watchlist.length > 6 && <button onClick={() => router.push('/vault')} className="w-full mt-3 py-2 text-[10px] font-bold text-neutral-500 hover:text-white uppercase tracking-widest transition-colors">View All {watchlist.length} Targets</button>}
           </div>
 
         </div>
       </div>
+
+      {/* ========================================= */}
+      {/* PERMANENT PREFERENCES MODAL                 */}
+      {/* ========================================= */}
+      {showFilterModal && (
+        <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-[#0a0a0a] rounded-2xl border border-neutral-800 shadow-[0_0_50px_rgba(0,0,0,0.8)] overflow-hidden">
+            <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Filter size={16} className="text-blue-500" />
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">Feed Preferences</h3>
+              </div>
+              <button onClick={() => setShowFilterModal(false)} className="text-neutral-500 hover:text-white"><X size={18} /></button>
+            </div>
+            
+            <div className="p-5 space-y-4">
+              <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest leading-relaxed">
+                Select the instruments you actively trade. Unselected categories will be permanently hidden from your feed until you re-enable them.
+              </p>
+              
+              <div className="space-y-2">
+                {Object.keys(ASSET_CATEGORIES).map(cat => {
+                  // If array is empty, technically everything is shown, so treat it as checked visually
+                  const isChecked = savedCategories.length === 0 || savedCategories.includes(cat)
+                  return (
+                    <button 
+                      key={cat}
+                      onClick={() => {
+                        let newArr = [...savedCategories]
+                        // If it's currently showing EVERYTHING (empty array), and they uncheck one, 
+                        // we need to populate the array with everything EXCEPT the one they clicked.
+                        if (savedCategories.length === 0) {
+                          newArr = Object.keys(ASSET_CATEGORIES).filter(c => c !== cat)
+                        } else {
+                          if (isChecked) newArr = newArr.filter(c => c !== cat)
+                          else newArr.push(cat)
+                        }
+                        
+                        // If they somehow unchecked EVERYTHING, just reset it to ALL
+                        if (newArr.length === 0) newArr = []
+                        setSavedCategories(newArr)
+                      }}
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border transition-all ${isChecked ? 'bg-blue-500/10 border-blue-500/30' : 'bg-[#111] border-neutral-800 hover:border-neutral-600'}`}
+                    >
+                      <span className={`text-xs font-black uppercase tracking-widest ${isChecked ? 'text-blue-400' : 'text-neutral-500'}`}>
+                        {cat}
+                      </span>
+                      {isChecked ? <CheckSquare size={16} className="text-blue-500" /> : <Square size={16} className="text-neutral-600" />}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="pt-2">
+                <button 
+                  onClick={() => savePermanentFilters(savedCategories)}
+                  className="w-full py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-lg hover:bg-neutral-200 transition-colors shadow-lg"
+                >
+                  Save Preferences
+                </button>
+                {savedCategories.length > 0 && (
+                  <button 
+                    onClick={() => savePermanentFilters([])}
+                    className="w-full mt-2 py-2 text-[9px] font-black text-neutral-500 uppercase tracking-widest hover:text-white transition-colors"
+                  >
+                    Reset to Default (Show All)
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
