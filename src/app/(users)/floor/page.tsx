@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import Image from 'next/image'
-import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio, X, ZoomIn, RefreshCw, Lock, MessageSquare, Send, Loader2 } from 'lucide-react'
+import { TrendingUp, TrendingDown, Eye, Activity, Clock, Zap, Target, Shield, Radio, X, ZoomIn, ZoomOut, RefreshCw, Lock, MessageSquare, Send, Loader2 } from 'lucide-react'
 import { createBrowserClient } from '@supabase/ssr'
 
 // --- TYPES ---
@@ -29,7 +29,6 @@ interface PollResult {
   totalVotes: number
 }
 
-// 🚨 NEW TYPE
 interface PostComment {
   id: string
   post_id: string
@@ -38,12 +37,20 @@ interface PostComment {
   created_at: string
 }
 
-// --- LIGHTBOX SUB-COMPONENT ---
+// --- LIGHTBOX SUB-COMPONENT (NOW WITH NATIVE GESTURES) ---
 function ChartLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () => void }) {
   const [scale, setScale] = useState(1)
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
+  const [isPinching, setIsPinching] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+
+  const touchMode = useRef<'none' | 'pan' | 'pinch' | 'swipe-zoom'>('none')
+  const pinchStartDist = useRef(0)
+  const initialScale = useRef(1)
+  const lastTouchTime = useRef(0)
+  const swipeZoomStartY = useRef(0)
+  const hasMovedSinceTap = useRef(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -51,40 +58,88 @@ function ChartLightbox({ imageUrl, onClose }: { imageUrl: string; onClose: () =>
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
+  // Desktop Controls
   const handleWheel = (e: React.WheelEvent) => {
     const zoomIn = e.deltaY < 0
     const newScale = zoomIn ? Math.min(scale + 0.15, 5) : Math.max(scale - 0.15, 1)
     if (newScale === 1) setPosition({ x: 0, y: 0 })
     setScale(newScale)
   }
-
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-    setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y })
-  }
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return
-    setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y })
-  }
-
+  const handleMouseDown = (e: React.MouseEvent) => { e.preventDefault(); setIsDragging(true); setDragStart({ x: e.clientX - position.x, y: e.clientY - position.y }) }
+  const handleMouseMove = (e: React.MouseEvent) => { if (!isDragging) return; setPosition({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y }) }
   const handleMouseUp = () => setIsDragging(false)
+  
+  // Mobile Controls
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      touchMode.current = 'pinch'; setIsPinching(true)
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      pinchStartDist.current = Math.hypot(dx, dy)
+      initialScale.current = scale
+    } else if (e.touches.length === 1) {
+      const now = Date.now()
+      hasMovedSinceTap.current = false
+      if (now - lastTouchTime.current < 300) {
+        touchMode.current = 'swipe-zoom'
+        swipeZoomStartY.current = e.touches[0].clientY
+        initialScale.current = scale; setIsPinching(true)
+      } else {
+        touchMode.current = 'pan'; setIsDragging(true)
+        setDragStart({ x: e.touches[0].clientX - position.x, y: e.touches[0].clientY - position.y })
+      }
+      lastTouchTime.current = now
+    }
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    hasMovedSinceTap.current = true
+    if (touchMode.current === 'pinch' && e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const dist = Math.hypot(dx, dy)
+      setScale(Math.min(Math.max(0.4, initialScale.current * (dist / pinchStartDist.current)), 5))
+    } else if (touchMode.current === 'swipe-zoom' && e.touches.length === 1) {
+      const deltaY = e.touches[0].clientY - swipeZoomStartY.current
+      setScale(Math.min(Math.max(0.4, initialScale.current + (deltaY * 0.005)), 5))
+    } else if (touchMode.current === 'pan' && e.touches.length === 1 && isDragging) {
+      setPosition({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y })
+    }
+  }
+
+  const handleTouchEnd = () => {
+    if (touchMode.current === 'swipe-zoom' && !hasMovedSinceTap.current) {
+      if (scale > 1) { setScale(1); setPosition({ x: 0, y: 0 }) } else { setScale(2.5) }
+    }
+    touchMode.current = 'none'; setIsDragging(false); setIsPinching(false)
+  }
+
   const handleDoubleClick = () => { setScale(1); setPosition({ x: 0, y: 0 }) }
+  const zoomIn = () => setScale(prev => Math.min(prev + 0.3, 5))
+  const zoomOut = () => setScale(prev => Math.max(prev - 0.3, 0.4))
 
   return (
-    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-200" style={{ height: '100dvh' }}>
       <div className="absolute inset-0 cursor-zoom-out" onClick={onClose} />
+      
       <div className="absolute top-6 right-6 flex gap-3 z-50">
-        <button onClick={handleDoubleClick} className="p-3 bg-neutral-900/80 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-blue-400 transition-colors border border-neutral-800 shadow-2xl" title="Reset Zoom"><RefreshCw size={20} /></button>
+        <button onClick={handleDoubleClick} className="p-3 bg-neutral-900/80 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-blue-400 transition-colors border border-neutral-800 shadow-2xl hidden md:block" title="Reset Zoom"><RefreshCw size={20} /></button>
         <button onClick={onClose} className="p-3 bg-neutral-900/80 hover:bg-neutral-800 rounded-full text-neutral-400 hover:text-red-400 transition-colors border border-neutral-800 shadow-2xl"><X size={20} /></button>
       </div>
+
+      {/* Mobile Zoom Buttons */}
+      <div className="md:hidden absolute bottom-24 right-4 flex flex-col space-y-2 pointer-events-auto z-50">
+        <button onClick={zoomIn} className="w-10 h-10 bg-neutral-900/80 backdrop-blur-md border border-neutral-800 rounded-full flex items-center justify-center text-neutral-400 hover:text-white shadow-xl active:scale-95 transition-all"><ZoomIn size={16}/></button>
+        <button onClick={zoomOut} className="w-10 h-10 bg-neutral-900/80 backdrop-blur-md border border-neutral-800 rounded-full flex items-center justify-center text-neutral-400 hover:text-white shadow-xl active:scale-95 transition-all"><ZoomOut size={16}/></button>
+      </div>
+
       <div 
-        className="relative w-[95vw] h-[90vh] flex items-center justify-center overflow-hidden rounded-xl border border-neutral-800/50 shadow-[0_0_100px_rgba(0,0,0,1)] bg-[#050505] p-2"
+        className="relative w-[95vw] h-[85vh] flex items-center justify-center overflow-hidden rounded-xl border border-neutral-800/50 shadow-[0_0_100px_rgba(0,0,0,1)] bg-[#050505] p-2"
         onWheel={handleWheel} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onDoubleClick={handleDoubleClick}
-        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+        onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchEnd}
+        style={{ cursor: isDragging || isPinching ? 'grabbing' : 'grab' }}
       >
-        <div className="relative w-full h-full flex items-center justify-center" style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transition: isDragging ? 'none' : 'transform 0.1s ease-out' }}>
+        <div className="relative w-full h-full flex items-center justify-center" style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transition: isDragging || isPinching ? 'none' : 'transform 0.15s ease-out' }}>
           <Image src={imageUrl} alt="Expanded Chart" fill className="object-contain pointer-events-none" unoptimized />
         </div>
       </div>
@@ -109,8 +164,9 @@ export default function LiveFloorPage() {
   // UI States
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
   const [isPlaybookVerified, setIsPlaybookVerified] = useState(false) 
+  const [mobileTab, setMobileTab] = useState<'floor' | 'squawk'>('floor') // 🚨 NEW MOBILE TOGGLE
   
-  // 🚨 NEW: Thread States
+  // Thread States
   const [activeDiscussion, setActiveDiscussion] = useState<Post | null>(null)
   const [comments, setComments] = useState<PostComment[]>([])
   const [newComment, setNewComment] = useState('')
@@ -130,35 +186,20 @@ export default function LiveFloorPage() {
   useEffect(() => { squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [squawks])
   useEffect(() => { commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [comments])
 
-  // 🚨 NEW: Fetch and listen to comments specifically when a discussion is opened
+  // Fetch comments dynamically
   useEffect(() => {
-    if (!activeDiscussion) {
-      setComments([]) // clear when modal closes
-      return
-    }
+    if (!activeDiscussion) { setComments([]); return }
 
     const fetchComments = async () => {
-      const { data } = await supabase
-        .from('post_comments')
-        .select('*')
-        .eq('post_id', activeDiscussion.id)
-        .order('created_at', { ascending: true })
+      const { data } = await supabase.from('post_comments').select('*').eq('post_id', activeDiscussion.id).order('created_at', { ascending: true })
       if (data) setComments(data)
     }
-
     fetchComments()
 
-    // Realtime listener strictly for THIS post's comments
     const commentChannel = supabase.channel(`comments:${activeDiscussion.id}`)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'post_comments',
-        filter: `post_id=eq.${activeDiscussion.id}` 
-      }, (payload) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'post_comments', filter: `post_id=eq.${activeDiscussion.id}` }, (payload) => {
         setComments((prev) => [...prev, payload.new as PostComment])
-      })
-      .subscribe()
+      }).subscribe()
 
     return () => { supabase.removeChannel(commentChannel) }
   }, [activeDiscussion, supabase])
@@ -200,7 +241,13 @@ export default function LiveFloorPage() {
   const setupRealtime = () => {
     const channel = supabase.channel('public:desk_feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (p) => setSquawks((c) => [...c, p.new as Squawk]))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'live_squawk' }, (payload) => setSquawks((current) => current.map(s => s.id === payload.new.id ? payload.new as Squawk : s)))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_squawk' }, (payload) => setSquawks((current) => current.filter(s => s.id !== payload.old.id)))
+      
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'terminal_posts' }, (p) => setPosts((c) => [...c, p.new as Post]))
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'terminal_posts' }, (payload) => setPosts((current) => current.map(p => p.id === payload.new.id ? payload.new as Post : p)))
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'terminal_posts' }, (payload) => setPosts((current) => current.filter(p => p.id !== payload.old.id)))
+      
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_votes' }, (p) => {
         setPollResults((prev) => { fetchPollResults([p.new.post_id]); return prev })
       })
@@ -234,29 +281,20 @@ export default function LiveFloorPage() {
     if (!error) fetchPollResults([postId])
   }
 
-  // 🚨 NEW: Submit Comment Function
   const handleSubmitComment = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (!newComment.trim() || !userId || !activeDiscussion || !isPlaybookVerified || isSubmittingComment) return
 
     setIsSubmittingComment(true)
-    const { error } = await supabase.from('post_comments').insert({
-      post_id: activeDiscussion.id,
-      user_id: userId,
-      content: newComment.trim()
-    })
+    const { error } = await supabase.from('post_comments').insert({ post_id: activeDiscussion.id, user_id: userId, content: newComment.trim() })
 
-    if (!error) {
-      setNewComment('')
-    } else {
-      console.error("Failed to post comment:", error)
-    }
+    if (!error) setNewComment('')
     setIsSubmittingComment(false)
   }
 
   if (loading) {
     return (
-      <div className="h-full w-full bg-[#050505] flex flex-col items-center justify-center min-h-[calc(100vh-65px)]">
+      <div className="h-full w-full bg-[#050505] flex flex-col items-center justify-center" style={{ height: 'calc(100dvh - 65px)' }}>
         <Activity className="w-8 h-8 text-blue-500 mb-4 animate-pulse" />
         <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 animate-pulse">Connecting to Terminal...</p>
       </div>
@@ -264,23 +302,42 @@ export default function LiveFloorPage() {
   }
 
   return (
-    <div className="w-full bg-[#050505] text-neutral-200 p-4 md:p-5 flex flex-col overflow-hidden relative h-[calc(100vh-65px)]">
-      <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
+    <div className="w-full bg-[#050505] text-neutral-200 p-3 md:p-5 flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
+      <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10 pb-14 md:pb-0">
+        
+        {/* 🚨 NEW: MOBILE TAB TOGGLE */}
+        <div className="flex lg:hidden bg-[#0a0a0a] p-1.5 rounded-xl mb-4 shrink-0 border border-neutral-800">
+           <button 
+             onClick={() => setMobileTab('floor')} 
+             className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${mobileTab === 'floor' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-neutral-500 hover:text-white'}`}
+           >
+             <Activity size={14} /> Live Floor
+           </button>
+           <button 
+             onClick={() => setMobileTab('squawk')} 
+             className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${mobileTab === 'squawk' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'text-neutral-500 hover:text-white'}`}
+           >
+             <Radio size={14} /> Squawk
+           </button>
+        </div>
+
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden h-full">
           
-          {/* LEFT PANE: LIVE FLOOR */}
-          <div className="lg:col-span-2 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex flex-col h-full shadow-2xl overflow-hidden relative">
-            <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 shadow-sm z-10">
+          {/* ========================================= */}
+          {/* LEFT PANE: LIVE FLOOR                       */}
+          {/* ========================================= */}
+          <div className={`lg:col-span-2 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex-col h-full shadow-2xl overflow-hidden relative ${mobileTab === 'floor' ? 'flex' : 'hidden lg:flex'}`}>
+            <div className="px-4 md:px-5 py-3 md:py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 shadow-sm z-10">
               <div className="flex items-center gap-3">
-                <div className="bg-blue-500/10 p-2 rounded-lg border border-blue-500/20"><Activity className="text-blue-500 w-5 h-5" /></div>
+                <div className="bg-blue-500/10 p-2 rounded-lg border border-blue-500/20"><Activity className="text-blue-500 w-4 h-4 md:w-5 md:h-5" /></div>
                 <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest">Live Floor</h3>
-                  <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Structural Analysis</p>
+                  <h3 className="text-xs md:text-sm font-black text-white uppercase tracking-widest">Live Floor</h3>
+                  <p className="text-[8px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Structural Analysis</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 custom-scrollbar bg-[#050505]">
+            <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-4 md:space-y-6 custom-scrollbar bg-[#050505]">
               {posts.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center opacity-50">
                   <Target className="w-10 h-10 text-neutral-600 mb-4" />
@@ -293,19 +350,19 @@ export default function LiveFloorPage() {
 
                   return (
                     <div key={post.id} className="bg-[#0a0a0a] rounded-xl border border-neutral-800 overflow-hidden shadow-lg transition-all duration-300">
-                      <div className="px-5 py-3 border-b border-neutral-900 flex justify-between items-center bg-[#0d0d0d]">
+                      <div className="px-4 md:px-5 py-2.5 md:py-3 border-b border-neutral-900 flex justify-between items-center bg-[#0d0d0d]">
                         <div className="flex items-center gap-2">
-                          <span className="px-3 py-1 bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-md border border-blue-500/20">{post.ticker}</span>
-                          <span className="text-[9px] font-black text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-1 rounded-md uppercase tracking-widest">{post.timeframe}</span>
+                          <span className="px-2 md:px-3 py-1 bg-blue-500/10 text-blue-400 text-[9px] md:text-[10px] font-black uppercase tracking-widest rounded-md border border-blue-500/20">{post.ticker}</span>
+                          <span className="text-[8px] md:text-[9px] font-black text-neutral-400 bg-neutral-900 border border-neutral-800 px-2 py-1 rounded-md uppercase tracking-widest">{post.timeframe}</span>
                         </div>
-                        <span className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
+                        <span className="text-[9px] md:text-[10px] text-neutral-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
                           <Clock size={10} className="text-neutral-600" />
                           {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
 
-                      <div className="flex flex-col xl:flex-row p-5 gap-6">
-                        <div className="w-full xl:w-[60%] flex flex-col gap-4">
+                      <div className="flex flex-col xl:flex-row p-4 md:p-5 gap-4 md:gap-6">
+                        <div className="w-full xl:w-[60%] flex flex-col gap-3 md:gap-4">
                           {post.image_url && (
                             <div className="relative w-full aspect-video rounded-xl border border-neutral-800 bg-[#000] overflow-hidden group cursor-zoom-in" onClick={() => setExpandedImage(post.image_url!)}>
                               <Image src={post.image_url} alt={`${post.ticker} Setup`} fill className="object-contain transition-transform duration-500 group-hover:scale-[1.02]" unoptimized />
@@ -314,14 +371,14 @@ export default function LiveFloorPage() {
                               </div>
                             </div>
                           )}
-                          <div className="pl-4 border-l-2 border-blue-500/50">
-                            <p className="text-neutral-300 text-sm leading-relaxed font-medium whitespace-pre-wrap">{post.thesis}</p>
+                          <div className="pl-3 md:pl-4 border-l-2 border-blue-500/50">
+                            <p className="text-neutral-300 text-xs md:text-sm leading-relaxed font-medium whitespace-pre-wrap">{post.thesis}</p>
                           </div>
                           
                           <div className="pt-2">
                              <button 
                                onClick={() => setActiveDiscussion(post)}
-                               className="flex items-center gap-2 px-3 py-1.5 bg-[#111] hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 text-neutral-400 hover:text-white rounded-md transition-all text-[10px] font-black uppercase tracking-widest"
+                               className="flex items-center gap-2 px-3 py-1.5 bg-[#111] hover:bg-neutral-800 border border-neutral-800 hover:border-neutral-600 text-neutral-400 hover:text-white rounded-md transition-all text-[9px] md:text-[10px] font-black uppercase tracking-widest w-full md:w-auto justify-center"
                              >
                                <MessageSquare size={12} /> Discuss Context
                              </button>
@@ -329,42 +386,40 @@ export default function LiveFloorPage() {
                         </div>
 
                         <div className="w-full xl:w-[40%] flex flex-col">
-                          <div className="h-full bg-[#050505] rounded-xl border border-neutral-900 p-5 flex flex-col justify-center shadow-inner relative">
+                          <div className="h-full bg-[#050505] rounded-xl border border-neutral-900 p-4 md:p-5 flex flex-col justify-center shadow-inner relative">
                             
                             {!isPlaybookVerified ? (
                                <div className="absolute inset-0 z-10 bg-[#050505]/80 backdrop-blur-[2px] rounded-xl flex flex-col items-center justify-center p-4 text-center animate-in fade-in duration-300 border border-neutral-800/50">
-                                 <div className="bg-neutral-900 p-3 rounded-full mb-3 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
-                                   <Lock size={20} className="text-neutral-500" />
-                                 </div>
+                                 <div className="bg-neutral-900 p-3 rounded-full mb-3 shadow-[0_0_20px_rgba(0,0,0,0.5)]"><Lock size={16} className="text-neutral-500" /></div>
                                  <p className="text-[10px] font-black text-white uppercase tracking-widest mb-1">Access Denied</p>
-                                 <p className="text-[9px] font-bold text-neutral-500 tracking-wide mb-4">You must complete the Playbook to unlock Floor voting.</p>
+                                 <p className="text-[9px] font-bold text-neutral-500 tracking-wide mb-2">Complete the Playbook to unlock Floor voting.</p>
                                </div>
                             ) : null}
 
                             <div className={!isPlaybookVerified ? 'opacity-30 pointer-events-none filter blur-[1px]' : ''}>
                               {!hasVoted ? (
                                 <div className="space-y-3">
-                                  <p className="text-[9px] text-center text-neutral-500 font-black uppercase tracking-widest mb-4">Establish Bias</p>
-                                  <div className="flex flex-col gap-3">
-                                    <button onClick={() => handleVote(post.id, 'aligned')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-blue-500/50 hover:bg-blue-500/5 group"><span className="text-[10px] font-black text-neutral-400 group-hover:text-blue-400 uppercase tracking-widest">Aligned</span><TrendingUp className="text-neutral-600 group-hover:text-blue-500" size={16} /></button>
-                                    <button onClick={() => handleVote(post.id, 'counter')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-red-500/50 hover:bg-red-500/5 group"><span className="text-[10px] font-black text-neutral-400 group-hover:text-red-400 uppercase tracking-widest">Counter</span><TrendingDown className="text-neutral-600 group-hover:text-red-500" size={16} /></button>
-                                    <button onClick={() => handleVote(post.id, 'sitting_out')} className="flex items-center justify-between px-4 py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-neutral-500 hover:bg-neutral-800 group"><span className="text-[10px] font-black text-neutral-500 group-hover:text-neutral-300 uppercase tracking-widest">Sitting Out</span><Eye className="text-neutral-600 group-hover:text-neutral-300" size={16} /></button>
+                                  <p className="text-[9px] text-center text-neutral-500 font-black uppercase tracking-widest mb-3 md:mb-4">Establish Bias</p>
+                                  <div className="flex flex-col gap-2 md:gap-3">
+                                    <button onClick={() => handleVote(post.id, 'aligned')} className="flex items-center justify-between px-4 py-2.5 md:py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-blue-500/50 hover:bg-blue-500/5 group"><span className="text-[9px] md:text-[10px] font-black text-neutral-400 group-hover:text-blue-400 uppercase tracking-widest">Aligned</span><TrendingUp className="text-neutral-600 group-hover:text-blue-500" size={14} /></button>
+                                    <button onClick={() => handleVote(post.id, 'counter')} className="flex items-center justify-between px-4 py-2.5 md:py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-red-500/50 hover:bg-red-500/5 group"><span className="text-[9px] md:text-[10px] font-black text-neutral-400 group-hover:text-red-400 uppercase tracking-widest">Counter</span><TrendingDown className="text-neutral-600 group-hover:text-red-500" size={14} /></button>
+                                    <button onClick={() => handleVote(post.id, 'sitting_out')} className="flex items-center justify-between px-4 py-2.5 md:py-3 rounded-lg bg-[#111] border border-neutral-800 hover:border-neutral-500 hover:bg-neutral-800 group"><span className="text-[9px] md:text-[10px] font-black text-neutral-500 group-hover:text-neutral-300 uppercase tracking-widest">Sitting Out</span><Eye className="text-neutral-600 group-hover:text-neutral-300" size={14} /></button>
                                   </div>
                                 </div>
                               ) : results ? (
-                                <div className="space-y-5 animate-in fade-in zoom-in-95 duration-300">
-                                  <div className="flex flex-col gap-1.5 border-b border-neutral-800 pb-4 mb-2">
-                                    <span className="text-[10px] font-black text-white uppercase tracking-widest">{results.totalVotes} Traders Voted</span>
-                                    <div className="text-[9px] font-black uppercase tracking-widest text-neutral-500">Your Bias: <span className={userVotes[post.id] === 'aligned' ? 'text-blue-400' : userVotes[post.id] === 'counter' ? 'text-red-400' : 'text-neutral-300'}>{userVotes[post.id].replace('_', ' ')}</span></div>
+                                <div className="space-y-4 md:space-y-5 animate-in fade-in zoom-in-95 duration-300">
+                                  <div className="flex flex-col gap-1 border-b border-neutral-800 pb-3 md:pb-4 mb-2">
+                                    <span className="text-[9px] md:text-[10px] font-black text-white uppercase tracking-widest">{results.totalVotes} Traders Voted</span>
+                                    <div className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-neutral-500">Your Bias: <span className={userVotes[post.id] === 'aligned' ? 'text-blue-400' : userVotes[post.id] === 'counter' ? 'text-red-400' : 'text-neutral-300'}>{userVotes[post.id].replace('_', ' ')}</span></div>
                                   </div>
-                                  <div className="space-y-4">
+                                  <div className="space-y-3 md:space-y-4">
                                     <div>
-                                      <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-black text-blue-400 tracking-widest uppercase">Aligned</span><span className="text-[11px] font-black text-white">{results.aligned}%</span></div>
-                                      <div className="h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800"><div className="h-full bg-blue-500 transition-all duration-1000 ease-out" style={{ width: `${results.aligned}%` }} /></div>
+                                      <div className="flex justify-between items-center mb-1.5"><span className="text-[9px] md:text-[10px] font-black text-blue-400 tracking-widest uppercase">Aligned</span><span className="text-[10px] md:text-[11px] font-black text-white">{results.aligned}%</span></div>
+                                      <div className="h-1.5 md:h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800"><div className="h-full bg-blue-500 transition-all duration-1000 ease-out" style={{ width: `${results.aligned}%` }} /></div>
                                     </div>
                                     <div>
-                                      <div className="flex justify-between items-center mb-2"><span className="text-[10px] font-black text-red-400 tracking-widest uppercase">Counter</span><span className="text-[11px] font-black text-white">{results.counter}%</span></div>
-                                      <div className="h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800"><div className="h-full bg-red-500 transition-all duration-1000 ease-out" style={{ width: `${results.counter}%` }} /></div>
+                                      <div className="flex justify-between items-center mb-1.5"><span className="text-[9px] md:text-[10px] font-black text-red-400 tracking-widest uppercase">Counter</span><span className="text-[10px] md:text-[11px] font-black text-white">{results.counter}%</span></div>
+                                      <div className="h-1.5 md:h-2 w-full bg-[#111] rounded-full overflow-hidden border border-neutral-800"><div className="h-full bg-red-500 transition-all duration-1000 ease-out" style={{ width: `${results.counter}%` }} /></div>
                                     </div>
                                   </div>
                                 </div>
@@ -384,19 +439,21 @@ export default function LiveFloorPage() {
             </div>
           </div>
 
-          {/* RIGHT PANE: LIVE SQUAWK */}
-          <div className="lg:col-span-1 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex flex-col h-full shadow-2xl overflow-hidden relative">
-            <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 shadow-sm z-10">
+          {/* ========================================= */}
+          {/* RIGHT PANE: LIVE SQUAWK                     */}
+          {/* ========================================= */}
+          <div className={`lg:col-span-1 bg-[#0a0a0a] rounded-xl border border-neutral-800 flex-col h-full shadow-2xl overflow-hidden relative ${mobileTab === 'squawk' ? 'flex' : 'hidden lg:flex'}`}>
+            <div className="px-4 md:px-5 py-3 md:py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 shadow-sm z-10">
               <div className="flex items-center gap-3">
-                <div className="bg-amber-500/10 p-2 rounded-lg border border-amber-500/20"><Radio className="text-amber-500 w-4 h-4 animate-pulse" /></div>
+                <div className="bg-amber-500/10 p-2 rounded-lg border border-amber-500/20"><Radio className="text-amber-500 w-4 h-4 md:w-5 md:h-5 animate-pulse" /></div>
                 <div>
-                  <h3 className="text-sm font-black text-white uppercase tracking-widest">Live Squawk</h3>
-                  <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Rapid Comms</p>
+                  <h3 className="text-xs md:text-sm font-black text-white uppercase tracking-widest">Live Squawk</h3>
+                  <p className="text-[8px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5">Rapid Comms</p>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar bg-[#050505]">
+            <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-5 md:space-y-6 custom-scrollbar bg-[#050505]">
               {squawks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full opacity-50">
                   <Zap className="w-6 h-6 text-neutral-600 mb-3" />
@@ -404,13 +461,13 @@ export default function LiveFloorPage() {
                 </div>
               ) : (
                 squawks.map((squawk, index) => (
-                  <div key={squawk.id} className="relative pl-5 border-l border-neutral-800 hover:border-amber-500/50 transition-colors group animate-in fade-in slide-in-from-bottom-2">
+                  <div key={squawk.id} className="relative pl-4 md:pl-5 border-l border-neutral-800 hover:border-amber-500/50 transition-colors group animate-in fade-in slide-in-from-bottom-2">
                     <div className={`absolute -left-[4px] top-1.5 w-1.5 h-1.5 rounded-full ${index === squawks.length - 1 ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]' : 'bg-neutral-700'}`} />
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[9px] text-neutral-500 font-black tracking-widest uppercase">{new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      {squawk.tag && <span className="text-[8px] px-1.5 py-0.5 bg-neutral-900 border border-neutral-800 text-neutral-400 rounded font-black uppercase tracking-widest">{squawk.tag}</span>}
+                      <span className="text-[8px] md:text-[9px] text-neutral-500 font-black tracking-widest uppercase">{new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      {squawk.tag && <span className="text-[7px] md:text-[8px] px-1.5 py-0.5 bg-neutral-900 border border-neutral-800 text-neutral-400 rounded font-black uppercase tracking-widest">{squawk.tag}</span>}
                     </div>
-                    <p className="text-xs text-neutral-300 leading-relaxed font-medium whitespace-pre-wrap">{squawk.message}</p>
+                    <p className="text-[11px] md:text-xs text-neutral-300 leading-relaxed font-medium whitespace-pre-wrap">{squawk.message}</p>
                   </div>
                 ))
               )}
@@ -418,7 +475,7 @@ export default function LiveFloorPage() {
             </div>
             
             <div className="p-3 border-t border-neutral-900 bg-[#0d0d0d] shrink-0 text-center shadow-md">
-               <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest flex items-center justify-center gap-1.5"><Shield size={10}/> Official Admin Feed</p>
+               <p className="text-[8px] md:text-[9px] font-black text-neutral-600 uppercase tracking-widest flex items-center justify-center gap-1.5"><Shield size={10}/> Official Admin Feed</p>
             </div>
           </div>
         </div>
@@ -426,21 +483,23 @@ export default function LiveFloorPage() {
 
       {expandedImage && <ChartLightbox imageUrl={expandedImage} onClose={() => setExpandedImage(null)} />}
 
-      {/* 🚨 NEW: Functional Threaded Discussion Modal */}
+      {/* ========================================= */}
+      {/* 🚨 DISCUSSION MODAL (BOTTOM SHEET ON MOBILE)*/}
+      {/* ========================================= */}
       {activeDiscussion && (
-        <div className="fixed inset-0 z-[90000] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[90000] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="absolute inset-0 cursor-pointer" onClick={() => setActiveDiscussion(null)}></div>
           
-          <div className="relative w-full max-w-3xl bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col h-[75vh] max-h-[700px] overflow-hidden z-10 animate-in zoom-in-95 duration-200 mx-4">
+          <div className="relative w-full max-w-3xl bg-[#0a0a0a] border-t border-x md:border border-neutral-800 rounded-t-3xl md:rounded-xl shadow-[0_-10px_50px_rgba(0,0,0,0.8)] md:shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col h-[85dvh] md:h-[75vh] max-h-[800px] overflow-hidden z-10 animate-in slide-in-from-bottom-10 md:zoom-in-95 duration-200 md:mx-4">
             
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-neutral-900 bg-[#0d0d0d] shrink-0">
+            <div className="flex items-center justify-between p-4 md:p-5 border-b border-neutral-900 bg-[#0d0d0d] shrink-0">
               <div>
-                <h3 className="text-white text-sm font-black uppercase tracking-widest flex items-center gap-2">
-                  <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[10px]">{activeDiscussion.ticker}</span>
+                <h3 className="text-white text-xs md:text-sm font-black uppercase tracking-widest flex items-center gap-2">
+                  <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[9px] md:text-[10px]">{activeDiscussion.ticker}</span>
                   Context Debate
                 </h3>
-                <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-1">Isolating noise. Focus strictly on structure.</p>
+                <p className="text-[8px] md:text-[9px] text-neutral-500 font-bold uppercase tracking-widest mt-1">Isolating noise. Focus strictly on structure.</p>
               </div>
               <button 
                 onClick={() => setActiveDiscussion(null)} 
@@ -455,28 +514,27 @@ export default function LiveFloorPage() {
                {comments.length === 0 ? (
                  <div className="h-full flex flex-col items-center justify-center text-center opacity-50">
                    <MessageSquare className="w-10 h-10 text-neutral-600 mb-3" />
-                   <p className="text-[11px] font-black uppercase tracking-widest text-neutral-400">No context submitted yet</p>
-                   <p className="text-[10px] text-neutral-500 font-bold max-w-xs mt-2 leading-relaxed">
+                   <p className="text-[10px] md:text-[11px] font-black uppercase tracking-widest text-neutral-400">No context submitted yet</p>
+                   <p className="text-[9px] md:text-[10px] text-neutral-500 font-bold max-w-xs mt-2 leading-relaxed">
                      Be the first to debate this structure. Remember to keep the discussion strictly to invalidation levels and price action.
                    </p>
                  </div>
                ) : (
                  comments.map((comment) => {
                    const isMe = comment.user_id === userId
-                   // Temporary mock username until a profiles table is built
                    const displayName = `Trader_${comment.user_id.substring(0, 4).toUpperCase()}` 
                    
                    return (
                      <div key={comment.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} animate-in fade-in slide-in-from-bottom-2`}>
                         <div className="flex items-baseline gap-2 mb-1">
-                          <span className={`text-[10px] font-black uppercase tracking-widest ${isMe ? 'text-blue-400' : 'text-neutral-500'}`}>
+                          <span className={`text-[9px] md:text-[10px] font-black uppercase tracking-widest ${isMe ? 'text-blue-400' : 'text-neutral-500'}`}>
                             {isMe ? 'You' : displayName}
                           </span>
-                          <span className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest">
+                          <span className="text-[7px] md:text-[8px] font-bold text-neutral-600 uppercase tracking-widest">
                             {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
                         </div>
-                        <div className={`px-4 py-2.5 rounded-xl max-w-[85%] text-xs font-medium leading-relaxed ${
+                        <div className={`px-4 py-2.5 rounded-xl max-w-[85%] text-[11px] md:text-xs font-medium leading-relaxed ${
                           isMe 
                             ? 'bg-blue-600 text-white rounded-tr-sm' 
                             : 'bg-neutral-900 border border-neutral-800 text-neutral-300 rounded-tl-sm'
@@ -490,22 +548,22 @@ export default function LiveFloorPage() {
                <div ref={commentsEndRef} className="h-1" />
             </div>
 
-            {/* Input Area */}
-            <form onSubmit={handleSubmitComment} className="p-4 border-t border-neutral-900 bg-[#0d0d0d] shrink-0">
+            {/* Input Area (Added pb-safe for mobile keyboard clearance) */}
+            <form onSubmit={handleSubmitComment} className="p-4 border-t border-neutral-900 bg-[#0d0d0d] shrink-0 pb-safe">
               <div className="relative">
                 <input
                   type="text"
                   value={newComment}
                   onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Draft your structural argument..."
-                  className="w-full bg-[#050505] border border-neutral-800 rounded-lg pl-4 pr-12 py-3 text-[11px] text-white focus:outline-none focus:border-blue-500/50 transition-colors placeholder:text-neutral-700 disabled:opacity-50"
+                  className="w-full bg-[#050505] border border-neutral-800 rounded-xl md:rounded-lg pl-4 pr-12 py-3 md:py-3 text-[11px] md:text-[11px] text-white focus:outline-none focus:border-blue-500/50 transition-colors placeholder:text-neutral-700 disabled:opacity-50"
                   disabled={!isPlaybookVerified || isSubmittingComment}
                 />
                 <button 
                   type="submit"
-                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all ${
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 md:p-1.5 rounded-lg md:rounded-md transition-all ${
                     isPlaybookVerified && newComment.trim() 
-                      ? 'bg-blue-600 text-white hover:bg-blue-500' 
+                      ? 'bg-blue-600 text-white hover:bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.3)]' 
                       : 'bg-neutral-800 text-neutral-600 cursor-not-allowed'
                   }`}
                   disabled={!isPlaybookVerified || isSubmittingComment || !newComment.trim()}
