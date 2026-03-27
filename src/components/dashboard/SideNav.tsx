@@ -34,7 +34,7 @@ export default function SideNav() {
   }
 
   return (
-    <aside className={`${isOpen ? 'w-64' : 'w-20'} transition-all duration-300 border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-screen shrink-0 z-50`}>
+    <aside className={`${isOpen ? 'w-56' : 'w-16'} transition-all duration-300 border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-screen shrink-0 z-50`}>
       
       {/* BRANDING & TOGGLE */}
       <div className="h-16 flex items-center px-4 border-b border-neutral-200 dark:border-neutral-800 justify-between overflow-hidden">
