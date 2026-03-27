@@ -340,7 +340,7 @@ function DashboardContent() {
                 onClick={() => setShowFilterModal(true)}
                 className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded transition-all border ${!noFiltersApplied ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]' : 'bg-[#111] text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600'}`}
               >
-                <Filter size={12} /> Preferences {!noFiltersApplied && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full ml-1"></div>}
+                <Filter size={12} /> {!noFiltersApplied && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full ml-1"></div>}
               </button>
             </div>
 
