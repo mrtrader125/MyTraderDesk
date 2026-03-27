@@ -66,7 +66,7 @@ function TopNavContent() {
       {/* 🚨 NEW: MOBILE LOGO (Shows only on small screens) */}
       {!isAccountPage && (
         <div className="md:hidden flex items-center mr-3 shrink-0">
-          <Link href="/dashboard" className="relative h-12 w-40 flex items-center block">
+          <Link href="/dashboard" className="relative h-14 w-32 flex items-center block">
             <Image src="/logo.png" alt="My Trader Desk" fill className="object-contain object-left" priority unoptimized />
           </Link>
         </div>
