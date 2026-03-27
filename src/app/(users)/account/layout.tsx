@@ -16,10 +16,10 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname()
 
   return (
-    // 🚨 STRICT LOCK: Locks the layout to the viewport, internal scrolling only
-    <div className="w-full bg-[#050505] text-neutral-200 flex flex-col overflow-hidden relative font-sans" style={{ height: 'calc(100dvh - 65px)' }}>
+    // 🚨 STRICT LOCK: Uses Tailwind calc to perfectly offset the TopNav (56px mobile, 64px desktop)
+    <div className="w-full bg-[#050505] text-neutral-200 flex flex-col overflow-hidden relative font-sans h-[calc(100dvh-56px)] md:h-[calc(100dvh-64px)]">
       <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col md:flex-row min-h-0 relative z-10">
-
+        
         {/* ========================================= */}
         {/* DESKTOP SUB-NAV (Vertical Left Sidebar)     */}
         {/* ========================================= */}
@@ -49,8 +49,8 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
         {/* ========================================= */}
         {/* SCROLLABLE CONTENT AREA                     */}
         {/* ========================================= */}
-        {/* Adjusted padding now that the mobile nav sits at the bottom */}
-        <div className="flex-1 min-w-0 h-full overflow-y-auto custom-scrollbar bg-[#050505] p-4 md:p-8 pb-6 md:pb-8">
+        {/* 🚨 pb-[140px] ensures content clears BOTH the fixed sub-nav and global bottom nav */}
+        <div className="flex-1 min-w-0 h-full overflow-y-auto custom-scrollbar bg-[#050505] p-4 md:p-8 pb-[140px] md:pb-8">
           <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-4 md:slide-in-from-right-4 duration-500">
             {children}
           </div>
@@ -59,8 +59,8 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
         {/* ========================================= */}
         {/* MOBILE SUB-NAV (Horizontal, Bottom)         */}
         {/* ========================================= */}
-        {/* Moved to the bottom of the DOM so it stacks below the content area */}
-        <div className="md:hidden shrink-0 w-full bg-[#0a0a0a]/95 backdrop-blur-md border-t border-neutral-900 overflow-x-auto scrollbar-hide px-3 py-3 flex items-center space-x-2 z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
+        {/* 🚨 FIXED bottom-[65px] perfectly stacks it on top of your main mobile Bottom Nav */}
+        <div className="md:hidden fixed bottom-[65px] left-0 right-0 w-full bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-neutral-900 overflow-x-auto scrollbar-hide px-3 py-3 flex items-center space-x-2 z-40 shadow-[0_-15px_30px_rgba(0,0,0,0.6)]">
           {ACCOUNT_LINKS.map((link) => {
             const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
             const Icon = link.icon
