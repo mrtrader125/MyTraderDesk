@@ -164,7 +164,7 @@ export default function LiveFloorPage() {
   // UI States
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
   const [isPlaybookVerified, setIsPlaybookVerified] = useState(false) 
-  const [mobileTab, setMobileTab] = useState<'floor' | 'squawk'>('floor') // 🚨 NEW MOBILE TOGGLE
+  const [mobileTab, setMobileTab] = useState<'floor' | 'squawk'>('floor') 
   
   // Thread States
   const [activeDiscussion, setActiveDiscussion] = useState<Post | null>(null)
@@ -303,23 +303,7 @@ export default function LiveFloorPage() {
 
   return (
     <div className="w-full bg-[#050505] text-neutral-200 p-3 md:p-5 flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
-      <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10 pb-14 md:pb-0">
-        
-        {/* 🚨 NEW: MOBILE TAB TOGGLE */}
-        <div className="flex lg:hidden bg-[#0a0a0a] p-1.5 rounded-xl mb-4 shrink-0 border border-neutral-800">
-           <button 
-             onClick={() => setMobileTab('floor')} 
-             className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${mobileTab === 'floor' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'text-neutral-500 hover:text-white'}`}
-           >
-             <Activity size={14} /> Live Floor
-           </button>
-           <button 
-             onClick={() => setMobileTab('squawk')} 
-             className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${mobileTab === 'squawk' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'text-neutral-500 hover:text-white'}`}
-           >
-             <Radio size={14} /> Squawk
-           </button>
-        </div>
+      <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden h-full">
           
@@ -337,7 +321,8 @@ export default function LiveFloorPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-4 md:space-y-6 custom-scrollbar bg-[#050505]">
+            {/* 🚨 ADDED pb-[80px] so content clears the bottom toggle bar on mobile */}
+            <div className="flex-1 overflow-y-auto p-3 md:p-6 pb-[80px] md:pb-6 space-y-4 md:space-y-6 custom-scrollbar bg-[#050505]">
               {posts.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center opacity-50">
                   <Target className="w-10 h-10 text-neutral-600 mb-4" />
@@ -453,7 +438,8 @@ export default function LiveFloorPage() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-5 space-y-5 md:space-y-6 custom-scrollbar bg-[#050505]">
+            {/* 🚨 ADDED pb-[80px] so content clears the bottom toggle bar on mobile */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-5 pb-[80px] md:pb-5 space-y-5 md:space-y-6 custom-scrollbar bg-[#050505]">
               {squawks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full opacity-50">
                   <Zap className="w-6 h-6 text-neutral-600 mb-3" />
@@ -479,12 +465,31 @@ export default function LiveFloorPage() {
             </div>
           </div>
         </div>
+
+        {/* ========================================= */}
+        {/* 🚨 MOBILE TAB TOGGLE (FLOATING BOTTOM BAR)*/}
+        {/* ========================================= */}
+        <div className="lg:hidden fixed bottom-[65px] left-0 right-0 w-full bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-neutral-900 p-2.5 flex items-center gap-2 z-40 shadow-[0_-15px_30px_rgba(0,0,0,0.6)]">
+           <button 
+             onClick={() => setMobileTab('floor')} 
+             className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${mobileTab === 'floor' ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-[#111] text-neutral-500 border border-neutral-800 hover:text-white'}`}
+           >
+             <Activity size={14} /> Live Floor
+           </button>
+           <button 
+             onClick={() => setMobileTab('squawk')} 
+             className={`flex-1 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center gap-2 ${mobileTab === 'squawk' ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30' : 'bg-[#111] text-neutral-500 border border-neutral-800 hover:text-white'}`}
+           >
+             <Radio size={14} /> Squawk
+           </button>
+        </div>
+
       </div>
 
       {expandedImage && <ChartLightbox imageUrl={expandedImage} onClose={() => setExpandedImage(null)} />}
 
       {/* ========================================= */}
-      {/* 🚨 DISCUSSION MODAL (BOTTOM SHEET ON MOBILE)*/}
+      {/* DISCUSSION MODAL (BOTTOM SHEET ON MOBILE)   */}
       {/* ========================================= */}
       {activeDiscussion && (
         <div className="fixed inset-0 z-[90000] flex items-end md:items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
