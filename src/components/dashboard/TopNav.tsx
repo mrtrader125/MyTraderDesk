@@ -5,6 +5,8 @@ import { Search, LogOut, User } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import NotificationBell from '@/components/notifications/NotificationBell'
+import Image from 'next/image' // 🚨 IMPORTED IMAGE
+import Link from 'next/link'
 
 function TopNavContent() {
   const pathname = usePathname()
@@ -13,7 +15,6 @@ function TopNavContent() {
   const [mounted, setMounted] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [showDropdown, setShowDropdown] = useState(false)
-  
   const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
@@ -25,32 +26,26 @@ function TopNavContent() {
     loadUser()
   }, [])
 
-  // NEW FIX: Clear the search bar cleanly whenever the user navigates to a new page.
-  // This prevents ghost text and ensures the new page shows all items.
   useEffect(() => {
     setSearchTerm('')
     window.dispatchEvent(new CustomEvent('globalSearch', { detail: '' }))
   }, [pathname])
 
-  // Debounced logging to Supabase (No URL changing!)
   useEffect(() => {
     if (!searchTerm || !user) return
-    
     const timer = setTimeout(() => {
       supabase.from('activity_logs').insert([{
         user_id: user.id,
         action: 'SEARCH',
         search_query: searchTerm
       }]).then()
-    }, 800) // 800ms debounce so we don't spam the database
-
+    }, 800)
     return () => clearTimeout(timer)
   }, [searchTerm, user])
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
     setSearchTerm(val)
-    // Broadcast instantly to the page without touching the URL
     window.dispatchEvent(new CustomEvent('globalSearch', { detail: val }))
   }
 
@@ -65,30 +60,42 @@ function TopNavContent() {
   const userInitial = user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'
 
   return (
-    <header className="h-16 w-full border-b border-neutral-800 bg-[#0a0a0a] flex items-center justify-between px-6 shrink-0 z-40 sticky top-0">
+    // 🚨 MODIFIED: Slightly shorter height on mobile (h-14), standard on desktop (md:h-16)
+    <header className="h-14 md:h-16 w-full border-b border-neutral-900 bg-[#0a0a0a]/95 backdrop-blur-md flex items-center justify-between px-3 md:px-6 shrink-0 z-40 sticky top-0 shadow-sm">
       
+      {/* 🚨 NEW: MOBILE LOGO (Shows only on small screens) */}
+      {!isAccountPage && (
+        <div className="md:hidden flex items-center mr-3 shrink-0">
+          <Link href="/dashboard" className="relative h-6 w-20 flex items-center block">
+            <Image src="/logo.png" alt="My Trader Desk" fill className="object-contain object-left" priority unoptimized />
+          </Link>
+        </div>
+      )}
+
+      {/* SEARCH BAR */}
       <div className="flex-1 max-w-md relative">
         {mounted && !isAccountPage && (
-          <div className="flex items-center bg-neutral-900 border border-neutral-800 rounded-full px-4 py-2 w-full focus-within:border-neutral-600 transition-colors">
-            <Search size={16} className="text-neutral-500 mr-3 shrink-0" />
+          <div className="flex items-center bg-[#111] md:bg-neutral-900/50 border border-neutral-800 rounded-full px-3 md:px-4 py-1.5 md:py-2 w-full focus-within:border-blue-500/50 focus-within:bg-[#111] transition-all shadow-inner group">
+            <Search size={14} className="text-neutral-500 mr-2 md:mr-3 shrink-0 group-focus-within:text-blue-400 transition-colors" />
             <input
               type="text"
               value={searchTerm}
               onChange={handleSearch}
-              placeholder="Search assets (e.g. XAUUSD)..."
-              className="bg-transparent border-none outline-none text-sm w-full text-white placeholder-neutral-500"
+              placeholder="Search..."
+              className="bg-transparent border-none outline-none text-xs md:text-sm w-full text-white placeholder-neutral-600"
             />
           </div>
         )}
       </div>
 
-      <div className="flex items-center space-x-4 ml-4 relative">
+      {/* ICONS & PROFILE */}
+      <div className="flex items-center space-x-3 md:space-x-4 ml-3 md:ml-4 relative shrink-0">
         {mounted && <NotificationBell />}
 
         <div className="relative">
           <button
             onClick={() => setShowDropdown(!showDropdown)}
-            className="h-8 w-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center cursor-pointer hover:border-neutral-500 transition-colors text-white font-black text-xs uppercase"
+            className="h-7 w-7 md:h-8 md:w-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center cursor-pointer hover:border-neutral-500 hover:shadow-[0_0_15px_rgba(255,255,255,0.1)] transition-all text-white font-black text-[10px] md:text-xs uppercase"
           >
             {mounted ? userInitial : '?'}
           </button>
@@ -97,7 +104,7 @@ function TopNavContent() {
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)}></div>
               <div className="absolute right-0 mt-3 w-56 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl z-20 overflow-hidden py-2 animate-in fade-in zoom-in-95 duration-200">
-                <div className="px-4 py-3 border-b border-neutral-800 mb-2">
+                <div className="px-4 py-3 border-b border-neutral-900 mb-2 bg-[#050505]">
                   <p className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Account</p>
                   <p className="text-xs font-bold text-white truncate mt-1">{user?.email || '...'}</p>
                 </div>
@@ -110,7 +117,7 @@ function TopNavContent() {
                 </button>
                 <button 
                   onClick={handleSignOut} 
-                  className="w-full flex items-center space-x-3 px-4 py-3 text-red-500 hover:bg-red-500/10 transition-all border-t border-neutral-800 mt-2 text-left"
+                  className="w-full flex items-center space-x-3 px-4 py-3 text-red-500 hover:bg-red-500/10 transition-all border-t border-neutral-900 mt-2 text-left"
                 >
                   <LogOut size={16} /> 
                   <span className="text-[11px] font-black uppercase tracking-widest">Disconnect</span>
@@ -124,10 +131,9 @@ function TopNavContent() {
   )
 }
 
-// Next.js 15 Suspense Wrapper
 export default function TopNav() {
   return (
-    <Suspense fallback={<div className="h-16 w-full border-b border-neutral-800 bg-[#0a0a0a] shrink-0 z-40 sticky top-0"></div>}>
+    <Suspense fallback={<div className="h-14 md:h-16 w-full border-b border-neutral-900 bg-[#0a0a0a] shrink-0 z-40 sticky top-0"></div>}>
       <TopNavContent />
     </Suspense>
   )
