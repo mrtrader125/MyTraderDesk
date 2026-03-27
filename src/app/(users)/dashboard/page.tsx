@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, Bookmark, ChevronRight, Filter, CheckSquare, Square, X } from 'lucide-react'
+// 🚨 FIXED: Added 'Target' to the import list below! 🚨
+import { Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, Bookmark, ChevronRight, Filter, CheckSquare, Square, X, Target } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ASSET_CATEGORIES, PLAN_CONFIG } from '@/lib/platformConfig'
 import Image from 'next/image'
@@ -242,7 +243,6 @@ function DashboardContent() {
   const totalFiltered = groupedSetups.today.length + groupedSetups.yesterday.length + groupedSetups.thisWeek.length + groupedSetups.older.length
 
   return (
-    // 🚨 STRICT LAYOUT LOCK: Prevents whole page scroll, enforcing internal scrolling
     <div className="w-full bg-[#050505] text-white p-4 md:p-6 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100vh - 65px)' }}>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start h-full min-h-0 max-w-[1800px] mx-auto w-full">
         
@@ -262,7 +262,6 @@ function DashboardContent() {
             <div className="md:col-span-4 xl:col-span-6 bg-[#0a0a0a] border border-neutral-800 p-5 rounded-2xl flex items-center justify-between group hover:border-neutral-700 transition-colors overflow-hidden shadow-sm">
               <div className="pr-2 flex flex-col justify-center">
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1">Trading Session</div>
-                {/* 🚨 FIXED: Removed truncate, adjusted text sizing and line-height so it naturally wraps/fits */}
                 <div className="text-lg xl:text-xl font-black text-white tracking-tight uppercase italic leading-none">{getActiveSession()}</div>
               </div>
               <div className="p-3 bg-white/5 rounded-xl text-neutral-400 group-hover:text-white transition-colors animate-pulse shrink-0"><Globe size={20} /></div>
@@ -307,7 +306,7 @@ function DashboardContent() {
               <h3 className="text-xs font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
                 <Target size={14} className="text-blue-500" /> Market Analysis Feed
               </h3>
-              {/* 🚨 PERMANENT FILTER BUTTON 🚨 */}
+              {/* PERMANENT FILTER BUTTON */}
               <button 
                 onClick={() => setShowFilterModal(true)}
                 className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded transition-all border ${savedCategories.length > 0 ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' : 'bg-[#111] text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600'}`}
@@ -423,23 +422,18 @@ function DashboardContent() {
               
               <div className="space-y-2">
                 {Object.keys(ASSET_CATEGORIES).map(cat => {
-                  // If array is empty, technically everything is shown, so treat it as checked visually
                   const isChecked = savedCategories.length === 0 || savedCategories.includes(cat)
                   return (
                     <button 
                       key={cat}
                       onClick={() => {
                         let newArr = [...savedCategories]
-                        // If it's currently showing EVERYTHING (empty array), and they uncheck one, 
-                        // we need to populate the array with everything EXCEPT the one they clicked.
                         if (savedCategories.length === 0) {
                           newArr = Object.keys(ASSET_CATEGORIES).filter(c => c !== cat)
                         } else {
                           if (isChecked) newArr = newArr.filter(c => c !== cat)
                           else newArr.push(cat)
                         }
-                        
-                        // If they somehow unchecked EVERYTHING, just reset it to ALL
                         if (newArr.length === 0) newArr = []
                         setSavedCategories(newArr)
                       }}
