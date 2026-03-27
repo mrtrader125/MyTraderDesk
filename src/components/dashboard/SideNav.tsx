@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import Image from 'next/image' // 🚨 NEW: Imported Image from next/image
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { 
   LayoutDashboard, LineChart, Bookmark, 
-  Award, Settings, LogOut, Menu, Users 
+  Settings, LogOut, Menu, Users 
 } from 'lucide-react'
 
 export default function SideNav() {
@@ -34,59 +34,88 @@ export default function SideNav() {
   }
 
   return (
-    <aside className={`${isOpen ? 'w-56' : 'w-16'} transition-all duration-300 border-r border-neutral-800 bg-[#0a0a0a] flex flex-col h-screen shrink-0 z-50`}>
-      
-      {/* BRANDING & TOGGLE */}
-      <div className="h-16 flex items-center px-4 border-b border-neutral-200 dark:border-neutral-800 justify-between overflow-hidden">
-        {isOpen && (
-          // 🚨 NEW: Image wrapper instead of text
-          <div className="relative h-20 w-50 flex items-center">
-            <Image 
-              src="/logo.png" // 🚨 IMPORTANT: Change this to match your file name in the public folder
-              alt="My Trader Desk"
-              fill
-              className="object-contain object-left"
-              priority
-              unoptimized
-            />
-          </div>
-        )}
-        <button 
-          onClick={() => setIsOpen(!isOpen)} 
-          className="p-2 hover:bg-neutral-200 dark:hover:bg-neutral-800 rounded-lg text-neutral-500 dark:text-neutral-400 transition-colors mx-auto shrink-0"
-        >
-          <Menu size={20} />
-        </button>
-      </div>
+    <>
+      {/* ========================================= */}
+      {/* DESKTOP SIDEBAR (Hidden on Mobile)          */}
+      {/* ========================================= */}
+      <aside className={`hidden md:flex ${isOpen ? 'w-56' : 'w-16'} transition-all duration-300 border-r border-neutral-900 bg-[#050505] flex-col h-screen shrink-0 z-50 shadow-[10px_0_30px_rgba(0,0,0,0.5)]`}>
+        
+        {/* BRANDING & TOGGLE */}
+        <div className="h-16 flex items-center px-4 border-b border-neutral-900 justify-between overflow-hidden shrink-0 bg-[#0a0a0a]">
+          {isOpen && (
+            <div className="relative h-8 w-32 flex items-center">
+              <Image 
+                src="/logo.png" 
+                alt="My Trader Desk"
+                fill
+                className="object-contain object-left"
+                priority
+                unoptimized
+              />
+            </div>
+          )}
+          <button 
+            onClick={() => setIsOpen(!isOpen)} 
+            className="p-2 hover:bg-neutral-800 rounded-lg text-neutral-500 hover:text-white transition-colors mx-auto shrink-0"
+          >
+            <Menu size={20} />
+          </button>
+        </div>
 
-      {/* NAVIGATION LINKS */}
-      <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
+        {/* NAVIGATION LINKS */}
+        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href.split('/')[1] ? `/${item.href.split('/')[1]}` : item.href))
+            
+            return (
+              <Link key={item.name} href={item.href}>
+                <div className={`flex items-center w-full p-3 rounded-xl transition-all mb-2
+                  ${isActive ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20 shadow-inner' : 'text-neutral-500 border border-transparent hover:bg-[#111] hover:text-neutral-300'}`}>
+                  <item.icon size={20} className="shrink-0" />
+                  {isOpen && <span className="ml-3 font-black text-xs uppercase tracking-widest truncate">{item.name}</span>}
+                </div>
+              </Link>
+            )
+          })}
+        </nav>
+
+        {/* DISCONNECT / LOGOUT */}
+        <div className="p-4 border-t border-neutral-900 bg-[#0a0a0a]">
+          <button 
+            onClick={handleSignOut}
+            className="flex items-center w-full p-3 rounded-xl text-neutral-500 border border-transparent hover:bg-red-500/10 hover:border-red-500/20 hover:text-red-500 transition-all"
+          >
+            <LogOut size={20} className="shrink-0" />
+            {isOpen && <span className="ml-3 font-black text-xs uppercase tracking-widest">Disconnect</span>}
+          </button>
+        </div>
+      </aside>
+
+      {/* ========================================= */}
+      {/* MOBILE BOTTOM NAV (Hidden on Desktop)       */}
+      {/* ========================================= */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[65px] bg-[#050505]/95 backdrop-blur-xl border-t border-neutral-900 z-[100] flex items-center justify-around px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href.split('/')[1] ? `/${item.href.split('/')[1]}` : item.href))
           
           return (
-            <Link key={item.name} href={item.href}>
-              <div className={`flex items-center w-full p-3 rounded-xl transition-colors mb-2
-                ${isActive ? 'bg-white/10 text-white' : 'text-neutral-400 hover:bg-white/5 hover:text-white'}`}>
-                <item.icon size={20} className="shrink-0" />
-                {isOpen && <span className="ml-3 font-bold text-sm uppercase tracking-widest truncate">{item.name}</span>}
-              </div>
+            <Link key={item.name} href={item.href} className="relative flex flex-col items-center justify-center w-full h-full space-y-1.5 group">
+              {/* Active Indicator Top Bar */}
+              {isActive && (
+                <div className="absolute top-0 w-8 h-0.5 bg-blue-500 rounded-b-full shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
+              )}
+              
+              <item.icon 
+                size={20} 
+                className={`transition-all duration-300 ${isActive ? 'text-blue-500 scale-110 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'text-neutral-600 group-hover:text-neutral-400'}`} 
+              />
+              <span className={`text-[8px] font-black uppercase tracking-widest transition-colors ${isActive ? 'text-blue-400' : 'text-neutral-600'}`}>
+                {item.name}
+              </span>
             </Link>
           )
         })}
       </nav>
-
-      {/* DISCONNECT / LOGOUT */}
-      <div className="p-4 border-t border-neutral-800">
-        <button 
-          onClick={handleSignOut}
-          className="flex items-center w-full p-3 rounded-xl text-neutral-400 hover:bg-red-500/10 hover:text-red-500 transition-colors"
-        >
-          <LogOut size={20} className="shrink-0" />
-          {isOpen && <span className="ml-3 font-bold text-sm uppercase tracking-widest">Disconnect</span>}
-        </button>
-      </div>
-      
-    </aside>
+    </>
   )
 }
