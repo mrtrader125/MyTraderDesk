@@ -40,7 +40,7 @@ export default function SideNav() {
       <div className="h-16 flex items-center px-4 border-b border-neutral-200 dark:border-neutral-800 justify-between overflow-hidden">
         {isOpen && (
           // 🚨 NEW: Image wrapper instead of text
-          <div className="relative h-10 w-50 flex items-center">
+          <div className="relative h-20 w-50 flex items-center">
             <Image 
               src="/logo.png" // 🚨 IMPORTANT: Change this to match your file name in the public folder
               alt="My Trader Desk"
