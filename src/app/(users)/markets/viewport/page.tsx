@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, Suspense } from 'react'
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin, Target, ZoomIn, ZoomOut, Menu } from 'lucide-react'
@@ -37,15 +37,24 @@ function ViewportContent() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [showInfo, setShowInfo] = useState(false)
   
-  // Sidebar State (Desktop Pin vs Mobile Drawer)
+  // Sidebar State
   const [isSidebarPinned, setIsSidebarPinned] = useState(false)
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
   
-  // Pan & Zoom Engine State
+  // --- NATIVE GESTURE ENGINE STATE ---
   const [scale, setScale] = useState(1)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
+  const [isPinching, setIsPinching] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+
+  // Touch Tracking Refs
+  const touchMode = useRef<'none' | 'pan' | 'pinch' | 'swipe-zoom'>('none')
+  const pinchStartDist = useRef(0)
+  const initialScale = useRef(1)
+  const lastTouchTime = useRef(0)
+  const swipeZoomStartY = useRef(0)
+  const hasMovedSinceTap = useRef(false)
 
   let backPath = '/markets'
   if (fromParam === 'dashboard') backPath = '/dashboard'
@@ -120,25 +129,100 @@ function ViewportContent() {
     }
   }
 
-  // --- NATIVE PAN & ZOOM ENGINE ---
+  // ==========================================
+  // 🚨 THE NATIVE MAPS GESTURE ENGINE 🚨
+  // ==========================================
+  
   const handleWheel = (e: React.WheelEvent) => {
     const zoomSensitivity = 0.0015
     setScale(Math.min(Math.max(0.4, scale - e.deltaY * zoomSensitivity), 5))
   }
   
-  // Desktop Mouse Drag
+  // Desktop Mouse Handlers
   const handleMouseDown = (e: React.MouseEvent) => { setIsDragging(true); setDragStart({ x: e.clientX - pos.x, y: e.clientY - pos.y }) }
   const handleMouseMove = (e: React.MouseEvent) => { if (isDragging) setPos({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y }) }
   const handleMouseUp = () => setIsDragging(false)
   
-  // Mobile Touch Drag
-  const handleTouchStart = (e: React.TouchEvent) => { setIsDragging(true); setDragStart({ x: e.touches[0].clientX - pos.x, y: e.touches[0].clientY - pos.y }) }
-  const handleTouchMove = (e: React.TouchEvent) => { if (isDragging) setPos({ x: e.touches[0].clientX - dragStart.x, y: e.touches[0].clientY - dragStart.y }) }
-  const handleTouchEnd = () => setIsDragging(false)
+  // Mobile Touch Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      // 1. PINCH TO ZOOM
+      touchMode.current = 'pinch'
+      setIsPinching(true)
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      pinchStartDist.current = Math.hypot(dx, dy)
+      initialScale.current = scale
+    } 
+    else if (e.touches.length === 1) {
+      const now = Date.now()
+      hasMovedSinceTap.current = false
+      
+      if (now - lastTouchTime.current < 300) {
+        // 2. DOUBLE TAP DETECTED (Enter Google Maps Swipe-Zoom Mode)
+        touchMode.current = 'swipe-zoom'
+        swipeZoomStartY.current = e.touches[0].clientY
+        initialScale.current = scale
+        setIsPinching(true) // Disable CSS transitions during zoom
+      } else {
+        // 3. STANDARD PANNING
+        touchMode.current = 'pan'
+        setIsDragging(true)
+        setDragStart({ x: e.touches[0].clientX - pos.x, y: e.touches[0].clientY - pos.y })
+      }
+      lastTouchTime.current = now
+    }
+  }
 
-  // Mobile Button Zoom
+  const handleTouchMove = (e: React.TouchEvent) => {
+    hasMovedSinceTap.current = true
+    
+    if (touchMode.current === 'pinch' && e.touches.length === 2) {
+      // Handle Pinch
+      const dx = e.touches[0].clientX - e.touches[1].clientX
+      const dy = e.touches[0].clientY - e.touches[1].clientY
+      const dist = Math.hypot(dx, dy)
+      const newScale = Math.min(Math.max(0.4, initialScale.current * (dist / pinchStartDist.current)), 5)
+      setScale(newScale)
+    } 
+    else if (touchMode.current === 'swipe-zoom' && e.touches.length === 1) {
+      // Handle Double-Tap and Swipe (Google Maps Style)
+      const deltaY = e.touches[0].clientY - swipeZoomStartY.current
+      const zoomSensitivity = 0.005
+      // Swipe down to zoom in, swipe up to zoom out
+      const newScale = Math.min(Math.max(0.4, initialScale.current + (deltaY * zoomSensitivity)), 5)
+      setScale(newScale)
+    } 
+    else if (touchMode.current === 'pan' && e.touches.length === 1 && isDragging) {
+      // Handle Standard Pan
+      setPos({
+        x: e.touches[0].clientX - dragStart.x,
+        y: e.touches[0].clientY - dragStart.y
+      })
+    }
+  }
+
+  const handleTouchEnd = () => {
+    // If they double-tapped but released immediately without swiping (Standard Reset)
+    if (touchMode.current === 'swipe-zoom' && !hasMovedSinceTap.current) {
+      if (scale > 1) {
+        setScale(1) // Reset to normal
+        setPos({ x: 0, y: 0 })
+      } else {
+        setScale(2.5) // Zoom in quickly
+      }
+    }
+    
+    touchMode.current = 'none'
+    setIsDragging(false)
+    setIsPinching(false)
+  }
+
+  // UI Button Controls
   const zoomIn = () => setScale(prev => Math.min(prev + 0.3, 5))
   const zoomOut = () => setScale(prev => Math.max(prev - 0.3, 0.4))
+
+  // ==========================================
 
   if (loading) return (
     <div className="fixed inset-0 bg-[#050505] flex overflow-hidden text-white" style={{ height: '100dvh' }}>
@@ -158,12 +242,11 @@ function ViewportContent() {
   const isCurrentBookmarked = watchlist.some(w => w.id === currentSetup.id)
 
   return (
-    // 🚨 STRICT MOBILE VIEWPORT LOCK (100dvh prevents browser bar bouncing)
     <div className="fixed inset-0 bg-[#050505] flex overflow-hidden text-white select-none touch-none font-sans" style={{ height: '100dvh' }}>
        
        {/* --- MAIN CHART STAGE --- */}
        <div 
-         className={`absolute inset-0 z-10 flex items-center justify-center md:pl-16 md:pr-20 md:pt-20 md:pb-10 overflow-hidden ${access.hasAccess ? (isDragging ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
+         className={`absolute inset-0 z-10 flex items-center justify-center md:pl-16 md:pr-20 md:pt-20 md:pb-10 overflow-hidden ${access.hasAccess ? (isDragging || isPinching ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
          onWheel={access.hasAccess ? handleWheel : undefined}
          onMouseDown={access.hasAccess ? handleMouseDown : undefined}
          onMouseMove={access.hasAccess ? handleMouseMove : undefined}
@@ -172,6 +255,7 @@ function ViewportContent() {
          onTouchStart={access.hasAccess ? handleTouchStart : undefined}
          onTouchMove={access.hasAccess ? handleTouchMove : undefined}
          onTouchEnd={access.hasAccess ? handleTouchEnd : undefined}
+         onTouchCancel={access.hasAccess ? handleTouchEnd : undefined}
        >
          {access.hasAccess ? (
            <img 
@@ -181,7 +265,7 @@ function ViewportContent() {
              className="w-[95%] h-[75%] md:max-w-full md:max-h-full object-contain pointer-events-none"
              style={{ 
                transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`, 
-               transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+               transition: (isDragging || isPinching) ? 'none' : 'transform 0.15s ease-out',
                imageRendering: 'high-quality'
              }} 
            />
@@ -241,7 +325,6 @@ function ViewportContent() {
                      <Target size={12} className="mr-1.5" />
                      <span className="text-[9px] font-black uppercase tracking-widest">Prime</span>
                    </div>
-                   {/* Compact prime badge for mobile header */}
                    <Target size={14} className="md:hidden text-amber-500" />
                  </>
                )}
@@ -271,7 +354,7 @@ function ViewportContent() {
            </button>
          </div>
 
-         {/* CENTERED INFO MODAL (Overrides desktop absolute positioning) */}
+         {/* CENTERED INFO MODAL */}
          {showInfo && access.hasAccess && (
            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm pointer-events-auto">
              <div className="w-full max-w-sm max-h-[70vh] flex flex-col bg-[#0a0a0a] border border-neutral-800 rounded-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
@@ -289,7 +372,7 @@ function ViewportContent() {
            </div>
          )}
 
-         {/* TIMEFRAME SELECTOR (Bottom on Mobile, Top Center on Desktop) */}
+         {/* TIMEFRAME SELECTOR */}
          <div className="absolute bottom-6 md:bottom-auto md:top-5 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 bg-[#0a0a0a]/90 backdrop-blur-md border border-neutral-800 p-1.5 rounded-xl md:rounded-2xl shadow-2xl pointer-events-auto z-40 flex items-center overflow-x-auto scrollbar-hide">
             {timeframes.map(t => {
               const isSelected = selectedTf === t
@@ -310,7 +393,7 @@ function ViewportContent() {
             })}
          </div>
 
-         {/* MOBILE ZOOM CONTROLS (Bottom Right, above timeframes) */}
+         {/* MOBILE ZOOM CONTROLS */}
          {access.hasAccess && (
            <div className="md:hidden absolute bottom-24 right-4 flex flex-col space-y-2 pointer-events-auto z-40">
              <button onClick={zoomIn} className="w-10 h-10 bg-[#0a0a0a]/90 backdrop-blur-md border border-neutral-800 rounded-full flex items-center justify-center text-neutral-400 hover:text-white shadow-xl active:scale-95 transition-all"><ZoomIn size={16}/></button>
@@ -318,7 +401,7 @@ function ViewportContent() {
            </div>
          )}
 
-         {/* HISTORY SIDEBAR (Desktop Hover-Panel OR Mobile Slide-Drawer) */}
+         {/* HISTORY SIDEBAR */}
          <div className={`
            absolute right-0 top-0 bottom-0 z-50 flex flex-col shadow-2xl transition-all duration-300 border-l border-neutral-800 pointer-events-auto
            ${isMobileSidebarOpen ? 'translate-x-0 w-64 bg-[#0a0a0a]/95 backdrop-blur-xl' : 'translate-x-full md:translate-x-0 w-64 md:w-12 md:hover:w-64 bg-[#0a0a0a]/95 md:bg-[#0a0a0a]/80 md:backdrop-blur-md group/sidebar'}
@@ -330,12 +413,10 @@ function ViewportContent() {
                <span className={`text-[10px] font-black text-white uppercase tracking-widest whitespace-nowrap transition-all duration-300 ml-2 ${isSidebarPinned ? 'md:opacity-100 md:w-auto' : 'md:opacity-0 md:w-0 md:overflow-hidden md:group-hover/sidebar:w-auto md:group-hover/sidebar:opacity-100'}`}>Setup History</span>
              </div>
              
-             {/* Desktop Pin Toggle */}
              <button onClick={() => setIsSidebarPinned(!isSidebarPinned)} className={`hidden md:block text-neutral-500 hover:text-white transition-colors ${isSidebarPinned ? 'block' : 'hidden group-hover/sidebar:block'}`}>
                {isSidebarPinned ? <X size={14} /> : <Pin size={14} />}
              </button>
              
-             {/* Mobile Close Button */}
              <button onClick={() => setIsMobileSidebarOpen(false)} className="md:hidden text-neutral-400 hover:text-white p-1">
                <X size={18} />
              </button>
@@ -353,7 +434,7 @@ function ViewportContent() {
                    onClick={() => { 
                      if(historyAccess.hasAccess) { 
                        setActiveIndex(idx); setScale(1); setPos({x:0, y:0}); 
-                       if(window.innerWidth < 768) setIsMobileSidebarOpen(false); // Auto-close on mobile selection
+                       if(window.innerWidth < 768) setIsMobileSidebarOpen(false); 
                      } 
                    }}
                    className={`w-full flex items-center h-12 md:h-10 rounded-xl md:rounded-lg transition-all relative px-3 
