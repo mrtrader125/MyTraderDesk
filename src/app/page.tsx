@@ -58,7 +58,7 @@ export default function Home() {
           <Link href="/" className="flex items-center space-x-2 group">
             <div className="relative h-10 w-32 md:h-12 md:w-40 flex items-center">
               <Image 
-                src="/icon.png" 
+                src="/logo.png" 
                 alt="My Trader Desk" 
                 fill 
                 className="object-contain object-left group-hover:scale-[1.02] transition-transform" 
