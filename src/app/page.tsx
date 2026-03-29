@@ -53,13 +53,19 @@ export default function Home() {
       {/* PREMIUM GLASS NAVBAR */}
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
+          
+          {/* 🚨 UPDATED: Image Logo instead of Text */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-              <Activity size={18} className="text-white" />
+            <div className="relative h-10 w-32 md:h-12 md:w-40 flex items-center">
+              <Image 
+                src="/icon.png" 
+                alt="My Trader Desk" 
+                fill 
+                className="object-contain object-left group-hover:scale-[1.02] transition-transform" 
+                priority 
+                unoptimized 
+              />
             </div>
-            <span className="text-white font-black uppercase tracking-widest italic text-sm">
-              MyTrader<span className="text-blue-500">Desk</span>
-            </span>
           </Link>
 
           <div className="hidden md:flex items-center space-x-8">
