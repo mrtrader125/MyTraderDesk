@@ -43,7 +43,7 @@ export default function SideNav() {
         {/* BRANDING & TOGGLE */}
         <div className="h-16 flex items-center px-4 border-b border-neutral-900 justify-between overflow-hidden shrink-0 bg-[#0a0a0a]">
           {isOpen && (
-            <div className="relative h-24 w-40 flex items-center">
+            <div className="relative h-14 w-30 flex items-center">
               <Image 
                 src="/logo.png" 
                 alt="My Trader Desk"
