@@ -59,7 +59,7 @@ export default function Home() {
             <img 
               src="/logo.png" 
               alt="My Trader Desk" 
-              className="w-20 md:w-44 h-auto object-contain object-left group-hover:scale-[1.02] transition-transform origin-left"
+              className="w-10 md:w-34 h-auto object-contain object-left group-hover:scale-[1.02] transition-transform origin-left"
             />
           </Link>
 
