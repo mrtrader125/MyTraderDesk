@@ -83,10 +83,11 @@ function DashboardContent() {
 
           if (broadcasts && broadcasts.length > 0) setActiveBroadcast(broadcasts[0])
 
-          const { data: vaultData } = await supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe)').eq('user_id', user.id)
+          // 🚨 MODIFIED: Fetching 'status' for the Vault Watchlist
+          const { data: vaultData } = await supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe, status)').eq('user_id', user.id)
           if (vaultData) {
             setWatchlist(vaultData.map((v: any) => ({
-              id: v.analysis_id, symbol: v.analyses?.asset_symbol, timeframe: v.analyses?.timeframe
+              id: v.analysis_id, symbol: v.analyses?.asset_symbol, timeframe: v.analyses?.timeframe, status: v.analyses?.status
             })))
           }
 
@@ -164,7 +165,7 @@ function DashboardContent() {
       setWatchlist(updated)
       await supabase.from('user_vault').delete().match({ user_id: userId, analysis_id: setup.id })
     } else {
-      updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe }) 
+      updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe, status: setup.status }) 
       setWatchlist(updated)
       await supabase.from('user_vault').insert([{ user_id: userId, analysis_id: setup.id }])
     }
@@ -194,7 +195,6 @@ function DashboardContent() {
     return { setupCount: setups.length, setupLabel: "Active Setups" }
   }, [setups])
 
-  // 🚨 MODIFIED: Using `grid-cols-1 sm:grid-cols-2` for touch-friendly mobile display
   const renderSetupGrid = (items: any[], title: string) => {
     if (items.length === 0) return null;
     return (
@@ -208,6 +208,13 @@ function DashboardContent() {
             const isBear = setup.bias?.toUpperCase() === 'BEARISH'
             const isBookmarked = watchlist.some(item => item.id === setup.id)
 
+            // 🚨 MODIFIED: Parse the status color for the badge
+            const status = (setup.status || 'WAITING').toUpperCase()
+            let statusColor = "text-neutral-500 bg-neutral-900 border-neutral-800"
+            if (status === 'ACTIVE') statusColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+            else if (status === 'WAITING') statusColor = "text-amber-500 bg-amber-500/10 border-amber-500/20"
+            else if (status === 'INVALID') statusColor = "text-red-500 bg-red-500/10 border-red-500/20"
+
             return (
               <div 
                 key={setup.id} 
@@ -219,8 +226,16 @@ function DashboardContent() {
               >
                 <div className="flex flex-col min-w-0 pr-2">
                   <span className="text-sm font-black text-white tracking-tight truncate">{setup.asset_symbol || 'UNKNOWN'}</span>
-                  <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-0.5 truncate">{setup.timeframe || '-'}</span>
+                  
+                  {/* 🚨 MODIFIED: Added the Status Pill next to the timeframe */}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest truncate">{setup.timeframe || '-'}</span>
+                    <span className={`px-1.5 py-0.5 rounded-[4px] text-[7px] font-black uppercase tracking-widest border ${statusColor}`}>
+                      {status}
+                    </span>
+                  </div>
                 </div>
+                
                 <div className="flex items-center space-x-1.5 shrink-0">
                   <button onClick={(e) => toggleBookmark(e, setup)} className="text-neutral-600 hover:text-white transition-colors p-2 md:p-1">
                     <Bookmark size={16} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
@@ -253,14 +268,12 @@ function DashboardContent() {
   const noFiltersApplied = savedCategories.length === 0 && savedSymbols.length === 0
 
   return (
-    // 🚨 MODIFIED: Uses dvh for mobile address bar fixes, tighter padding on mobile
     <div className="w-full bg-[#050505] text-white p-3 md:p-6 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start h-full min-h-0 max-w-[1800px] mx-auto w-full">
         
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col h-full min-h-0 space-y-3 md:space-y-4">
           
-          {/* 🚨 MODIFIED: STATS ROW - Fully optimized for small screens (Full width + 2 half width) */}
           <div className="shrink-0 grid grid-cols-2 md:grid-cols-12 gap-3">
             <div className="col-span-2 md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-4 md:p-5 rounded-2xl flex items-center justify-between shadow-sm">
               <div className="min-w-0 pr-2">
@@ -310,7 +323,6 @@ function DashboardContent() {
           {/* --- SCROLLABLE FEED ENGINE --- */}
           <div className="flex-1 bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col min-h-0 overflow-hidden shadow-2xl relative">
             
-            {/* Feed Header */}
             <div className="px-4 md:px-5 py-3 md:py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 z-10 shadow-sm">
               <h3 className="text-[11px] md:text-xs font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
                 <Target size={14} className="text-blue-500" /> Analysis Feed
@@ -323,7 +335,6 @@ function DashboardContent() {
               </button>
             </div>
 
-            {/* Scrollable Grid Content */}
             <div className="flex-1 overflow-y-auto p-4 md:p-5 custom-scrollbar bg-[#050505]">
               {totalFiltered === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-12 opacity-50">
@@ -338,13 +349,8 @@ function DashboardContent() {
                   {renderSetupGrid(groupedSetups.thisWeek, "This Week")}
                   {renderSetupGrid(groupedSetups.older, "Older History")}
                   
-                  {/* 🚨 MODIFIED: Render mobile widgets inline at the bottom of the feed */}
                   <div className="lg:hidden mt-8 pt-8 border-t border-neutral-800 space-y-6 pb-6">
-                     <MobileWidgets 
-                       activeBroadcast={activeBroadcast} 
-                       watchlist={watchlist} 
-                       router={router} 
-                     />
+                     <MobileWidgets activeBroadcast={activeBroadcast} watchlist={watchlist} router={router} />
                   </div>
                 </>
               )}
@@ -468,7 +474,6 @@ function DashboardContent() {
   )
 }
 
-// Extracting the Widgets out to easily reuse them on Mobile and Desktop
 function MobileWidgets({ activeBroadcast, watchlist, router }: any) {
   return (
     <>
@@ -515,15 +520,26 @@ function MobileWidgets({ activeBroadcast, watchlist, router }: any) {
 
         <div className="space-y-2">
           {watchlist.length > 0 ? (
-            watchlist.slice(0, 6).map((item: any) => (
-              <div key={item.id} onClick={() => router.push(`/markets/viewport?asset=${item.symbol}&tf=${item.timeframe}&from=dashboard`)} className="flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl cursor-pointer transition-colors group">
-                <div className="flex items-center">
-                  <span className="text-xs font-bold text-white tracking-widest truncate max-w-[100px]">{item.symbol}</span>
-                  {item.timeframe && <span className="text-[9px] font-bold text-neutral-500 ml-2 uppercase truncate">{item.timeframe}</span>}
+            watchlist.slice(0, 6).map((item: any) => {
+              
+              // 🚨 MODIFIED: Parse Vault Status dot colors
+              const status = (item.status || 'WAITING').toUpperCase()
+              let statusDot = "bg-neutral-500"
+              if (status === 'ACTIVE') statusDot = "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]"
+              else if (status === 'WAITING') statusDot = "bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)]"
+              else if (status === 'INVALID') statusDot = "bg-red-500 shadow-[0_0_5px_rgba(239,68,68,0.5)]"
+
+              return (
+                <div key={item.id} onClick={() => router.push(`/markets/viewport?asset=${item.symbol}&tf=${item.timeframe}&from=dashboard`)} className="flex items-center justify-between p-3 bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl cursor-pointer transition-colors group">
+                  <div className="flex items-center">
+                    <div className={`w-1.5 h-1.5 rounded-full mr-2 ${statusDot}`} title={`Status: ${status}`}></div>
+                    <span className="text-xs font-bold text-white tracking-widest truncate max-w-[100px]">{item.symbol}</span>
+                    {item.timeframe && <span className="text-[9px] font-bold text-neutral-500 ml-2 uppercase truncate">{item.timeframe}</span>}
+                  </div>
+                  <ChevronRight size={14} className="text-neutral-600 group-hover:text-white transition-colors shrink-0" />
                 </div>
-                <ChevronRight size={14} className="text-neutral-600 group-hover:text-white transition-colors shrink-0" />
-              </div>
-            ))
+              )
+            })
           ) : <div className="py-6 text-center text-neutral-600 text-xs italic font-medium">No saved setups.</div>}
         </div>
         
