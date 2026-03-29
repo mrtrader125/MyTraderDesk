@@ -56,7 +56,7 @@ export default function Home() {
           
           {/* 🚨 UPDATED: Image Logo instead of Text */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="relative h-10 w-32 md:h-12 md:w-40 flex items-center">
+            <div className="relative h-24 w-44 md:h-12 md:w-40 flex items-center">
               <Image 
                 src="/logo.png" 
                 alt="My Trader Desk" 
