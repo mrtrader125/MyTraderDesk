@@ -56,7 +56,7 @@ export default function Home() {
           
           {/* 🚨 THE FIX: Added shrink-0 so flexbox NEVER squishes this logo */}
           <Link href="/" className="flex items-center shrink-0 group">
-            <div className="relative h-8 w-40 md:h-12 md:w-56 flex items-center transition-all duration-300">
+            <div className="relative h-20 w-50 md:h-12 md:w-56 flex items-center transition-all duration-300">
               <Image 
                 src="/logo.png" 
                 alt="My Trader Desk" 
