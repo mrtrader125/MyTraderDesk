@@ -54,10 +54,9 @@ export default function Home() {
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           
-{/* 🚨 UPDATED: Image Logo instead of Text */}
-          <Link href="/" className="flex items-center space-x-2 group">
-            {/* 👇 Increased height and width here (h-16 and w-64 for desktop) 👇 */}
-            <div className="relative h-12 w-48 md:h-16 md:w-64 flex items-center">
+{/* 🚨 UPDATED: Switched back to logo.png for the full text logo */}
+          <Link href="/" className="flex items-center group">
+            <div className="relative h-[40px] w-[180px] md:h-[70px] md:w-[320px] flex items-center">
               <Image 
                 src="/logo.png" 
                 alt="My Trader Desk" 
@@ -308,13 +307,13 @@ export default function Home() {
       <footer className="bg-[#020202] border-t border-neutral-900 pt-20 pb-10 px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           
-      {/* Brand Column */}
+{/* Brand Column */}
           <div className="col-span-1 md:col-span-1">
             <Link href="/" className="flex items-center group mb-6">
-              {/* 🚨 UPDATED: Image Logo for the Footer */}
-              <div className="relative h-10 w-32 md:h-12 md:w-40 flex items-center">
+              {/* 🚨 UPDATED: Switched to logo.png and made slightly wider */}
+              <div className="relative h-10 w-40 md:h-12 md:w-48 flex items-center">
                 <Image 
-                  src="/icon.png" 
+                  src="/logo.png" 
                   alt="My Trader Desk" 
                   fill 
                   className="object-contain object-left group-hover:scale-[1.02] transition-transform opacity-70 group-hover:opacity-100" 
