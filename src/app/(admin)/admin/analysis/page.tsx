@@ -4,19 +4,9 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { 
-  Plus, 
-  Trash2, 
-  Edit2,
-  Activity, 
-  TrendingUp, 
-  TrendingDown, 
-  Clock, 
-  Search, 
-  ExternalLink, 
-  Image as ImageIcon, 
-  Minus, 
-  Radio,
-  Target
+  Plus, Trash2, Edit2, Activity, TrendingUp, TrendingDown, 
+  Clock, Search, ExternalLink, Image as ImageIcon, Minus, 
+  Target, CheckCircle2, XCircle, AlertCircle, LayoutList
 } from 'lucide-react'
 
 export default function AdminAnalysisPage() {
@@ -24,22 +14,13 @@ export default function AdminAnalysisPage() {
   const [setups, setSetups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedSetupId, setSelectedSetupId] = useState<string | null>(null)
   
-  // NEW: State for the Custom Cinematic Modal
   const [confirmModal, setConfirmModal] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    actionText: string;
-    actionType: 'danger' | 'prime';
-    onConfirm: () => void;
+    isOpen: boolean; title: string; message: string; actionText: string;
+    actionType: 'danger' | 'prime'; onConfirm: () => void;
   }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    actionText: '',
-    actionType: 'prime',
-    onConfirm: () => {}
+    isOpen: false, title: '', message: '', actionText: '', actionType: 'prime', onConfirm: () => {}
   })
 
   useEffect(() => {
@@ -52,51 +33,58 @@ export default function AdminAnalysisPage() {
       .select('*')
       .order('created_at', { ascending: false })
     
-    if (!error && data) setSetups(data)
+    if (!error && data) {
+      setSetups(data)
+      if (data.length > 0) setSelectedSetupId(data[0].id) // Auto-select the first item
+    }
     setLoading(false)
   }
 
-  // UPDATED: Custom Delete Handler
   const handleDelete = (id: string, symbol: string) => {
     setConfirmModal({
       isOpen: true,
       title: 'Delete Setup',
-      message: `Are you sure you want to permanently delete the setup for ${symbol}? This action cannot be undone.`,
+      message: `Are you sure you want to permanently delete the setup for ${symbol}?`,
       actionText: 'Delete Asset',
       actionType: 'danger',
       onConfirm: async () => {
         setSetups(prev => prev.filter(s => s.id !== id)) 
+        if (selectedSetupId === id) setSelectedSetupId(null)
         await supabase.from('analyses').delete().eq('id', id)
       }
     })
   }
 
-  // UPDATED: Custom Prime Toggle Handler
   const togglePrimeStatus = (id: string, symbol: string, currentStatus: boolean) => {
     const action = currentStatus ? "remove" : "mark";
     setConfirmModal({
       isOpen: true,
-      title: currentStatus ? 'Remove Prime Status' : 'Mark as Prime',
+      title: currentStatus ? 'Remove Prime' : 'Mark as Prime',
       message: `Are you sure you want to ${action} ${symbol} as a Prime setup?`,
       actionText: currentStatus ? 'Remove Prime' : 'Confirm Prime',
       actionType: 'prime',
       onConfirm: async () => {
-        // Optimistically update UI
         setSetups(prev => prev.map(s => s.id === id ? { ...s, is_featured: !currentStatus } : s));
-
-        // Update Database
-        const { error } = await supabase
-          .from('analyses')
-          .update({ is_featured: !currentStatus })
-          .eq('id', id);
-
+        const { error } = await supabase.from('analyses').update({ is_featured: !currentStatus }).eq('id', id);
         if (error) {
-          // Revert UI if it fails
           setSetups(prev => prev.map(s => s.id === id ? { ...s, is_featured: currentStatus } : s));
-          alert("Failed to update status. Please try again.");
+          alert("Failed to update status.");
         }
       }
     })
+  }
+
+  // 🚨 NEW: Rapid Status Updater
+  const updateSetupStatus = async (id: string, newStatus: string) => {
+    // Optimistic UI Update
+    setSetups(prev => prev.map(s => s.id === id ? { ...s, status: newStatus } : s))
+    
+    // DB Update
+    const { error } = await supabase.from('analyses').update({ status: newStatus }).eq('id', id)
+    if (error) {
+      alert("Failed to update status. Please make sure you added the 'status' column to your Supabase table.")
+      fetchSetups() // revert on fail
+    }
   }
 
   const filteredSetups = setups.filter(s => 
@@ -104,236 +92,220 @@ export default function AdminAnalysisPage() {
     (s.category || '').toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  // TIME-BASED GROUPING LOGIC
-  const grouped = { today: [] as any[], yesterday: [] as any[], older: [] as any[] }
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1)
-
-  filteredSetups.forEach(setup => {
-    const d = new Date(setup.created_at).getTime()
-    if (d >= today.getTime()) grouped.today.push(setup)
-    else if (d >= yesterday.getTime()) grouped.yesterday.push(setup)
-    else grouped.older.push(setup)
-  })
-
-  // REUSABLE GRID RENDERER FOR THE GROUPS
-  const renderSetupGrid = (setupList: any[]) => (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
-      {setupList.map((setup) => {
-        const isBull = setup.bias?.toUpperCase() === 'BULLISH'
-        const isBear = setup.bias?.toUpperCase() === 'BEARISH'
-        const isPrime = setup.is_featured === true
-
-        return (
-          <div key={setup.id} className={`bg-[#0a0a0a] border rounded-3xl overflow-hidden group transition-all shadow-lg flex flex-col ${isPrime ? 'border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.1)]' : 'border-neutral-800 hover:border-neutral-600'}`}>
-            
-            <div className="h-32 w-full bg-black relative overflow-hidden border-b border-neutral-800/50">
-              {setup.image_url ? (
-                <img 
-                  src={setup.image_url} 
-                  alt={setup.asset_symbol} 
-                  className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-all duration-500" 
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-neutral-800"><ImageIcon size={24} /></div>
-              )}
-              
-              <div className="absolute top-2 left-2 flex gap-1.5">
-                <span className="bg-[#0a0a0a]/90 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest border border-white/10 shadow-lg">
-                  {setup.category}
-                </span>
-                <span className="bg-[#0a0a0a]/90 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest border border-white/10 shadow-lg">
-                  {setup.timeframe}
-                </span>
-              </div>
-
-              {/* Bias Pill */}
-              <div className={`absolute bottom-2 right-2 p-1 rounded-md backdrop-blur-md border shadow-lg ${isBull ? 'bg-emerald-500/20 border-emerald-500/30 text-emerald-500' : isBear ? 'bg-red-500/20 border-red-500/30 text-red-500' : 'bg-neutral-800/80 border-neutral-700 text-neutral-400'}`}>
-                {isBull ? <TrendingUp size={12} /> : isBear ? <TrendingDown size={12} /> : <Minus size={12} />}
-              </div>
-            </div>
-
-            <div className="p-4 flex flex-col flex-1">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-base font-black text-white tracking-tighter uppercase italic">{setup.asset_symbol}</h3>
-                <div className="flex items-center text-[8px] font-bold text-neutral-500 uppercase tracking-widest">
-                  <Clock size={8} className="mr-1" /> 
-                  {new Date(setup.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                </div>
-              </div>
-              
-              <p className="text-[10px] font-medium text-neutral-400 line-clamp-2 flex-1 mb-4">
-                {setup.title || setup.content || "No analysis notes."}
-              </p>
-
-              {/* ACTION BUTTONS */}
-              <div className="flex items-center gap-2 mt-auto">
-                
-                {/* PRIME TOGGLE BUTTON */}
-                <button 
-                  onClick={() => togglePrimeStatus(setup.id, setup.asset_symbol, isPrime)}
-                  className={`flex-1 py-2 text-[9px] font-black uppercase tracking-widest rounded-lg flex items-center justify-center transition-all border
-                    ${isPrime 
-                      ? 'bg-amber-500/20 text-amber-500 border-amber-500/30 hover:bg-amber-500 hover:text-black' 
-                      : 'bg-neutral-900 text-neutral-500 border-neutral-800 hover:text-amber-500 hover:border-amber-500/50 hover:bg-amber-500/10'
-                    }
-                  `}
-                  title={isPrime ? "Remove Prime Status" : "Mark as Prime"}
-                >
-                  <Target size={12} className="mr-1.5" /> 
-                  {isPrime ? 'Unmark Prime' : 'Prime'}
-                </button>
-                
-                {/* Inspect Button */}
-                <button 
-                  onClick={() => router.push(`/admin/analysis/viewport?id=${setup.id}`)}
-                  className="p-2 text-blue-500 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500 hover:text-white transition-colors flex items-center justify-center"
-                  title="Inspect Setup"
-                >
-                  <ExternalLink size={14} />
-                </button>
-                
-                <button 
-                  onClick={() => router.push(`/admin/analysis/${setup.id}/edit`)}
-                  className="p-2 text-neutral-500 hover:text-white hover:bg-neutral-700 bg-neutral-900 border border-neutral-800 rounded-lg transition-all"
-                  title="Edit Setup"
-                >
-                  <Edit2 size={14} />
-                </button>
-
-                <button 
-                  onClick={() => handleDelete(setup.id, setup.asset_symbol)}
-                  className="p-2 text-neutral-500 hover:text-white hover:bg-red-500 hover:border-red-500 bg-neutral-900 border border-neutral-800 rounded-lg transition-all"
-                  title="Delete Setup"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      })}
-    </div>
-  )
+  const selectedSetup = setups.find(s => s.id === selectedSetupId)
 
   if (loading) {
     return (
       <div className="h-[80vh] flex flex-col items-center justify-center space-y-4">
-        <Activity className="animate-pulse text-brand-primary" size={40} />
+        <Activity className="animate-pulse text-blue-500" size={40} />
         <span className="font-black uppercase tracking-[0.3em] text-neutral-500 text-[10px]">Loading Setups...</span>
       </div>
     )
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12 animate-in fade-in duration-500 relative">
+    <div className="max-w-[1600px] mx-auto pb-12 animate-in fade-in duration-500 relative flex flex-col h-[calc(100vh-100px)]">
       
-      {/* HEADER & CONTROLS */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-6 shrink-0">
         <div>
           <h2 className="text-3xl font-black text-white uppercase tracking-tighter italic">
-            Market <span className="text-brand-primary">Setups</span>
+            Market <span className="text-blue-500">Setups</span>
           </h2>
-          <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Manage published analysis</p>
+          <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Rapid review & status management</p>
         </div>
 
-        <div className="flex items-center gap-4">
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search assets..." 
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-[#0a0a0a] border border-neutral-800 rounded-xl py-2.5 pl-11 pr-4 text-xs font-bold text-white placeholder:text-neutral-500 outline-none focus:border-brand-primary/50 transition-colors w-64"
-            />
-          </div>
-          <button 
-            onClick={() => router.push('/admin/analysis/new')}
-            className="flex items-center px-5 py-2.5 bg-brand-primary text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-white/90 transition-colors shadow-lg shrink-0"
-          >
-            <Plus size={14} className="mr-2" /> Publish Setup
-          </button>
-        </div>
+        <button 
+          onClick={() => router.push('/admin/analysis/new')}
+          className="flex items-center px-5 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 transition-colors shadow-lg shrink-0"
+        >
+          <Plus size={14} className="mr-2" /> Publish Setup
+        </button>
       </div>
 
-      {filteredSetups.length === 0 ? (
-        <div className="w-full bg-[#0a0a0a] border border-dashed border-neutral-800 rounded-3xl p-16 flex flex-col items-center text-center">
-          <Radio size={48} className="text-neutral-700 mb-6" />
-          <h3 className="text-lg font-black text-white uppercase tracking-widest mb-2">No Setups Found</h3>
-        </div>
-      ) : (
-        <div className="space-y-10">
-          
-          {/* TODAY SECTION */}
-          {grouped.today.length > 0 && (
-            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">
-                Published Today <div className="ml-4 h-px flex-1 bg-neutral-800"></div>
-              </h2>
-              {renderSetupGrid(grouped.today)}
-            </section>
-          )}
+      {/* SPLIT SCREEN LAYOUT */}
+      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 overflow-hidden">
+        
+        {/* LEFT COLUMN: INBOX LIST */}
+        <div className="w-full lg:w-1/3 bg-[#0a0a0a] border border-neutral-800 rounded-3xl flex flex-col overflow-hidden shadow-2xl shrink-0">
+          <div className="p-4 border-b border-neutral-800 bg-[#0d0d0d]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" size={14} />
+              <input 
+                type="text" 
+                placeholder="Search assets..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-[#050505] border border-neutral-800 rounded-lg py-2 pl-9 pr-4 text-xs font-bold text-white placeholder:text-neutral-600 outline-none focus:border-blue-500/50 transition-colors"
+              />
+            </div>
+          </div>
 
-          {/* YESTERDAY SECTION */}
-          {grouped.yesterday.length > 0 && (
-            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-75">
-              <h2 className="text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-4 flex items-center">
-                Yesterday <div className="ml-4 h-px flex-1 bg-neutral-800"></div>
-              </h2>
-              {renderSetupGrid(grouped.yesterday)}
-            </section>
-          )}
-
-          {/* OLDER SECTION */}
-          {grouped.older.length > 0 && (
-            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
-              <h2 className="text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 flex items-center">
-                Older Setups <div className="ml-4 h-px flex-1 bg-neutral-800/30"></div>
-              </h2>
-              <div className="opacity-80 hover:opacity-100 transition-opacity">
-                {renderSetupGrid(grouped.older)}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1">
+            {filteredSetups.length === 0 ? (
+              <div className="text-center py-10 text-neutral-600 flex flex-col items-center">
+                <LayoutList size={24} className="mb-2 opacity-50" />
+                <span className="text-[10px] font-bold uppercase tracking-widest">No setups found</span>
               </div>
-            </section>
-          )}
+            ) : (
+              filteredSetups.map((setup) => {
+                const isSelected = selectedSetupId === setup.id
+                const status = (setup.status || 'WAITING').toUpperCase()
+                
+                let statusColor = "text-neutral-500 bg-neutral-900"
+                if (status === 'ACTIVE') statusColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
+                if (status === 'WAITING') statusColor = "text-amber-500 bg-amber-500/10 border-amber-500/20"
+                if (status === 'INVALID') statusColor = "text-red-500 bg-red-500/10 border-red-500/20"
 
+                return (
+                  <div 
+                    key={setup.id}
+                    onClick={() => setSelectedSetupId(setup.id)}
+                    className={`p-3 rounded-xl cursor-pointer transition-all border flex items-center justify-between ${
+                      isSelected 
+                        ? 'bg-blue-500/10 border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.1)]' 
+                        : 'bg-transparent border-transparent hover:bg-white/5'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className={`text-xs font-black uppercase tracking-widest ${isSelected ? 'text-blue-400' : 'text-white'}`}>{setup.asset_symbol}</span>
+                        <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">{setup.timeframe}</span>
+                      </div>
+                      <div className="text-[9px] text-neutral-600 font-medium">
+                        {new Date(setup.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                    <div className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest border ${statusColor}`}>
+                      {status}
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
         </div>
-      )}
 
-      {/* NEW: THE CUSTOM CINEMATIC MODAL */}
+        {/* RIGHT COLUMN: VIEWPORT & CONTROLS */}
+        <div className="w-full lg:w-2/3 bg-[#0a0a0a] border border-neutral-800 rounded-3xl flex flex-col overflow-hidden shadow-2xl relative">
+          {selectedSetup ? (
+            <>
+              {/* TOP: Image Viewer */}
+              <div className="h-[45%] lg:h-[55%] w-full bg-black relative border-b border-neutral-800/50 flex items-center justify-center overflow-hidden group">
+                {selectedSetup.image_url ? (
+                  <img src={selectedSetup.image_url} alt="Chart" className="w-full h-full object-contain" />
+                ) : (
+                  <ImageIcon className="text-neutral-800 w-16 h-16" />
+                )}
+                
+                {/* Image overlay actions */}
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <button onClick={() => window.open(selectedSetup.image_url, '_blank')} className="bg-black/80 backdrop-blur text-white p-2 rounded-lg hover:bg-blue-600 transition-colors" title="Full Screen">
+                    <ExternalLink size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* BOTTOM: Details & Status Controls */}
+              <div className="flex-1 p-6 flex flex-col overflow-y-auto custom-scrollbar">
+                
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h3 className="text-2xl font-black text-white uppercase tracking-tighter italic mb-1">{selectedSetup.asset_symbol}</h3>
+                    <div className="flex items-center gap-3">
+                      <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded text-[10px] font-black uppercase tracking-widest">{selectedSetup.timeframe}</span>
+                      <span className="px-2 py-0.5 bg-[#111] text-neutral-400 border border-neutral-800 rounded text-[10px] font-black uppercase tracking-widest flex items-center gap-1">
+                        {selectedSetup.bias?.toUpperCase() === 'BULLISH' ? <TrendingUp size={10} className="text-emerald-500"/> : selectedSetup.bias?.toUpperCase() === 'BEARISH' ? <TrendingDown size={10} className="text-red-500"/> : <Minus size={10} />}
+                        {selectedSetup.bias || 'NEUTRAL'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* EDIT & DELETE */}
+                  <div className="flex gap-2">
+                    <button onClick={() => router.push(`/admin/analysis/${selectedSetup.id}/edit`)} className="p-2 bg-[#111] text-neutral-400 hover:text-white rounded-lg border border-neutral-800 hover:border-neutral-600 transition-all"><Edit2 size={14}/></button>
+                    <button onClick={() => handleDelete(selectedSetup.id, selectedSetup.asset_symbol)} className="p-2 bg-[#111] text-neutral-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg border border-neutral-800 hover:border-red-500/50 transition-all"><Trash2 size={14}/></button>
+                  </div>
+                </div>
+
+                <div className="mb-8">
+                  <p className="text-sm font-medium text-neutral-300 leading-relaxed whitespace-pre-wrap bg-[#111] p-4 rounded-xl border border-neutral-800/50">
+                    {selectedSetup.content || selectedSetup.title || "No analysis notes provided."}
+                  </p>
+                </div>
+
+                {/* 🚨 THE STATUS CONTROLS 🚨 */}
+                <div className="mt-auto">
+                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Set Live Status</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    
+                    <button 
+                      onClick={() => updateSetupStatus(selectedSetup.id, 'ACTIVE')}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+                        (selectedSetup.status || '').toUpperCase() === 'ACTIVE' 
+                          ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-500 shadow-[0_0_20px_rgba(16,185,129,0.15)]' 
+                          : 'bg-[#111] border-neutral-800 text-neutral-500 hover:border-emerald-500/30 hover:text-emerald-400'
+                      }`}
+                    >
+                      <CheckCircle2 size={20} className="mb-2" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Active</span>
+                    </button>
+
+                    <button 
+                      onClick={() => updateSetupStatus(selectedSetup.id, 'WAITING')}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+                        (selectedSetup.status || 'WAITING').toUpperCase() === 'WAITING' 
+                          ? 'bg-amber-500/10 border-amber-500/50 text-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.15)]' 
+                          : 'bg-[#111] border-neutral-800 text-neutral-500 hover:border-amber-500/30 hover:text-amber-400'
+                      }`}
+                    >
+                      <Clock size={20} className="mb-2" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Waiting</span>
+                    </button>
+
+                    <button 
+                      onClick={() => updateSetupStatus(selectedSetup.id, 'INVALID')}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${
+                        (selectedSetup.status || '').toUpperCase() === 'INVALID' 
+                          ? 'bg-red-500/10 border-red-500/50 text-red-500 shadow-[0_0_20px_rgba(239,68,68,0.15)]' 
+                          : 'bg-[#111] border-neutral-800 text-neutral-500 hover:border-red-500/30 hover:text-red-400'
+                      }`}
+                    >
+                      <XCircle size={20} className="mb-2" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Invalid</span>
+                    </button>
+
+                  </div>
+                </div>
+
+              </div>
+            </>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 p-8 text-center">
+              <Target size={48} className="mb-4 opacity-20" />
+              <p className="text-sm font-bold uppercase tracking-widest mb-2 text-neutral-400">No Setup Selected</p>
+              <p className="text-[10px] uppercase tracking-widest">Select a setup from the list on the left to review and manage its status.</p>
+            </div>
+          )}
+        </div>
+
+      </div>
+
+      {/* CONFIRMATION MODAL */}
       {confirmModal.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8 w-full max-w-sm shadow-2xl scale-in-95 animate-in zoom-in-95 duration-200 flex flex-col">
+          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8 w-full max-w-sm shadow-2xl flex flex-col">
             <h3 className="text-xl font-black text-white mb-3 tracking-tight">{confirmModal.title}</h3>
-            <p className="text-neutral-400 text-sm mb-8 leading-relaxed">
-              {confirmModal.message}
-            </p>
+            <p className="text-neutral-400 text-sm mb-8 leading-relaxed">{confirmModal.message}</p>
             <div className="flex gap-3 mt-auto">
-              <button
-                onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-                className="flex-1 px-4 py-3 rounded-xl border border-neutral-800 text-neutral-400 font-bold text-[10px] uppercase tracking-widest hover:bg-neutral-900 hover:text-white transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  confirmModal.onConfirm();
-                  setConfirmModal(prev => ({ ...prev, isOpen: false }));
-                }}
-                className={`flex-1 px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg ${
-                  confirmModal.actionType === 'danger'
-                    ? 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white hover:shadow-[0_0_20px_rgba(239,68,68,0.2)]'
-                    : 'bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-black hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]'
-                }`}
-              >
+              <button onClick={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))} className="flex-1 px-4 py-3 rounded-xl border border-neutral-800 text-neutral-400 font-bold text-[10px] uppercase tracking-widest hover:bg-neutral-900 hover:text-white transition-colors">Cancel</button>
+              <button onClick={() => { confirmModal.onConfirm(); setConfirmModal(prev => ({ ...prev, isOpen: false })); }} className={`flex-1 px-4 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg ${confirmModal.actionType === 'danger' ? 'bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white' : 'bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:bg-amber-500 hover:text-black'}`}>
                 {confirmModal.actionText}
               </button>
             </div>
           </div>
         </div>
       )}
-
     </div>
   )
 }
