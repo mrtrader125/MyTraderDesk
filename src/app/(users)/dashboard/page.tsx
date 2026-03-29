@@ -83,7 +83,6 @@ function DashboardContent() {
 
           if (broadcasts && broadcasts.length > 0) setActiveBroadcast(broadcasts[0])
 
-          // 🚨 MODIFIED: Fetching 'status' for the Vault Watchlist
           const { data: vaultData } = await supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe, status)').eq('user_id', user.id)
           if (vaultData) {
             setWatchlist(vaultData.map((v: any) => ({
@@ -208,35 +207,32 @@ function DashboardContent() {
             const isBear = setup.bias?.toUpperCase() === 'BEARISH'
             const isBookmarked = watchlist.some(item => item.id === setup.id)
 
-            // 🚨 MODIFIED: Parse the status color for the badge
+            // 🚨 MODIFIED: Minimalist Bottom Line Glow Logic
             const status = (setup.status || 'WAITING').toUpperCase()
-            let statusColor = "text-neutral-500 bg-neutral-900 border-neutral-800"
-            if (status === 'ACTIVE') statusColor = "text-emerald-500 bg-emerald-500/10 border-emerald-500/20"
-            else if (status === 'WAITING') statusColor = "text-amber-500 bg-amber-500/10 border-amber-500/20"
-            else if (status === 'INVALID') statusColor = "text-red-500 bg-red-500/10 border-red-500/20"
+            let statusLine = "bg-neutral-800 group-hover:bg-neutral-600"
+            if (status === 'ACTIVE') statusLine = "bg-emerald-500/40 group-hover:bg-emerald-400 group-hover:shadow-[0_-4px_12px_rgba(16,185,129,0.5)]"
+            else if (status === 'WAITING') statusLine = "bg-amber-500/40 group-hover:bg-amber-400 group-hover:shadow-[0_-4px_12px_rgba(245,158,11,0.5)]"
+            else if (status === 'INVALID') statusLine = "bg-red-500/40 group-hover:bg-red-400 group-hover:shadow-[0_-4px_12px_rgba(239,68,68,0.5)]"
 
             return (
               <div 
                 key={setup.id} 
+                title={`Status: ${status}`}
                 onClick={async () => {
                   if (userId) supabase.from('activity_logs').insert([{ user_id: userId, action: 'FEED_CLICK', asset_symbol: setup.asset_symbol, timeframe: setup.timeframe }]).then()
                   router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=dashboard`)
                 }}
-                className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-3 md:p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden"
+                // 🚨 Added pb-4 to give room for the line
+                className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-3 md:p-2.5 pb-4 md:pb-3.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden relative"
               >
-                <div className="flex flex-col min-w-0 pr-2">
+                <div className="flex flex-col min-w-0 pr-2 z-10">
                   <span className="text-sm font-black text-white tracking-tight truncate">{setup.asset_symbol || 'UNKNOWN'}</span>
-                  
-                  {/* 🚨 MODIFIED: Added the Status Pill next to the timeframe */}
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest truncate">{setup.timeframe || '-'}</span>
-                    <span className={`px-1.5 py-0.5 rounded-[4px] text-[7px] font-black uppercase tracking-widest border ${statusColor}`}>
-                      {status}
-                    </span>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-1.5 shrink-0">
+                <div className="flex items-center space-x-1.5 shrink-0 z-10">
                   <button onClick={(e) => toggleBookmark(e, setup)} className="text-neutral-600 hover:text-white transition-colors p-2 md:p-1">
                     <Bookmark size={16} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
                   </button>
@@ -244,6 +240,10 @@ function DashboardContent() {
                     {isBull ? <TrendingUp size={16} /> : isBear ? <TrendingDown size={16} /> : <Minus size={16} />}
                   </div>
                 </div>
+
+                {/* 🚨 THE AMBIENT STATUS LINE */}
+                <div className={`absolute bottom-0 inset-x-0 h-1 transition-all duration-500 ${statusLine}`} />
+
               </div>
             )
           })}
@@ -522,7 +522,6 @@ function MobileWidgets({ activeBroadcast, watchlist, router }: any) {
           {watchlist.length > 0 ? (
             watchlist.slice(0, 6).map((item: any) => {
               
-              // 🚨 MODIFIED: Parse Vault Status dot colors
               const status = (item.status || 'WAITING').toUpperCase()
               let statusDot = "bg-neutral-500"
               if (status === 'ACTIVE') statusDot = "bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]"
