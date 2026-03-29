@@ -212,8 +212,7 @@ function DashboardContent() {
             let statusLine = "bg-neutral-800 group-hover:bg-neutral-600"
             if (status === 'ACTIVE') statusLine = "bg-emerald-500/40 group-hover:bg-emerald-400 group-hover:shadow-[0_-4px_12px_rgba(16,185,129,0.5)]"
             else if (status === 'WAITING') statusLine = "bg-amber-500/40 group-hover:bg-amber-400 group-hover:shadow-[0_-4px_12px_rgba(245,158,11,0.5)]"
-            else if (status === 'INVALID') statusLine = "bg-red-500/40 group-hover:bg-red-400 group-hover:shadow-[0_-4px_12px_rgba(239,68,68,0.5)]"
-
+            else if (status === 'INVALID') statusLine = "bg-red-600/70 group-hover:bg-red-500 group-hover:shadow-[0_-4px_15px_rgba(239,68,68,0.8)]"
             return (
               <div 
                 key={setup.id} 
