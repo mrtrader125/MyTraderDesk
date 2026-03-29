@@ -54,18 +54,13 @@ export default function Home() {
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           
-          {/* 🚨 THE FIX: Added shrink-0 so flexbox NEVER squishes this logo */}
+          {/* 🚨 THE ULTIMATE FIX: Using a standard img tag with exact widths (w-40 mobile, w-64 desktop) */}
           <Link href="/" className="flex items-center shrink-0 group">
-            <div className="relative h-20 w-50 md:h-12 md:w-56 flex items-center transition-all duration-300">
-              <Image 
-                src="/logo.png" 
-                alt="My Trader Desk" 
-                fill 
-                className="object-contain object-left group-hover:scale-[1.02] transition-transform" 
-                priority 
-                unoptimized 
-              />
-            </div>
+            <img 
+              src="/logo.png" 
+              alt="My Trader Desk" 
+              className="w-40 md:w-64 h-auto object-contain object-left group-hover:scale-[1.02] transition-transform origin-left"
+            />
           </Link>
 
           <div className="hidden md:flex items-center space-x-8 shrink-0">
@@ -304,16 +299,12 @@ export default function Home() {
           {/* Brand Column */}
           <div className="col-span-1 md:col-span-1">
             <Link href="/" className="flex items-center shrink-0 group mb-6">
-              {/* 🚨 THE FIX: Added shrink-0 to the Footer Logo as well */}
-              <div className="relative h-10 w-48 md:h-12 md:w-56 flex items-center transition-all duration-300">
-                <Image 
-                  src="/logo.png" 
-                  alt="My Trader Desk" 
-                  fill 
-                  className="object-contain object-left group-hover:scale-[1.02] transition-transform opacity-70 group-hover:opacity-100" 
-                  unoptimized 
-                />
-              </div>
+              {/* 🚨 THE ULTIMATE FIX: Direct img tag for the footer too */}
+              <img 
+                src="/logo.png" 
+                alt="My Trader Desk" 
+                className="w-40 md:w-64 h-auto opacity-70 group-hover:opacity-100 group-hover:scale-[1.02] transition-all origin-left"
+              />
             </Link>
             <p className="text-xs font-medium text-neutral-500 leading-relaxed pr-4">
               A dedicated digital trading floor providing intermediate traders with institutional-grade structural analysis and crowdsourced market confluence.
