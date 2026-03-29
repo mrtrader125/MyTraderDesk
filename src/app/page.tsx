@@ -54,11 +54,12 @@ export default function Home() {
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           
-          {/* 🚨 UPDATED: Image Logo instead of Text */}
+{/* 🚨 UPDATED: Image Logo instead of Text */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="relative h-24 w-44 md:h-12 md:w-40 flex items-center">
+            {/* 👇 Increased height and width here (h-16 and w-64 for desktop) 👇 */}
+            <div className="relative h-12 w-48 md:h-16 md:w-64 flex items-center">
               <Image 
-                src="/logo.png" 
+                src="/icon.png" 
                 alt="My Trader Desk" 
                 fill 
                 className="object-contain object-left group-hover:scale-[1.02] transition-transform" 
@@ -67,7 +68,7 @@ export default function Home() {
               />
             </div>
           </Link>
-
+          
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/community" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">Live Floor</Link>
             <Link href="/playbook" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">Playbook</Link>
