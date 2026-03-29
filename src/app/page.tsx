@@ -54,9 +54,9 @@ export default function Home() {
       <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#050505]/80 backdrop-blur-xl border-b border-white/5 py-4' : 'bg-transparent py-6'}`}>
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           
-{/* 🚨 UPDATED: Switched back to logo.png for the full text logo */}
-          <Link href="/" className="flex items-center group">
-            <div className="relative h-[40px] w-[180px] md:h-[70px] md:w-[320px] flex items-center">
+          {/* 🚨 THE FIX: Added shrink-0 so flexbox NEVER squishes this logo */}
+          <Link href="/" className="flex items-center shrink-0 group">
+            <div className="relative h-8 w-40 md:h-12 md:w-56 flex items-center transition-all duration-300">
               <Image 
                 src="/logo.png" 
                 alt="My Trader Desk" 
@@ -67,14 +67,14 @@ export default function Home() {
               />
             </div>
           </Link>
-          
-          <div className="hidden md:flex items-center space-x-8">
+
+          <div className="hidden md:flex items-center space-x-8 shrink-0">
             <Link href="/community" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">Live Floor</Link>
             <Link href="/playbook" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">Playbook</Link>
             <Link href="#pricing" className="text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors">Access</Link>
           </div>
 
-          <div className="flex gap-4 items-center">
+          <div className="flex gap-4 items-center shrink-0">
             <Link href="/login" className="text-xs font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors hidden sm:block">Log In</Link>
             <Link href="/signup" className="px-6 py-2.5 text-[10px] uppercase tracking-widest font-black bg-white text-black rounded-xl hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-all">
               Enter The Desk
@@ -83,7 +83,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* HERO SECTION - REPOSITIONED FOR TRADERS */}
+      {/* HERO SECTION */}
       <section className="relative z-10 pt-40 pb-20 px-6 max-w-6xl mx-auto text-center">
         <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-5 py-2 mb-8 backdrop-blur-sm">
           <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
@@ -215,7 +215,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* THE GATEKEEPER (FILTERING THE AUDIENCE) */}
+      {/* THE GATEKEEPER */}
       <section className="relative z-10 max-w-6xl mx-auto py-24 px-6">
         <div className="text-center mb-16">
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">Who Belongs on The Desk?</h2>
@@ -240,14 +240,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* PRICING TIERS - WITH CHURN-KILLING ANNUAL TOGGLE */}
+      {/* PRICING TIERS */}
       <section id="pricing" className="relative z-10 max-w-6xl mx-auto py-32 px-6">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight">Institutional Access</h2>
           <p className="text-neutral-500 mt-4 text-xl">A fraction of the cost of losing a bad trade.</p>
         </div>
 
-        {/* Billing Toggle */}
         <div className="flex justify-center mb-16">
           <div className="bg-[#111] p-1.5 rounded-2xl border border-neutral-800 inline-flex items-center">
             <button 
@@ -266,8 +265,6 @@ export default function Home() {
         </div>
         
         <div className="grid md:grid-cols-3 gap-8 items-center">
-          
-          {/* Free Tier */}
           <div className="bg-[#0a0a0a] p-10 rounded-3xl border border-neutral-800 hover:border-neutral-600 transition-colors text-center">
             <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">The Lobby</h3>
             <p className="text-5xl font-black text-white my-6">$0</p>
@@ -275,7 +272,6 @@ export default function Home() {
             <Link href="/signup" className="block w-full py-4 px-6 bg-[#111] text-white font-bold rounded-xl border border-neutral-700 hover:bg-neutral-800 transition-colors uppercase tracking-widest text-[10px]">Create Free Account</Link>
           </div>
 
-          {/* Essential Tier */}
           <div className="bg-[#0a0a0a] p-10 rounded-3xl border border-neutral-800 hover:border-blue-500/50 transition-colors text-center transform md:-translate-y-4 shadow-xl">
             <h3 className="text-xl font-bold text-white uppercase tracking-widest mb-2">Essential</h3>
             <p className="text-5xl font-black text-white my-6">
@@ -286,7 +282,6 @@ export default function Home() {
             <Link href="/signup" className="block w-full py-4 px-6 bg-[#111] text-white font-black rounded-xl border border-neutral-700 hover:border-blue-500 hover:text-blue-400 transition-all uppercase tracking-widest text-[10px]">Select Essential</Link>
           </div>
 
-          {/* Pro Tier */}
           <div className="bg-gradient-to-b from-[#111] to-[#050505] p-10 rounded-3xl border border-blue-500/50 shadow-[0_0_40px_rgba(59,130,246,0.15)] relative text-center">
             <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-5 py-2 rounded-full shadow-lg">
               All Access
@@ -299,7 +294,6 @@ export default function Home() {
             <p className="text-neutral-400 text-sm mb-10 h-10">Unlocks Crypto, Gold, Indices, and premium community badges.</p>
             <Link href="/signup" className="block w-full py-4 px-6 bg-white text-black font-black rounded-xl hover:scale-105 shadow-[0_0_20px_rgba(255,255,255,0.1)] transition-transform uppercase tracking-widest text-[10px]">Get Pro Access</Link>
           </div>
-
         </div>
       </section>
 
@@ -307,11 +301,11 @@ export default function Home() {
       <footer className="bg-[#020202] border-t border-neutral-900 pt-20 pb-10 px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           
-{/* Brand Column */}
+          {/* Brand Column */}
           <div className="col-span-1 md:col-span-1">
-            <Link href="/" className="flex items-center group mb-6">
-              {/* 🚨 UPDATED: Switched to logo.png and made slightly wider */}
-              <div className="relative h-10 w-40 md:h-12 md:w-48 flex items-center">
+            <Link href="/" className="flex items-center shrink-0 group mb-6">
+              {/* 🚨 THE FIX: Added shrink-0 to the Footer Logo as well */}
+              <div className="relative h-10 w-48 md:h-12 md:w-56 flex items-center transition-all duration-300">
                 <Image 
                   src="/logo.png" 
                   alt="My Trader Desk" 
@@ -325,7 +319,7 @@ export default function Home() {
               A dedicated digital trading floor providing intermediate traders with institutional-grade structural analysis and crowdsourced market confluence.
             </p>
           </div>
-          
+
           {/* Live Markets (SEO Hubs) */}
           <div>
             <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-6">Live Markets</h4>
