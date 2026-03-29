@@ -59,7 +59,7 @@ export default function Home() {
             {/* 👇 Increased height and width here (h-16 and w-64 for desktop) 👇 */}
             <div className="relative h-12 w-48 md:h-16 md:w-64 flex items-center">
               <Image 
-                src="/icon.png" 
+                src="/logo.png" 
                 alt="My Trader Desk" 
                 fill 
                 className="object-contain object-left group-hover:scale-[1.02] transition-transform" 
