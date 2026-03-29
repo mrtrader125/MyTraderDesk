@@ -308,19 +308,25 @@ export default function Home() {
       <footer className="bg-[#020202] border-t border-neutral-900 pt-20 pb-10 px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-16">
           
-          {/* Brand Column */}
+      {/* Brand Column */}
           <div className="col-span-1 md:col-span-1">
-            <Link href="/" className="flex items-center space-x-2 mb-6">
-               <Activity size={24} className="text-blue-500" />
-              <span className="text-white font-black uppercase tracking-widest italic text-lg">
-                Sentinel<span className="text-blue-500">Vortex</span>
-              </span>
+            <Link href="/" className="flex items-center group mb-6">
+              {/* 🚨 UPDATED: Image Logo for the Footer */}
+              <div className="relative h-10 w-32 md:h-12 md:w-40 flex items-center">
+                <Image 
+                  src="/icon.png" 
+                  alt="My Trader Desk" 
+                  fill 
+                  className="object-contain object-left group-hover:scale-[1.02] transition-transform opacity-70 group-hover:opacity-100" 
+                  unoptimized 
+                />
+              </div>
             </Link>
             <p className="text-xs font-medium text-neutral-500 leading-relaxed pr-4">
               A dedicated digital trading floor providing intermediate traders with institutional-grade structural analysis and crowdsourced market confluence.
             </p>
           </div>
-
+          
           {/* Live Markets (SEO Hubs) */}
           <div>
             <h4 className="text-white text-[10px] font-black uppercase tracking-widest mb-6">Live Markets</h4>
