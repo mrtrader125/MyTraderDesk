@@ -242,7 +242,7 @@ function DashboardContent() {
                 </div>
 
                 {/* 🚨 THE AMBIENT STATUS LINE */}
-                <div className={`absolute bottom-0 inset-x-0 h-1 transition-all duration-500 ${statusLine}`} />
+                <div className={`absolute bottom-0 inset-x-0 [2px] transition-all duration-500 ${statusLine}`} />
 
               </div>
             )
