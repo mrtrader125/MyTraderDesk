@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin, Star, Target, ZoomIn, ZoomOut, Menu, CheckCircle2, XCircle, Ban } from 'lucide-react'
+import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin, Star, Target, ZoomIn, ZoomOut, Menu, CheckCircle2, XCircle, Ban, Archive } from 'lucide-react'
 import { PLAN_CONFIG, getAssetCategory } from '@/lib/platformConfig'
 
 // 🚨 INLINED ACCESS LOGIC: Strictly enforces Free (7-day delay / category locks) vs Pro (Instant)
@@ -301,6 +301,9 @@ export default function ViewportClient({
   } else if (status === 'CANCELED') {
     statusStyle = "text-neutral-400 bg-neutral-700/30 border-neutral-500/50 shadow-[0_0_10px_rgba(163,163,163,0.1)]"
     StatusIcon = Ban
+  } else if (status === 'ARCHIVED') {
+    statusStyle = "text-neutral-500 bg-neutral-800/30 border-neutral-700/50 shadow-[0_0_10px_rgba(115,115,115,0.1)]"
+    StatusIcon = Archive
   }
 
   return (
@@ -332,8 +335,8 @@ export default function ViewportClient({
                className="w-[95%] h-[75%] md:max-w-full md:max-h-full object-contain pointer-events-none"
                style={{ 
                  transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
-  transition: (isDragging || isPinching) ? 'none' : 'transform 0.15s ease-out'
-}}
+                 transition: (isDragging || isPinching) ? 'none' : 'transform 0.15s ease-out'
+               }}
              />
            )
          ) : (
@@ -398,7 +401,9 @@ export default function ViewportClient({
 
                <div className={`flex items-center px-2 py-1 md:py-1.5 rounded-md border backdrop-blur-md ${statusStyle}`}>
                  <StatusIcon size={12} className="mr-1.5" />
-                 <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest">{status}</span>
+                 <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest">
+                   {status === 'ARCHIVED' ? 'OLD SETUP' : status}
+                 </span>
                </div>
                
                {(currentSetup.is_featured || currentSetup.is_prime) && (
