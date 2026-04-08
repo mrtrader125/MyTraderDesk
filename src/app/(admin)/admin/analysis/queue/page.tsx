@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Clock, CheckSquare, Square, Target, Loader2, ArrowLeft, Trash2, ListPlus, Edit2, X, Rocket } from 'lucide-react'
+import { Clock, CheckSquare, Square, Target, Loader2, ArrowLeft, Trash2, ListPlus, Edit2, X, Rocket, Server } from 'lucide-react'
 
 export default function AdminQueueManager() {
   const router = useRouter()
@@ -12,7 +12,7 @@ export default function AdminQueueManager() {
   const [isDeploying, setIsDeploying] = useState(false)
   const [loading, setLoading] = useState(true)
 
-  // 🌍 12-HOUR CUSTOM CLOCK STATE
+  // 🌍 SUPABASE CLOCK STATE
   const [releaseHour, setReleaseHour] = useState<string>('08')
   const [releaseMinute, setReleaseMinute] = useState<string>('00')
   const [releaseAmPm, setReleaseAmPm] = useState<string>('AM')
@@ -27,17 +27,27 @@ export default function AdminQueueManager() {
   const dailyReleaseTime = `${releaseHour}:${releaseMinute} ${releaseAmPm}`
 
   useEffect(() => {
-    const savedTime = localStorage.getItem('sentinel_global_release_time')
-    if (savedTime) {
-      const match = savedTime.match(/(\d{2}):(\d{2})\s(AM|PM)/)
+    fetchGlobalSettings()
+    fetchQueue()
+  }, [])
+
+  // 🚨 1. FETCH TIME FROM SUPABASE (Backend Source of Truth)
+  const fetchGlobalSettings = async () => {
+    const { data, error } = await supabase
+      .from('platform_settings')
+      .select('global_release_time')
+      .eq('id', 1)
+      .single()
+
+    if (data && data.global_release_time) {
+      const match = data.global_release_time.match(/(\d{2}):(\d{2})\s(AM|PM)/)
       if (match) {
         setReleaseHour(match[1])
         setReleaseMinute(match[2])
         setReleaseAmPm(match[3])
       }
     }
-    fetchQueue()
-  }, [])
+  }
 
   const fetchQueue = async () => {
     setLoading(true)
@@ -53,77 +63,6 @@ export default function AdminQueueManager() {
     setLoading(false)
   }
 
-  // 🚨 RESILIENT AUTOMATED FRONTEND TRIGGER 🚨
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Don't run if empty or currently deploying
-      if (queuedSetups.length === 0 || isDeploying) return;
-
-      const now = new Date();
-      const targetTimeStr = localStorage.getItem('sentinel_global_release_time') || '08:00 AM';
-
-      // Parse target time into mathematical values
-      const match = targetTimeStr.match(/(\d{2}):(\d{2})\s(AM|PM)/);
-      if (!match) return;
-
-      let targetH = parseInt(match[1], 10);
-      const targetM = parseInt(match[2], 10);
-      const ampm = match[3];
-
-      // Convert 12hr to 24hr format for Date object
-      if (ampm === 'PM' && targetH < 12) targetH += 12;
-      if (ampm === 'AM' && targetH === 12) targetH = 0;
-
-      // Construct today's Target Date
-      const targetDate = new Date();
-      targetDate.setHours(targetH, targetM, 0, 0);
-
-      // Check difference in milliseconds
-      const diffMs = now.getTime() - targetDate.getTime();
-
-      // SAFETY WINDOW: If it is exactly the time, OR up to 5 minutes after (to catch sleeping tabs)
-      if (diffMs >= 0 && diffMs <= 5 * 60 * 1000) {
-        console.log("⏰ Auto-Release Window Active! Deploying Dark Pool...");
-        autoDeployAll();
-      }
-    }, 10000); // Check every 10 seconds for high precision
-
-    return () => clearInterval(interval);
-  }, [queuedSetups, isDeploying]); // Re-bind if queue size changes
-
-  const autoDeployAll = async () => {
-    setIsDeploying(true)
-    try {
-      const idsArray = queuedSetups.map(s => s.id)
-      
-      const liveItems = queuedSetups.map(item => ({
-        asset_symbol: item.asset_symbol,
-        category: item.category,
-        timeframe: item.timeframe,
-        bias: item.bias,
-        title: item.title,
-        content: item.content,
-        tier_access: item.tier_access,
-        is_featured: item.is_featured,
-        image_url: item.image_url,
-        status: 'ACTIVE' 
-      }))
-
-      const { error: insertError } = await supabase.from('analyses').insert(liveItems)
-      if (insertError) throw insertError
-
-      const { error: deleteError } = await supabase.from('queued_analyses').delete().in('id', idsArray)
-      if (deleteError) throw deleteError
-
-      fetchQueue()
-      setSelectedIds(new Set())
-    } catch (err: any) {
-      console.error(`Auto-Deploy failed: ${err.message}`)
-    } finally {
-      setIsDeploying(false)
-    }
-  }
-
   // --- TIME EDITOR LOGIC ---
   const openTimeEditor = () => {
     setTempHour(releaseHour)
@@ -132,7 +71,8 @@ export default function AdminQueueManager() {
     setIsTimeModalOpen(true)
   }
 
-  const saveTimeEditor = () => {
+  // 🚨 2. SAVE TIME DIRECTLY TO SUPABASE
+  const saveTimeEditor = async () => {
     let finalH = parseInt(tempHour) || 12
     let finalM = parseInt(tempMinute) || 0
     if (finalH > 12) finalH = 12
@@ -142,17 +82,26 @@ export default function AdminQueueManager() {
 
     const formattedH = finalH.toString().padStart(2, '0')
     const formattedM = finalM.toString().padStart(2, '0')
-
-    setReleaseHour(formattedH)
-    setReleaseMinute(formattedM)
-    setReleaseAmPm(tempAmPm)
-    
     const newTime = `${formattedH}:${formattedM} ${tempAmPm}`
-    localStorage.setItem('sentinel_global_release_time', newTime)
-    
-    setIsTimeModalOpen(false)
-    setIsSaved(true)
-    setTimeout(() => setIsSaved(false), 2000)
+
+    try {
+      const { error } = await supabase
+        .from('platform_settings')
+        .update({ global_release_time: newTime })
+        .eq('id', 1)
+
+      if (error) throw error
+
+      setReleaseHour(formattedH)
+      setReleaseMinute(formattedM)
+      setReleaseAmPm(tempAmPm)
+      
+      setIsTimeModalOpen(false)
+      setIsSaved(true)
+      setTimeout(() => setIsSaved(false), 2000)
+    } catch (err: any) {
+      alert(`Failed to save schedule: ${err.message}`)
+    }
   }
 
   const handleWheel = (e: React.WheelEvent, type: 'hour' | 'minute') => {
@@ -369,8 +318,8 @@ export default function AdminQueueManager() {
                       
                       <div className="flex items-center gap-6 shrink-0">
                         <span className="text-xs text-zinc-500 font-medium flex items-center gap-1.5">
-                          <Clock size={14} className="opacity-50" />
-                          Pending Drop
+                          <Server size={14} className="opacity-50" />
+                          Pending Backend Drop
                         </span>
                       </div>
                     </div>
