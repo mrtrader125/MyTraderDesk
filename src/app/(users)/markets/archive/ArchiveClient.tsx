@@ -71,15 +71,17 @@ export default function ArchiveClient({ asset, initialHistory, userPlan }: { ass
     else if (status === 'DONE') statusLine = "bg-emerald-500/50 group-hover:bg-emerald-400 group-hover:shadow-[-3px_0_10px_rgba(16,185,129,0.5)]"
     else if (status === 'INVALID') statusLine = "bg-red-500/50 group-hover:bg-red-400 group-hover:shadow-[-3px_0_10px_rgba(239,68,68,0.5)]"
     else if (status === 'CANCELED') statusLine = "bg-neutral-600/50 group-hover:bg-neutral-400 group-hover:shadow-[-3px_0_10px_rgba(163,163,163,0.5)]"
+    else if (status === 'ARCHIVED') statusLine = "bg-neutral-700/50 group-hover:bg-neutral-500 group-hover:shadow-[-3px_0_10px_rgba(115,115,115,0.5)]"
 
-    const isCanceled = status === 'CANCELED'
+    // Fade out both canceled and archived setups so active setups pop out more
+    const isFaded = status === 'CANCELED' || status === 'ARCHIVED'
 
     return (
       <div 
         onClick={() => router.push(`/markets/viewport?asset=${asset}&from=archive`)}
         className={`bg-[#0a0a0a] border rounded-xl overflow-hidden flex flex-col group cursor-pointer transition-all duration-300 relative min-h-[180px] md:min-h-[200px]
           ${isPrime ? 'border-blue-500/30 hover:border-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.05)]' : 'border-neutral-800 hover:border-neutral-600 shadow-sm'}
-          ${isCanceled ? 'opacity-60 hover:opacity-100' : ''}
+          ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
         <div className="h-24 md:h-28 w-full bg-[#050505] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
@@ -88,7 +90,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan }: { ass
             src={setup.image_url} 
             alt={displayText} 
             draggable={false}
-            className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100' : 'opacity-10 blur-md grayscale'}`} 
+            className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100' : 'opacity-10 blur-md grayscale'} ${status === 'ARCHIVED' ? 'grayscale-[50%]' : ''}`} 
           />
           
           {/* 🚨 UPDATED PAYWALL OVERLAY */}
