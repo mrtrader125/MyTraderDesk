@@ -6,8 +6,8 @@ import { supabase } from '@/lib/supabase'
 import { 
   Plus, Trash2, Edit2, Activity, TrendingUp, TrendingDown, 
   Clock, Search, ExternalLink, Image as ImageIcon, Minus, 
-  Target, CheckCircle2, XCircle, LayoutList, Star, 
-  UploadCloud, Loader2, Ban, Shield, SplitSquareHorizontal
+  Target, CheckCircle2, LayoutList, Star, 
+  UploadCloud, Loader2, Shield, SplitSquareHorizontal
 } from 'lucide-react'
 
 export default function AdminAnalysisPage() {
@@ -252,6 +252,8 @@ export default function AdminAnalysisPage() {
                   if (status === 'waiting') statusColor = "bg-amber-500/10 text-amber-400"
                   if (status === 'done') statusColor = "bg-emerald-500/10 text-emerald-400"
                   if (status === 'invalid') statusColor = "bg-red-500/10 text-red-400"
+                  // 🚨 Added ARCHIVED color handling
+                  if (status === 'archived') statusColor = "bg-zinc-800/50 text-zinc-500 border border-zinc-800"
 
                   return (
                     <div 
@@ -270,7 +272,7 @@ export default function AdminAnalysisPage() {
                             {setup.timeframe}
                           </span>
                         </div>
-                        <div className={`text-xs font-medium px-2 py-0.5 rounded-md capitalize ${statusColor}`}>
+                        <div className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${statusColor}`}>
                           {status}
                         </div>
                       </div>
@@ -439,10 +441,11 @@ export default function AdminAnalysisPage() {
                 </div>
 
                 {/* Status Update */}
-                <div className="w-full xl:w-[360px] shrink-0">
+                <div className="w-full xl:w-[450px] shrink-0">
                   <h4 className="text-sm font-medium text-zinc-400 mb-3">Set Live Status</h4>
                   <div className="flex flex-wrap gap-2">
-                    {['WAITING', 'ACTIVE', 'DONE', 'INVALID', 'CANCELED'].map((statusOption) => {
+                    {/* 🚨 Added ARCHIVED to the list of status options */}
+                    {['WAITING', 'ACTIVE', 'DONE', 'INVALID', 'CANCELED', 'ARCHIVED'].map((statusOption) => {
                       const isActive = (selectedSetup.status || 'WAITING').toUpperCase() === statusOption;
                       
                       let activeClasses = "bg-zinc-700 text-white"; // default fallback
@@ -451,18 +454,19 @@ export default function AdminAnalysisPage() {
                       if (statusOption === 'DONE') activeClasses = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
                       if (statusOption === 'INVALID') activeClasses = "bg-red-500/10 text-red-400 border-red-500/30";
                       if (statusOption === 'CANCELED') activeClasses = "bg-zinc-800 text-zinc-300 border-zinc-600";
+                      if (statusOption === 'ARCHIVED') activeClasses = "bg-zinc-800/80 text-zinc-400 border-zinc-600";
 
                       return (
                         <button 
                           key={statusOption}
                           onClick={() => updateSetupStatus(selectedSetup.id, statusOption)} 
-                          className={`px-4 py-2 rounded-lg text-xs font-medium capitalize transition-all border ${
+                          className={`px-4 py-2 rounded-lg text-[10px] font-bold tracking-wider uppercase transition-all border ${
                             isActive 
                               ? activeClasses 
                               : 'bg-zinc-950 text-zinc-500 border-zinc-800/50 hover:bg-zinc-900 hover:text-zinc-300'
                           }`}
                         >
-                          {statusOption.toLowerCase()}
+                          {statusOption === 'ARCHIVED' ? 'OLD/ARCHIVED' : statusOption}
                         </button>
                       )
                     })}
