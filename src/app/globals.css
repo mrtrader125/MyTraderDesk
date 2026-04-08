@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+/* --- 1. TAILWIND V4 THEME DEFINITION --- */
+@theme inline {
+  /* Institutional Fonts - Linked to layout.tsx variables */
+  --font-sans: var(--font-sans), ui-sans-serif, system-ui;
+  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular;
+
+  /* Custom Institutional Colors */
+  --color-brand-primary: #3b82f6;
+  --color-brand-primary-rgb: 59, 130, 246;
+  
+  --color-app-bg: #050505;
+  --color-card-bg: #0a0a0a;
+  --color-card-border: rgba(255, 255, 255, 0.05);
+
+  /* Shadows & Glows */
+  --shadow-brand-glow: 0 0 15px rgba(59, 130, 246, 0.15);
+  --shadow-card-heavy: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+
+  /* Animations */
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* --- 2. BASE STYLES --- */
+@layer base {
+  :root {
+    --background: #050505;
+    --foreground: #e5e5e5;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Force premium monospace for data */
+  .font-mono, code, pre {
+    font-family: var(--font-mono);
+    letter-spacing: -0.02em;
+  }
+}
+
+/* --- 3. UTILITIES & GRADIENTS --- */
+@utility bg-brand-gradient {
+  background-image: linear-gradient(to bottom right, rgba(59, 130, 246, 0.1), transparent);
+}
+
+@utility glass-panel {
+  background: rgba(10, 10, 10, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* --- 4. SCROLLBARS --- */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.15);
+}

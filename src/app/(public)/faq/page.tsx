@@ -1,0 +1,94 @@
+import { Metadata } from 'next'
+import Link from 'next/link'
+import { HelpCircle } from 'lucide-react'
+
+// 🚨 NEW: Added OpenGraph tags
+export const metadata: Metadata = {
+  title: 'Frequently Asked Questions | MyTraderDesk',
+  description: 'Everything you need to know about Sentinel Vortex, our subscription tiers, and how our trading desk operates.',
+  openGraph: {
+    title: 'FAQ | MyTraderDesk',
+    description: 'Learn how the MyTraderDesk platform operates and find the right tier for your trading style.',
+    url: 'https://mytraderdesk.com/faq',
+    siteName: 'Sentinel Vortex',
+    type: 'website',
+  }
+}
+
+const FAQS = [
+  {
+    q: "Is this a signal group?",
+    a: "Absolutely not. We do not offer 'Buy now / Sell now' alerts. MyTraderDesk provides structured, probability-based market analysis and institutional confluence. It is designed for traders who want to validate their own setups, not blindly follow alerts."
+  },
+  {
+    q: "What is the difference between Essential and Pro?",
+    a: "The Essential tier ($4.99/mo) gives you full access to Forex and Commodity market analysis, plus community voting. The Pro tier ($9.99/mo) unlocks the entire board, including Crypto, Indices, Stocks, and priority updates."
+  },
+  {
+    q: "Can I view the charts on my phone?",
+    a: "Yes. The platform is fully responsive. You can zoom and pan our high-resolution analysis charts seamlessly on desktop, tablet, or mobile."
+  },
+  {
+    q: "How often are setups posted?",
+    a: "We post daily before the London and New York sessions. Our goal is quality over quantity; we only post instruments that have clear, highly-actionable structural setups."
+  },
+  {
+    q: "Can I cancel my subscription anytime?",
+    a: "Yes. You can manage, pause, or cancel your subscription instantly through our secure billing portal (powered by Lemon Squeezy) inside your account settings."
+  }
+]
+
+export default function FAQPage() {
+  // 🚨 NEW: Dynamic SEO Schema Generation
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": FAQS.map(faq => ({
+      "@type": "Question",
+      "name": faq.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": faq.a
+      }
+    }))
+  }
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-white font-sans pt-24 pb-20 px-6">
+      {/* 🚨 NEW: Injecting the Schema directly into the HTML */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      <div className="max-w-3xl mx-auto space-y-12">
+        <div className="text-center">
+          <HelpCircle className="mx-auto text-neutral-600 mb-6" size={48} />
+          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4">
+            Frequently Asked <span className="text-brand-primary">Questions</span>
+          </h1>
+          <p className="text-neutral-500 text-sm font-bold uppercase tracking-widest">
+            Everything you need to know about the desk.
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          {FAQS.map((faq, i) => (
+            <div key={i} className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8">
+              <h3 className="text-lg font-black text-white mb-3 leading-tight">{faq.q}</h3>
+              <p className="text-sm font-medium text-neutral-400 leading-relaxed">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="bg-[#111] border border-neutral-800 rounded-3xl p-8 text-center mt-12">
+          <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Still have questions?</h3>
+          <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-6">Create a free account to look around the platform risk-free.</p>
+          <Link href="/signup" className="px-8 py-4 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-colors inline-block">
+            Start for Free
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
+}
