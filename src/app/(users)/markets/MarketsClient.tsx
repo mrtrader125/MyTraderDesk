@@ -146,26 +146,22 @@ export default function MarketsClient({ initialGroupedAnalyses }: any) {
                     </div>
 
                     <div className="mt-auto pt-4 border-t border-white/[0.05] flex items-center justify-between z-10">
-                      <div className="flex items-center gap-2 flex-wrap">
+                      
+                      {/* 🚨 NEW: Simple glowing dots instead of pills */}
+                      <div className="flex items-center gap-2">
                         {market.activeCount > 0 && (
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-[10px] font-black text-blue-400" title={`${market.activeCount} Active Setups`}>
-                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
-                            {market.activeCount}
-                          </div>
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" title={`${market.activeCount} Active Setups`}></div>
                         )}
                         
                         {market.waitingCount > 0 && (
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 rounded text-[10px] font-black text-amber-400" title={`${market.waitingCount} Waiting Setups`}>
-                            <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
-                            {market.waitingCount}
-                          </div>
+                          <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]" title={`${market.waitingCount} Waiting Setups`}></div>
                         )}
 
-                        {/* 🚨 NEW: Archived Badge (Only shows if no Active/Waiting setups exist, but old ones do) */}
+                        {/* Archived Badge (Only shows if no Active/Waiting setups exist, but old ones do) */}
                         {market.activeCount === 0 && market.waitingCount === 0 && market.archivedCount > 0 && (
                           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-neutral-800/30 border border-neutral-700/50 rounded text-[10px] font-black text-neutral-500" title={`${market.archivedCount} Archived Setups`}>
                             <Archive size={10} />
-                            {market.archivedCount} Archived
+                            Archived
                           </div>
                         )}
 
