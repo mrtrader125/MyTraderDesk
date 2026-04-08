@@ -181,17 +181,17 @@ export default function AdminQueueManager() {
       if (fetchError || !itemsToMove) throw fetchError
 
       const liveItems = itemsToMove.map(item => ({
-        asset_symbol: item.asset_symbol,
-        category: item.category,
-        timeframe: item.timeframe,
-        bias: item.bias,
-        title: item.title,
-        content: item.content,
-        tier_access: item.tier_access,
-        is_featured: item.is_featured,
-        image_url: item.image_url,
-        status: 'ACTIVE' 
-      }))
+  asset_symbol: item.asset_symbol,
+  category: item.category,
+  timeframe: item.timeframe,
+  bias: item.bias,
+  title: item.title,
+  content: item.content,
+  tier_access: item.tier_access,
+  is_featured: item.is_featured,
+  image_url: item.image_url,
+  status: 'ACTIVE' 
+}))
 
       const { error: insertError } = await supabase.from('analyses').insert(liveItems)
       if (insertError) throw insertError
