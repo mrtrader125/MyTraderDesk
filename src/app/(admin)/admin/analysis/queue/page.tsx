@@ -163,6 +163,7 @@ export default function AdminQueueManager() {
     setSelectedIds(newSelected)
   }
 
+  // 🚀 FORCE DROP (WITH AUTO-ARCHIVE)
   const handlePushLive = async () => {
     if (selectedIds.size === 0) return alert("Select at least one setup to push live.")
     
@@ -181,17 +182,27 @@ export default function AdminQueueManager() {
       if (fetchError || !itemsToMove) throw fetchError
 
       const liveItems = itemsToMove.map(item => ({
-  asset_symbol: item.asset_symbol,
-  category: item.category,
-  timeframe: item.timeframe,
-  bias: item.bias,
-  title: item.title,
-  content: item.content,
-  tier_access: item.tier_access,
-  is_featured: item.is_featured,
-  image_url: item.image_url,
-  status: 'ACTIVE' 
-}))
+        asset_symbol: item.asset_symbol,
+        category: item.category,
+        timeframe: item.timeframe,
+        bias: item.bias,
+        title: item.title,
+        content: item.content,
+        tier_access: item.tier_access,
+        is_featured: item.is_featured,
+        image_url: item.image_url,
+        status: 'ACTIVE' 
+      }))
+
+      // 🚨 AUTO-ARCHIVE LOGIC: Clean the floor before dropping new setups manually
+      for (const item of liveItems) {
+        await supabase
+          .from('analyses')
+          .update({ status: 'ARCHIVED' })
+          .eq('asset_symbol', item.asset_symbol)
+          .eq('timeframe', item.timeframe)
+          .in('status', ['WAITING', 'ACTIVE']);
+      }
 
       const { error: insertError } = await supabase.from('analyses').insert(liveItems)
       if (insertError) throw insertError
