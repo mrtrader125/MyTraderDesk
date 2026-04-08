@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Activity, ArrowRight, Target } from 'lucide-react'
+import { Activity, ArrowRight, Target, Archive } from 'lucide-react'
 import { ASSET_CATEGORIES } from '@/lib/platformConfig'
 
 const CATEGORIES = [
@@ -100,7 +100,7 @@ export default function MarketsClient({ initialGroupedAnalyses }: any) {
           </div>
         </div>
 
-        {/* MARKET CARDS GRID (NO PAYWALL OVERLAYS) */}
+        {/* MARKET CARDS GRID */}
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-6 pr-1">
           <div 
             key={`${activeTab}-${searchQuery}`}
@@ -146,7 +146,7 @@ export default function MarketsClient({ initialGroupedAnalyses }: any) {
                     </div>
 
                     <div className="mt-auto pt-4 border-t border-white/[0.05] flex items-center justify-between z-10">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         {market.activeCount > 0 && (
                           <div className="flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/10 border border-blue-500/20 rounded text-[10px] font-black text-blue-400" title={`${market.activeCount} Active Setups`}>
                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></div>
@@ -161,7 +161,16 @@ export default function MarketsClient({ initialGroupedAnalyses }: any) {
                           </div>
                         )}
 
-                        {market.activeCount === 0 && market.waitingCount === 0 && (
+                        {/* 🚨 NEW: Archived Badge (Only shows if no Active/Waiting setups exist, but old ones do) */}
+                        {market.activeCount === 0 && market.waitingCount === 0 && market.archivedCount > 0 && (
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-neutral-800/30 border border-neutral-700/50 rounded text-[10px] font-black text-neutral-500" title={`${market.archivedCount} Archived Setups`}>
+                            <Archive size={10} />
+                            {market.archivedCount} Archived
+                          </div>
+                        )}
+
+                        {/* Fallback for total setups if no specific stats are tracked */}
+                        {market.activeCount === 0 && market.waitingCount === 0 && !market.archivedCount && (
                           <span className="text-[9px] font-bold text-neutral-500 bg-[#111] px-3 py-1 rounded border border-white/[0.05] uppercase tracking-widest shadow-inner">
                             {market.count} Total
                           </span>
