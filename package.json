@@ -18,7 +18,9 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-zoom-pan-pinch": "^3.7.0",
-    "recharts": "^3.8.0"
+    "recharts": "^3.8.0",
+    "react-markdown": "^9.0.1",
+    "framer-motion": "^11.0.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
