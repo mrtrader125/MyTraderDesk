@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Clock, CheckSquare, Square, Target, Loader2, ArrowLeft, Trash2, ListPlus, Rocket, Server } from 'lucide-react'
+import { Clock, CheckSquare, Square, Target, Loader2, ArrowLeft, Trash2, ListPlus, Edit2, X, Rocket } from 'lucide-react'
 
 export default function AdminQueueManager() {
   const router = useRouter()
@@ -12,7 +12,30 @@ export default function AdminQueueManager() {
   const [isDeploying, setIsDeploying] = useState(false)
   const [loading, setLoading] = useState(true)
 
+  // 🌍 12-HOUR CUSTOM CLOCK STATE
+  const [releaseHour, setReleaseHour] = useState<string>('08')
+  const [releaseMinute, setReleaseMinute] = useState<string>('00')
+  const [releaseAmPm, setReleaseAmPm] = useState<string>('AM')
+  const [isSaved, setIsSaved] = useState(false)
+
+  // 🕒 MODAL STATE FOR TIME EDITOR
+  const [isTimeModalOpen, setIsTimeModalOpen] = useState(false)
+  const [tempHour, setTempHour] = useState('08')
+  const [tempMinute, setTempMinute] = useState('00')
+  const [tempAmPm, setTempAmPm] = useState('AM')
+
+  const dailyReleaseTime = `${releaseHour}:${releaseMinute} ${releaseAmPm}`
+
   useEffect(() => {
+    const savedTime = localStorage.getItem('sentinel_global_release_time')
+    if (savedTime) {
+      const match = savedTime.match(/(\d{2}):(\d{2})\s(AM|PM)/)
+      if (match) {
+        setReleaseHour(match[1])
+        setReleaseMinute(match[2])
+        setReleaseAmPm(match[3])
+      }
+    }
     fetchQueue()
   }, [])
 
@@ -28,6 +51,146 @@ export default function AdminQueueManager() {
       setSelectedIds(new Set(data.map(s => s.id)))
     }
     setLoading(false)
+  }
+
+  // 🚨 RESILIENT AUTOMATED FRONTEND TRIGGER 🚨
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Don't run if empty or currently deploying
+      if (queuedSetups.length === 0 || isDeploying) return;
+
+      const now = new Date();
+      const targetTimeStr = localStorage.getItem('sentinel_global_release_time') || '08:00 AM';
+
+      // Parse target time into mathematical values
+      const match = targetTimeStr.match(/(\d{2}):(\d{2})\s(AM|PM)/);
+      if (!match) return;
+
+      let targetH = parseInt(match[1], 10);
+      const targetM = parseInt(match[2], 10);
+      const ampm = match[3];
+
+      // Convert 12hr to 24hr format for Date object
+      if (ampm === 'PM' && targetH < 12) targetH += 12;
+      if (ampm === 'AM' && targetH === 12) targetH = 0;
+
+      // Construct today's Target Date
+      const targetDate = new Date();
+      targetDate.setHours(targetH, targetM, 0, 0);
+
+      // Check difference in milliseconds
+      const diffMs = now.getTime() - targetDate.getTime();
+
+      // SAFETY WINDOW: If it is exactly the time, OR up to 5 minutes after (to catch sleeping tabs)
+      if (diffMs >= 0 && diffMs <= 5 * 60 * 1000) {
+        console.log("⏰ Auto-Release Window Active! Deploying Dark Pool...");
+        autoDeployAll();
+      }
+    }, 10000); // Check every 10 seconds for high precision
+
+    return () => clearInterval(interval);
+  }, [queuedSetups, isDeploying]); // Re-bind if queue size changes
+
+  const autoDeployAll = async () => {
+    setIsDeploying(true)
+    try {
+      const idsArray = queuedSetups.map(s => s.id)
+      
+      const liveItems = queuedSetups.map(item => ({
+        asset_symbol: item.asset_symbol,
+        category: item.category,
+        timeframe: item.timeframe,
+        bias: item.bias,
+        title: item.title,
+        content: item.content,
+        tier_access: item.tier_access,
+        is_featured: item.is_featured,
+        image_url: item.image_url,
+        status: 'ACTIVE' 
+      }))
+
+      const { error: insertError } = await supabase.from('analyses').insert(liveItems)
+      if (insertError) throw insertError
+
+      const { error: deleteError } = await supabase.from('queued_analyses').delete().in('id', idsArray)
+      if (deleteError) throw deleteError
+
+      fetchQueue()
+      setSelectedIds(new Set())
+    } catch (err: any) {
+      console.error(`Auto-Deploy failed: ${err.message}`)
+    } finally {
+      setIsDeploying(false)
+    }
+  }
+
+  // --- TIME EDITOR LOGIC ---
+  const openTimeEditor = () => {
+    setTempHour(releaseHour)
+    setTempMinute(releaseMinute)
+    setTempAmPm(releaseAmPm)
+    setIsTimeModalOpen(true)
+  }
+
+  const saveTimeEditor = () => {
+    let finalH = parseInt(tempHour) || 12
+    let finalM = parseInt(tempMinute) || 0
+    if (finalH > 12) finalH = 12
+    if (finalH < 1) finalH = 12
+    if (finalM > 59) finalM = 59
+    if (finalM < 0) finalM = 0
+
+    const formattedH = finalH.toString().padStart(2, '0')
+    const formattedM = finalM.toString().padStart(2, '0')
+
+    setReleaseHour(formattedH)
+    setReleaseMinute(formattedM)
+    setReleaseAmPm(tempAmPm)
+    
+    const newTime = `${formattedH}:${formattedM} ${tempAmPm}`
+    localStorage.setItem('sentinel_global_release_time', newTime)
+    
+    setIsTimeModalOpen(false)
+    setIsSaved(true)
+    setTimeout(() => setIsSaved(false), 2000)
+  }
+
+  const handleWheel = (e: React.WheelEvent, type: 'hour' | 'minute') => {
+    e.preventDefault()
+    const dir = e.deltaY > 0 ? -1 : 1 
+
+    if (type === 'hour') {
+      let next = (parseInt(tempHour) || 12) + dir
+      if (next > 12) next = 1
+      if (next < 1) next = 12
+      setTempHour(next.toString().padStart(2, '0'))
+    } else {
+      let next = (parseInt(tempMinute) || 0) + dir
+      if (next > 59) next = 0
+      if (next < 0) next = 59
+      setTempMinute(next.toString().padStart(2, '0'))
+    }
+  }
+
+  const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'hour' | 'minute') => {
+    const val = e.target.value.replace(/\D/g, '') 
+    if (val.length > 2) return
+    if (type === 'hour') setTempHour(val)
+    if (type === 'minute') setTempMinute(val)
+  }
+
+  const handleTimeBlur = (type: 'hour' | 'minute') => {
+    if (type === 'hour') {
+      let val = parseInt(tempHour)
+      if (isNaN(val) || val < 1) val = 12
+      if (val > 12) val = 12
+      setTempHour(val.toString().padStart(2, '0'))
+    } else {
+      let val = parseInt(tempMinute)
+      if (isNaN(val)) val = 0
+      if (val > 59) val = 59
+      setTempMinute(val.toString().padStart(2, '0'))
+    }
   }
 
   const toggleSelect = (id: string) => {
@@ -51,7 +214,6 @@ export default function AdminQueueManager() {
     setSelectedIds(newSelected)
   }
 
-  // 🚀 MANUAL FORCE DROP (Overrides Vercel Cron)
   const handlePushLive = async () => {
     if (selectedIds.size === 0) return alert("Select at least one setup to push live.")
     
@@ -127,16 +289,27 @@ export default function AdminQueueManager() {
 
         <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
           
-          {/* Static Backend Status Display (Replaces old clunky time editor) */}
+          {/* Active Auto-Drop Editor Card */}
           <div className="flex items-center justify-between w-full sm:w-auto bg-zinc-900/50 border border-zinc-800/50 rounded-lg px-4 py-2.5">
-            <span className="text-xs text-zinc-400 font-medium mr-4 flex items-center">
-              <Server size={14} className="mr-2" /> Backend Status
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
-              <span className="text-xs font-mono text-emerald-400 font-medium tracking-wide">
-                Vercel Active
+            <div className="flex items-center gap-3 mr-6">
+              <span className="text-xs text-zinc-400 font-medium flex items-center">
+                <Clock size={14} className="mr-1.5" /> Auto-Drop
               </span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-sm font-mono text-zinc-200 tracking-wide">{releaseHour}:{releaseMinute}</span>
+                <span className="text-xs font-medium text-amber-500/80">{releaseAmPm}</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              {isSaved && <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest mr-2 animate-pulse">Saved</span>}
+              <button 
+                onClick={openTimeEditor}
+                className="text-zinc-500 hover:text-zinc-300 transition-colors p-1 bg-zinc-800/50 hover:bg-zinc-700/50 rounded"
+                title="Edit Time"
+              >
+                <Edit2 size={14} />
+              </button>
             </div>
           </div>
 
@@ -197,7 +370,7 @@ export default function AdminQueueManager() {
                       <div className="flex items-center gap-6 shrink-0">
                         <span className="text-xs text-zinc-500 font-medium flex items-center gap-1.5">
                           <Clock size={14} className="opacity-50" />
-                          Pending Backend Drop
+                          Pending Drop
                         </span>
                       </div>
                     </div>
@@ -216,6 +389,68 @@ export default function AdminQueueManager() {
           </div>
         </div>
       </div>
+
+      {/* 🕒 TIME EDITOR MODAL */}
+      {isTimeModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#000000]/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-950 ring-1 ring-zinc-800/50 rounded-2xl p-6 w-full max-w-[300px] shadow-2xl relative overflow-hidden">
+            
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-sm font-medium text-zinc-200">Schedule Time</h3>
+              <button onClick={() => setIsTimeModalOpen(false)} className="text-zinc-500 hover:text-zinc-300 transition-colors p-1"><X size={16} /></button>
+            </div>
+
+            <div className="flex flex-col items-center justify-center mb-8">
+              <div className="flex items-center gap-2">
+                <input 
+                  type="text"
+                  value={tempHour}
+                  onChange={(e) => handleTimeChange(e, 'hour')}
+                  onWheel={(e) => handleWheel(e, 'hour')}
+                  onBlur={() => handleTimeBlur('hour')}
+                  className="w-16 bg-zinc-900 ring-1 ring-zinc-800/50 rounded-xl text-center text-2xl font-mono text-zinc-200 py-3 outline-none focus:ring-zinc-700 transition-all select-all"
+                />
+                
+                <span className="text-zinc-600 text-xl font-mono pb-1">:</span>
+                
+                <input 
+                  type="text"
+                  value={tempMinute}
+                  onChange={(e) => handleTimeChange(e, 'minute')}
+                  onWheel={(e) => handleWheel(e, 'minute')}
+                  onBlur={() => handleTimeBlur('minute')}
+                  className="w-16 bg-zinc-900 ring-1 ring-zinc-800/50 rounded-xl text-center text-2xl font-mono text-zinc-200 py-3 outline-none focus:ring-zinc-700 transition-all select-all"
+                />
+
+                <button 
+                  onClick={() => setTempAmPm(prev => prev === 'AM' ? 'PM' : 'AM')}
+                  className="w-14 bg-transparent hover:bg-zinc-800/50 rounded-xl text-center text-sm font-medium text-zinc-400 py-4 ml-1 transition-all select-none ring-1 ring-transparent hover:ring-zinc-800/50"
+                >
+                  {tempAmPm}
+                </button>
+              </div>
+              <p className="text-[10px] text-zinc-500 mt-4">Scroll or type to edit.</p>
+            </div>
+
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setIsTimeModalOpen(false)}
+                className="flex-1 py-2.5 bg-transparent text-zinc-400 text-xs font-medium hover:text-zinc-200 hover:bg-zinc-800/50 transition-colors rounded-lg"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={saveTimeEditor}
+                className="flex-1 py-2.5 bg-zinc-100 text-zinc-900 text-xs font-semibold rounded-lg hover:bg-white transition-colors"
+              >
+                Save
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
