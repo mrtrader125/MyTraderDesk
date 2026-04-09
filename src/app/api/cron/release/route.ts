@@ -127,7 +127,7 @@ export async function GET(request: Request) {
         if (botToken && channelId) {
           const messageText = `🟢 **Today's analysis is live.**\n\n🖥️ Check the website/app for full details.\n\n⚡ Watch the live floor terminal for real-time execution and updates.\n\n⚠️ _Risk Advisory : Risk management is not optional. Keep your stops tight and size your positions responsibly._`;
 
-          // 1. Send directly to Telegram
+          // 1. Send directly to Telegram WITH Mini App Button
           const tgResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -135,7 +135,17 @@ export async function GET(request: Request) {
               chat_id: channelId,
               text: messageText,
               parse_mode: 'Markdown',
-              disable_web_page_preview: true
+              disable_web_page_preview: true,
+              reply_markup: {
+                inline_keyboard: [
+                  [
+                    { 
+                      text: "📱 Launch Mobile Terminal", 
+                      web_app: { url: "https://mytraderdesk.com/miniapp" } 
+                    }
+                  ]
+                ]
+              }
             }),
           });
 
