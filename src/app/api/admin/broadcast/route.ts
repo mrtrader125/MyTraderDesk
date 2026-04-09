@@ -2,8 +2,17 @@ import { NextResponse } from 'next/server';
 
 export const runtime = 'edge';
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    // 1. Read the incoming payload to see who triggered this
+    let releaseType = 'automated'; // Default to automated
+    try {
+      const body = await req.json();
+      if (body.type) releaseType = body.type;
+    } catch (e) {
+      // If no body is sent, it safely falls back to automated
+    }
+
     const botToken = process.env.TELEGRAM_SENTINEL_TOKEN;
     const channelId = process.env.TELEGRAM_BROADCAST_CHANNEL_ID;
 
@@ -12,16 +21,18 @@ export async function POST() {
       return NextResponse.json({ error: "Telegram credentials missing." }, { status: 500 });
     }
 
-    // Your exact formatted message
-    const messageText = `🟢 **Today's analysis is live.**
+    // 2. Decide which message to send based on the trigger
+    let messageText = '';
 
-🖥️ Check the website/app for full details.
+    if (releaseType === 'manual') {
+      // The Urgent Manual Drop
+      messageText = `⚡ **Quick Setup Released!**\n\nA new setup has just been dropped on the Live Floor.\n\n🖥️ [Open Terminal to view](https://mytraderdesk.com/markets)`;
+    } else {
+      // The Daily Scheduled Drop
+      messageText = `🟢 **Today's analysis is live.**\n\n🖥️ Check the website/app for full details.\n\n⚡ Watch the live floor terminal for real-time execution and updates.\n\n⚠️ _Risk Advisory : Risk management is not optional. Keep your stops tight and size your positions responsibly._`;
+    }
 
-⚡ Watch the live floor terminal for real-time execution and updates.
-
-⚠️ _Risk Advisory : Risk management is not optional. Keep your stops tight and size your positions responsibly._`;
-
-    // Send the message to the broadcast channel
+    // 3. Send to Telegram
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -34,11 +45,7 @@ export async function POST() {
     });
 
     const data = await response.json();
-
-    if (!data.ok) {
-      console.error("❌ Telegram API Error:", data);
-      return NextResponse.json({ error: data.description }, { status: 400 });
-    }
+    if (!data.ok) throw new Error(data.description);
 
     return NextResponse.json({ success: true, messageId: data.result.message_id });
 
