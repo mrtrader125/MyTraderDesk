@@ -31,13 +31,13 @@ export async function POST(req: Request) {
 
     if (releaseType === 'manual') {
       // The Urgent Manual Drop
-      messageText = `⚡ **Quick Setup Released!**\n\nA new setup has just been dropped on the Live Floor.\n\n🖥️ [Open Terminal to view](https://mytraderdesk.com/markets)`;
+      messageText = `⚡ **Quick Setup Released!**\n\nA new setup has just been dropped on the Live Floor.`;
     } else {
       // The Daily Scheduled Drop
       messageText = `🟢 **Today's analysis is live.**\n\n🖥️ Check the website/app for full details.\n\n⚡ Watch the live floor terminal for real-time execution and updates.\n\n⚠️ _Risk Advisory : Risk management is not optional. Keep your stops tight and size your positions responsibly._`;
     }
 
-    // 3. Send to Telegram
+    // 3. Send to Telegram WITH Mini App Button
     const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -45,7 +45,17 @@ export async function POST(req: Request) {
         chat_id: channelId,
         text: messageText,
         parse_mode: 'Markdown',
-        disable_web_page_preview: true
+        disable_web_page_preview: true,
+        reply_markup: {
+          inline_keyboard: [
+            [
+              { 
+                text: "⚡ Open Terminal", 
+                web_app: { url: "https://mytraderdesk.com/miniapp" } 
+              }
+            ]
+          ]
+        }
       }),
     });
 
