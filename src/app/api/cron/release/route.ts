@@ -117,6 +117,21 @@ export async function GET(request: Request) {
       const { error: deleteError } = await supabase.from('queued_analyses').delete().in('id', idsArray);
       if (deleteError) throw deleteError;
 
+      // ==========================================
+      // 🚨 NEW: TRIGGER THE TELEGRAM BROADCAST
+      // ==========================================
+      try {
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mytraderdesk.com';
+        await fetch(`${baseUrl}/api/admin/broadcast`, { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'automated' }) 
+        });
+        console.log('Cron: Automated Telegram Broadcast Fired!');
+      } catch (broadcastError) {
+        console.error('Cron: Failed to send Telegram Broadcast:', broadcastError);
+      }
+
       console.log(`Cron: SUCCESS! Dropped ${liveItems.length} setups.`);
       return NextResponse.json({ message: `Success! Deployed ${liveItems.length} setups to Live Floor.` }, { status: 200 });
     }
