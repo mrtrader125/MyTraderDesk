@@ -7,7 +7,7 @@ import { ArrowLeft, Lock, Clock, Shield, TrendingUp, TrendingDown, Minus, Target
 import { PLAN_CONFIG, getAssetCategory } from '@/lib/platformConfig'
 import { supabase } from '@/lib/supabase'
 
-// 🚨 INLINED ACCESS LOGIC: Strictly enforces Free (7-day delay / category locks) vs Pro (Instant)
+// 🚨 INLINED ACCESS LOGIC
 const getSetupAccess = (setup: any, userPlan: string) => {
   if (!setup) return { hasAccess: false, requiredTier: 'pro' };
   if (userPlan === 'pro') return { hasAccess: true, requiredTier: 'free' };
@@ -15,15 +15,9 @@ const getSetupAccess = (setup: any, userPlan: string) => {
   const category = getAssetCategory(setup.asset_symbol);
   const isAllowedCategory = PLAN_CONFIG.free.allowedCategories.includes(category);
 
-  // 1. Check if the asset category is allowed for Free users
-  if (!isAllowedCategory) {
-    return { hasAccess: false, requiredTier: 'pro' };
-  }
-
-  // 2. Check if the admin explicitly made this setup free
+  if (!isAllowedCategory) return { hasAccess: false, requiredTier: 'pro' };
   if (setup.tier_access === 'free') return { hasAccess: true, requiredTier: 'free' };
 
-  // 3. Calculate 7-day delay
   const postTime = new Date(setup.created_at).getTime();
   const currentTime = new Date().getTime();
   const hoursSincePosted = (currentTime - postTime) / (1000 * 60 * 60);
@@ -38,9 +32,10 @@ const getSetupAccess = (setup: any, userPlan: string) => {
 export default function ArchiveClient({ asset, initialHistory, userPlan, userId }: { asset: string, initialHistory: any[], userPlan: string, userId?: string }) {
   const router = useRouter()
   
-  // 🚨 NEW: Unseen Tracker State
+  // 🚨 Unseen Tracker State
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
 
+  // Fetch the user's read receipts from Supabase on load
   useEffect(() => {
     const fetchSeenSetups = async () => {
       if (!userId) return;
@@ -79,8 +74,6 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
     
     const isPrime = setup.is_prime === true;
-    
-    // Evaluate access using our new strict logic
     const { hasAccess, requiredTier } = getSetupAccess(setup, userPlan)
 
     const status = (setup.status || 'WAITING').toUpperCase()
@@ -93,32 +86,24 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     else if (status === 'CANCELED') statusLine = "bg-neutral-600/50 group-hover:bg-neutral-400 group-hover:shadow-[-3px_0_10px_rgba(163,163,163,0.5)]"
     else if (status === 'ARCHIVED') statusLine = "bg-neutral-700/50 group-hover:bg-neutral-500 group-hover:shadow-[-3px_0_10px_rgba(115,115,115,0.5)]"
 
-    // Fade out both canceled and archived setups so active setups pop out more
     const isFaded = status === 'CANCELED' || status === 'ARCHIVED'
 
-    // 🚨 NEW: Unseen Logic (Must be < 7 days old and not in seen database)
+    // 🚨 Unseen Logic (Must be < 7 days old and not in seen database)
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
     const isOlderThanAWeek = new Date(setup.created_at).getTime() < Date.now() - SEVEN_DAYS_MS;
     const isUnseen = !seenIds.has(setup.id) && !isOlderThanAWeek;
 
-    const handleCardClick = () => {
+    const handleCardClick = async () => {
       // 1. Instantly remove glow via optimistic UI update
       if (isUnseen && userId) {
-        setSeenIds(prev => {
-          const next = new Set(prev);
-          next.add(setup.id);
-          return next;
-        });
+        setSeenIds(prev => new Set([...prev, setup.id]));
 
-        // 2. Save read receipt in background
-        supabase.from('user_seen_setups').insert({
-          user_id: userId,
-          analysis_id: setup.id
-        }).then(({ error }) => {
-          if (error && error.code !== '23505') console.error("Failed to mark setup as seen:", error);
-        });
+        // 2. AWAIT the database insert so the browser doesn't cancel it during navigation
+        await supabase.from('user_seen_setups').upsert(
+          { user_id: userId, analysis_id: setup.id },
+          { onConflict: 'user_id, analysis_id' }
+        );
       }
-
       // 3. Route to Viewport
       router.push(`/markets/viewport?asset=${asset}&from=archive`);
     };
@@ -133,7 +118,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
-        {/* TOP IMAGE AREA - Cleaned of all badges */}
+        {/* 🚨 IMAGE AREA - Completely Cleaned */}
         <div className="h-24 md:h-28 w-full bg-[#050505] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
           <img 
             src={setup.image_url} 
@@ -141,7 +126,6 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
             draggable={false}
             className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100' : 'opacity-10 blur-md grayscale'} ${status === 'ARCHIVED' ? 'grayscale-[50%]' : ''}`} 
           />
-          
           {!hasAccess && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
               <Lock size={14} className="text-blue-500 mb-1" />
@@ -158,10 +142,10 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           
           <div className="flex flex-col items-start mb-2 w-full pr-2">
             
-            {/* 🚨 NEW: Tags Row (Timeframe, Bias, Prime, New) */}
+            {/* 🚨 NEW: Tags Row in the Black Content Area */}
             <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
               {hasAccess && (
-                <span className="bg-[#111] px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest border border-white/5">
+                <span className="bg-[#111] px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest border border-white/5 shadow-inner">
                   {setup.timeframe || '-'}
                 </span>
               )}
@@ -210,14 +194,12 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     <div className="w-full bg-[#050505] font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
       <div className="w-full border-b border-neutral-900 bg-[#0a0a0a]/95 backdrop-blur-md z-20 shadow-sm shrink-0">
         <div className="max-w-[90rem] mx-auto flex items-center space-x-3 p-3 md:p-5">
-          
           <Link 
             href="/markets"
             className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#111] border border-neutral-800 flex items-center justify-center text-neutral-400 hover:bg-neutral-800 hover:text-white hover:border-neutral-600 transition-all shrink-0 shadow-sm"
           >
             <ArrowLeft size={14} />
           </Link>
-          
           <div className="flex flex-col">
             <h1 className="text-lg md:text-2xl font-black text-white tracking-tighter uppercase italic leading-none mb-1">{asset} <span className="text-blue-500">Archive</span></h1>
             <p className="text-[8px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-[0.2em] leading-none">Historical Records</p>
@@ -227,7 +209,6 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
 
       <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#050505] p-3 md:p-5 lg:p-6">
         <div className="max-w-[90rem] mx-auto space-y-8 md:space-y-10 pb-20 md:pb-6">
-          
           {grouped.today.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="text-[9px] md:text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">
@@ -267,7 +248,6 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
               <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">No Historical Data Found</span>
             </div>
           )}
-          
         </div>
       </div>
     </div>
