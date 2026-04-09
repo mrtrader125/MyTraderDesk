@@ -1,4 +1,3 @@
-// src/app/api/admin/broadcast/route.ts
 import { NextResponse } from 'next/server';
 
 export const runtime = 'edge';
@@ -13,7 +12,7 @@ export async function POST() {
       return NextResponse.json({ error: "Telegram credentials missing." }, { status: 500 });
     }
 
-    // Your exact formatted message using Markdown
+    // Your exact formatted message
     const messageText = `🟢 **Today's analysis is live.**
 
 🖥️ Check the website/app for full details.
@@ -41,7 +40,6 @@ export async function POST() {
       return NextResponse.json({ error: data.description }, { status: 400 });
     }
 
-    console.log("✅ Broadcast message sent successfully!");
     return NextResponse.json({ success: true, messageId: data.result.message_id });
 
   } catch (error: any) {
