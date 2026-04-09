@@ -163,7 +163,7 @@ export default function AdminQueueManager() {
     setSelectedIds(newSelected)
   }
 
-  // 🚀 FORCE DROP (WITH AUTO-ARCHIVE)
+  // 🚀 FORCE DROP (WITH AUTO-ARCHIVE AND TELEGRAM BROADCAST)
   const handlePushLive = async () => {
     if (selectedIds.size === 0) return alert("Select at least one setup to push live.")
     
@@ -210,8 +210,16 @@ export default function AdminQueueManager() {
       const { error: deleteError } = await supabase.from('queued_analyses').delete().in('id', idsArray)
       if (deleteError) throw deleteError
 
+      // 🚨 TRIGGER MANUAL TELEGRAM BROADCAST
+      fetch('/api/admin/broadcast', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'manual' })
+      }).catch(console.error);
+
       fetchQueue()
       setSelectedIds(new Set())
+      alert("Analysis released! Telegram community notified.")
     } catch (err: any) {
       alert(`Transfer failed: ${err.message}`)
     } finally {
