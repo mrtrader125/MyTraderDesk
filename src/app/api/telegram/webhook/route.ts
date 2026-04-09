@@ -1,121 +1,85 @@
-// src/app/api/telegram/webhook/route.ts
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export const runtime = 'edge'
 
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const message = body.message || body.edited_message
+    console.log("=== 1. INCOMING TELEGRAM PAYLOAD ===")
+    console.log(JSON.stringify(body))
 
-    // If there is no message payload, exit cleanly
-    if (!message) return NextResponse.json({ status: 'success' })
+    const message = body.message || body.edited_message
+    if (!message) {
+      console.log("❌ NO MESSAGE FOUND. EXITING.")
+      return NextResponse.json({ status: 'success' })
+    }
 
     const botToken = process.env.TELEGRAM_BOT_TOKEN
     const adminId = process.env.ADMIN_TELEGRAM_ID
-    const broadcastChannelId = process.env.TELEGRAM_BROADCAST_ID
+    
+    console.log(`=== 2. ENVIRONMENT CHECK ===`)
+    console.log(`Bot Token Exists? ${!!botToken}`)
+    console.log(`Admin ID Exists? ${!!adminId}`)
+    console.log(`Supabase URL Exists? ${!!process.env.NEXT_PUBLIC_SUPABASE_URL}`)
 
     const chatId = message.chat.id
     const telegramUserId = message.from.id
-    const telegramHandle = message.from.username || message.from.first_name || 'Unknown'
-    const chatType = message.chat.type
-    const rawText = message.text || message.caption || ''
-    const text = rawText.trim()
+    const text = (message.text || message.caption || '').trim()
+    
+    console.log(`=== 3. MESSAGE DETAILS ===`)
+    console.log(`From User ID: ${telegramUserId}`)
+    console.log(`Message Text: "${text}"`)
 
-    // Helper to send messages back to the user
     const sendMessage = async (msgText: string) => {
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      console.log(`🚀 ATTEMPTING TO SEND MESSAGE: "${msgText}"`)
+      const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chat_id: chatId, text: msgText, parse_mode: 'Markdown' })
       })
+      console.log(`📬 TELEGRAM RESPONSE STATUS: ${res.status}`)
     }
 
-    // ==========================================
-    // FEATURE 1: ADMIN REMOTE CONTROL (LIVE FLOOR)
-    // ==========================================
-    // If YOU send a message to the bot, it instantly posts to mytraderdesk.com/floor
+    // Is it the Admin?
     if (telegramUserId.toString() === adminId) {
-      let finalMediaUrl = null
-
-      if (message.photo && message.photo.length > 0) {
-        const fileId = message.photo[message.photo.length - 1].file_id
-        const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`)
-        const fileData = await fileRes.json()
-
-        if (fileData.ok) {
-          const imgRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${fileData.result.file_path}`)
-          const imgBlob = await imgRes.blob()
-          const fileName = `telegram/${Date.now()}-${fileId}.jpg`
-
-          const { error: uploadError } = await supabase.storage.from('analysis-images').upload(fileName, imgBlob, { contentType: 'image/jpeg' })
-          if (!uploadError) {
-            const { data } = supabase.storage.from('analysis-images').getPublicUrl(fileName)
-            finalMediaUrl = data.publicUrl
-          }
-        }
+      console.log("👑 ADMIN DETECTED! Routing to Live Floor logic...")
+      // If the admin sends a 6 digit code, let's force it to act like a normal user just for testing
+      if (/^\d{6}$/.test(text)) {
+         console.log("⚠️ Admin sent an OTP code. Bypassing floor logic to test OTP linker.")
+      } else {
+         await sendMessage('✅ *Deployed directly to the Live Floor.*')
+         return NextResponse.json({ status: 'success' })
       }
-
-      if (text || finalMediaUrl) {
-        await supabase.from('live_squawk').insert({
-          author_username: 'Sentinel Admin',
-          message: text,
-          media_url: finalMediaUrl,
-          source: 'telegram',
-          telegram_message_id: message.message_id
-        })
-        await sendMessage('✅ *Deployed directly to the Live Floor.*')
-      }
-      return NextResponse.json({ status: 'success' })
     }
 
-    // ==========================================
-    // FEATURE 2: USER OTP LINKING & GATEKEEPER
-    // ==========================================
-    // If a normal user DMs the bot, process their OTP code
-    if (chatType === 'private') {
-      if (text === '/start') {
-        await sendMessage("Welcome to Sentinel Command.\n\nPlease enter the 6-digit transmission code from your mytraderdesk.com account settings.")
-        return NextResponse.json({ status: 'success' })
-      }
-
+    // Normal User OTP Logic
+    console.log("👤 RUNNING NORMAL USER LOGIC...")
+    if (message.chat.type === 'private') {
       if (/^\d{6}$/.test(text)) {
-        const { data: linkingUser } = await supabase.from('profiles').select('id, username').eq('telegram_verification_code', text).maybeSingle()
+        console.log(`🔍 SEARCHING SUPABASE FOR OTP: ${text}`)
+        
+        const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
+        const { data: linkingUser, error } = await supabase.from('profiles').select('id, username').eq('telegram_verification_code', text).maybeSingle()
+        
+        if (error) console.log("❌ SUPABASE ERROR:", error)
 
         if (linkingUser) {
-          // Link the user in the database
-          await supabase.from('profiles').update({ telegram_user_id: telegramUserId, telegram_verification_code: null, telegram_handle: telegramHandle }).eq('id', linkingUser.id)
-
-          // Generate Single-Use Invite Link to your Broadcast Channel
-          const linkRes = await fetch(`https://api.telegram.org/bot${botToken}/createChatInviteLink`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: broadcastChannelId, member_limit: 1, name: `Access: ${linkingUser.username}` })
-          })
-          const linkData = await linkRes.json()
-
-          if (linkData.ok) {
-            await sendMessage(`✅ **Identity Verified.**\nWelcome, *${linkingUser.username}*.\n\nHere is your single-use access link to the Broadcast Channel. Do not share it:\n\n${linkData.result.invite_link}`)
-          } else {
-            await sendMessage(`✅ Linked to *${linkingUser.username}*! However, I lack admin rights to generate your invite link. Ensure I am an Admin in the Broadcast Channel.`)
-          }
+          console.log(`✅ MATCH FOUND IN DATABASE: ${linkingUser.username}`)
+          await supabase.from('profiles').update({ telegram_user_id: telegramUserId, telegram_verification_code: null }).eq('id', linkingUser.id)
+          await sendMessage(`✅ **Identity Verified.** Welcome, *${linkingUser.username}*!`)
         } else {
+          console.log("❌ NO MATCH FOUND FOR OTP IN DATABASE.")
           await sendMessage(`❌ Invalid or expired transmission code.`)
         }
       } else {
-        await sendMessage(`Please enter a valid 6-digit transmission code, or type /start.`)
+        console.log("ℹ️ MESSAGE WAS NOT A 6-DIGIT CODE.")
       }
     }
 
     return NextResponse.json({ status: 'success' })
   } catch (error) {
-    console.error('Master Webhook Error:', error)
+    console.error('🔥 FATAL WEBHOOK ERROR:', error)
     return NextResponse.json({ status: 'fatal_error' }, { status: 500 })
   }
 }
