@@ -1,10 +1,9 @@
 'use client'
 
-import { useEffect, useState, useRef, useMemo } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Script from 'next/script'
 import { Lock, Smartphone, Loader2, Target, TrendingUp, TrendingDown, Minus, Activity, Clock, X, ZoomIn, ZoomOut, ArrowLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
-import Image from 'next/image'
 
 // ==========================================
 // 1. MOBILE VIEWPORT COMPONENT (Sliding Modal)
@@ -16,7 +15,6 @@ function MobileViewport({ setup, onClose }: { setup: any, onClose: () => void })
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [showThesis, setShowThesis] = useState(false)
 
-  // Mobile Touch Refs
   const touchMode = useRef<'none' | 'pan' | 'pinch'>('none')
   const pinchStartDist = useRef(0)
   const initialScale = useRef(1)
@@ -59,17 +57,17 @@ function MobileViewport({ setup, onClose }: { setup: any, onClose: () => void })
     <div className="fixed inset-0 z-[100] bg-[#030303] flex flex-col animate-in slide-in-from-bottom-full duration-300">
       
       {/* TOP HEADER */}
-      <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black/80 to-transparent z-50 flex items-center justify-between px-4">
-        <div className="flex items-center gap-3">
-          <button onClick={onClose} className="w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 text-white active:scale-95 transition-all">
+      <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black/80 to-transparent z-50 flex items-center justify-between px-4 pointer-events-none">
+        <div className="flex items-center gap-3 pointer-events-auto">
+          <button onClick={onClose} className="w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 text-white active:scale-95 transition-all shadow-lg">
             <ArrowLeft size={20} />
           </button>
           <div className="flex flex-col">
-            <span className="text-white font-black uppercase tracking-widest text-sm leading-tight">{setup.asset_symbol}</span>
-            <span className="text-blue-400 font-bold text-[10px] tracking-widest uppercase leading-tight">{setup.timeframe}</span>
+            <span className="text-white font-black uppercase tracking-widest text-sm leading-tight drop-shadow-md">{setup.asset_symbol}</span>
+            <span className="text-blue-400 font-bold text-[10px] tracking-widest uppercase leading-tight drop-shadow-md">{setup.timeframe}</span>
           </div>
         </div>
-        <div className={`px-2 py-1 rounded-md border text-[9px] font-black uppercase tracking-widest ${setup.status === 'ACTIVE' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
+        <div className={`px-2 py-1 rounded-md border text-[9px] font-black uppercase tracking-widest pointer-events-auto shadow-lg ${setup.status === 'ACTIVE' ? 'bg-blue-500/10 border-blue-500/20 text-blue-400' : 'bg-amber-500/10 border-amber-500/20 text-amber-400'}`}>
           {setup.status}
         </div>
       </div>
@@ -110,7 +108,6 @@ function MobileViewport({ setup, onClose }: { setup: any, onClose: () => void })
           </p>
         </div>
       </div>
-
     </div>
   )
 }
@@ -127,6 +124,9 @@ export default function MiniAppPage() {
   const [setups, setSetups] = useState<any[]>([])
   const [seenIds, setSeenIds] = useState<string[]>([])
   const [selectedSetup, setSelectedSetup] = useState<any | null>(null)
+
+  // Constant for 7 days in milliseconds
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 
   // 1. Initialize Telegram & Auth
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function MiniAppPage() {
           if (data.authorized) {
             setUserData(data.user)
             setStatus('authorized')
-            fetchSetups()
+            fetchData(data.user.id) 
           } else {
             setStatus(data.reason)
           }
@@ -171,33 +171,45 @@ export default function MiniAppPage() {
     return () => clearTimeout(timer)
   }, [])
 
-  // 2. Load Seen IDs from Browser Storage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('sentinel_seen_setups')
-      if (stored) setSeenIds(JSON.parse(stored))
-    }
-  }, [])
-
-  // 3. Fetch Live Data
-  const fetchSetups = async () => {
-    const { data, error } = await supabase
+  // 2. Fetch Setups & Seen Receipts from Supabase
+  const fetchData = async (userId: string) => {
+    const { data: setupsData } = await supabase
       .from('analyses')
       .select('*')
       .in('status', ['ACTIVE', 'WAITING'])
       .order('created_at', { ascending: false })
       .limit(50)
 
-    if (data && !error) setSetups(data)
+    if (setupsData) setSetups(setupsData)
+
+    const { data: seenData } = await supabase
+      .from('user_seen_setups')
+      .select('analysis_id')
+      .eq('user_id', userId)
+
+    if (seenData) {
+      setSeenIds(seenData.map(row => row.analysis_id))
+    }
   }
 
-  // 4. Open Setup & Mark as Seen
-  const handleOpenSetup = (setup: any) => {
-    if (!seenIds.includes(setup.id)) {
-      const newSeen = [...seenIds, setup.id]
-      setSeenIds(newSeen)
-      localStorage.setItem('sentinel_seen_setups', JSON.stringify(newSeen))
+  // 3. Open Setup & Sync "Seen" status
+  const handleOpenSetup = async (setup: any) => {
+    const isOlderThanAWeek = new Date(setup.created_at).getTime() < Date.now() - SEVEN_DAYS_MS;
+
+    // Only hit the database if it's actually unseen AND less than a week old
+    if (!seenIds.includes(setup.id) && !isOlderThanAWeek) {
+      setSeenIds(prev => [...prev, setup.id])
+      
+      if (userData?.id) {
+        supabase.from('user_seen_setups').insert({
+          user_id: userData.id,
+          analysis_id: setup.id
+        }).then(({ error }) => {
+          if (error) console.error("Failed to mark setup as seen:", error)
+        })
+      }
     }
+    
     setSelectedSetup(setup)
   }
 
@@ -257,7 +269,7 @@ export default function MiniAppPage() {
             <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest leading-tight">Sentinel Vortex</span>
           </div>
         </div>
-        <div className="text-[10px] font-black px-2.5 py-1.5 bg-[#111] border border-white/5 text-neutral-300 rounded-lg tracking-wider uppercase">
+        <div className="text-[10px] font-black px-2.5 py-1.5 bg-[#111] border border-white/5 text-neutral-300 rounded-lg tracking-wider uppercase shadow-sm">
           {userData?.username}
         </div>
       </div>
@@ -271,14 +283,17 @@ export default function MiniAppPage() {
           </div>
         ) : (
           setups.map(setup => {
-            const isUnseen = !seenIds.includes(setup.id)
+            // 🚨 THE FIX: Automatically treat anything older than 7 days as "Seen"
+            const isOlderThanAWeek = new Date(setup.created_at).getTime() < Date.now() - SEVEN_DAYS_MS;
+            const isUnseen = !seenIds.includes(setup.id) && !isOlderThanAWeek;
+            
             const isActive = setup.status === 'ACTIVE'
 
             return (
               <button 
                 key={setup.id}
                 onClick={() => handleOpenSetup(setup)}
-                className="w-full text-left bg-[#0a0a0a] border border-white/[0.04] rounded-2xl p-4 flex items-center justify-between transition-transform active:scale-95 relative overflow-hidden"
+                className="w-full text-left bg-[#0a0a0a] border border-white/[0.04] rounded-2xl p-4 flex items-center justify-between transition-transform active:scale-95 relative overflow-hidden shadow-sm"
               >
                 {/* Unseen Glowing Dot */}
                 {isUnseen && (
@@ -286,17 +301,17 @@ export default function MiniAppPage() {
                 )}
 
                 <div className="flex items-center gap-4 pl-2">
-                  <div className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center border ${isActive ? 'bg-blue-500/10 border-blue-500/20' : 'bg-amber-500/10 border-amber-500/20'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center border shrink-0 ${isActive ? 'bg-blue-500/10 border-blue-500/20' : 'bg-amber-500/10 border-amber-500/20'}`}>
                     <span className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest mb-0.5">{isActive ? 'LIVE' : 'WAIT'}</span>
                     <span className={`text-xs font-black uppercase ${isActive ? 'text-blue-400' : 'text-amber-500'}`}>{setup.timeframe}</span>
                   </div>
 
-                  <div className="flex flex-col">
-                    <span className="text-sm font-black uppercase tracking-wider text-white mb-1">{setup.asset_symbol}</span>
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <span className="text-sm font-black uppercase tracking-wider text-white mb-1 truncate">{setup.asset_symbol}</span>
                     <div className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
                       {getBiasUI(setup.bias)}
                       <span className="text-neutral-700">•</span>
-                      <span className="text-neutral-500">{getTimeAgo(setup.created_at)}</span>
+                      <span className="text-neutral-500 shrink-0">{getTimeAgo(setup.created_at)}</span>
                     </div>
                   </div>
                 </div>
