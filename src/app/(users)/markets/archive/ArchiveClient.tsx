@@ -1,9 +1,11 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Lock, Clock, Shield, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react'
 import { PLAN_CONFIG, getAssetCategory } from '@/lib/platformConfig'
+import { supabase } from '@/lib/supabase'
 
 // 🚨 INLINED ACCESS LOGIC: Strictly enforces Free (7-day delay / category locks) vs Pro (Instant)
 const getSetupAccess = (setup: any, userPlan: string) => {
@@ -33,8 +35,26 @@ const getSetupAccess = (setup: any, userPlan: string) => {
   }
 }
 
-export default function ArchiveClient({ asset, initialHistory, userPlan }: { asset: string, initialHistory: any[], userPlan: string }) {
+export default function ArchiveClient({ asset, initialHistory, userPlan, userId }: { asset: string, initialHistory: any[], userPlan: string, userId?: string }) {
   const router = useRouter()
+  
+  // 🚨 NEW: Unseen Tracker State
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    const fetchSeenSetups = async () => {
+      if (!userId) return;
+      const { data } = await supabase
+        .from('user_seen_setups')
+        .select('analysis_id')
+        .eq('user_id', userId);
+      
+      if (data) {
+        setSeenIds(new Set(data.map(d => d.analysis_id)));
+      }
+    };
+    fetchSeenSetups();
+  }, [userId]);
   
   // --- GROUPING LOGIC ---
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -76,11 +96,18 @@ export default function ArchiveClient({ asset, initialHistory, userPlan }: { ass
     // Fade out both canceled and archived setups so active setups pop out more
     const isFaded = status === 'CANCELED' || status === 'ARCHIVED'
 
+    // 🚨 NEW: Unseen Logic (Must be < 7 days old and not in seen database)
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const isOlderThanAWeek = new Date(setup.created_at).getTime() < Date.now() - SEVEN_DAYS_MS;
+    const isUnseen = !seenIds.has(setup.id) && !isOlderThanAWeek;
+
     return (
       <div 
         onClick={() => router.push(`/markets/viewport?asset=${asset}&from=archive`)}
         className={`bg-[#0a0a0a] border rounded-xl overflow-hidden flex flex-col group cursor-pointer transition-all duration-300 relative min-h-[180px] md:min-h-[200px]
-          ${isPrime ? 'border-blue-500/30 hover:border-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.05)]' : 'border-neutral-800 hover:border-neutral-600 shadow-sm'}
+          ${isUnseen ? 'border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.1)]' : ''}
+          ${isPrime && !isUnseen ? 'border-blue-500/30 hover:border-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.05)]' : ''}
+          ${!isPrime && !isUnseen ? 'border-neutral-800 hover:border-neutral-600 shadow-sm' : ''}
           ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
@@ -108,6 +135,18 @@ export default function ArchiveClient({ asset, initialHistory, userPlan }: { ass
               <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest border border-white/10 z-20">
                 {setup.timeframe || '-'}
               </div>
+
+              {/* 🚨 NEW: Unseen Glowing Badge */}
+              {isUnseen && (
+                <div className="absolute top-2 right-2 bg-blue-500/10 backdrop-blur-md px-1.5 py-0.5 rounded flex items-center border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.3)] z-20">
+                  <span className="relative flex h-1.5 w-1.5 mr-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                  </span>
+                  <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">New</span>
+                </div>
+              )}
+
               <div className="absolute bottom-2 right-2 p-1 rounded-md backdrop-blur-md bg-[#111]/80 border border-neutral-800 text-neutral-500 group-hover:text-white transition-colors z-20">
                 {isBull ? <TrendingUp size={10} /> : isBear ? <TrendingDown size={10} /> : <Minus size={10} />}
               </div>
