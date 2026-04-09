@@ -195,17 +195,17 @@ export default function ViewportClient({
     return sorted[0].id;
   }, [allHistory]);
 
-  // 🚨 NEW: INSTANT LOCAL STORAGE + SUPABASE SYNC
+  // 🚨 FIXED: LOCAL STORAGE KEY MATCHES ARCHIVE CLIENT NOW
   useEffect(() => {
     if (userId && currentSetup?.id) {
       // Step A: Instantly write to LocalStorage so when user hits 'Back', it's already marked unseen
       if (typeof window !== 'undefined') {
         try {
-          const stored = localStorage.getItem('sentinel_seen_setups')
+          const stored = localStorage.getItem('sentinel_archive_seen') // 🚨 FIXED KEY
           const localSeen = stored ? JSON.parse(stored) : []
           if (!localSeen.includes(currentSetup.id)) {
             localSeen.push(currentSetup.id)
-            localStorage.setItem('sentinel_seen_setups', JSON.stringify(localSeen))
+            localStorage.setItem('sentinel_archive_seen', JSON.stringify(localSeen)) // 🚨 FIXED KEY
           }
         } catch (e) {
           console.error("Local storage error:", e)
@@ -369,9 +369,9 @@ export default function ViewportClient({
          onTouchEnd={access.hasAccess ? handleTouchEnd : undefined}
          onTouchCancel={access.hasAccess ? handleTouchEnd : undefined}
        >
-         {/* 🚨 LATEST BADGE (Top Right) */}
+         {/* 🚨 LATEST BADGE (Moved to Bottom Left, above timeframe selector) */}
          {currentSetup.id === latestSetupId && (
-           <div className="absolute top-20 right-4 md:top-24 md:right-8 z-40 flex items-center px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md pointer-events-none">
+           <div className="absolute bottom-24 left-4 md:bottom-8 md:left-8 z-40 flex items-center px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md pointer-events-none">
              <span className="relative flex h-2 w-2 mr-2">
                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
