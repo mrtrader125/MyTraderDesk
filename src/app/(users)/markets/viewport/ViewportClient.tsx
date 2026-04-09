@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin, Star, Target, ZoomIn, ZoomOut, Menu, CheckCircle2, XCircle, Ban, Archive } from 'lucide-react'
 import { PLAN_CONFIG, getAssetCategory } from '@/lib/platformConfig'
 
-// 🚨 INLINED ACCESS LOGIC
+// 🚨 INLINED ACCESS LOGIC: Strictly enforces Free (7-day delay / category locks) vs Pro (Instant)
 const getSetupAccess = (setup: any, userPlan: string) => {
   if (!setup) return { hasAccess: false, countdownText: '', isCategoryLocked: false };
   if (userPlan === 'pro') return { hasAccess: true, countdownText: '', isCategoryLocked: false };
@@ -14,9 +14,15 @@ const getSetupAccess = (setup: any, userPlan: string) => {
   const category = getAssetCategory(setup.asset_symbol);
   const isAllowedCategory = PLAN_CONFIG.free.allowedCategories.includes(category);
 
-  if (!isAllowedCategory) return { hasAccess: false, countdownText: '', isCategoryLocked: true };
+  // 1. Check if the asset category is allowed for Free users
+  if (!isAllowedCategory) {
+    return { hasAccess: false, countdownText: '', isCategoryLocked: true };
+  }
+
+  // 2. Check if the admin explicitly made this setup free
   if (setup.tier_access === 'free') return { hasAccess: true, countdownText: '', isCategoryLocked: false };
 
+  // 3. Calculate 7-day delay
   const postTime = new Date(setup.created_at).getTime();
   const currentTime = new Date().getTime();
   const hoursSincePosted = (currentTime - postTime) / (1000 * 60 * 60);
@@ -175,24 +181,38 @@ export default function ViewportClient({
   const filteredHistory = useMemo(() => allHistory.filter(a => a.timeframe === selectedTf), [allHistory, selectedTf])
   const currentSetup = filteredHistory[activeIndex]
 
-  // 🚨 NEW: 1. Identify the absolute Latest Setup for this asset
+  // 1. Identify the absolute Latest Setup for this asset (if ACTIVE or WAITING)
   const latestSetupId = useMemo(() => {
     if (!allHistory || allHistory.length === 0) return null;
-    // Only fetch setups that are ACTIVE or WAITING
     const activeOrWaiting = allHistory.filter(s => {
       const st = (s.status || 'WAITING').toUpperCase();
       return st === 'ACTIVE' || st === 'WAITING';
     });
     if (activeOrWaiting.length === 0) return null;
 
-    // Sort by newest first
+    // Sort by newest first and return the top ID
     const sorted = [...activeOrWaiting].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return sorted[0].id;
   }, [allHistory]);
 
-  // 🚨 NEW: 2. Write Read Receipt to Supabase when viewing this specific chart
+  // 🚨 NEW: INSTANT LOCAL STORAGE + SUPABASE SYNC
   useEffect(() => {
     if (userId && currentSetup?.id) {
+      // Step A: Instantly write to LocalStorage so when user hits 'Back', it's already marked unseen
+      if (typeof window !== 'undefined') {
+        try {
+          const stored = localStorage.getItem('sentinel_seen_setups')
+          const localSeen = stored ? JSON.parse(stored) : []
+          if (!localSeen.includes(currentSetup.id)) {
+            localSeen.push(currentSetup.id)
+            localStorage.setItem('sentinel_seen_setups', JSON.stringify(localSeen))
+          }
+        } catch (e) {
+          console.error("Local storage error:", e)
+        }
+      }
+
+      // Step B: Silently sync with Supabase for cross-device persistence
       supabase
         .from('user_seen_setups')
         .upsert(
@@ -200,7 +220,9 @@ export default function ViewportClient({
           { onConflict: 'user_id, analysis_id' }
         )
         .then(({ error }) => {
-           if (error) console.error("Seen Tracking Error:", error);
+           if (error && error.code !== '23505') {
+             console.error("Seen Tracking Error:", error);
+           }
         });
     }
   }, [userId, currentSetup?.id]);
@@ -347,7 +369,7 @@ export default function ViewportClient({
          onTouchEnd={access.hasAccess ? handleTouchEnd : undefined}
          onTouchCancel={access.hasAccess ? handleTouchEnd : undefined}
        >
-         {/* 🚨 LATEST BADGE (Top Right, avoiding zoom buttons/timeframes) */}
+         {/* 🚨 LATEST BADGE (Top Right) */}
          {currentSetup.id === latestSetupId && (
            <div className="absolute top-20 right-4 md:top-24 md:right-8 z-40 flex items-center px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md pointer-events-none">
              <span className="relative flex h-2 w-2 mr-2">
