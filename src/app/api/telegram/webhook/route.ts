@@ -11,7 +11,6 @@ export const runtime = 'edge'
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    console.log("=== 1. INCOMING TELEGRAM PAYLOAD ===")
     
     const botToken = process.env.TELEGRAM_SENTINEL_TOKEN
     const broadcastChannelId = process.env.TELEGRAM_BROADCAST_CHANNEL_ID
@@ -22,7 +21,6 @@ export async function POST(req: Request) {
        return NextResponse.json({ status: 'error' }, { status: 500 })
     }
 
-    // Helper to keep code clean and log outbound messages
     const sendMessage = async (chatId: number, text: string, parseMode?: string, replyMarkup?: any, replyToId?: number) => {
       const payload: any = { chat_id: chatId, text, parse_mode: parseMode }
       if (replyMarkup) payload.reply_markup = replyMarkup
@@ -40,7 +38,7 @@ export async function POST(req: Request) {
     // ==========================================
     if (body.callback_query) {
       const cb = body.callback_query
-      const data = cb.data // e.g., 'deploy_123' or 'cancel_123'
+      const data = cb.data 
       const chatId = cb.message.chat.id
       const messageId = cb.message.message_id
 
@@ -55,7 +53,6 @@ export async function POST(req: Request) {
         const draftId = data.replace('cancel_', '')
         await supabase.from('queued_analyses').delete().eq('id', draftId)
         
-        // Edit the message to show it was cancelled
         await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -67,33 +64,32 @@ export async function POST(req: Request) {
       if (data.startsWith('deploy_')) {
         const draftId = data.replace('deploy_', '')
         
-        // 1. Fetch the draft securely
-        const { data: draft } = await supabase.from('queued_analyses').select('*').eq('id', draftId).single()
+        // 🚨 THE ATOMIC LOCK: Delete and fetch in the exact same step to prevent duplicate Telegram retries.
+        const { data: deletedDrafts } = await supabase
+          .from('queued_analyses')
+          .delete()
+          .eq('id', draftId)
+          .select()
         
-        if (draft) {
-          // 2. Deploy it to the MAIN LIVE FLOOR (Left Pane)
-          await supabase.from('terminal_posts').insert({
-            thesis: draft.content || '',
-            ticker: 'UPDATE',
-            timeframe: 'NOW',
-            tier_access: 'pro',
-            image_url: draft.image_url
-          })
-
-          // Fallback just in case you use the analyses table instead of terminal_posts
-          await supabase.from('analyses').insert({
+        // If length > 0, we successfully acquired the lock and deleted it. Safe to deploy!
+        if (deletedDrafts && deletedDrafts.length > 0) {
+          const draft = deletedDrafts[0]
+          
+          // Deploy it to the MAIN LIVE FLOOR (analyses table)
+          const { error: insertError } = await supabase.from('analyses').insert({
             content: draft.content || '',
             asset_symbol: 'UPDATE',
             timeframe: 'NOW',
+            category: 'FOREX',
+            bias: 'NEUTRAL',
             tier_access: 'pro',
             status: 'ACTIVE',
             image_url: draft.image_url
-          }).catch(() => {})
+          })
 
-          // 3. Delete the draft
-          await supabase.from('queued_analyses').delete().eq('id', draftId)
+          if (insertError) console.error("Floor Insert Error:", insertError)
 
-          // 4. Update the Telegram message
+          // Update the Telegram message so the button goes away
           await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -109,7 +105,6 @@ export async function POST(req: Request) {
     // ==========================================
     const channelPost = body.channel_post || body.edited_channel_post
     if (channelPost && channelPost.chat.id.toString() === broadcastChannelId) {
-      console.log("📢 BROADCAST CHANNEL POST DETECTED. Mirroring to Web...")
       const messageId = channelPost.message_id
       const rawText = channelPost.text || channelPost.caption || ''
       const text = rawText.trim()
@@ -158,12 +153,9 @@ export async function POST(req: Request) {
 
       // --- THE ADMIN REMOTE CONTROL (MAIN FLOOR) ---
       if (telegramUserId.toString() === adminId && !/^\d{6}$/.test(text) && text !== '/start') {
-         console.log("👑 ADMIN COMMAND DETECTED. Processing Draft...")
-         
          let finalMediaUrl = null
 
          if (message.photo && message.photo.length > 0) {
-           console.log("📸 Image detected in Admin DM. Processing download...")
            const fileId = message.photo[message.photo.length - 1].file_id
            const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`)
            const fileData = await fileRes.json()
@@ -181,7 +173,7 @@ export async function POST(req: Request) {
            }
          }
 
-         // Save securely in the staging queue to prevent it flashing on the live floor unconfirmed
+         // Save securely in the staging queue
          const { data: draftData, error: draftError } = await supabase.from('queued_analyses').insert({
            asset_symbol: 'UPDATE',
            timeframe: 'NOW',
@@ -209,8 +201,6 @@ export async function POST(req: Request) {
               inlineKeyboard, 
               message.message_id
             )
-         } else {
-            console.error("Draft Save Error:", draftError)
          }
          return NextResponse.json({ status: 'success' })
       }
