@@ -181,53 +181,6 @@ export default function ViewportClient({
   const filteredHistory = useMemo(() => allHistory.filter(a => a.timeframe === selectedTf), [allHistory, selectedTf])
   const currentSetup = filteredHistory[activeIndex]
 
-  // 1. Identify the absolute Latest Setup for this asset (if ACTIVE or WAITING)
-  const latestSetupId = useMemo(() => {
-    if (!allHistory || allHistory.length === 0) return null;
-    const activeOrWaiting = allHistory.filter(s => {
-      const st = (s.status || 'WAITING').toUpperCase();
-      return st === 'ACTIVE' || st === 'WAITING';
-    });
-    if (activeOrWaiting.length === 0) return null;
-
-    // Sort by newest first and return the top ID
-    const sorted = [...activeOrWaiting].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    return sorted[0].id;
-  }, [allHistory]);
-
-  // 🚨 FIXED: LOCAL STORAGE KEY MATCHES ARCHIVE CLIENT NOW
-  useEffect(() => {
-    if (userId && currentSetup?.id) {
-      // Step A: Instantly write to LocalStorage so when user hits 'Back', it's already marked unseen
-      if (typeof window !== 'undefined') {
-        try {
-          const stored = localStorage.getItem('sentinel_archive_seen') // 🚨 FIXED KEY
-          const localSeen = stored ? JSON.parse(stored) : []
-          if (!localSeen.includes(currentSetup.id)) {
-            localSeen.push(currentSetup.id)
-            localStorage.setItem('sentinel_archive_seen', JSON.stringify(localSeen)) // 🚨 FIXED KEY
-          }
-        } catch (e) {
-          console.error("Local storage error:", e)
-        }
-      }
-
-      // Step B: Silently sync with Supabase for cross-device persistence
-      supabase
-        .from('user_seen_setups')
-        .upsert(
-          { user_id: userId, analysis_id: currentSetup.id },
-          { onConflict: 'user_id, analysis_id' }
-        )
-        .then(({ error }) => {
-           if (error && error.code !== '23505') {
-             console.error("Seen Tracking Error:", error);
-           }
-        });
-    }
-  }, [userId, currentSetup?.id]);
-
-
   const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
     e.stopPropagation() 
     if (!setup || !userId) return
@@ -369,17 +322,6 @@ export default function ViewportClient({
          onTouchEnd={access.hasAccess ? handleTouchEnd : undefined}
          onTouchCancel={access.hasAccess ? handleTouchEnd : undefined}
        >
-         {/* 🚨 LATEST BADGE (Moved to Bottom Left, above timeframe selector) */}
-         {currentSetup.id === latestSetupId && (
-           <div className="absolute bottom-24 left-4 md:bottom-8 md:left-8 z-40 flex items-center px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md pointer-events-none">
-             <span className="relative flex h-2 w-2 mr-2">
-               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-               <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-             </span>
-             <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Latest Setup</span>
-           </div>
-         )}
-
          {access.hasAccess ? (
            currentSetup.after_image_url && currentSetup.image_url ? (
              <div className="w-[95%] h-[75%] md:w-full md:h-full max-w-6xl flex items-center justify-center pointer-events-auto">
@@ -552,7 +494,7 @@ export default function ViewportClient({
 
          {/* MOBILE ZOOM CONTROLS */}
          {access.hasAccess && !currentSetup.after_image_url && (
-           <div className="md:hidden absolute bottom-36 right-4 flex flex-col space-y-2 pointer-events-auto z-40">
+           <div className="md:hidden absolute bottom-24 right-4 flex flex-col space-y-2 pointer-events-auto z-40">
              <button onClick={zoomIn} className="w-10 h-10 bg-[#0a0a0a]/90 backdrop-blur-md border border-neutral-800 rounded-full flex items-center justify-center text-neutral-400 hover:text-white shadow-xl active:scale-95 transition-all"><ZoomIn size={16}/></button>
              <button onClick={zoomOut} className="w-10 h-10 bg-[#0a0a0a]/90 backdrop-blur-md border border-neutral-800 rounded-full flex items-center justify-center text-neutral-400 hover:text-white shadow-xl active:scale-95 transition-all"><ZoomOut size={16}/></button>
            </div>
