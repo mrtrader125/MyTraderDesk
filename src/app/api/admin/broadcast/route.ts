@@ -1,33 +1,51 @@
-// app/api/admin/broadcast/route.ts
+// src/app/api/admin/broadcast/route.ts
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { ticker, timeframe, thesis, image_url, tier_access } = body;
+export const runtime = 'edge';
 
-    // 1. Validate the incoming data
-    if (!ticker || !thesis) {
-      return NextResponse.json(
-        { message: 'Ticker and thesis are required' },
-        { status: 400 }
-      );
+export async function POST() {
+  try {
+    const botToken = process.env.TELEGRAM_SENTINEL_TOKEN;
+    const channelId = process.env.TELEGRAM_BROADCAST_CHANNEL_ID;
+
+    if (!botToken || !channelId) {
+      console.error("❌ TELEGRAM BROADCAST ERROR: Missing Environment Variables");
+      return NextResponse.json({ error: "Telegram credentials missing." }, { status: 500 });
     }
 
-    // 2. TODO: Insert into your Supabase database here (if not doing it on frontend)
-    // 3. TODO: Send message to your Telegram Bot here using fetch()
+    // Your exact formatted message using Markdown
+    const messageText = `🟢 **Today's analysis is live.**
 
-    // 4. Return a success JSON response
-    return NextResponse.json({ 
-      success: true, 
-      message: 'Broadcast successful' 
-    }, { status: 200 });
+🖥️ Check the website/app for full details.
+
+⚡ Watch the live floor terminal for real-time execution and updates.
+
+⚠️ _Risk Advisory : Risk management is not optional. Keep your stops tight and size your positions responsibly._`;
+
+    // Send the message to the broadcast channel
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: channelId,
+        text: messageText,
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!data.ok) {
+      console.error("❌ Telegram API Error:", data);
+      return NextResponse.json({ error: data.description }, { status: 400 });
+    }
+
+    console.log("✅ Broadcast message sent successfully!");
+    return NextResponse.json({ success: true, messageId: data.result.message_id });
 
   } catch (error: any) {
-    console.error('Broadcast API Error:', error);
-    return NextResponse.json(
-      { message: error.message || 'Internal Server Error' },
-      { status: 500 }
-    );
+    console.error("🔥 Fatal Broadcast Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
