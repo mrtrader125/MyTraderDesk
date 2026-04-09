@@ -35,8 +35,17 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
   // 🚨 Unseen Tracker State
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
 
-  // Fetch the user's read receipts from Supabase on load
+  // Fetch the user's read receipts (Combines LocalStorage for instant UI + Supabase for cross-device)
   useEffect(() => {
+    // 1. Check local storage instantly so "Back" button navigation is flawless
+    if (typeof window !== 'undefined') {
+      const localSeen = localStorage.getItem('sentinel_archive_seen');
+      if (localSeen) {
+        setSeenIds(new Set(JSON.parse(localSeen)));
+      }
+    }
+
+    // 2. Fetch the permanent ground truth from Supabase
     const fetchSeenSetups = async () => {
       if (!userId) return;
       const { data } = await supabase
@@ -45,7 +54,14 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
         .eq('user_id', userId);
       
       if (data) {
-        setSeenIds(new Set(data.map(d => d.analysis_id)));
+        setSeenIds(prev => {
+          const next = new Set(prev);
+          data.forEach(d => next.add(d.analysis_id));
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('sentinel_archive_seen', JSON.stringify(Array.from(next)));
+          }
+          return next;
+        });
       }
     };
     fetchSeenSetups();
@@ -68,12 +84,11 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     const dateObj = new Date(setup.created_at)
     const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
     const formattedTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    const displayText = setup.title || setup.content || `${asset} Setup`
     
     const isBull = setup.bias?.toUpperCase() === 'BULLISH'
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
-    
     const isPrime = setup.is_prime === true;
+    
     const { hasAccess, requiredTier } = getSetupAccess(setup, userPlan)
 
     const status = (setup.status || 'WAITING').toUpperCase()
@@ -93,18 +108,27 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     const isOlderThanAWeek = new Date(setup.created_at).getTime() < Date.now() - SEVEN_DAYS_MS;
     const isUnseen = !seenIds.has(setup.id) && !isOlderThanAWeek;
 
-    const handleCardClick = async () => {
-      // 1. Instantly remove glow via optimistic UI update
+    const handleCardClick = () => {
+      // 1. Instantly update UI and LocalStorage
       if (isUnseen && userId) {
-        setSeenIds(prev => new Set([...prev, setup.id]));
+        setSeenIds(prev => {
+          const next = new Set(prev);
+          next.add(setup.id);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('sentinel_archive_seen', JSON.stringify(Array.from(next)));
+          }
+          return next;
+        });
 
-        // 2. AWAIT the database insert so the browser doesn't cancel it during navigation
-        await supabase.from('user_seen_setups').upsert(
+        // 2. Fire and forget to Supabase (so it syncs to their phone later)
+        supabase.from('user_seen_setups').upsert(
           { user_id: userId, analysis_id: setup.id },
           { onConflict: 'user_id, analysis_id' }
-        );
+        ).then(({ error }) => {
+          if (error && error.code !== '23505') console.error("Seen DB sync error:", error);
+        });
       }
-      // 3. Route to Viewport
+      // 3. Route instantly
       router.push(`/markets/viewport?asset=${asset}&from=archive`);
     };
 
@@ -122,7 +146,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
         <div className="h-24 md:h-28 w-full bg-[#050505] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
           <img 
             src={setup.image_url} 
-            alt={displayText} 
+            alt={`${asset} Chart`} 
             draggable={false}
             className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100' : 'opacity-10 blur-md grayscale'} ${status === 'ARCHIVED' ? 'grayscale-[50%]' : ''}`} 
           />
@@ -136,51 +160,51 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           )}
         </div>
 
-        {/* BOTTOM CONTENT AREA */}
-        <div className="relative p-3 md:p-4 pr-4 md:pr-5 flex flex-col flex-1 justify-between z-10">
+        {/* 🚨 BOTTOM CONTENT AREA - Cleaned and Reordered */}
+        <div className="relative p-3 md:p-4 flex flex-col flex-1 justify-between z-10">
           <div className={`absolute top-0 right-0 inset-y-0 w-1 transition-all duration-500 z-30 ${statusLine}`} />
           
-          <div className="flex flex-col items-start mb-2 w-full pr-2">
+          <div className="flex justify-between items-start mb-2 pr-2">
             
-            {/* 🚨 NEW: Tags Row in the Black Content Area */}
-            <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
-              {hasAccess && (
-                <span className="bg-[#111] px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest border border-white/5 shadow-inner">
-                  {setup.timeframe || '-'}
-                </span>
-              )}
-
-              {hasAccess && (
-                <span className="flex items-center gap-1 px-1 text-[8px] font-bold uppercase tracking-widest text-neutral-400">
-                  {isBull ? <TrendingUp size={10} className="text-emerald-400" /> : isBear ? <TrendingDown size={10} className="text-red-400" /> : <Minus size={10} />}
-                  {setup.bias || 'Neutral'}
-                </span>
-              )}
-
-              {isPrime && (
-                <div className="flex items-center px-1.5 py-0.5 rounded border bg-blue-500/10 border-blue-500/20 text-blue-400 shadow-sm">
-                  <Target size={8} className="mr-1" />
-                  <span className="text-[7px] font-black uppercase tracking-widest">Prime</span>
-                </div>
-              )}
-
-              {hasAccess && isUnseen && (
-                <div className="flex items-center px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.3)]">
-                  <span className="relative flex h-1.5 w-1.5 mr-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+            {/* LEFT: Instrument Name, TF, Bias */}
+            <div className="flex flex-col gap-1.5">
+              <h3 className={`text-[13px] md:text-sm font-black uppercase tracking-wider transition-colors ${hasAccess ? 'text-neutral-200 group-hover:text-white' : 'text-neutral-600'}`}>
+                {asset}
+              </h3>
+              
+              <div className="flex items-center gap-1.5">
+                {hasAccess && (
+                  <span className="bg-[#111] px-1.5 py-0.5 rounded text-[9px] font-black text-white uppercase tracking-widest border border-white/5 shadow-inner">
+                    {setup.timeframe || '-'}
                   </span>
-                  <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">New</span>
-                </div>
-              )}
+                )}
+                {hasAccess && (
+                  <span className="flex items-center justify-center bg-[#111] w-5 h-5 rounded border border-white/5 shadow-inner">
+                    {isBull ? <TrendingUp size={10} className="text-emerald-400" /> : isBear ? <TrendingDown size={10} className="text-red-400" /> : <Minus size={10} className="text-neutral-500" />}
+                  </span>
+                )}
+                {isPrime && (
+                  <div className="flex items-center justify-center w-5 h-5 rounded border bg-blue-500/10 border-blue-500/20 shadow-sm" title="Prime Setup">
+                    <Target size={10} className="text-blue-400" />
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* TITLE */}
-            <h3 className={`text-[11px] md:text-xs font-bold line-clamp-2 leading-tight transition-colors ${hasAccess ? 'text-neutral-200 group-hover:text-white' : 'text-neutral-600'}`}>
-              {hasAccess ? displayText : 'Analysis Locked.'}
-            </h3>
+            {/* RIGHT: NEW Tag */}
+            {hasAccess && isUnseen && (
+              <div className="flex items-center px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.3)] shrink-0">
+                <span className="relative flex h-1.5 w-1.5 mr-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                </span>
+                <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">New</span>
+              </div>
+            )}
+
           </div>
           
+          {/* BOTTOM ROW: Timestamp */}
           <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-neutral-500 pt-2.5 border-t border-neutral-800/50 mt-auto pr-1">
             <span className="flex items-center"><Clock size={8} className="mr-1.5" /> {formattedDate}</span>
             <span>{formattedTime}</span>
