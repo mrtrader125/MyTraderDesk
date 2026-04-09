@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'edge';
 
@@ -15,11 +16,15 @@ export async function POST(req: Request) {
 
     const botToken = process.env.TELEGRAM_SENTINEL_TOKEN;
     const channelId = process.env.TELEGRAM_BROADCAST_CHANNEL_ID;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    if (!botToken || !channelId) {
+    if (!botToken || !channelId || !supabaseUrl || !supabaseKey) {
       console.error("❌ TELEGRAM BROADCAST ERROR: Missing Environment Variables");
-      return NextResponse.json({ error: "Telegram credentials missing." }, { status: 500 });
+      return NextResponse.json({ error: "Credentials missing." }, { status: 500 });
     }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // 2. Decide which message to send based on the trigger
     let messageText = '';
@@ -46,6 +51,22 @@ export async function POST(req: Request) {
 
     const data = await response.json();
     if (!data.ok) throw new Error(data.description);
+
+    // 4. 🚨 MIRROR TO DATABASE
+    // This guarantees the Live Floor updates instantly alongside Telegram
+    const { error: dbError } = await supabase.from('live_squawk').insert({
+      author_username: 'Sentinel Admin',
+      message: messageText,
+      source: 'system_broadcast',
+      tag: 'Broadcast',
+      telegram_message_id: data.result.message_id
+    });
+
+    if (dbError) {
+       console.error("❌ Failed to mirror broadcast to Supabase:", dbError);
+    } else {
+       console.log("✅ Broadcast mirrored to live_squawk database.");
+    }
 
     return NextResponse.json({ success: true, messageId: data.result.message_id });
 
