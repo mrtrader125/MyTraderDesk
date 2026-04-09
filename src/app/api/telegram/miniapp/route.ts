@@ -17,17 +17,21 @@ export async function POST(req: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
+    // 🚨 FIX 1: Corrected variable name to `telegramId`
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('id, username, plan')
-      .eq('telegram_user_id', telegramUserId)
+      .eq('telegram_user_id', telegramId)
       .single()
 
     if (error || !profile) {
       return NextResponse.json({ authorized: false, reason: 'not_linked' })
     }
 
-    if (profile.plan !== 'pro' && profile.plan !== 'premium') {
+    // 🚨 FIX 2: Bulletproof plan check (handles uppercase, nulls, and spacing)
+    const userPlan = (profile.plan || 'free').toLowerCase().trim()
+
+    if (userPlan !== 'pro' && userPlan !== 'premium') {
       return NextResponse.json({ authorized: false, reason: 'not_pro' })
     }
 
