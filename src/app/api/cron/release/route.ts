@@ -118,18 +118,47 @@ export async function GET(request: Request) {
       if (deleteError) throw deleteError;
 
       // ==========================================
-      // 🚨 NEW: TRIGGER THE TELEGRAM BROADCAST
+      // 🚨 ATOMIC TELEGRAM BROADCAST & WEB MIRROR
       // ==========================================
       try {
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://mytraderdesk.com';
-        await fetch(`${baseUrl}/api/admin/broadcast`, { 
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'automated' }) 
-        });
-        console.log('Cron: Automated Telegram Broadcast Fired!');
+        const botToken = process.env.TELEGRAM_SENTINEL_TOKEN;
+        const channelId = process.env.TELEGRAM_BROADCAST_CHANNEL_ID;
+
+        if (botToken && channelId) {
+          const messageText = `🟢 **Today's analysis is live.**\n\n🖥️ Check the website/app for full details.\n\n⚡ Watch the live floor terminal for real-time execution and updates.\n\n⚠️ _Risk Advisory : Risk management is not optional. Keep your stops tight and size your positions responsibly._`;
+
+          // 1. Send directly to Telegram
+          const tgResponse = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: channelId,
+              text: messageText,
+              parse_mode: 'Markdown',
+              disable_web_page_preview: true
+            }),
+          });
+
+          const tgData = await tgResponse.json();
+
+          // 2. Mirror instantly to the Live Floor
+          if (tgData.ok) {
+            console.log('Cron: Telegram Broadcast Fired Successfully!');
+            await supabase.from('live_squawk').insert({
+              author_username: 'Sentinel Admin',
+              message: messageText,
+              source: 'system_broadcast',
+              tag: 'Broadcast',
+              telegram_message_id: tgData.result.message_id
+            });
+          } else {
+            console.error('Cron: Telegram API Error:', tgData);
+          }
+        } else {
+          console.error('Cron: Missing Telegram env variables for broadcast.');
+        }
       } catch (broadcastError) {
-        console.error('Cron: Failed to send Telegram Broadcast:', broadcastError);
+        console.error('Cron: Failed to execute Telegram Broadcast:', broadcastError);
       }
 
       console.log(`Cron: SUCCESS! Dropped ${liveItems.length} setups.`);
