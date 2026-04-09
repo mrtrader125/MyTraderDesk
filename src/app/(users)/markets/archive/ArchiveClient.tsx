@@ -35,7 +35,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
   // 🚨 Unseen Tracker State
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
 
-  // --- SYNC ENGINE ---
+  // --- SYNC ENGINE (Instant LocalStorage + DB) ---
   const syncSeenIds = useCallback(() => {
     if (typeof window !== 'undefined') {
       const localSeen = localStorage.getItem('sentinel_archive_seen');
@@ -46,15 +46,12 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
   }, []);
 
   useEffect(() => {
-    // 1. Initial Sync on load
+    // 1. Instantly check local storage for snappy Back-Button navigation
     syncSeenIds();
-
-    // 2. Force re-sync when navigating BACK to this page from Viewport
     window.addEventListener('focus', syncSeenIds);
     window.addEventListener('pageshow', syncSeenIds);
-    window.addEventListener('popstate', syncSeenIds);
 
-    // 3. Fetch permanent ground truth from Supabase
+    // 2. Fetch permanent ground truth from Supabase
     const fetchSeenSetups = async () => {
       if (!userId) return;
       const { data } = await supabase
@@ -78,7 +75,6 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     return () => {
       window.removeEventListener('focus', syncSeenIds);
       window.removeEventListener('pageshow', syncSeenIds);
-      window.removeEventListener('popstate', syncSeenIds);
     };
   }, [userId, syncSeenIds]);
   
@@ -118,14 +114,20 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
 
     const isFaded = status === 'CANCELED' || status === 'ARCHIVED'
 
-    // 🚨 Unseen Logic (Must be < 7 days old and not in seen database)
+    // 🚨 Unseen Logic
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
     const isOlderThanAWeek = new Date(setup.created_at).getTime() < Date.now() - SEVEN_DAYS_MS;
-    const isUnseen = !seenIds.has(setup.id) && !isOlderThanAWeek;
+    
+    // 🚨 THE FIX: Instant UI Kill Switch
+    const [localHideNew, setLocalHideNew] = useState(false);
+    const isUnseen = !seenIds.has(setup.id) && !isOlderThanAWeek && !localHideNew;
 
     const handleCardClick = () => {
-      // 1. Instantly update UI and LocalStorage
       if (isUnseen && userId) {
+        // 1. INSTANTLY kill the UI tag. Next.js caches this state before routing!
+        setLocalHideNew(true);
+
+        // 2. Update Global State & Local Storage
         setSeenIds(prev => {
           const next = new Set(prev);
           next.add(setup.id);
@@ -135,7 +137,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           return next;
         });
 
-        // 2. Fire and forget to Supabase
+        // 3. Fire-and-forget DB sync
         supabase.from('user_seen_setups').upsert(
           { user_id: userId, analysis_id: setup.id },
           { onConflict: 'user_id, analysis_id' }
@@ -144,10 +146,8 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
         });
       }
       
-      // 3. 🚨 THE FIX: Delay routing by 50ms so React updates the DOM (removes dot) BEFORE Next.js snapshots the page!
-      setTimeout(() => {
-        router.push(`/markets/viewport?asset=${asset}&from=archive`);
-      }, 50);
+      // Route immediately
+      router.push(`/markets/viewport?asset=${asset}&from=archive`);
     };
 
     return (
@@ -160,7 +160,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
-        {/* IMAGE AREA - Completely Cleaned */}
+        {/* 🚨 IMAGE AREA - Completely Clean */}
         <div className="h-24 md:h-28 w-full bg-[#050505] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
           <img 
             src={setup.image_url} 
@@ -178,13 +178,13 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           )}
         </div>
 
-        {/* BOTTOM CONTENT AREA - Cleaned and Reordered */}
+        {/* 🚨 BOTTOM CONTENT AREA */}
         <div className="relative p-3 md:p-4 flex flex-col flex-1 justify-between z-10">
           <div className={`absolute top-0 right-0 inset-y-0 w-1 transition-all duration-500 z-30 ${statusLine}`} />
           
           <div className="flex justify-between items-start mb-2 pr-2">
             
-            {/* LEFT: Instrument Name, TF, Bias */}
+            {/* LEFT: Instrument Name, TF, Bias Icon */}
             <div className="flex flex-col gap-1.5">
               <h3 className={`text-[13px] md:text-sm font-black uppercase tracking-wider transition-colors ${hasAccess ? 'text-neutral-200 group-hover:text-white' : 'text-neutral-600'}`}>
                 {asset}
@@ -196,6 +196,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
                     {setup.timeframe || '-'}
                   </span>
                 )}
+                {/* JUST THE ICON, NO TEXT */}
                 {hasAccess && (
                   <span className="flex items-center justify-center bg-[#111] w-5 h-5 rounded border border-white/5 shadow-inner">
                     {isBull ? <TrendingUp size={10} className="text-emerald-400" /> : isBear ? <TrendingDown size={10} className="text-red-400" /> : <Minus size={10} className="text-neutral-500" />}
