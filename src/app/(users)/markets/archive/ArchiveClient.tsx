@@ -101,9 +101,31 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     const isOlderThanAWeek = new Date(setup.created_at).getTime() < Date.now() - SEVEN_DAYS_MS;
     const isUnseen = !seenIds.has(setup.id) && !isOlderThanAWeek;
 
+    const handleCardClick = () => {
+      // 1. Instantly remove glow via optimistic UI update
+      if (isUnseen && userId) {
+        setSeenIds(prev => {
+          const next = new Set(prev);
+          next.add(setup.id);
+          return next;
+        });
+
+        // 2. Save read receipt in background
+        supabase.from('user_seen_setups').insert({
+          user_id: userId,
+          analysis_id: setup.id
+        }).then(({ error }) => {
+          if (error && error.code !== '23505') console.error("Failed to mark setup as seen:", error);
+        });
+      }
+
+      // 3. Route to Viewport
+      router.push(`/markets/viewport?asset=${asset}&from=archive`);
+    };
+
     return (
       <div 
-        onClick={() => router.push(`/markets/viewport?asset=${asset}&from=archive`)}
+        onClick={handleCardClick}
         className={`bg-[#0a0a0a] border rounded-xl overflow-hidden flex flex-col group cursor-pointer transition-all duration-300 relative min-h-[180px] md:min-h-[200px]
           ${isUnseen ? 'border-blue-500/40 shadow-[0_0_15px_rgba(59,130,246,0.1)]' : ''}
           ${isPrime && !isUnseen ? 'border-blue-500/30 hover:border-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.05)]' : ''}
@@ -111,8 +133,8 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
+        {/* TOP IMAGE AREA - Cleaned of all badges */}
         <div className="h-24 md:h-28 w-full bg-[#050505] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
-          
           <img 
             src={setup.image_url} 
             alt={displayText} 
@@ -120,7 +142,6 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
             className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100' : 'opacity-10 blur-md grayscale'} ${status === 'ARCHIVED' ? 'grayscale-[50%]' : ''}`} 
           />
           
-          {/* 🚨 UPDATED PAYWALL OVERLAY */}
           {!hasAccess && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
               <Lock size={14} className="text-blue-500 mb-1" />
@@ -129,16 +150,38 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
               </span>
             </div>
           )}
+        </div>
 
-          {hasAccess && (
-            <>
-              <div className="absolute top-2 left-2 bg-black/80 backdrop-blur-md px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest border border-white/10 z-20">
-                {setup.timeframe || '-'}
-              </div>
+        {/* BOTTOM CONTENT AREA */}
+        <div className="relative p-3 md:p-4 pr-4 md:pr-5 flex flex-col flex-1 justify-between z-10">
+          <div className={`absolute top-0 right-0 inset-y-0 w-1 transition-all duration-500 z-30 ${statusLine}`} />
+          
+          <div className="flex flex-col items-start mb-2 w-full pr-2">
+            
+            {/* 🚨 NEW: Tags Row (Timeframe, Bias, Prime, New) */}
+            <div className="flex flex-wrap items-center gap-1.5 mb-2.5">
+              {hasAccess && (
+                <span className="bg-[#111] px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-widest border border-white/5">
+                  {setup.timeframe || '-'}
+                </span>
+              )}
 
-              {/* 🚨 NEW: Unseen Glowing Badge */}
-              {isUnseen && (
-                <div className="absolute top-2 right-2 bg-blue-500/10 backdrop-blur-md px-1.5 py-0.5 rounded flex items-center border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.3)] z-20">
+              {hasAccess && (
+                <span className="flex items-center gap-1 px-1 text-[8px] font-bold uppercase tracking-widest text-neutral-400">
+                  {isBull ? <TrendingUp size={10} className="text-emerald-400" /> : isBear ? <TrendingDown size={10} className="text-red-400" /> : <Minus size={10} />}
+                  {setup.bias || 'Neutral'}
+                </span>
+              )}
+
+              {isPrime && (
+                <div className="flex items-center px-1.5 py-0.5 rounded border bg-blue-500/10 border-blue-500/20 text-blue-400 shadow-sm">
+                  <Target size={8} className="mr-1" />
+                  <span className="text-[7px] font-black uppercase tracking-widest">Prime</span>
+                </div>
+              )}
+
+              {hasAccess && isUnseen && (
+                <div className="flex items-center px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.3)]">
                   <span className="relative flex h-1.5 w-1.5 mr-1.5">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
@@ -146,24 +189,9 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
                   <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest">New</span>
                 </div>
               )}
+            </div>
 
-              <div className="absolute bottom-2 right-2 p-1 rounded-md backdrop-blur-md bg-[#111]/80 border border-neutral-800 text-neutral-500 group-hover:text-white transition-colors z-20">
-                {isBull ? <TrendingUp size={10} /> : isBear ? <TrendingDown size={10} /> : <Minus size={10} />}
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="relative p-3 md:p-4 pr-4 md:pr-5 flex flex-col flex-1 justify-between z-10">
-          <div className={`absolute top-0 right-0 inset-y-0 w-1 transition-all duration-500 z-30 ${statusLine}`} />
-          
-          <div className="flex flex-col items-start mb-2">
-            {isPrime && (
-              <div className="flex items-center mb-2 px-1.5 py-0.5 rounded border bg-blue-500/10 border-blue-500/20 text-blue-400 shadow-sm">
-                <Target size={8} className="mr-1" />
-                <span className="text-[7px] font-black uppercase tracking-widest">Prime</span>
-              </div>
-            )}
+            {/* TITLE */}
             <h3 className={`text-[11px] md:text-xs font-bold line-clamp-2 leading-tight transition-colors ${hasAccess ? 'text-neutral-200 group-hover:text-white' : 'text-neutral-600'}`}>
               {hasAccess ? displayText : 'Analysis Locked.'}
             </h3>
