@@ -1,14 +1,17 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useMemo } from 'react'
 import Script from 'next/script'
 import { Lock, Smartphone, Loader2, Target, TrendingUp, TrendingDown, Minus, Activity, Clock, X, ZoomIn, ZoomOut, ArrowLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
+// 🚨 THE EPOCH CUTOFF: Only setups created AFTER this date will ever show the "NEW" tag.
+const NEW_TAG_EPOCH = new Date('2026-04-09T00:00:00Z').getTime();
+
 // ==========================================
 // 1. MOBILE VIEWPORT COMPONENT (Sliding Modal)
 // ==========================================
-function MobileViewport({ setup, onClose }: { setup: any, onClose: () => void }) {
+function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: boolean, onClose: () => void }) {
   const [scale, setScale] = useState(1)
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [isDragging, setIsDragging] = useState(false)
@@ -90,10 +93,21 @@ function MobileViewport({ setup, onClose }: { setup: any, onClose: () => void })
           }}
           draggable={false}
         />
+
+        {/* 🚨 LATEST BADGE (Floating bottom-left, just above the thesis drawer) */}
+        {isLatest && (
+          <div className="absolute bottom-[5.5rem] left-4 z-40 flex items-center px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md pointer-events-none">
+            <span className="relative flex h-2 w-2 mr-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+            </span>
+            <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Latest Setup</span>
+          </div>
+        )}
       </div>
 
       {/* BOTTOM THESIS DRAWER */}
-      <div className={`absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-3xl transition-transform duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] ${showThesis ? 'translate-y-0' : 'translate-y-[calc(100%-4.5rem)]'}`}>
+      <div className={`absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-3xl transition-transform duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 ${showThesis ? 'translate-y-0' : 'translate-y-[calc(100%-4.5rem)]'}`}>
         <div 
           className="h-[4.5rem] flex items-center justify-between px-6 cursor-pointer"
           onClick={() => setShowThesis(!showThesis)}
@@ -122,11 +136,8 @@ export default function MiniAppPage() {
   
   // App State
   const [setups, setSetups] = useState<any[]>([])
-  const [seenIds, setSeenIds] = useState<string[]>([])
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
   const [selectedSetup, setSelectedSetup] = useState<any | null>(null)
-
-  // Constant for 7 days in milliseconds
-  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 
   // 1. Initialize Telegram & Auth
   useEffect(() => {
@@ -163,7 +174,7 @@ export default function MiniAppPage() {
           setStatus('error')
         }
       } else {
-        setStatus('error')
+        setStatus('error') // Not in Telegram
       }
     }
 
@@ -171,8 +182,15 @@ export default function MiniAppPage() {
     return () => clearTimeout(timer)
   }, [])
 
-  // 2. Fetch Setups & Seen Receipts from Supabase
+  // 2. Fetch Setups & Seen Receipts from Supabase/LocalStorage
   const fetchData = async (userId: string) => {
+    // A. Sync LocalStorage instantly
+    if (typeof window !== 'undefined') {
+      const localSeen = localStorage.getItem('sentinel_archive_seen')
+      if (localSeen) setSeenIds(new Set(JSON.parse(localSeen)))
+    }
+
+    // B. Fetch live setups
     const { data: setupsData } = await supabase
       .from('analyses')
       .select('*')
@@ -182,34 +200,65 @@ export default function MiniAppPage() {
 
     if (setupsData) setSetups(setupsData)
 
+    // C. Fetch Supabase truth
     const { data: seenData } = await supabase
       .from('user_seen_setups')
       .select('analysis_id')
       .eq('user_id', userId)
 
     if (seenData) {
-      setSeenIds(seenData.map(row => row.analysis_id))
+      setSeenIds(prev => {
+        const next = new Set(prev);
+        seenData.forEach(d => next.add(d.analysis_id));
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('sentinel_archive_seen', JSON.stringify(Array.from(next)));
+        }
+        return next;
+      })
     }
   }
 
+  // Calculate the absolute latest setup per asset so the Viewport badge works
+  const latestSetupIds = useMemo(() => {
+    const map = new Map<string, string>();
+    setups.forEach(s => {
+      // Setups are already sorted descending, so the first one we see per asset is the latest
+      if (!map.has(s.asset_symbol)) {
+        map.set(s.asset_symbol, s.id);
+      }
+    });
+    return map;
+  }, [setups]);
+
   // 3. Open Setup & Sync "Seen" status
   const handleOpenSetup = async (setup: any) => {
-    const isOlderThanAWeek = new Date(setup.created_at).getTime() < Date.now() - SEVEN_DAYS_MS;
+    const setupTime = new Date(setup.created_at).getTime();
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    const isEligibleForNewTag = setupTime >= NEW_TAG_EPOCH;
+    const isOlderThanAWeek = setupTime < Date.now() - SEVEN_DAYS_MS;
+    const isUnseen = isEligibleForNewTag && !isOlderThanAWeek && !seenIds.has(setup.id);
 
-    // Only hit the database if it's actually unseen AND less than a week old
-    if (!seenIds.includes(setup.id) && !isOlderThanAWeek) {
-      setSeenIds(prev => [...prev, setup.id])
+    // Instantly mark as seen in React & Local Storage (Zero Lag)
+    if (isUnseen && userData?.id) {
+      setSeenIds(prev => {
+        const next = new Set(prev);
+        next.add(setup.id);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('sentinel_archive_seen', JSON.stringify(Array.from(next)));
+        }
+        return next;
+      });
       
-      if (userData?.id) {
-        supabase.from('user_seen_setups').insert({
-          user_id: userData.id,
-          analysis_id: setup.id
-        }).then(({ error }) => {
-          if (error) console.error("Failed to mark setup as seen:", error)
-        })
-      }
+      // Fire-and-forget DB sync
+      supabase.from('user_seen_setups').upsert(
+        { user_id: userData.id, analysis_id: setup.id },
+        { onConflict: 'user_id, analysis_id' }
+      ).then(({ error }) => {
+        if (error && error.code !== '23505') console.error("Seen sync error:", error)
+      });
     }
     
+    // Slide modal up
     setSelectedSetup(setup)
   }
 
@@ -283,19 +332,23 @@ export default function MiniAppPage() {
           </div>
         ) : (
           setups.map(setup => {
-            // 🚨 THE FIX: Automatically treat anything older than 7 days as "Seen"
-            const isOlderThanAWeek = new Date(setup.created_at).getTime() < Date.now() - SEVEN_DAYS_MS;
-            const isUnseen = !seenIds.includes(setup.id) && !isOlderThanAWeek;
+            const setupTime = new Date(setup.created_at).getTime();
+            const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+            const isEligibleForNewTag = setupTime >= NEW_TAG_EPOCH;
+            const isOlderThanAWeek = setupTime < Date.now() - SEVEN_DAYS_MS;
             
+            const isUnseen = isEligibleForNewTag && !isOlderThanAWeek && !seenIds.has(setup.id);
             const isActive = setup.status === 'ACTIVE'
 
             return (
               <button 
                 key={setup.id}
                 onClick={() => handleOpenSetup(setup)}
-                className="w-full text-left bg-[#0a0a0a] border border-white/[0.04] rounded-2xl p-4 flex items-center justify-between transition-transform active:scale-95 relative overflow-hidden shadow-sm"
+                className={`w-full text-left bg-[#0a0a0a] border rounded-2xl p-4 flex items-center justify-between transition-transform active:scale-95 relative overflow-hidden shadow-sm
+                  ${isUnseen ? 'border-blue-500/30' : 'border-white/[0.04]'}
+                `}
               >
-                {/* Unseen Glowing Dot */}
+                {/* Unseen Glowing Edge */}
                 {isUnseen && (
                   <div className="absolute top-1/2 -translate-y-1/2 left-0 w-1 h-8 bg-blue-500 rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
                 )}
@@ -323,7 +376,11 @@ export default function MiniAppPage() {
 
       {/* FULLSCREEN OVERLAY MODAL */}
       {selectedSetup && (
-        <MobileViewport setup={selectedSetup} onClose={() => setSelectedSetup(null)} />
+        <MobileViewport 
+          setup={selectedSetup} 
+          isLatest={latestSetupIds.get(selectedSetup.asset_symbol) === selectedSetup.id}
+          onClose={() => setSelectedSetup(null)} 
+        />
       )}
 
     </div>
