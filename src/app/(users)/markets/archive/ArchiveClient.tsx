@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Lock, Clock, Shield, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react'
@@ -35,17 +35,26 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
   // 🚨 Unseen Tracker State
   const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
 
-  // Fetch the user's read receipts (Combines LocalStorage for instant UI + Supabase for cross-device)
-  useEffect(() => {
-    // 1. Check local storage instantly so "Back" button navigation is flawless
+  // --- SYNC ENGINE ---
+  const syncSeenIds = useCallback(() => {
     if (typeof window !== 'undefined') {
       const localSeen = localStorage.getItem('sentinel_archive_seen');
       if (localSeen) {
         setSeenIds(new Set(JSON.parse(localSeen)));
       }
     }
+  }, []);
 
-    // 2. Fetch the permanent ground truth from Supabase
+  useEffect(() => {
+    // 1. Initial Sync on load
+    syncSeenIds();
+
+    // 2. Force re-sync when navigating BACK to this page from Viewport
+    window.addEventListener('focus', syncSeenIds);
+    window.addEventListener('pageshow', syncSeenIds);
+    window.addEventListener('popstate', syncSeenIds);
+
+    // 3. Fetch permanent ground truth from Supabase
     const fetchSeenSetups = async () => {
       if (!userId) return;
       const { data } = await supabase
@@ -65,7 +74,13 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
       }
     };
     fetchSeenSetups();
-  }, [userId]);
+
+    return () => {
+      window.removeEventListener('focus', syncSeenIds);
+      window.removeEventListener('pageshow', syncSeenIds);
+      window.removeEventListener('popstate', syncSeenIds);
+    };
+  }, [userId, syncSeenIds]);
   
   // --- GROUPING LOGIC ---
   const today = new Date(); today.setHours(0, 0, 0, 0)
@@ -120,7 +135,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           return next;
         });
 
-        // 2. Fire and forget to Supabase (so it syncs to their phone later)
+        // 2. Fire and forget to Supabase
         supabase.from('user_seen_setups').upsert(
           { user_id: userId, analysis_id: setup.id },
           { onConflict: 'user_id, analysis_id' }
@@ -128,8 +143,11 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           if (error && error.code !== '23505') console.error("Seen DB sync error:", error);
         });
       }
-      // 3. Route instantly
-      router.push(`/markets/viewport?asset=${asset}&from=archive`);
+      
+      // 3. 🚨 THE FIX: Delay routing by 50ms so React updates the DOM (removes dot) BEFORE Next.js snapshots the page!
+      setTimeout(() => {
+        router.push(`/markets/viewport?asset=${asset}&from=archive`);
+      }, 50);
     };
 
     return (
@@ -142,7 +160,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
-        {/* 🚨 IMAGE AREA - Completely Cleaned */}
+        {/* IMAGE AREA - Completely Cleaned */}
         <div className="h-24 md:h-28 w-full bg-[#050505] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
           <img 
             src={setup.image_url} 
@@ -160,7 +178,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           )}
         </div>
 
-        {/* 🚨 BOTTOM CONTENT AREA - Cleaned and Reordered */}
+        {/* BOTTOM CONTENT AREA - Cleaned and Reordered */}
         <div className="relative p-3 md:p-4 flex flex-col flex-1 justify-between z-10">
           <div className={`absolute top-0 right-0 inset-y-0 w-1 transition-all duration-500 z-30 ${statusLine}`} />
           
