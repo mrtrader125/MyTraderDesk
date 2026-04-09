@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Activity, ArrowRight, Target, Archive } from 'lucide-react'
 import { ASSET_CATEGORIES } from '@/lib/platformConfig'
+import { supabase } from '@/lib/supabase'
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All' },
@@ -43,12 +44,11 @@ const AssetIcon = ({ symbol, category }: { symbol: string, category: string }) =
   );
 }
 
-export default function MarketsClient({ initialGroupedAnalyses }: any) {
+export default function MarketsClient({ initialGroupedAnalyses, userId }: any) {
   const router = useRouter()
   const searchParams = useSearchParams() 
   
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
-  
   const [groupedAnalyses] = useState<any[]>(initialGroupedAnalyses || [])
   
   const [activeTab, setActiveTab] = useState('ALL')
@@ -56,12 +56,54 @@ export default function MarketsClient({ initialGroupedAnalyses }: any) {
   const [slideDirection, setSlideDirection] = useState<'right' | 'left'>('right')
   const [mounted, setMounted] = useState(false)
 
+  // 🚨 NEW: Unseen Tracker State
+  const [unseenAssets, setUnseenAssets] = useState<Set<string>>(new Set())
+
   useEffect(() => {
     setMounted(true)
     const handleSearch = (e: any) => setSearchQuery(e.detail?.toLowerCase() || '')
     window.addEventListener('globalSearch', handleSearch)
     return () => window.removeEventListener('globalSearch', handleSearch)
   }, [])
+
+  // 🚨 NEW: Fetch Unseen Status on Mount
+  useEffect(() => {
+    const fetchUnseenStatus = async () => {
+      if (!userId) return;
+
+      // 1. Get setups from the last 7 days
+      const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+      const sevenDaysAgo = new Date(Date.now() - SEVEN_DAYS_MS).toISOString();
+
+      const { data: recentSetups } = await supabase
+        .from('analyses')
+        .select('id, asset_symbol')
+        .in('status', ['ACTIVE', 'WAITING'])
+        .gte('created_at', sevenDaysAgo);
+
+      if (!recentSetups || recentSetups.length === 0) return;
+
+      // 2. Get user's read receipts
+      const { data: seenData } = await supabase
+        .from('user_seen_setups')
+        .select('analysis_id')
+        .eq('user_id', userId);
+
+      const seenIds = new Set(seenData?.map(s => s.analysis_id) || []);
+
+      // 3. Find which assets have setups that are NOT in the seen list
+      const unseen = new Set<string>();
+      recentSetups.forEach(setup => {
+        if (!seenIds.has(setup.id)) {
+          unseen.add(setup.asset_symbol);
+        }
+      });
+
+      setUnseenAssets(unseen);
+    };
+
+    fetchUnseenStatus();
+  }, [userId]);
 
   const handleTabChange = (id: string, index: number) => {
     setSlideDirection(index > prevIndex ? 'right' : 'left')
@@ -119,73 +161,90 @@ export default function MarketsClient({ initialGroupedAnalyses }: any) {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5">
-                {filteredMarkets.map(market => (
-                  <div 
-                    key={market.symbol}
-                    onClick={() => router.push(`/markets/viewport?asset=${market.symbol}&from=markets`)}
-                    className={`bg-[#0a0a0a] border rounded-2xl p-5 transition-all duration-300 cursor-pointer group flex flex-col min-h-[140px] relative overflow-hidden
-                      ${market.isPrime ? 'border-blue-500/30 bg-blue-500/[0.02] hover:border-blue-500/60 shadow-[0_0_20px_rgba(37,99,235,0.08)]' : 
-                        'border-white/[0.04] hover:border-white/10 hover:bg-[#0c0c0c] shadow-sm'}
-                    `}
-                  >
-                    <div className="flex justify-between items-start mb-5 z-10">
-                      <div className="flex items-center space-x-3.5">
-                        <AssetIcon symbol={market.symbol} category={market.category} />
-                        <div className="flex flex-col justify-center gap-1.5">
-                          <h3 className="text-xl font-black text-white tracking-tight leading-none font-mono">{market.symbol}</h3>
-                          <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest leading-none bg-[#111] px-1.5 py-0.5 rounded w-fit border border-white/[0.02]">{market.category}</span>
-                        </div>
-                      </div>
+                {filteredMarkets.map(market => {
+                  // Check if this specific market has an unseen setup
+                  const hasUnseen = unseenAssets.has(market.symbol);
 
-                      {market.isPrime && (
-                        <div className="flex items-center px-2 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-sm" title="Prime Setup Active">
-                          <Target size={10} className="mr-1.5" />
-                          <span className="text-[8px] font-black uppercase tracking-widest">Prime</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mt-auto pt-4 border-t border-white/[0.05] flex items-center justify-between z-10">
-                      
-                      {/* 🚨 NEW: Simple glowing dots instead of pills */}
-                      <div className="flex items-center gap-2">
-                        {market.activeCount > 0 && (
-                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" title={`${market.activeCount} Active Setups`}></div>
-                        )}
-                        
-                        {market.waitingCount > 0 && (
-                          <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]" title={`${market.waitingCount} Waiting Setups`}></div>
-                        )}
-
-                        {/* Archived Badge (Only shows if no Active/Waiting setups exist, but old ones do) */}
-                        {market.activeCount === 0 && market.waitingCount === 0 && market.archivedCount > 0 && (
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-neutral-800/30 border border-neutral-700/50 rounded text-[10px] font-black text-neutral-500" title={`${market.archivedCount} Archived Setups`}>
-                            <Archive size={10} />
-                            Archived
+                  return (
+                    <div 
+                      key={market.symbol}
+                      onClick={() => router.push(`/markets/viewport?asset=${market.symbol}&from=markets`)}
+                      className={`bg-[#0a0a0a] border rounded-2xl p-5 transition-all duration-300 cursor-pointer group flex flex-col min-h-[140px] relative overflow-hidden
+                        ${hasUnseen ? 'border-blue-500/20 bg-blue-500/[0.02] shadow-[0_0_15px_rgba(59,130,246,0.05)]' : ''}
+                        ${market.isPrime && !hasUnseen ? 'border-blue-500/30 bg-blue-500/[0.02] hover:border-blue-500/60 shadow-[0_0_20px_rgba(37,99,235,0.08)]' : ''}
+                        ${!market.isPrime && !hasUnseen ? 'border-white/[0.04] hover:border-white/10 hover:bg-[#0c0c0c] shadow-sm' : ''}
+                      `}
+                    >
+                      <div className="flex justify-between items-start mb-5 z-10">
+                        <div className="flex items-center space-x-3.5">
+                          <AssetIcon symbol={market.symbol} category={market.category} />
+                          <div className="flex flex-col justify-center gap-1.5">
+                            <h3 className="text-xl font-black text-white tracking-tight leading-none font-mono">{market.symbol}</h3>
+                            <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest leading-none bg-[#111] px-1.5 py-0.5 rounded w-fit border border-white/[0.02]">{market.category}</span>
                           </div>
-                        )}
+                        </div>
 
-                        {/* Fallback for total setups if no specific stats are tracked */}
-                        {market.activeCount === 0 && market.waitingCount === 0 && !market.archivedCount && (
-                          <span className="text-[9px] font-bold text-neutral-500 bg-[#111] px-3 py-1 rounded border border-white/[0.05] uppercase tracking-widest shadow-inner">
-                            {market.count} Total
-                          </span>
-                        )}
+                        {/* Top Right Badges Container */}
+                        <div className="flex flex-col items-end gap-1.5">
+                          {/* 🚨 NEW: Unseen Glowing Badge */}
+                          {hasUnseen && (
+                            <div className="flex items-center px-2 py-1 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                              <span className="relative flex h-1.5 w-1.5 mr-1.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                              </span>
+                              <span className="text-[8px] font-black uppercase tracking-widest">New</span>
+                            </div>
+                          )}
+
+                          {market.isPrime && (
+                            <div className="flex items-center px-2 py-1 rounded bg-blue-500/10 border border-blue-500/20 text-blue-400 shadow-sm" title="Prime Setup Active">
+                              <Target size={10} className="mr-1.5" />
+                              <span className="text-[8px] font-black uppercase tracking-widest">Prime</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
 
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); router.push(`/markets/archive?asset=${market.symbol}&from=markets`); }}
-                        className={`w-8 h-8 rounded-lg bg-[#111] border flex items-center justify-center transition-all shrink-0 shadow-sm
-                          ${market.isPrime 
-                            ? 'border-blue-500/30 text-blue-400 hover:bg-blue-600 hover:text-white group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500' 
-                            : 'border-white/[0.05] text-neutral-500 hover:text-white hover:bg-[#222] hover:border-white/10 group-hover:bg-[#151515] group-hover:border-white/10 group-hover:text-white'}
-                        `}
-                      >
-                        <ArrowRight size={14} />
-                      </button>
+                      <div className="mt-auto pt-4 border-t border-white/[0.05] flex items-center justify-between z-10">
+                        
+                        <div className="flex items-center gap-2">
+                          {market.activeCount > 0 && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)]" title={`${market.activeCount} Active Setups`}></div>
+                          )}
+                          
+                          {market.waitingCount > 0 && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]" title={`${market.waitingCount} Waiting Setups`}></div>
+                          )}
+
+                          {market.activeCount === 0 && market.waitingCount === 0 && market.archivedCount > 0 && (
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-neutral-800/30 border border-neutral-700/50 rounded text-[10px] font-black text-neutral-500" title={`${market.archivedCount} Archived Setups`}>
+                              <Archive size={10} />
+                              Archived
+                            </div>
+                          )}
+
+                          {market.activeCount === 0 && market.waitingCount === 0 && !market.archivedCount && (
+                            <span className="text-[9px] font-bold text-neutral-500 bg-[#111] px-3 py-1 rounded border border-white/[0.05] uppercase tracking-widest shadow-inner">
+                              {market.count} Total
+                            </span>
+                          )}
+                        </div>
+
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); router.push(`/markets/archive?asset=${market.symbol}&from=markets`); }}
+                          className={`w-8 h-8 rounded-lg bg-[#111] border flex items-center justify-center transition-all shrink-0 shadow-sm
+                            ${market.isPrime 
+                              ? 'border-blue-500/30 text-blue-400 hover:bg-blue-600 hover:text-white group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500' 
+                              : 'border-white/[0.05] text-neutral-500 hover:text-white hover:bg-[#222] hover:border-white/10 group-hover:bg-[#151515] group-hover:border-white/10 group-hover:text-white'}
+                          `}
+                        >
+                          <ArrowRight size={14} />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
