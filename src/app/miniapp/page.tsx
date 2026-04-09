@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react'
 import Script from 'next/script'
-import { Lock, Smartphone, Loader2, Target, TrendingUp, TrendingDown, Minus, Activity, Clock, X, ZoomIn, ZoomOut, ArrowLeft } from 'lucide-react'
+import { Lock, Smartphone, Loader2, Target, TrendingUp, TrendingDown, Minus, Activity, Clock, ArrowLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 // 🚨 THE EPOCH CUTOFF: Only setups created AFTER this date will ever show the "NEW" tag.
@@ -18,10 +18,14 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [showThesis, setShowThesis] = useState(false)
 
-  const touchMode = useRef<'none' | 'pan' | 'pinch'>('none')
+  const touchMode = useRef<'none' | 'pan' | 'pinch' | 'one-finger-zoom'>('none')
   const pinchStartDist = useRef(0)
   const initialScale = useRef(1)
+  const lastTouchTime = useRef(0)
+  const swipeZoomStartY = useRef(0)
+  const hasMovedSinceTap = useRef(false)
 
+  // 🚨 GOOGLE MAPS 1-FINGER ZOOM LOGIC
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
       touchMode.current = 'pinch'
@@ -30,9 +34,19 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
       pinchStartDist.current = Math.hypot(dx, dy)
       initialScale.current = scale
     } else if (e.touches.length === 1) {
-      touchMode.current = 'pan'
-      setIsDragging(true)
-      setDragStart({ x: e.touches[0].clientX - pos.x, y: e.touches[0].clientY - pos.y })
+      const now = Date.now()
+      
+      // If the user tapped again within 300ms of lifting their finger, initiate 1-finger zoom!
+      if (now - lastTouchTime.current < 300) {
+        touchMode.current = 'one-finger-zoom'
+        swipeZoomStartY.current = e.touches[0].clientY
+        initialScale.current = scale
+        hasMovedSinceTap.current = false
+      } else {
+        touchMode.current = 'pan'
+        setIsDragging(true)
+        setDragStart({ x: e.touches[0].clientX - pos.x, y: e.touches[0].clientY - pos.y })
+      }
     }
   }
 
@@ -43,7 +57,16 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
       const dist = Math.hypot(dx, dy)
       const newScale = Math.min(Math.max(0.5, initialScale.current * (dist / pinchStartDist.current)), 5)
       setScale(newScale)
-    } else if (touchMode.current === 'pan' && e.touches.length === 1 && isDragging) {
+    } 
+    else if (touchMode.current === 'one-finger-zoom' && e.touches.length === 1) {
+      hasMovedSinceTap.current = true
+      const deltaY = e.touches[0].clientY - swipeZoomStartY.current
+      // Google Maps style: Drag DOWN to zoom IN (+), Drag UP to zoom OUT (-)
+      const zoomSensitivity = 0.012 
+      const newScale = Math.min(Math.max(0.5, initialScale.current + (deltaY * zoomSensitivity)), 5)
+      setScale(newScale)
+    } 
+    else if (touchMode.current === 'pan' && e.touches.length === 1 && isDragging) {
       setPos({
         x: e.touches[0].clientX - dragStart.x,
         y: e.touches[0].clientY - dragStart.y
@@ -52,8 +75,17 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
   }
 
   const handleTouchEnd = () => {
+    if (touchMode.current === 'one-finger-zoom' && !hasMovedSinceTap.current) {
+      // Quick double tap toggle!
+      if (scale > 1) { setScale(1); setPos({ x: 0, y: 0 }) } 
+      else { setScale(2.5) }
+    }
+    
     touchMode.current = 'none'
     setIsDragging(false)
+    
+    // Record exactly when the finger left the screen for the double-tap timer
+    lastTouchTime.current = Date.now()
   }
 
   return (
@@ -89,12 +121,12 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
           className="absolute inset-0 w-full h-full object-contain"
           style={{ 
             transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})`,
-            transition: isDragging || touchMode.current === 'pinch' ? 'none' : 'transform 0.1s ease-out'
+            transition: isDragging || touchMode.current === 'pinch' || touchMode.current === 'one-finger-zoom' ? 'none' : 'transform 0.15s ease-out'
           }}
           draggable={false}
         />
 
-        {/* 🚨 LATEST BADGE (Floating bottom-left, just above the thesis drawer) */}
+        {/* LATEST BADGE */}
         {isLatest && (
           <div className="absolute bottom-[5.5rem] left-4 z-40 flex items-center px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md pointer-events-none">
             <span className="relative flex h-2 w-2 mr-2">
@@ -136,7 +168,7 @@ export default function MiniAppPage() {
   
   // App State
   const [setups, setSetups] = useState<any[]>([])
-  const [seenIds, setSeenIds] = useState<Set<string>>(new Set())
+  const [seenIds, setSeenIds] = useState<string[]>([])
   const [selectedSetup, setSelectedSetup] = useState<any | null>(null)
 
   // 1. Initialize Telegram & Auth
@@ -165,8 +197,8 @@ export default function MiniAppPage() {
 
           if (data.authorized) {
             setUserData(data.user)
-            setStatus('authorized')
             fetchData(data.user.id) 
+            setStatus('authorized')
           } else {
             setStatus(data.reason)
           }
@@ -182,39 +214,36 @@ export default function MiniAppPage() {
     return () => clearTimeout(timer)
   }, [])
 
-  // 2. Fetch Setups & Seen Receipts from Supabase/LocalStorage
+  // 🚨 FIXED: Fetch Setups & Seen Receipts Concurrently to stop flashing!
   const fetchData = async (userId: string) => {
     // A. Sync LocalStorage instantly
+    let localIds: string[] = [];
     if (typeof window !== 'undefined') {
-      const localSeen = localStorage.getItem('sentinel_archive_seen')
-      if (localSeen) setSeenIds(new Set(JSON.parse(localSeen)))
+      const localSeen = localStorage.getItem('sentinel_archive_seen');
+      if (localSeen) {
+        localIds = JSON.parse(localSeen);
+        setSeenIds(localIds);
+      }
     }
 
-    // B. Fetch live setups
-    const { data: setupsData } = await supabase
-      .from('analyses')
-      .select('*')
-      .in('status', ['ACTIVE', 'WAITING'])
-      .order('created_at', { ascending: false })
-      .limit(50)
+    // B. Fetch Supabase Data concurrently
+    const [setupsRes, seenRes] = await Promise.all([
+      supabase.from('analyses').select('*').in('status', ['ACTIVE', 'WAITING']).order('created_at', { ascending: false }).limit(50),
+      supabase.from('user_seen_setups').select('analysis_id').eq('user_id', userId)
+    ]);
 
-    if (setupsData) setSetups(setupsData)
+    // C. Reconcile Database Truth
+    if (seenRes.data) {
+      const dbIds = seenRes.data.map(d => d.analysis_id);
+      const mergedIds = Array.from(new Set([...localIds, ...dbIds]));
+      setSeenIds(mergedIds);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('sentinel_archive_seen', JSON.stringify(mergedIds));
+      }
+    }
 
-    // C. Fetch Supabase truth
-    const { data: seenData } = await supabase
-      .from('user_seen_setups')
-      .select('analysis_id')
-      .eq('user_id', userId)
-
-    if (seenData) {
-      setSeenIds(prev => {
-        const next = new Set(prev);
-        seenData.forEach(d => next.add(d.analysis_id));
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('sentinel_archive_seen', JSON.stringify(Array.from(next)));
-        }
-        return next;
-      })
+    if (setupsRes.data) {
+      setSetups(setupsRes.data);
     }
   }
 
@@ -222,7 +251,6 @@ export default function MiniAppPage() {
   const latestSetupIds = useMemo(() => {
     const map = new Map<string, string>();
     setups.forEach(s => {
-      // Setups are already sorted descending, so the first one we see per asset is the latest
       if (!map.has(s.asset_symbol)) {
         map.set(s.asset_symbol, s.id);
       }
@@ -236,15 +264,15 @@ export default function MiniAppPage() {
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
     const isEligibleForNewTag = setupTime >= NEW_TAG_EPOCH;
     const isOlderThanAWeek = setupTime < Date.now() - SEVEN_DAYS_MS;
-    const isUnseen = isEligibleForNewTag && !isOlderThanAWeek && !seenIds.has(setup.id);
+    
+    const isUnseen = isEligibleForNewTag && !isOlderThanAWeek && !seenIds.includes(setup.id);
 
-    // Instantly mark as seen in React & Local Storage (Zero Lag)
+    // Instantly mark as seen in React array & Local Storage (Zero Lag)
     if (isUnseen && userData?.id) {
       setSeenIds(prev => {
-        const next = new Set(prev);
-        next.add(setup.id);
+        const next = [...prev, setup.id];
         if (typeof window !== 'undefined') {
-          localStorage.setItem('sentinel_archive_seen', JSON.stringify(Array.from(next)));
+          localStorage.setItem('sentinel_archive_seen', JSON.stringify(next));
         }
         return next;
       });
@@ -337,7 +365,7 @@ export default function MiniAppPage() {
             const isEligibleForNewTag = setupTime >= NEW_TAG_EPOCH;
             const isOlderThanAWeek = setupTime < Date.now() - SEVEN_DAYS_MS;
             
-            const isUnseen = isEligibleForNewTag && !isOlderThanAWeek && !seenIds.has(setup.id);
+            const isUnseen = isEligibleForNewTag && !isOlderThanAWeek && !seenIds.includes(setup.id);
             const isActive = setup.status === 'ACTIVE'
 
             return (
