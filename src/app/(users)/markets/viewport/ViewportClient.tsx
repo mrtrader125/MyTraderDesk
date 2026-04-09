@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin, Star, Target, ZoomIn, ZoomOut, Menu, CheckCircle2, XCircle, Ban, Archive } from 'lucide-react'
 import { PLAN_CONFIG, getAssetCategory } from '@/lib/platformConfig'
 
-// 🚨 INLINED ACCESS LOGIC: Strictly enforces Free (7-day delay / category locks) vs Pro (Instant)
+// 🚨 INLINED ACCESS LOGIC
 const getSetupAccess = (setup: any, userPlan: string) => {
   if (!setup) return { hasAccess: false, countdownText: '', isCategoryLocked: false };
   if (userPlan === 'pro') return { hasAccess: true, countdownText: '', isCategoryLocked: false };
@@ -14,15 +14,9 @@ const getSetupAccess = (setup: any, userPlan: string) => {
   const category = getAssetCategory(setup.asset_symbol);
   const isAllowedCategory = PLAN_CONFIG.free.allowedCategories.includes(category);
 
-  // 1. Check if the asset category is allowed for Free users
-  if (!isAllowedCategory) {
-    return { hasAccess: false, countdownText: '', isCategoryLocked: true };
-  }
-
-  // 2. Check if the admin explicitly made this setup free
+  if (!isAllowedCategory) return { hasAccess: false, countdownText: '', isCategoryLocked: true };
   if (setup.tier_access === 'free') return { hasAccess: true, countdownText: '', isCategoryLocked: false };
 
-  // 3. Calculate 7-day delay
   const postTime = new Date(setup.created_at).getTime();
   const currentTime = new Date().getTime();
   const hoursSincePosted = (currentTime - postTime) / (1000 * 60 * 60);
@@ -181,31 +175,32 @@ export default function ViewportClient({
   const filteredHistory = useMemo(() => allHistory.filter(a => a.timeframe === selectedTf), [allHistory, selectedTf])
   const currentSetup = filteredHistory[activeIndex]
 
-  // 🚨 NEW: 1. Identify the absolute Latest Setup for this asset (if ACTIVE or WAITING)
+  // 🚨 NEW: 1. Identify the absolute Latest Setup for this asset
   const latestSetupId = useMemo(() => {
     if (!allHistory || allHistory.length === 0) return null;
+    // Only fetch setups that are ACTIVE or WAITING
     const activeOrWaiting = allHistory.filter(s => {
       const st = (s.status || 'WAITING').toUpperCase();
       return st === 'ACTIVE' || st === 'WAITING';
     });
     if (activeOrWaiting.length === 0) return null;
 
-    // Sort by newest first and return the top ID
+    // Sort by newest first
     const sorted = [...activeOrWaiting].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return sorted[0].id;
   }, [allHistory]);
 
-  // 🚨 NEW: 2. Write Read Receipt to Supabase when viewing
+  // 🚨 NEW: 2. Write Read Receipt to Supabase when viewing this specific chart
   useEffect(() => {
     if (userId && currentSetup?.id) {
       supabase
         .from('user_seen_setups')
-        .insert({ user_id: userId, analysis_id: currentSetup.id })
+        .upsert(
+          { user_id: userId, analysis_id: currentSetup.id },
+          { onConflict: 'user_id, analysis_id' }
+        )
         .then(({ error }) => {
-           // Error code 23505 means "already exists" - which is perfectly fine and expected!
-           if (error && error.code !== '23505') {
-             console.error("Seen Tracking Error:", error);
-           }
+           if (error) console.error("Seen Tracking Error:", error);
         });
     }
   }, [userId, currentSetup?.id]);
@@ -352,9 +347,9 @@ export default function ViewportClient({
          onTouchEnd={access.hasAccess ? handleTouchEnd : undefined}
          onTouchCancel={access.hasAccess ? handleTouchEnd : undefined}
        >
-         {/* 🚨 NEW: LATEST BADGE */}
+         {/* 🚨 LATEST BADGE (Top Right, avoiding zoom buttons/timeframes) */}
          {currentSetup.id === latestSetupId && (
-           <div className="absolute bottom-24 left-4 md:bottom-6 md:left-6 z-40 flex items-center px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md pointer-events-none">
+           <div className="absolute top-20 right-4 md:top-24 md:right-8 z-40 flex items-center px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 rounded-lg shadow-[0_0_20px_rgba(59,130,246,0.3)] backdrop-blur-md pointer-events-none">
              <span className="relative flex h-2 w-2 mr-2">
                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
