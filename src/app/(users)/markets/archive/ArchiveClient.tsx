@@ -29,6 +29,10 @@ const getSetupAccess = (setup: any, userPlan: string) => {
   }
 }
 
+// 🚨 THE EPOCH CUTOFF: Only setups created AFTER this date will ever show the "NEW" tag.
+// Set to roughly right now. Old setups will never trigger the tag.
+const NEW_TAG_EPOCH = new Date('2026-04-09T00:00:00Z').getTime();
+
 export default function ArchiveClient({ asset, initialHistory, userPlan, userId }: { asset: string, initialHistory: any[], userPlan: string, userId?: string }) {
   const router = useRouter()
   
@@ -95,6 +99,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     const dateObj = new Date(setup.created_at)
     const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
     const formattedTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    const displayText = setup.title || setup.content || `${asset} Setup`
     
     const isBull = setup.bias?.toUpperCase() === 'BULLISH'
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
@@ -114,20 +119,18 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
 
     const isFaded = status === 'CANCELED' || status === 'ARCHIVED'
 
-    // 🚨 Unseen Logic
+    // 🚨 BULLETPROOF UNSEEN LOGIC
+    const setupTime = new Date(setup.created_at).getTime();
+    const isEligibleForNewTag = setupTime >= NEW_TAG_EPOCH; // Must be uploaded AFTER the epoch
     const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
-    const isOlderThanAWeek = new Date(setup.created_at).getTime() < Date.now() - SEVEN_DAYS_MS;
+    const isOlderThanAWeek = setupTime < Date.now() - SEVEN_DAYS_MS;
     
-    // 🚨 THE FIX: Instant UI Kill Switch
-    const [localHideNew, setLocalHideNew] = useState(false);
-    const isUnseen = !seenIds.has(setup.id) && !isOlderThanAWeek && !localHideNew;
+    // Only show if it's eligible, less than a week old, AND not in the seen memory
+    const isUnseen = isEligibleForNewTag && !isOlderThanAWeek && !seenIds.has(setup.id);
 
     const handleCardClick = () => {
       if (isUnseen && userId) {
-        // 1. INSTANTLY kill the UI tag. Next.js caches this state before routing!
-        setLocalHideNew(true);
-
-        // 2. Update Global State & Local Storage
+        // 1. INSTANTLY wipe it from React State & Local Storage
         setSeenIds(prev => {
           const next = new Set(prev);
           next.add(setup.id);
@@ -137,7 +140,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           return next;
         });
 
-        // 3. Fire-and-forget DB sync
+        // 2. Background Sync to Supabase
         supabase.from('user_seen_setups').upsert(
           { user_id: userId, analysis_id: setup.id },
           { onConflict: 'user_id, analysis_id' }
@@ -146,8 +149,10 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
         });
       }
       
-      // Route immediately
-      router.push(`/markets/viewport?asset=${asset}&from=archive`);
+      // 3. Force Next.js to wait 50ms before routing so it takes a "clean" snapshot!
+      setTimeout(() => {
+        router.push(`/markets/viewport?asset=${asset}&from=archive`);
+      }, 50);
     };
 
     return (
@@ -160,7 +165,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
-        {/* 🚨 IMAGE AREA - Completely Clean */}
+        {/* IMAGE AREA - Completely Clean */}
         <div className="h-24 md:h-28 w-full bg-[#050505] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
           <img 
             src={setup.image_url} 
@@ -178,7 +183,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           )}
         </div>
 
-        {/* 🚨 BOTTOM CONTENT AREA */}
+        {/* BOTTOM CONTENT AREA */}
         <div className="relative p-3 md:p-4 flex flex-col flex-1 justify-between z-10">
           <div className={`absolute top-0 right-0 inset-y-0 w-1 transition-all duration-500 z-30 ${statusLine}`} />
           
