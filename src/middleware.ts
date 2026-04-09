@@ -57,16 +57,17 @@ export async function middleware(request: NextRequest) {
   }
 }
 
+// 🚨 THE FIX: This Regex pattern protects your app but creates a secure tunnel for your Webhooks
 export const config = {
   matcher: [
-    '/admin/:path*', 
-    '/floor/:path*', 
-    '/dashboard/:path*', 
-    '/markets/:path*', 
-    '/settings/:path*', 
-    '/profile/:path*',
-    '/vault/:path*',
-    '/login',
-    '/signup'
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - api/telegram (Let Telegram bots pass through!)
+     * - api/webhook (Let Lemon Squeezy pass through!)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|api/telegram|api/webhook).*)',
   ],
 }
