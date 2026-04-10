@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     });
     const currentTimeStr = formatter.format(now); 
 
-    // 🚨 BULLETPROOF PARSER: Prevents the silent server crash caused by invisible spaces
+    // 🚨 BULLETPROOF PARSER
     const getMinutes = (timeString: string) => {
       const match = timeString.match(/(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)/i);
       if (!match) return -1;
@@ -69,7 +69,7 @@ export async function GET(request: Request) {
        return NextResponse.json({ error: 'Time parsing failed' }, { status: 500 });
     }
 
-    // 5. SAFETY WINDOW LOGIC (Between 0 and 5 minutes after target time)
+    // 5. SAFETY WINDOW LOGIC
     if (currentMins >= targetMins && currentMins < targetMins + 6) {
       console.log('Cron: Time matched! Executing Dark Pool drop...');
       
@@ -97,7 +97,7 @@ export async function GET(request: Request) {
 
       const idsArray = queuedItems.map(item => item.id);
 
-      // 🚨 AUTO-ARCHIVE LOGIC: Clean the floor before dropping new setups
+      // Auto-Archive old setups
       console.log('Cron: Archiving old setups...');
       for (const item of liveItems) {
         await supabase
@@ -108,7 +108,6 @@ export async function GET(request: Request) {
           .in('status', ['WAITING', 'ACTIVE']);
       }
 
-      // Execute Database Transfer
       console.log('Cron: Inserting new setups...');
       const { error: insertError } = await supabase.from('analyses').insert(liveItems);
       if (insertError) throw insertError;
@@ -125,7 +124,6 @@ export async function GET(request: Request) {
         const channelId = process.env.TELEGRAM_BROADCAST_CHANNEL_ID;
 
         if (botToken && channelId) {
-          // 🚨 REVERTED TO SAFE TEXT LINK: Telegram blocks web_app buttons in channels
           const messageText = `🟢 **Today's analysis is live.**\n\n🖥️ [Check the website/app for full details.](https://mytraderdesk.com/markets)\n\n⚡ Watch the live floor terminal for real-time execution and updates.\n\n⚠️ _Risk Advisory : Risk management is not optional. Keep your stops tight and size your positions responsibly._`;
 
           // 1. Send directly to Telegram
@@ -145,18 +143,21 @@ export async function GET(request: Request) {
           // 2. Mirror instantly to the Live Floor
           if (tgData.ok) {
             console.log('Cron: Telegram Broadcast Fired Successfully!');
-            await supabase.from('live_squawk').insert({
-              author_username: 'Sentinel Admin',
-              message: messageText,
-              source: 'system_broadcast',
-              tag: 'Broadcast',
-              telegram_message_id: tgData.result.message_id
+            
+            // 👇 FIX: Basic, crash-proof Supabase Insert
+            const { error: dbError } = await supabase.from('live_squawk').insert({
+              title: '📢 System Broadcast', // CHANGE 'title' IF YOUR DB USES A DIFFERENT COLUMN NAME
+              content: messageText          // CHANGE 'content' IF YOUR DB USES 'message' OR SOMETHING ELSE
             });
+
+            if (dbError) {
+              console.error('Cron: Database Mirror Failed:', dbError);
+            } else {
+              console.log('Cron: Successfully mirrored to Live Squawk!');
+            }
           } else {
             console.error('Cron: Telegram API Error:', tgData);
           }
-        } else {
-          console.error('Cron: Missing Telegram env variables for broadcast.');
         }
       } catch (broadcastError) {
         console.error('Cron: Failed to execute Telegram Broadcast:', broadcastError);

@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { ArrowLeft, Lock, Crown, Clock, Shield, Info, X, Activity, Bookmark, Pin, Star, Target, ZoomIn, ZoomOut, Menu, CheckCircle2, XCircle, Ban, Archive } from 'lucide-react'
 import { PLAN_CONFIG, getAssetCategory } from '@/lib/platformConfig'
 
-// 🚨 INLINED ACCESS LOGIC: Strictly enforces Free (7-day delay / category locks) vs Pro (Instant)
+// 🚨 INLINED ACCESS LOGIC
 const getSetupAccess = (setup: any, userPlan: string) => {
   if (!setup) return { hasAccess: false, countdownText: '', isCategoryLocked: false };
   if (userPlan === 'pro') return { hasAccess: true, countdownText: '', isCategoryLocked: false };
@@ -14,15 +14,9 @@ const getSetupAccess = (setup: any, userPlan: string) => {
   const category = getAssetCategory(setup.asset_symbol);
   const isAllowedCategory = PLAN_CONFIG.free.allowedCategories.includes(category);
 
-  // 1. Check if the asset category is allowed for Free users
-  if (!isAllowedCategory) {
-    return { hasAccess: false, countdownText: '', isCategoryLocked: true };
-  }
-
-  // 2. Check if the admin explicitly made this setup free
+  if (!isAllowedCategory) return { hasAccess: false, countdownText: '', isCategoryLocked: true };
   if (setup.tier_access === 'free') return { hasAccess: true, countdownText: '', isCategoryLocked: false };
 
-  // 3. Calculate 7-day delay
   const postTime = new Date(setup.created_at).getTime();
   const currentTime = new Date().getTime();
   const hoursSincePosted = (currentTime - postTime) / (1000 * 60 * 60);
@@ -39,7 +33,7 @@ const getSetupAccess = (setup: any, userPlan: string) => {
 }
 
 const getTfWeight = (tf: string) => {
-  const cleanTf = tf.trim().toLowerCase();
+  const cleanTf = (tf || '').trim().toLowerCase();
   if (cleanTf === '1m' || cleanTf === '1min') return 1;
   if (cleanTf === '5m' || cleanTf === '5mins' || cleanTf === '5min') return 2;
   if (cleanTf === '15m' || cleanTf === '15mins' || cleanTf === '15min') return 3;
@@ -111,6 +105,7 @@ export default function ViewportClient({
   userId 
 }: any) {
   const router = useRouter()
+  const searchParams = useSearchParams() 
 
   const [allHistory] = useState<any[]>(initialHistory || [])
   const [userPlan] = useState(initialPlan || 'free')
@@ -141,22 +136,51 @@ export default function ViewportClient({
   else if (fromParam === 'vault') backPath = '/vault'
   else if (fromParam === 'archive') backPath = `/markets/archive?asset=${asset}`
 
+  const timeframes = useMemo(() => {
+    const uniqueTfs = Array.from(new Set(allHistory.map(a => a.timeframe)))
+    return uniqueTfs.sort((a, b) => getTfWeight(a) - getTfWeight(b))
+  }, [allHistory])
+  
+  const filteredHistory = useMemo(() => allHistory.filter(a => a.timeframe === selectedTf), [allHistory, selectedTf])
+  const currentSetup = filteredHistory[activeIndex]
+
   useEffect(() => {
     if (allHistory && allHistory.length > 0) {
-      const requestedTfExists = tfParam && allHistory.some(d => d.timeframe === tfParam)
-      let targetTf = allHistory[0].timeframe
-      if (requestedTfExists) targetTf = tfParam
-      setSelectedTf(targetTf)
+      let targetTf = allHistory[0].timeframe;
+      let targetIndex = 0;
+      let targetSetup = allHistory[0];
 
-      if (userId) {
-         const targetSetup = allHistory.find(d => d.timeframe === targetTf)
-         const accessCheck = getSetupAccess(targetSetup, userPlan)
+      const requestedId = searchParams.get('id');
+
+      if (requestedId) {
+        const exactSetup = allHistory.find(d => d.id === requestedId);
+        if (exactSetup) {
+          targetTf = exactSetup.timeframe;
+          targetSetup = exactSetup;
+          const historyForTf = allHistory.filter(a => a.timeframe === targetTf);
+          targetIndex = historyForTf.findIndex(a => a.id === requestedId);
+          if (targetIndex === -1) targetIndex = 0;
+        }
+      } 
+      else if (tfParam) {
+        const requestedTfExists = allHistory.some(d => d.timeframe === tfParam);
+        if (requestedTfExists) {
+          targetTf = tfParam;
+          targetSetup = allHistory.find(d => d.timeframe === targetTf);
+        }
+      }
+
+      setSelectedTf(targetTf);
+      setActiveIndex(targetIndex);
+
+      if (userId && targetSetup) {
+         const accessCheck = getSetupAccess(targetSetup, userPlan);
          if (!accessCheck.hasAccess) {
-           supabase.from('activity_logs').insert([{ user_id: userId, action: 'PAYWALL_BUMP', asset_symbol: asset, timeframe: targetTf }]).then()
+           supabase.from('activity_logs').insert([{ user_id: userId, action: 'PAYWALL_BUMP', asset_symbol: asset, timeframe: targetTf }]).then();
          }
       }
     }
-  }, [allHistory, tfParam, userId, userPlan, asset])
+  }, [allHistory, tfParam, userId, userPlan, asset, searchParams])
 
   useEffect(() => {
     if (allHistory && allHistory.length > 0) {
@@ -173,13 +197,45 @@ export default function ViewportClient({
     }
   }, [allHistory])
 
-  const timeframes = useMemo(() => {
-    const uniqueTfs = Array.from(new Set(allHistory.map(a => a.timeframe)))
-    return uniqueTfs.sort((a, b) => getTfWeight(a) - getTfWeight(b))
-  }, [allHistory])
-  
-  const filteredHistory = useMemo(() => allHistory.filter(a => a.timeframe === selectedTf), [allHistory, selectedTf])
-  const currentSetup = filteredHistory[activeIndex]
+  // 🚨 KEYBOARD NAVIGATION LISTENER (Infinite Wrap-Around Space & Shift+Space)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent interfering with inputs
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault(); // Stop page from scrolling
+        
+        setActiveIndex(prev => {
+          let nextIndex = prev;
+          
+          if (e.shiftKey) {
+            // Shift + Space: Go Up (Newer Analysis). Wrap to bottom if at the top.
+            nextIndex = prev > 0 ? prev - 1 : filteredHistory.length - 1;
+          } else {
+            // Space: Go Down (Older Analysis). Wrap to top if at the bottom.
+            nextIndex = prev < filteredHistory.length - 1 ? prev + 1 : 0;
+          }
+
+          // If index changed, ensure access and reset zoom
+          if (nextIndex !== prev) {
+            const targetSetup = filteredHistory[nextIndex];
+            const accessCheck = getSetupAccess(targetSetup, userPlan);
+            if (accessCheck.hasAccess) {
+              setScale(1);
+              setPos({ x: 0, y: 0 });
+              return nextIndex;
+            }
+          }
+          return prev;
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [filteredHistory, userPlan]);
+
 
   const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
     e.stopPropagation() 
@@ -526,6 +582,22 @@ export default function ViewportClient({
                const historyAccess = getSetupAccess(item, userPlan)
                const isActive = activeIndex === idx
                const isItemBookmarked = watchlist.some(w => w.id === item.id)
+               const itemStatus = (item.status || 'WAITING').toUpperCase()
+
+               // 🚨 DYNAMIC STYLING FOR DOT AND ACTIVE BUTTON
+               let activeBg = 'bg-white/10 border border-white/5'
+               let dotClass = isActive ? 'bg-white shadow-[0_0_5px_#fff]' : 'bg-neutral-700'
+
+               if (itemStatus === 'ACTIVE') {
+                 activeBg = 'bg-blue-500/10 border border-blue-500/20'
+                 dotClass = isActive ? 'bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]' : 'bg-blue-500/40'
+               } else if (itemStatus === 'WAITING') {
+                 activeBg = 'bg-amber-500/10 border border-amber-500/20'
+                 dotClass = isActive ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'bg-amber-500/40'
+               } else if (itemStatus === 'DONE') {
+                 activeBg = 'bg-emerald-500/10 border border-emerald-500/20'
+                 dotClass = isActive ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-emerald-500/40'
+               }
 
                return (
                  <button 
@@ -538,11 +610,11 @@ export default function ViewportClient({
                    }}
                    className={`w-full flex items-center h-12 md:h-10 rounded-xl md:rounded-lg transition-all relative px-3 
                      ${isSidebarPinned ? 'md:justify-start' : 'md:justify-center md:group-hover/sidebar:justify-start'} 
-                     ${isActive ? 'bg-white/10 border border-white/5' : 'hover:bg-white/5 border border-transparent'} 
+                     ${isActive ? activeBg : 'hover:bg-white/5 border border-transparent'} 
                      ${!historyAccess.hasAccess ? 'cursor-not-allowed opacity-60' : ''}`}
                  >
                    <div className={`${isSidebarPinned ? 'md:hidden' : 'hidden md:block md:group-hover/sidebar:hidden shrink-0'}`}>
-                     <div className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white shadow-[0_0_5px_#fff]' : 'bg-neutral-700'}`} />
+                     <div className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
                    </div>
                    
                    <div className={`items-center justify-between w-full min-w-0 flex ${isSidebarPinned ? 'md:flex' : 'md:hidden md:group-hover/sidebar:flex'}`}>

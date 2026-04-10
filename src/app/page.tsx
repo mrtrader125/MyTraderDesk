@@ -435,7 +435,7 @@ export default function Home() {
             <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-sm shadow-md">All Access</span>
             <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-2">Professional</h3>
             <p className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 my-6">
-              ${billingCycle === 'monthly' ? '29' : '290'}
+              ${billingCycle === 'monthly' ? '29' : '299'}
               <span className="text-xs text-neutral-600 font-medium tracking-normal">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
             </p>
             <p className="text-neutral-400 text-[11px] font-medium mb-8 h-10">Instant real-time setups, Live Floor, Telegram alerts & voting.</p>

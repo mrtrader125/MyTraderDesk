@@ -23,6 +23,7 @@ export default function DashboardClient({
   const [userPlan, setUserPlan] = useState(initialPlan || 'free') 
   const [setups, setSetups] = useState<any[]>(initialSetups || [])
   const [watchlist, setWatchlist] = useState<any[]>(initialWatchlist || [])
+  // 🚨 FIXED: Renamed Broadcast to activeBroadcast to match the rest of the code
   const [activeBroadcast, setActiveBroadcast] = useState<any>(initialBroadcast)
   
   const [showFilterModal, setShowFilterModal] = useState(false)
@@ -188,7 +189,6 @@ export default function DashboardClient({
     return 'Inter-Bank'
   }
 
-  // 🚨 TOP STAT UPDATED: Only counts Active and Waiting statuses
   const { setupCount, setupLabel } = useMemo(() => {
     const activeWaiting = setups.filter(s => {
       const status = (s.status || '').toUpperCase()
@@ -227,7 +227,7 @@ export default function DashboardClient({
 
               const status = (setup.status || 'WAITING').toUpperCase()
               let statusLine = "bg-neutral-800 group-hover:bg-neutral-600"
-              if (status === 'ACTIVE') statusLine = "bg-emerald-500/40 group-hover:bg-emerald-400 group-hover:shadow-[-4px_0_12px_rgba(16,185,129,0.5)]"
+              if (status === 'ACTIVE') statusLine = "bg-blue-500/50 group-hover:bg-blue-400 group-hover:shadow-[-3px_0_10px_rgba(59,130,246,0.5)]"
               else if (status === 'WAITING') statusLine = "bg-amber-500/40 group-hover:bg-amber-400 group-hover:shadow-[-4px_0_12px_rgba(245,158,11,0.5)]"
 
               return (

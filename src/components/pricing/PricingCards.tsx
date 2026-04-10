@@ -104,7 +104,7 @@ export default function PricingCards({ userPlan = 'free' }: { userPlan?: string 
           <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mb-6 leading-relaxed">The ultimate institutional terminal.</p>
           
           <div className="mb-6">
-            <span className="text-3xl font-black text-blue-500">${isYearly ? '290.00' : '29.00'}</span>
+            <span className="text-3xl font-black text-blue-500">${isYearly ? '299.00' : '29.00'}</span>
             <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1.5">/ {isYearly ? 'yr' : 'mo'}</span>
           </div>
 
