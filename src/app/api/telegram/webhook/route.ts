@@ -42,7 +42,6 @@ export async function POST(req: Request) {
       const chatId = cb.message.chat.id
       const messageId = cb.message.message_id
 
-      // Instantly stop the loading spinner on the Telegram button
       await fetch(`https://api.telegram.org/bot${botToken}/answerCallbackQuery`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -51,40 +50,27 @@ export async function POST(req: Request) {
 
       if (data.startsWith('cancel_')) {
         const draftId = data.replace('cancel_', '')
-        
-        // 1. Instantly update UI
         await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: '❌ *Update Cancelled.*', parse_mode: 'Markdown' })
         })
-
-        // 2. Delete the draft in background
         await supabase.from('queued_analyses').delete().eq('id', draftId)
         return NextResponse.json({ status: 'success' })
       }
 
       if (data.startsWith('deploy_')) {
         const draftId = data.replace('deploy_', '')
-        
-        // 1. Atomic Lock: Grab the data and delete it so duplicates can't happen
-        const { data: deletedDrafts } = await supabase
-          .from('queued_analyses')
-          .delete()
-          .eq('id', draftId)
-          .select()
+        const { data: deletedDrafts } = await supabase.from('queued_analyses').delete().eq('id', draftId).select()
         
         if (deletedDrafts && deletedDrafts.length > 0) {
           const draft = deletedDrafts[0]
-
-          // 2. 🚨 INSTANTLY update the Telegram message (Fixed!)
           await fetch(`https://api.telegram.org/bot${botToken}/editMessageText`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: chatId, message_id: messageId, text: '✅ *Deployed to Main Live Floor.*', parse_mode: 'Markdown' })
           })
           
-          // 3. Push to the floor immediately after the UI is updated
           const { error: insertError } = await supabase.from('terminal_posts').insert({
             thesis: draft.content || '',
             ticker: 'UPDATE',
@@ -92,7 +78,6 @@ export async function POST(req: Request) {
             tier_access: 'pro',
             image_url: draft.image_url
           })
-
           if (insertError) console.error("Floor Insert Error:", insertError)
         }
         return NextResponse.json({ status: 'success' })
@@ -108,6 +93,11 @@ export async function POST(req: Request) {
       const rawText = channelPost.text || channelPost.caption || ''
       const text = rawText.trim()
       let finalMediaUrl = null
+
+      // 🚨 FIX 1: Ignore automated bot posts to prevent infinite duplicate loops
+      if (text.includes("Today's analysis is live") || text.includes("Quick Setup Released!")) {
+         return NextResponse.json({ status: 'success' })
+      }
 
       if (channelPost.photo && channelPost.photo.length > 0) {
         const fileId = channelPost.photo[channelPost.photo.length - 1].file_id
@@ -129,14 +119,20 @@ export async function POST(req: Request) {
 
       if (!text && !finalMediaUrl) return NextResponse.json({ status: 'success' })
 
-      await supabase.from('live_squawk').insert({
+      // 🚨 FIX 2: Supabase column safety check (using image_url instead of media_url)
+      const mirrorPayload: any = {
         author_username: 'Sentinel Admin', 
         message: text || '', 
-        media_url: finalMediaUrl, 
         source: 'telegram',
         telegram_message_id: messageId,
         tag: 'Broadcast'
-      })
+      }
+      
+      if (finalMediaUrl) mirrorPayload.image_url = finalMediaUrl;
+
+      const { error: insertError } = await supabase.from('live_squawk').insert(mirrorPayload)
+      if (insertError) console.error("Mirror Database Error:", insertError)
+
       return NextResponse.json({ status: 'success' })
     }
 
@@ -190,15 +186,9 @@ export async function POST(req: Request) {
                   { text: "❌ Cancel", callback_data: `cancel_${draftData.id}` }
                 ]
               ]
-            }
+             }
 
-            await sendMessage(
-              chatId, 
-              '⚠️ **Ready to deploy.**\n\nDo you want to push this desk update to the Main Live Floor?', 
-              'Markdown', 
-              inlineKeyboard, 
-              message.message_id
-            )
+            await sendMessage(chatId, '⚠️ **Ready to deploy.**\n\nDo you want to push this desk update to the Main Live Floor?', 'Markdown', inlineKeyboard, message.message_id)
          }
          return NextResponse.json({ status: 'success' })
       }
@@ -208,7 +198,7 @@ export async function POST(req: Request) {
 
       if (existingProfile) {
         if (text === '/start') {
-          await sendMessage(chatId, `Welcome back, *${existingProfile.username || 'Trader'}*.\n\nYour Telegram is already connected to the Sentinel Vortex terminal. Your current access level is: *${(existingProfile.plan || 'Free').toUpperCase()}*.`, 'Markdown')
+           await sendMessage(chatId, `Welcome back, *${existingProfile.username || 'Trader'}*.\n\nYour Telegram is already connected to the Sentinel Vortex terminal.\nYour current access level is: *${(existingProfile.plan || 'Free').toUpperCase()}*.`, 'Markdown')
         } else {
           await sendMessage(chatId, `System alert: Your Telegram is already securely connected to the terminal. You do not need to submit any further transmission codes.`)
         }
@@ -234,7 +224,7 @@ export async function POST(req: Request) {
           const linkData = await linkRes.json()
 
           if (linkData.ok) {
-            await sendMessage(chatId, `✅ **Identity Verified.**\nWelcome to Sentinel Command, *${linkingUser.username}*.\n\nHere is your single-use access link to the Live Broadcast Channel. Do not share this link; it will expire immediately after one use:\n\n${linkData.result.invite_link}`, 'Markdown')
+             await sendMessage(chatId, `✅ **Identity Verified.**\nWelcome to Sentinel Command, *${linkingUser.username}*.\n\nHere is your single-use access link to the Live Broadcast Channel.\nDo not share this link; it will expire immediately after one use:\n\n${linkData.result.invite_link}`, 'Markdown')
           } else {
              await sendMessage(chatId, `✅ Linked to *${linkingUser.username}*! However, I lack admin rights to generate your invite link. Contact support.`, 'Markdown')
           }
