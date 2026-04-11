@@ -27,38 +27,77 @@ export async function POST(req: Request) {
 
     let messageText = '';
 
+    // Cleaned up text since buttons handle the links now
     if (releaseType === 'manual') {
-      messageText = `⚡ **Quick Setup Released!**\n\nA new setup has just been dropped on the Live Floor.\n\n🖥️ [Open Terminal to view](https://mytraderdesk.com/markets)`;
+      messageText = `⚡ **Quick Setup Released!**\n\nA new setup has just been dropped on the Live Floor.`;
     } else {
-      messageText = `🟢 **Today's analysis is live.**\n\n🖥️ [Check the website/app for full details.](https://mytraderdesk.com/markets)\n\n⚡ Watch the live floor terminal for real-time execution and updates.\n\n⚠️ _Risk Advisory : Risk management is not optional. Keep your stops tight and size your positions responsibly._`;
+      messageText = `🟢 **Today's analysis is live.**\n\n⚡ Watch the live floor terminal for real-time execution and updates.\n\n⚠️ _Risk Advisory : Risk management is not optional. Keep your stops tight and size your positions responsibly._`;
     }
 
-    // 🚨 REVERTED: Standard message payload without the crashing web_app button
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: channelId,
-        text: messageText,
-        parse_mode: 'Markdown',
-        disable_web_page_preview: true
+    // 1. Fetch the ID of the LAST message we sent so we can remove its buttons
+    const { data: settings } = await supabase
+      .from('platform_settings')
+      .select('last_telegram_msg_id')
+      .eq('id', 1)
+      .single();
+    
+    const oldMessageId = settings?.last_telegram_msg_id;
+
+    // 2. Define the Keyboard with TWO buttons (Mini App & Website)
+    const dualKeyboard = {
+      inline_keyboard: [
+        [
+          { text: "📱 Open Mini App", web_app: { url: "https://mytraderdesk.com/markets" } },
+          { text: "🌐 Visit Website", url: "https://mytraderdesk.com/markets" }
+        ]
+      ]
+    };
+
+    // 3. INSTANT DUAL BROADCAST (Parallel Execution)
+    const [tgResponse, dbResult] = await Promise.all([
+      fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: channelId,
+          text: messageText,
+          parse_mode: 'Markdown',
+          disable_web_page_preview: true,
+          reply_markup: dualKeyboard // Attach both buttons here!
+        }),
       }),
-    });
+      supabase.from('live_squawk').insert({
+        author_username: 'Sentinel Admin',
+        message: messageText,
+        source: 'telegram', // Using 'telegram' for consistency with mirror
+        tag: 'Broadcast'
+      })
+    ]);
 
-    const data = await response.json();
-    if (!data.ok) throw new Error(data.description);
+    const tgData = await tgResponse.json();
+    if (dbResult.error) console.error("❌ Failed to mirror broadcast to Supabase:", dbResult.error);
+    if (!tgData.ok) throw new Error(tgData.description);
 
-    const { error: dbError } = await supabase.from('live_squawk').insert({
-      author_username: 'Sentinel Admin',
-      message: messageText,
-      source: 'system_broadcast',
-      tag: 'Broadcast',
-      telegram_message_id: data.result.message_id
-    });
+    // 4. THE HOPPING LOGIC
+    const newMessageId = tgData.result.message_id;
 
-    if (dbError) console.error("❌ Failed to mirror broadcast to Supabase:", dbError);
+    // Save the NEW message ID to Supabase in the background
+    supabase.from('platform_settings').update({ last_telegram_msg_id: newMessageId }).eq('id', 1).then();
 
-    return NextResponse.json({ success: true, messageId: data.result.message_id });
+    // REMOVE the buttons from the OLD message in the background
+    if (oldMessageId) {
+      fetch(`https://api.telegram.org/bot${botToken}/editMessageReplyMarkup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: channelId,
+          message_id: oldMessageId,
+          reply_markup: { inline_keyboard: [] } // Empty array instantly deletes the buttons
+        }),
+      }).catch(err => console.error("Failed to remove old buttons:", err));
+    }
+
+    return NextResponse.json({ success: true, messageId: newMessageId });
 
   } catch (error: any) {
     console.error("🔥 Fatal Broadcast Error:", error);
