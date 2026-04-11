@@ -34,3 +34,33 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+
+
+Code Storage : Github
+
+Hosting : Vercel
+
+Mail Service : ReSend
+
+Cron Job : cron-job.org
+
+Database & Storage : Supabase
+
+Telegram Bot : Sentinel_vortex_bot
+
+
+
+## WORKFLOW
+
+Sign up
+Verify (Mail)
+Log in
+Free user (Delayed Analysis  & No Access to live floor).
+Pro user (Daily Trade updates & Live floor access & Everything).
+OTP verification via settings- Send to sentinel_vortex_bot.
+Telegram ID connected to profile & Link to Channel is send.
+
+
+
