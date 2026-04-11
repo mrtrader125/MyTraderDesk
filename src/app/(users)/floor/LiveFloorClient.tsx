@@ -12,6 +12,23 @@ type PostInteraction = {
   note: string;
 }
 
+// 🚨 NEW: Lightweight Telegram Markdown to Web HTML Parser
+const formatTelegramText = (text: string) => {
+  if (!text) return '';
+  let formatted = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Convert **bold**
+    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
+    // Convert _italic_
+    .replace(/_(.*?)_/g, '<em class="italic opacity-90">$1</em>')
+    // Convert [Links](https...)
+    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#2AABEE] hover:text-blue-400 hover:underline underline-offset-2">$1</a>');
+  
+  return formatted;
+}
+
 export default function LiveFloorClient({ 
   initialPosts, 
   initialSquawks, 
@@ -187,7 +204,6 @@ export default function LiveFloorClient({
 
 
   // 🚨 NEW RULE: FREE USERS ARE COMPLETELY BLOCKED FROM THE FLOOR
-  // (Moved down here so React doesn't crash from an early return)
   if (!isProUser) {
     return (
       <div className="w-full h-[calc(100dvh-65px)] bg-[#050505] flex items-center justify-center p-6">
@@ -213,7 +229,6 @@ export default function LiveFloorClient({
     )
   }
 
-
   return (
     <>
       {/* FULLSCREEN IMAGE MODAL */}
@@ -232,9 +247,7 @@ export default function LiveFloorClient({
         <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
           <div className="flex-1 flex gap-6 lg:gap-8 min-h-0 overflow-hidden h-full">
             
-            {/* ========================================= */}
-            {/* LEFT PANE: NATIVE PAGE STYLE              */}
-            {/* ========================================= */}
+            {/* LEFT PANE: NATIVE PAGE STYLE */}
             <div className="flex flex-col h-full overflow-hidden relative transition-all duration-500 ease-in-out flex-1">
               
               {/* PAGE-STYLE TABS */}
@@ -304,9 +317,11 @@ export default function LiveFloorClient({
                                   {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
-                              <p className="text-sm text-neutral-400 font-medium whitespace-pre-wrap leading-relaxed pl-11">
-                                {post.thesis}
-                              </p>
+                              {/* 🚨 FIX: Applied markdown formatter to Floor Text Broadcasts */}
+                              <p 
+                                className="text-sm text-neutral-400 font-medium whitespace-pre-wrap leading-relaxed pl-11"
+                                dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }}
+                              />
                             </div>
                           )
                         }
@@ -471,16 +486,17 @@ export default function LiveFloorClient({
 
                                 {/* THESIS (Bottom) */}
                                 <div className="px-6 lg:px-8 py-6 bg-[#050505]">
-                                  <p className="text-sm text-neutral-400 whitespace-pre-wrap leading-relaxed">
-                                    {post.thesis}
-                                  </p>
+                                  {/* 🚨 FIX: Applied markdown formatter to Full Setup Thesis */}
+                                  <p 
+                                    className="text-sm text-neutral-400 whitespace-pre-wrap leading-relaxed"
+                                    dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }}
+                                  />
                                 </div>
                               </div>
                             )}
                           </div>
                         )
                       })}
-                      {/* Auto-scroll target anchor */}
                       <div ref={floorEndRef} className="h-1" />
                     </div>
                   )}
@@ -607,10 +623,7 @@ export default function LiveFloorClient({
               )}
             </div>
 
-            {/* ========================================= */}
-            {/* RIGHT PANE: TELEGRAM BROADCAST MIRROR     */}
-            {/* THE FIX: Absolute position guarantees it pushes to the right cleanly */}
-            {/* ========================================= */}
+            {/* RIGHT PANE: TELEGRAM BROADCAST MIRROR */}
             <div className={`hidden lg:block relative shrink-0 transition-[width,opacity] duration-500 ease-in-out ${isCommsOpen ? 'w-[340px] xl:w-[400px] opacity-100' : 'w-0 opacity-0 pointer-events-none'}`}>
               
               <div className={`absolute top-0 right-0 w-[340px] xl:w-[400px] h-full bg-[#080808] rounded-2xl border border-white/[0.03] flex flex-col shadow-2xl transition-transform duration-500 ease-out origin-right ${isCommsOpen ? 'translate-x-0' : 'translate-x-[150%]'}`}>
@@ -666,7 +679,14 @@ export default function LiveFloorClient({
                                 <Image src={squawk.media_url} width={300} height={200} alt="Attached media" className="object-cover w-full h-auto max-h-[250px] group-hover:opacity-90 transition-opacity" unoptimized />
                               </div>
                             )}
-                            {squawk.message && <span className="whitespace-pre-wrap">{squawk.message}</span>}
+                            
+                            {/* 🚨 FIX: Applied markdown formatter to Live Squawk Feed */}
+                            {squawk.message && (
+                              <span 
+                                className="whitespace-pre-wrap"
+                                dangerouslySetInnerHTML={{ __html: formatTelegramText(squawk.message) }} 
+                              />
+                            )}
                           </div>
                         </div>
                       )
