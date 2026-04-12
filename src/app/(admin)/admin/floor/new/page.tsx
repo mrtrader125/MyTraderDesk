@@ -4,20 +4,18 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { createBrowserClient } from '@supabase/ssr'
 import Image from 'next/image'
-import { Activity, Clock, Target, X, ZoomIn, PanelRightClose, PanelRightOpen, ShieldCheck, ShieldAlert, Image as ImageIcon, Megaphone, Send, Edit3, Edit2, Trash2, Shield, FolderSearch, Loader2, Save, PlusCircle, Radio } from 'lucide-react'
+import { Activity, Clock, Target, X, ZoomIn, PanelRightClose, PanelRightOpen, Image as ImageIcon, Megaphone, Send, Edit2, Trash2, Shield, FolderSearch, Loader2, Save, PlusCircle } from 'lucide-react'
 
 // Lightweight Telegram Markdown to Web HTML Parser
 const formatTelegramText = (text: string) => {
   if (!text) return '';
-  let formatted = text
+  return text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
     .replace(/_(.*?)_/g, '<em class="italic opacity-90">$1</em>')
     .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#2AABEE] hover:text-blue-400 hover:underline underline-offset-2">$1</a>');
-  
-  return formatted;
 }
 
 export default function AdminFloorControl() {
@@ -59,7 +57,7 @@ export default function AdminFloorControl() {
   const [commsTag, setCommsTag] = useState('')
   const [isPostingComms, setIsPostingComms] = useState(false)
 
-  // --- MANAGEMENT / MODALS ---
+  // --- MANAGEMENT / DRAFTS ---
   const [editingPost, setEditingPost] = useState<any | null>(null)
   const [editingSquawk, setEditingSquawk] = useState<any | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
@@ -70,7 +68,6 @@ export default function AdminFloorControl() {
   // 1. Initial Fetch & Sync
   useEffect(() => {
     const fetchInitialData = async () => {
-      // Reverse so the newest is at the bottom (chat style)
       const { data: initialPosts } = await supabase.from('terminal_posts').select('*').order('created_at', { ascending: false }).limit(20)
       if (initialPosts) setPosts(initialPosts.reverse())
 
@@ -130,8 +127,8 @@ export default function AdminFloorControl() {
     await supabase.from('live_squawk').delete().eq('id', id)
   }
 
-  const handleUpdatePost = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleUpdatePost = async () => {
+    if (!editingPost) return
     setIsUpdating(true)
     await supabase.from('terminal_posts').update({
       ticker: editingPost.ticker.toUpperCase(),
@@ -144,10 +141,13 @@ export default function AdminFloorControl() {
     setEditingPost(null)
   }
 
-  const handleUpdateSquawk = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleUpdateSquawk = async () => {
+    if (!editingSquawk) return
     setIsUpdating(true)
-    await supabase.from('live_squawk').update({ message: editingSquawk.message, tag: editingSquawk.tag }).eq('id', editingSquawk.id)
+    await supabase.from('live_squawk').update({ 
+      message: editingSquawk.message, 
+      tag: editingSquawk.tag 
+    }).eq('id', editingSquawk.id)
     setIsUpdating(false)
     setEditingSquawk(null)
   }
@@ -186,8 +186,8 @@ export default function AdminFloorControl() {
 
   // --- SUBMISSIONS ---
   const handleFloorSubmit = async () => {
-    if (!thesis) return alert('Message body is required.')
-    if (imagePreview && !ticker) return alert('Ticker is required when attaching a setup chart.')
+    if (!thesis.trim()) return alert('Message body is required.')
+    if (imagePreview && !ticker.trim()) return alert('Ticker is required when attaching a setup chart.')
 
     setIsPostingFloor(true)
     try {
@@ -224,7 +224,7 @@ export default function AdminFloorControl() {
   }
 
   const handleCommsSubmit = async () => {
-    if (!commsMessage) return
+    if (!commsMessage.trim()) return
     setIsPostingComms(true)
     await supabase.from('live_squawk').insert({ message: commsMessage, tag: commsTag || null })
     setCommsMessage(''); setCommsTag('');
@@ -235,8 +235,8 @@ export default function AdminFloorControl() {
     <>
       {/* FULLSCREEN IMAGE MODAL */}
       {expandedImage && (
-        <div className="fixed inset-0 z-[99999] bg-[#000000]/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setExpandedImage(null)}>
-          <div className="relative w-full max-w-7xl aspect-[16/9] rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[99999] bg-[#000000]/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setExpandedImage(null)}>
+          <div className="relative w-full max-w-7xl aspect-[16/9] rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
             <Image src={expandedImage} alt="Expanded Chart" fill className="object-contain" unoptimized />
             <button className="absolute top-4 right-4 p-2.5 bg-black/60 hover:bg-black rounded-full text-neutral-400 hover:text-white transition-all ring-1 ring-white/10 backdrop-blur-md">
               <X size={20} />
@@ -245,58 +245,117 @@ export default function AdminFloorControl() {
         </div>
       )}
 
-      <div className="w-full bg-[#030303] text-neutral-200 p-4 md:p-6 flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
-        <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
-          <div className="flex-1 flex gap-6 lg:gap-8 min-h-0 overflow-hidden h-full">
+      {/* 🚨 RIGID LAYOUT SHELL */}
+      <div className="w-full bg-[#030303] text-neutral-200 p-4 md:p-6 flex flex-col" style={{ height: 'calc(100dvh - 65px)' }}>
+        <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0">
+          
+          {/* HEADER */}
+          <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.04] shrink-0">
+            <h1 className="text-xl font-bold text-white flex items-center gap-3 tracking-tight italic uppercase">
+              <Shield className="text-emerald-500 w-5 h-5 not-italic" /> Admin Desk
+            </h1>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
+              </div>
+              <button 
+                onClick={() => setIsCommsOpen(!isCommsOpen)}
+                className="flex items-center justify-center text-neutral-400 hover:text-white transition-colors bg-[#111] hover:bg-[#1a1a1a] w-10 h-10 rounded-xl border border-white/[0.04] shadow-sm"
+                title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
+              >
+                {isCommsOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex-1 flex gap-6 lg:gap-8 min-h-0">
             
-            {/* LEFT PANE: NATIVE PAGE STYLE */}
-            <div className="flex flex-col h-full overflow-hidden relative transition-all duration-500 ease-in-out flex-1">
+            {/* ==================================================== */}
+            {/* LEFT PANE: LIVE FLOOR FEED & CHAT INPUT              */}
+            {/* ==================================================== */}
+            <div className="flex-1 flex flex-col h-full min-w-0 bg-[#080808] border border-white/[0.04] rounded-2xl overflow-hidden shadow-xl">
               
-              {/* PAGE-STYLE TABS (Admin Mirrored) */}
-              <div className="flex items-end justify-between border-b border-white/[0.04] shrink-0 z-10 mb-4">
-                <div className="flex gap-8 px-2">
-                  <button className="flex items-center gap-2 pb-4 text-sm font-semibold transition-all duration-300 border-b-2 border-white text-white">
-                    <Activity size={16} className="text-blue-400" /> Admin Live Floor
-                  </button>
-                </div>
-                <div className="flex items-center gap-4 mb-3">
-                  <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
-                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
-                  </div>
-                  <button 
-                    onClick={() => setIsCommsOpen(!isCommsOpen)}
-                    className="hidden lg:flex items-center justify-center text-neutral-500 hover:text-white transition-colors bg-white/[0.02] hover:bg-white/[0.06] w-9 h-9 rounded-lg border border-white/[0.04]"
-                    title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
-                  >
-                    {isCommsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
-                  </button>
+              <div className="px-5 py-4 border-b border-white/[0.04] bg-[#0a0a0a] flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2 text-sm font-bold text-white">
+                  <Activity size={16} className="text-blue-400" /> Floor Terminal
                 </div>
               </div>
 
-              {/* TAB 1: DESK FEED (Chat Style Bottom-Up) */}
-              <div className="flex-1 overflow-y-auto pb-4 custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out px-1">
+              {/* FLOOR FEED (SCROLLABLE) */}
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-[#030303]">
                 {posts.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center opacity-40">
                     <Target className="w-12 h-12 text-neutral-600 mb-4 stroke-1" />
                     <h3 className="text-sm font-medium tracking-wide text-neutral-400">Awaiting Transmissions</h3>
                   </div>
                 ) : (
-                  <div className="space-y-8 max-w-[1000px] mx-auto mt-4">
+                  <div className="space-y-8 max-w-[900px] mx-auto pb-4">
                     {posts.map((post) => {
                       const isSetup = post.image_url && post.image_url.trim() !== ''
+                      const isEditing = editingPost?.id === post.id;
 
+                      // --- INLINE EDIT MODE FOR FLOOR POSTS ---
+                      if (isEditing) {
+                        return (
+                          <div key={post.id} className="bg-[#0f0f0f] rounded-2xl border border-blue-500/50 p-6 shadow-[0_0_30px_rgba(37,99,235,0.1)] relative animate-in zoom-in-95 duration-200">
+                            <div className="flex items-center gap-2 mb-6 pb-4 border-b border-white/[0.05] text-blue-400 text-xs font-bold uppercase tracking-widest">
+                              <Edit2 size={16}/> Editing Active Floor Post
+                            </div>
+                            
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-5">
+                              <div>
+                                <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-2 block">Ticker</label>
+                                <input type="text" value={editingPost.ticker} onChange={(e) => setEditingPost({...editingPost, ticker: e.target.value.toUpperCase()})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500" required />
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-2 block">Timeframe</label>
+                                <select value={editingPost.timeframe || '1D'} onChange={(e) => setEditingPost({...editingPost, timeframe: e.target.value})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
+                                  <option value="15M">15M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-2 block">Access Tier</label>
+                                <select value={editingPost.tier_access} onChange={e=>setEditingPost({...editingPost, tier_access: e.target.value})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
+                                  <option value="free">Free Preview</option><option value="pro">Pro Exclusive</option>
+                                </select>
+                              </div>
+                              <div className="bg-[#050505] p-2.5 rounded-xl border border-white/[0.05]">
+                                <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest flex justify-between items-center w-full">
+                                  Override Sentiment
+                                  <input type="checkbox" checked={editingPost.overrideSentiment} onChange={()=>setEditingPost({...editingPost, overrideSentiment: !editingPost.overrideSentiment})} className="accent-blue-500" />
+                                </label>
+                                {editingPost.overrideSentiment && (
+                                   <input type="range" min="0" max="100" value={editingPost.admin_align_pct} onChange={e=>setEditingPost({...editingPost, admin_align_pct: Number(e.target.value)})} className="w-full mt-2.5 h-1 bg-white/[0.2] rounded-full appearance-none accent-blue-500" />
+                                )}
+                              </div>
+                            </div>
+                            
+                            <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-2 block">Thesis / Breakdown</label>
+                            <textarea value={editingPost.thesis} onChange={(e) => setEditingPost({...editingPost, thesis: e.target.value})} className="w-full h-32 bg-[#050505] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed" required />
+                            
+                            <div className="flex justify-end gap-3 mt-5">
+                              <button onClick={() => setEditingPost(null)} className="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-neutral-400 bg-[#111] hover:bg-[#1a1a1a] border border-white/[0.05] rounded-xl transition-all">Cancel</button>
+                              <button onClick={handleUpdatePost} disabled={isUpdating} className="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] disabled:opacity-50">
+                                {isUpdating ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Post
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      // --- NORMAL DISPLAY MODE FOR FLOOR POSTS ---
                       return (
-                        <div key={post.id} className="relative group/post animate-in slide-in-from-bottom-4 fade-in duration-500">
+                        <div key={post.id} className="relative group/post animate-in fade-in duration-300">
                           
-                          {/* ADMIN INLINE CONTROLS */}
-                          <div className="absolute -top-4 -right-2 z-20 flex items-center gap-1 opacity-0 group-hover/post:opacity-100 transition-opacity bg-[#111] p-1.5 rounded-xl border border-white/[0.1] shadow-2xl">
-                            <button onClick={() => setEditingPost({...post, overrideSentiment: post.admin_align_pct !== null, admin_align_pct: post.admin_align_pct || 75})} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded-md transition-colors"><Edit2 size={16} /></button>
-                            <button onClick={() => handleDeletePost(post.id)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 size={16} /></button>
+                          {/* FLOATING ACTION BUTTONS */}
+                          <div className="absolute -top-3 -right-3 z-20 flex items-center gap-1 opacity-0 group-hover/post:opacity-100 transition-opacity bg-[#111] p-1.5 rounded-xl border border-white/[0.1] shadow-2xl">
+                            <button onClick={() => setEditingPost({...post, overrideSentiment: post.admin_align_pct !== null, admin_align_pct: post.admin_align_pct || 75})} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded-md transition-colors"><Edit2 size={14} /></button>
+                            <button onClick={() => handleDeletePost(post.id)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 size={14} /></button>
                           </div>
 
                           {/* TEXT ONLY BROADCAST */}
                           {!isSetup ? (
-                            <div className="group bg-[#0a0a0a] rounded-2xl border border-white/[0.03] p-6 flex flex-col gap-3 transition-all hover:border-white/[0.1] shadow-sm">
+                            <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] p-6 flex flex-col gap-3 shadow-sm group-hover/post:border-white/[0.08] transition-colors">
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -316,21 +375,19 @@ export default function AdminFloorControl() {
                               <p className="text-sm text-neutral-400 font-medium whitespace-pre-wrap leading-relaxed pl-11" dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }} />
                             </div>
                           ) : (
-                            /* FULL SETUP */
-                            <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] overflow-hidden transition-all hover:border-white/[0.1] shadow-sm flex flex-col">
+                            /* FULL SETUP POST */
+                            <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] overflow-hidden shadow-sm flex flex-col group-hover/post:border-white/[0.08] transition-colors">
                               <div className="flex flex-col lg:flex-row border-b border-white/[0.02]">
                                 
-                                {/* IMAGE */}
-                                <div className="relative w-full lg:w-[480px] shrink-0 aspect-[16/10] bg-[#000000] cursor-pointer group border-r border-white/[0.02]" onClick={() => setExpandedImage(post.image_url)}>
+                                <div className="relative w-full lg:w-[480px] shrink-0 aspect-[16/10] bg-[#000000] cursor-pointer group/img border-r border-white/[0.02]" onClick={() => setExpandedImage(post.image_url)}>
                                   <Image src={post.image_url} alt="Setup" fill className="object-contain p-2" unoptimized />
-                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
+                                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
                                     <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center border border-white/20">
                                       <ZoomIn className="text-white w-5 h-5" />
                                     </div>
                                   </div>
                                 </div>
 
-                                {/* ACTIONS PANEL (Admin Read-Only View) */}
                                 <div className="flex-1 flex flex-col p-6 lg:p-8">
                                   <div className="flex justify-between items-start mb-8">
                                     <div className="flex items-center gap-3">
@@ -341,20 +398,20 @@ export default function AdminFloorControl() {
                                   </div>
 
                                   <div className="flex flex-col gap-4 mt-auto">
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest w-24">Access Tier:</span>
+                                    <div className="flex items-center gap-3 bg-[#050505] p-3 rounded-xl border border-white/[0.02]">
+                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest w-24">Access Tier</span>
                                       <span className={`px-2.5 py-1 text-[9px] font-bold tracking-wider uppercase rounded border ${post.tier_access === 'free' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20'}`}>
                                         {post.tier_access === 'pro' ? 'Pro Exclusive' : 'Free Preview'}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest w-24">Sentiment:</span>
+                                    <div className="flex items-center gap-3 bg-[#050505] p-3 rounded-xl border border-white/[0.02]">
+                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest w-24">Sentiment</span>
                                       {post.admin_align_pct !== null ? (
-                                        <span className="px-2.5 py-1 text-[9px] font-bold tracking-wider uppercase rounded border bg-amber-500/10 text-amber-500 border-amber-500/20 flex items-center gap-2">
-                                          Admin Forced: {post.admin_align_pct}% Align
+                                        <span className="px-2.5 py-1 text-[9px] font-bold tracking-wider uppercase rounded border bg-amber-500/10 text-amber-500 border-amber-500/20">
+                                          Forced: {post.admin_align_pct}% Align
                                         </span>
                                       ) : (
-                                        <span className="text-[10px] text-neutral-400 font-medium">Organic Voting Engine</span>
+                                        <span className="px-2.5 py-1 text-[9px] font-bold tracking-wider uppercase rounded border bg-neutral-500/10 text-neutral-400 border-neutral-500/20">Organic Engine Active</span>
                                       )}
                                     </div>
                                   </div>
@@ -362,7 +419,6 @@ export default function AdminFloorControl() {
                                 </div>
                               </div>
 
-                              {/* THESIS */}
                               <div className="px-6 lg:px-8 py-6 bg-[#050505]">
                                 <p className="text-sm text-neutral-400 whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }} />
                               </div>
@@ -371,33 +427,34 @@ export default function AdminFloorControl() {
                         </div>
                       )
                     })}
-                    <div ref={floorEndRef} className="h-2" />
+                    <div ref={floorEndRef} className="h-1" />
                   </div>
                 )}
               </div>
 
-              {/* ADMIN CHAT INPUT BAR (LEFT) */}
-              <div className="shrink-0 bg-[#0a0a0a] border border-white/[0.05] rounded-2xl p-3 flex flex-col shadow-2xl relative mt-2 animate-in slide-in-from-bottom-2 duration-500">
+              {/* ADMIN CHAT INPUT BAR (ANCHORED BOTTOM) */}
+              <div className="shrink-0 bg-[#0a0a0a] border-t border-white/[0.04] p-4 flex flex-col relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+                
                 {/* EXPANDED SETUP CONFIG (Only shows if image attached) */}
                 {imagePreview && (
-                  <div className="mb-3 p-4 bg-[#111] rounded-xl border border-white/[0.05] animate-in slide-in-from-bottom-2 duration-300">
+                  <div className="mb-4 p-5 bg-[#111] rounded-2xl border border-blue-500/20 animate-in slide-in-from-bottom-2 duration-300 shadow-inner">
                     <div className="flex justify-between items-start mb-4 pb-3 border-b border-white/[0.05]">
-                      <h4 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><ImageIcon size={14} className="text-blue-400"/> Chart Attached</h4>
-                      <button onClick={clearSetupState} className="text-neutral-500 hover:text-white"><X size={16}/></button>
+                      <h4 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2"><ImageIcon size={14} className="text-blue-400"/> Trade Setup Attached</h4>
+                      <button onClick={clearSetupState} className="text-neutral-500 hover:text-white bg-white/[0.05] p-1.5 rounded-lg"><X size={14}/></button>
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                      <div className="relative aspect-video rounded-lg overflow-hidden border border-white/[0.1] bg-black">
-                         <Image src={imagePreview} alt="Preview" fill className="object-contain" unoptimized />
+                      <div className="relative aspect-video rounded-xl overflow-hidden border border-white/[0.05] bg-black">
+                         <Image src={imagePreview} alt="Preview" fill className="object-contain p-1" unoptimized />
                       </div>
                       
                       <div className="flex flex-col gap-4">
                         <div>
                           <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Ticker</label>
-                          <input type="text" value={ticker} onChange={e=>setTicker(e.target.value.toUpperCase())} placeholder="BTCUSD" className="w-full bg-[#050505] border border-white/[0.05] rounded-lg px-3 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500" />
+                          <input type="text" value={ticker} onChange={e=>setTicker(e.target.value.toUpperCase())} placeholder="BTCUSD" className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500" />
                         </div>
                         <div>
                           <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Timeframe</label>
-                          <select value={timeframe} onChange={e=>setTimeframe(e.target.value)} className="w-full bg-[#050505] border border-white/[0.05] rounded-lg px-3 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
+                          <select value={timeframe} onChange={e=>setTimeframe(e.target.value)} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
                             <option value="15M">15M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option>
                           </select>
                         </div>
@@ -406,17 +463,17 @@ export default function AdminFloorControl() {
                       <div className="flex flex-col gap-4">
                         <div>
                           <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Tier Access</label>
-                          <select value={tier} onChange={e=>setTier(e.target.value)} className="w-full bg-[#050505] border border-white/[0.05] rounded-lg px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
+                          <select value={tier} onChange={e=>setTier(e.target.value)} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
                             <option value="pro">Pro Exclusive</option><option value="free">Free Preview</option>
                           </select>
                         </div>
-                        <div>
-                          <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 flex justify-between items-center">
-                            Sentiment Override
+                        <div className="bg-[#050505] p-2.5 rounded-xl border border-white/[0.05]">
+                          <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest flex justify-between items-center w-full">
+                            Force Sentiment
                             <input type="checkbox" checked={overrideSentiment} onChange={()=>setOverrideSentiment(!overrideSentiment)} className="accent-blue-500 w-3.5 h-3.5" />
                           </label>
                           {overrideSentiment && (
-                             <input type="range" min="0" max="100" value={adminAlignPct} onChange={e=>setAdminAlignPct(Number(e.target.value))} className="w-full mt-2 h-1.5 bg-white/[0.1] rounded-full appearance-none accent-blue-500" />
+                             <input type="range" min="0" max="100" value={adminAlignPct} onChange={e=>setAdminAlignPct(Number(e.target.value))} className="w-full mt-3 h-1.5 bg-white/[0.1] rounded-full appearance-none accent-blue-500" />
                           )}
                         </div>
                       </div>
@@ -425,14 +482,14 @@ export default function AdminFloorControl() {
                 )}
 
                 {/* MAIN CHAT INPUT */}
-                <div className="flex items-end gap-3">
+                <div className="flex items-end gap-3 max-w-[1000px] w-full mx-auto">
                   <div className="flex bg-[#111] rounded-xl border border-white/[0.05] p-1 shrink-0 shadow-inner">
-                    <label className="p-2.5 text-neutral-400 hover:text-white hover:bg-[#1a1a1a] rounded-lg cursor-pointer transition-colors" title="Upload Image">
-                       <ImageIcon size={18} />
+                    <label className="p-3 text-neutral-400 hover:text-white hover:bg-[#1a1a1a] rounded-lg cursor-pointer transition-colors" title="Upload Image">
+                       <ImageIcon size={20} />
                        <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                     </label>
-                    <button onClick={() => setIsLibraryOpen(true)} className="p-2.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors" title="Open Master Playbook">
-                      <FolderSearch size={18} />
+                    <button onClick={() => setIsLibraryOpen(true)} className="p-3 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors" title="Open Master Playbook">
+                      <FolderSearch size={20} />
                     </button>
                   </div>
                   
@@ -440,80 +497,115 @@ export default function AdminFloorControl() {
                     value={thesis} 
                     onChange={e => setThesis(e.target.value)} 
                     placeholder={imagePreview ? "Detail your setup thesis..." : "Send a quick desk update (supports Telegram Markdown)..."}
-                    className="flex-1 max-h-40 min-h-[48px] bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed shadow-inner"
+                    className="flex-1 max-h-40 min-h-[52px] bg-[#111] border border-white/[0.05] rounded-xl px-5 py-3.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed shadow-inner"
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFloorSubmit(); } }}
                   />
 
-                  <button onClick={handleFloorSubmit} disabled={isPostingFloor || (!thesis.trim() && !imagePreview)} className="p-3.5 bg-blue-600 text-white rounded-xl hover:bg-blue-500 disabled:opacity-50 transition-all shrink-0 shadow-[0_0_15px_rgba(37,99,235,0.3)]">
-                    {isPostingFloor ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                  <button onClick={handleFloorSubmit} disabled={isPostingFloor || (!thesis.trim() && !imagePreview)} className="p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-500 disabled:opacity-50 transition-all shrink-0 shadow-[0_0_15px_rgba(37,99,235,0.3)]">
+                    {isPostingFloor ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT PANE: TELEGRAM BROADCAST MIRROR */}
-            <div className={`hidden lg:block relative shrink-0 transition-[width,opacity] duration-500 ease-in-out ${isCommsOpen ? 'w-[340px] xl:w-[400px] opacity-100' : 'w-0 opacity-0 pointer-events-none'}`}>
-              <div className={`absolute top-0 right-0 w-[340px] xl:w-[400px] h-full bg-[#080808] rounded-2xl border border-white/[0.03] flex flex-col shadow-2xl transition-transform duration-500 ease-out origin-right ${isCommsOpen ? 'translate-x-0' : 'translate-x-[150%]'}`}>
+            {/* ==================================================== */}
+            {/* RIGHT PANE: TELEGRAM BROADCAST MIRROR                */}
+            {/* ==================================================== */}
+            {isCommsOpen && (
+              <div className="w-[350px] xl:w-[400px] shrink-0 h-full flex flex-col bg-[#080808] rounded-2xl border border-white/[0.04] shadow-2xl animate-in slide-in-from-right-8 duration-300">
                 
                 {/* HEADER */}
-                <div className="px-5 py-5 border-b border-[#2AABEE]/10 bg-[#2AABEE]/[0.02] flex items-center justify-between shrink-0 rounded-t-2xl">
+                <div className="px-5 py-4 border-b border-[#2AABEE]/20 bg-[#2AABEE]/[0.03] flex items-center justify-between shrink-0 rounded-t-2xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#2AABEE]/10 flex items-center justify-center border border-[#2AABEE]/20">
+                    <div className="w-8 h-8 rounded-full bg-[#2AABEE]/10 flex items-center justify-center border border-[#2AABEE]/30">
                       <Send className="text-[#2AABEE] w-4 h-4 -ml-0.5" />
                     </div>
                     <div>
                       <h3 className="text-sm font-bold text-[#2AABEE]">Sentinel Broadcast</h3>
-                      <p className="text-[10px] text-neutral-500 font-semibold tracking-wider uppercase mt-0.5">Live Telegram Channel</p>
+                      <p className="text-[10px] text-neutral-500 font-semibold tracking-wider uppercase mt-0.5">Live Telegram Mirror</p>
                     </div>
                   </div>
                   <div className="w-2 h-2 rounded-full bg-[#2AABEE] animate-pulse shadow-[0_0_8px_#2AABEE]" />
                 </div>
 
-                {/* SQUAWK FEED */}
-                <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar w-full bg-[#050505]">
+                {/* SQUAWK FEED (SCROLLABLE) */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar bg-[#050505]">
                   {squawks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full opacity-40">
                       <Send className="w-8 h-8 text-neutral-600 mb-3 stroke-1" />
                       <p className="text-xs font-medium text-neutral-500">Awaiting Channel Broadcasts</p>
                     </div>
                   ) : (
-                    squawks.map((squawk) => (
-                      <div key={squawk.id} className="flex flex-col items-end relative group/squawk animate-in fade-in slide-in-from-bottom-4 duration-500">
-                        
-                        {/* ADMIN INLINE CONTROLS */}
-                        <div className="absolute top-1/2 -translate-y-1/2 -left-16 opacity-0 group-hover/squawk:opacity-100 transition-opacity flex gap-1 bg-[#111] p-1.5 rounded-xl border border-white/[0.1] shadow-2xl">
-                          <button onClick={() => setEditingSquawk(squawk)} className="p-1.5 text-amber-500 hover:bg-amber-500/20 rounded-md transition-colors"><Edit2 size={14} /></button>
-                          <button onClick={() => handleDeleteSquawk(squawk.id)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 size={14} /></button>
-                        </div>
+                    squawks.map((squawk) => {
+                      const isEditing = editingSquawk?.id === squawk.id;
 
-                        <div className="px-4 py-3.5 rounded-2xl max-w-[92%] text-[13px] font-medium leading-relaxed shadow-sm bg-gradient-to-br from-[#2AABEE] to-[#1E88E5] text-white rounded-tr-sm">
-                          <div className="flex items-center gap-2 mb-2">
-                            {squawk.tag && <span className="bg-white/20 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">{squawk.tag}</span>}
-                            <span className="text-[10px] font-bold tracking-wider text-blue-100 ml-auto">You</span>
-                            <span className="text-[9px] font-medium text-blue-100/70">{new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                          
-                          {squawk.media_url && (
-                            <div className="mb-3 relative rounded-xl overflow-hidden cursor-pointer group" onClick={() => setExpandedImage(squawk.media_url)}>
-                              <Image src={squawk.media_url} width={300} height={200} alt="Media" className="object-cover w-full h-auto max-h-[250px] group-hover:opacity-90 transition-opacity" unoptimized />
+                      // --- INLINE EDIT MODE FOR SQUAWKS ---
+                      if (isEditing) {
+                        return (
+                          <div key={squawk.id} className="w-full bg-[#0f0f0f] rounded-2xl border border-amber-500/50 p-4 shadow-[0_0_20px_rgba(245,158,11,0.1)] animate-in zoom-in-95 duration-200">
+                            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/[0.05] text-amber-500 text-[10px] font-bold uppercase tracking-widest">
+                              <Edit2 size={14}/> Editing Broadcast
                             </div>
-                          )}
+                            <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Transmission Tag</label>
+                            <select value={editingSquawk.tag || ''} onChange={e=>setEditingSquawk({...editingSquawk, tag: e.target.value})} className="w-full bg-[#050505] text-[10px] font-bold uppercase tracking-widest text-neutral-300 border border-white/[0.05] rounded-lg px-3 py-2 outline-none focus:border-amber-500 appearance-none mb-4">
+                              <option value="">No Tag (Standard)</option>
+                              <option value="Execution">Live Execution</option>
+                              <option value="Alert">Critical Alert</option>
+                              <option value="News">Macro News</option>
+                            </select>
+                            
+                            <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Message</label>
+                            <textarea value={editingSquawk.message} onChange={(e) => setEditingSquawk({...editingSquawk, message: e.target.value})} className="w-full h-24 bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-amber-500 custom-scrollbar resize-none leading-relaxed" required />
+                            
+                            <div className="flex justify-end gap-2 mt-4">
+                              <button onClick={() => setEditingSquawk(null)} className="px-4 py-2 text-[9px] font-black uppercase tracking-widest text-neutral-400 bg-[#111] hover:bg-[#1a1a1a] rounded-lg border border-white/[0.05]">Cancel</button>
+                              <button onClick={handleUpdateSquawk} disabled={isUpdating} className="px-4 py-2 text-[9px] font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 rounded-lg flex items-center justify-center gap-1.5">
+                                {isUpdating ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      }
+
+                      // --- NORMAL DISPLAY MODE FOR SQUAWKS ---
+                      return (
+                        <div key={squawk.id} className="flex flex-col items-end relative group/squawk animate-in fade-in duration-300">
                           
-                          {squawk.message && (
-                            <span className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formatTelegramText(squawk.message) }} />
-                          )}
+                          {/* FLOATING ACTION BUTTONS */}
+                          <div className="absolute top-1/2 -translate-y-1/2 -left-14 opacity-0 group-hover/squawk:opacity-100 transition-opacity flex gap-1 bg-[#111] p-1.5 rounded-xl border border-white/[0.1] shadow-xl">
+                            <button onClick={() => setEditingSquawk(squawk)} className="p-1.5 text-amber-500 hover:bg-amber-500/20 rounded-md transition-colors"><Edit2 size={12} /></button>
+                            <button onClick={() => handleDeleteSquawk(squawk.id)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 size={12} /></button>
+                          </div>
+
+                          <div className="px-4 py-3.5 rounded-2xl w-full max-w-[92%] text-[13px] font-medium leading-relaxed shadow-sm bg-gradient-to-br from-[#2AABEE] to-[#1E88E5] text-white rounded-tr-sm">
+                            <div className="flex items-center gap-2 mb-2">
+                              {squawk.tag && <span className="bg-white/20 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest shadow-sm">{squawk.tag}</span>}
+                              <span className="text-[10px] font-bold tracking-wider text-blue-100 ml-auto">Sentinel Admin</span>
+                              <span className="text-[9px] font-medium text-blue-100/70">{new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                            
+                            {squawk.media_url && (
+                              <div className="mb-3 relative rounded-xl overflow-hidden cursor-pointer group shadow-sm border border-white/10" onClick={() => setExpandedImage(squawk.media_url)}>
+                                <Image src={squawk.media_url} width={300} height={200} alt="Media" className="object-cover w-full h-auto max-h-[250px] group-hover:opacity-90 transition-opacity" unoptimized />
+                              </div>
+                            )}
+                            
+                            {squawk.message && (
+                              <span className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formatTelegramText(squawk.message) }} />
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      )
+                    })
                   )}
                   <div ref={squawkEndRef} className="h-1" />
                 </div>
 
-                {/* SQUAWK INPUT BAR */}
-                <div className="p-3 bg-[#0a0a0a] border-t border-white/[0.05] rounded-b-2xl shrink-0">
-                  <div className="flex items-center gap-2 mb-2 px-1">
-                     <select value={commsTag} onChange={e=>setCommsTag(e.target.value)} className="bg-[#111] text-[10px] font-bold uppercase tracking-widest text-neutral-400 border border-white/[0.05] rounded-md px-2 py-1.5 outline-none cursor-pointer">
-                       <option value="">No Tag</option>
+                {/* SQUAWK INPUT BAR (ANCHORED BOTTOM) */}
+                <div className="p-4 bg-[#0a0a0a] border-t border-white/[0.04] shrink-0 rounded-b-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-20">
+                  <div className="flex items-center gap-2 mb-3">
+                     <select value={commsTag} onChange={e=>setCommsTag(e.target.value)} className="bg-[#111] text-[10px] font-bold uppercase tracking-widest text-neutral-400 border border-white/[0.05] rounded-md px-3 py-2 outline-none cursor-pointer appearance-none focus:border-[#2AABEE]">
+                       <option value="">No Tag (Standard Update)</option>
                        <option value="Execution">Live Execution</option>
                        <option value="Alert">Critical Alert</option>
                        <option value="News">Macro News</option>
@@ -527,80 +619,36 @@ export default function AdminFloorControl() {
                       className="flex-1 max-h-32 min-h-[44px] bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-[#2AABEE] custom-scrollbar resize-none shadow-inner"
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCommsSubmit(); } }}
                     />
-                    <button onClick={handleCommsSubmit} disabled={isPostingComms || !commsMessage.trim()} className="p-3 bg-[#2AABEE]/10 text-[#2AABEE] rounded-xl hover:bg-[#2AABEE] hover:text-white disabled:opacity-50 transition-all shrink-0">
+                    <button onClick={handleCommsSubmit} disabled={isPostingComms || !commsMessage.trim()} className="p-3 bg-[#2AABEE]/10 text-[#2AABEE] rounded-xl hover:bg-[#2AABEE] hover:text-white disabled:opacity-50 transition-all shrink-0 shadow-[0_0_15px_rgba(42,171,238,0.2)]">
                       {isPostingComms ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
                     </button>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
           </div>
         </div>
       </div>
 
       {/* ========================================= */}
-      {/* MODALS (EDIT & LIBRARY)                   */}
+      {/* FULLSCREEN MASTER PLAYBOOK LIBRARY MODAL  */}
       {/* ========================================= */}
-      
-      {/* EDIT DESK POST MODAL */}
-      {mounted && editingPost && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#050505]/90 backdrop-blur-sm" onClick={() => setEditingPost(null)}></div>
-          <div className="relative w-full max-w-lg bg-[#0a0a0a] rounded-3xl border border-white/[0.05] shadow-[0_0_50px_rgba(0,0,0,0.8)] p-8 animate-in zoom-in-95">
-            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-3 border-b border-white/[0.05] pb-4"><Edit2 size={16} className="text-blue-500"/> Edit Terminal Post</h3>
-            <form onSubmit={handleUpdatePost} className="space-y-5">
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 block">Ticker</label><input type="text" value={editingPost.ticker} onChange={(e) => setEditingPost({...editingPost, ticker: e.target.value})} className="w-full bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm font-mono text-white outline-none" required /></div>
-                <div><label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 block">Timeframe</label><input type="text" value={editingPost.timeframe || ''} onChange={(e) => setEditingPost({...editingPost, timeframe: e.target.value})} className="w-full bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm font-mono text-white outline-none" /></div>
-              </div>
-              <div className="flex gap-4">
-                 <div className="flex-1"><label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 block">Tier</label><select value={editingPost.tier_access} onChange={e=>setEditingPost({...editingPost, tier_access: e.target.value})} className="w-full bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white outline-none"><option value="free">Free</option><option value="pro">Pro</option></select></div>
-              </div>
-              <div><label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 block">Thesis</label><textarea value={editingPost.thesis} onChange={(e) => setEditingPost({...editingPost, thesis: e.target.value})} className="w-full h-32 bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white outline-none custom-scrollbar resize-none" required /></div>
-              <div className="flex gap-3 pt-4 border-t border-white/[0.05]">
-                <button type="button" onClick={() => setEditingPost(null)} className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400 bg-[#111] hover:bg-[#151515] rounded-xl">Cancel</button>
-                <button type="submit" disabled={isUpdating} className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center gap-2">{isUpdating ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Data</button>
-              </div>
-            </form>
-          </div>
-        </div>, document.body
-      )}
-
-      {/* EDIT TELEGRAM SQUAWK MODAL */}
-      {mounted && editingSquawk && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-[#050505]/90 backdrop-blur-sm" onClick={() => setEditingSquawk(null)}></div>
-          <div className="relative w-full max-w-lg bg-[#0a0a0a] rounded-3xl border border-white/[0.05] shadow-[0_0_50px_rgba(0,0,0,0.8)] p-8 animate-in zoom-in-95">
-            <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-3 border-b border-white/[0.05] pb-4"><Edit2 size={16} className="text-amber-500"/> Edit Comms</h3>
-            <form onSubmit={handleUpdateSquawk} className="space-y-5">
-              <div><label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 block">Tag</label><input type="text" value={editingSquawk.tag || ''} onChange={(e) => setEditingSquawk({...editingSquawk, tag: e.target.value})} className="w-full bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm font-bold text-white outline-none" /></div>
-              <div><label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-2 block">Message</label><textarea value={editingSquawk.message} onChange={(e) => setEditingSquawk({...editingSquawk, message: e.target.value})} className="w-full h-32 bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white outline-none custom-scrollbar resize-none" required /></div>
-              <div className="flex gap-3 pt-4 border-t border-white/[0.05]">
-                <button type="button" onClick={() => setEditingSquawk(null)} className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-neutral-400 bg-[#111] hover:bg-[#151515] rounded-xl">Cancel</button>
-                <button type="submit" disabled={isUpdating} className="flex-1 py-3 text-[10px] font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 rounded-xl flex items-center justify-center gap-2">{isUpdating ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save</button>
-              </div>
-            </form>
-          </div>
-        </div>, document.body
-      )}
-
-      {/* MASTER PLAYBOOK LIBRARY MODAL */}
       {mounted && isLibraryOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-8">
-          <div className="absolute inset-0 bg-[#050505]/90 backdrop-blur-sm" onClick={() => setIsLibraryOpen(false)}></div>
-          <div className="relative w-full max-w-6xl h-[85vh] bg-[#0a0a0a] rounded-3xl border border-white/[0.05] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in zoom-in-95">
+          <div className="absolute inset-0 bg-[#050505]/95 backdrop-blur-sm" onClick={() => setIsLibraryOpen(false)}></div>
+          <div className="relative w-full max-w-6xl h-[85vh] bg-[#0a0a0a] rounded-3xl border border-white/[0.05] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-8 py-6 border-b border-white/[0.05] bg-[#0c0c0c] flex justify-between items-center shrink-0">
                <h2 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-3"><FolderSearch className="text-blue-500 w-5 h-5"/> Master Playbook</h2>
-               <button onClick={() => setIsLibraryOpen(false)} className="p-2 bg-[#111] hover:bg-[#151515] rounded-lg text-neutral-400"><X size={20}/></button>
+               <button onClick={() => setIsLibraryOpen(false)} className="p-2 bg-[#111] hover:bg-[#1a1a1a] border border-white/[0.05] rounded-xl text-neutral-400 transition-colors"><X size={20}/></button>
             </div>
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-               <div className="w-full md:w-3/5 p-6 overflow-y-auto custom-scrollbar border-r border-white/[0.05] bg-[#050505]">
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+               <div className="w-full md:w-3/5 p-6 md:p-8 overflow-y-auto custom-scrollbar border-r border-white/[0.05] bg-[#050505]">
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
                      {recentImages.map((item, i) => (
-                        <div key={i} onClick={() => setModalPreview(item)} className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer border ${modalPreview?.url === item.url ? 'border-blue-500 scale-[0.98]' : 'border-white/[0.05] hover:border-white/[0.2]'}`}>
+                        <div key={i} onClick={() => setModalPreview(item)} className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer border transition-all ${modalPreview?.url === item.url ? 'border-blue-500 scale-[0.98] shadow-[0_0_20px_rgba(37,99,235,0.2)]' : 'border-white/[0.05] hover:border-white/[0.2] hover:scale-105 shadow-sm'}`}>
                            <Image src={item.url} alt="Library" fill className="object-cover" unoptimized />
-                           <div className="absolute top-2 left-2 bg-black/80 px-2 py-1 rounded-md text-[9px] font-bold text-white uppercase">{item.ticker} | {item.timeframe}</div>
+                           <div className="absolute top-2.5 left-2.5 bg-black/80 px-2.5 py-1 rounded-md text-[9px] font-black text-white uppercase tracking-widest border border-white/[0.1] shadow-lg">{item.ticker} | {item.timeframe}</div>
                         </div>
                      ))}
                   </div>
@@ -611,10 +659,10 @@ export default function AdminFloorControl() {
                      <div className="relative w-full flex-1 rounded-2xl overflow-hidden border border-white/[0.05] bg-[#050505] min-h-[200px] mb-6 shadow-inner">
                         <Image src={modalPreview.url} alt="Preview" fill className="object-contain" unoptimized />
                      </div>
-                     <button onClick={handleAttachFromLibrary} className="w-full py-4 bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.3)]"><PlusCircle size={18}/> Attach to Input</button>
+                     <button onClick={handleAttachFromLibrary} className="w-full py-4 bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all active:scale-[0.98]"><PlusCircle size={18}/> Attach to Input</button>
                     </>
                   ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-white/[0.05] rounded-3xl bg-[#111]"><Target className="w-10 h-10 text-neutral-600 mb-4"/><p className="text-[10px] text-neutral-500 font-bold uppercase text-center px-6">Select analysis to preview</p></div>
+                    <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-white/[0.05] rounded-3xl bg-[#111]"><Target className="w-10 h-10 text-neutral-600 mb-4 stroke-1"/><p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest text-center px-6 leading-relaxed">Select analysis to preview<br/><br/>Attaching it will automatically fill your ticker and timeframe.</p></div>
                   )}
                </div>
             </div>
