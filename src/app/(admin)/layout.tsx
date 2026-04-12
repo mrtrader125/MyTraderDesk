@@ -12,7 +12,9 @@ import {
   ShieldAlert, 
   ChevronRight,
   Radio,
-  BookOpen 
+  BookOpen,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -20,6 +22,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [adminEmail, setAdminEmail] = useState('')
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   useEffect(() => {
     async function verifyAdmin() {
@@ -79,50 +82,75 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex h-screen bg-[#050505] text-white font-sans overflow-hidden">
       {/* SIDEBAR */}
-      <div className="w-64 bg-[#0a0a0a] border-r border-neutral-800 flex flex-col z-20 shrink-0">
+      <div 
+        className={`bg-[#0a0a0a] border-r border-neutral-800 flex flex-col z-20 shrink-0 transition-all duration-300 ease-in-out ${
+          isSidebarOpen ? 'w-64' : 'w-20'
+        }`}
+      >
         
-        {/* Branding */}
-        <div className="h-16 flex items-center px-6 border-b border-neutral-800 shrink-0">
-          <div className="w-2 h-2 bg-brand-primary rounded-full animate-pulse mr-3"></div>
-          <h1 className="text-sm font-black uppercase tracking-widest text-white">ADMIN PORTAL</h1>
+        {/* Branding & Toggle */}
+        <div className={`h-16 flex items-center border-b border-neutral-800 shrink-0 transition-all duration-300 ${isSidebarOpen ? 'px-6 justify-between' : 'px-0 justify-center'}`}>
+          {isSidebarOpen && (
+            <div className="flex items-center overflow-hidden">
+              <div className="w-2 h-2 bg-brand-primary rounded-full animate-pulse mr-3 shrink-0"></div>
+              <h1 className="text-sm font-black uppercase tracking-widest text-white whitespace-nowrap">ADMIN PORTAL</h1>
+            </div>
+          )}
+          <button 
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+            className="text-neutral-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5 shrink-0"
+            title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+          >
+            {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+          </button>
         </div>
 
         {/* Navigation */}
-        <div className="flex-1 py-6 px-4 space-y-2 overflow-y-auto scrollbar-hide">
+        <div className={`flex-1 py-6 space-y-2 overflow-y-auto scrollbar-hide ${isSidebarOpen ? 'px-4' : 'px-3'}`}>
           {navLinks.map((link) => {
             const isActive = pathname === link.path
             return (
               <button
                 key={link.name}
                 onClick={() => router.push(link.path)}
-                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all group ${
+                title={!isSidebarOpen ? link.name : undefined}
+                className={`w-full flex items-center rounded-xl transition-all group ${
                   isActive 
                     ? 'bg-brand-primary text-black shadow-[0_0_15px_rgba(var(--brand-primary-rgb),0.2)]' 
                     : 'text-neutral-500 hover:bg-white/5 hover:text-white'
-                }`}
+                } ${isSidebarOpen ? 'px-4 py-3 justify-between' : 'py-3 justify-center'}`}
               >
-                <div className="flex items-center space-x-3">
-                  <link.icon size={16} className={isActive ? 'text-black' : 'text-neutral-500 group-hover:text-neutral-300'} />
-                  <span className="text-[10px] font-black uppercase tracking-widest">{link.name}</span>
+                <div className="flex items-center">
+                  <link.icon size={18} className={`${isActive ? 'text-black' : 'text-neutral-500 group-hover:text-neutral-300'} ${isSidebarOpen ? 'mr-3' : 'mr-0'}`} />
+                  {isSidebarOpen && (
+                    <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                      {link.name}
+                    </span>
+                  )}
                 </div>
-                {isActive && <ChevronRight size={14} className="opacity-50" />}
+                {isSidebarOpen && isActive && <ChevronRight size={14} className="opacity-50 shrink-0" />}
               </button>
             )
           })}
         </div>
 
         {/* Admin Footer */}
-        <div className="p-4 border-t border-neutral-800 shrink-0">
-          <div className="bg-[#050505] border border-neutral-800 rounded-xl p-3 mb-3">
-            <span className="text-[8px] font-black text-brand-primary uppercase tracking-widest block mb-1">Admin Account</span>
-            <span className="text-xs font-bold text-neutral-300 truncate block">{adminEmail}</span>
-          </div>
+        <div className={`p-4 border-t border-neutral-800 shrink-0 flex flex-col ${!isSidebarOpen && 'items-center'}`}>
+          {isSidebarOpen && (
+            <div className="bg-[#050505] border border-neutral-800 rounded-xl p-3 mb-3 overflow-hidden">
+              <span className="text-[8px] font-black text-brand-primary uppercase tracking-widest block mb-1 whitespace-nowrap">Admin Account</span>
+              <span className="text-xs font-bold text-neutral-300 truncate block">{adminEmail}</span>
+            </div>
+          )}
           <button 
             onClick={handleSignOut}
-            className="w-full flex items-center justify-center space-x-2 px-4 py-2.5 rounded-lg text-red-500 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest transition-colors"
+            title={!isSidebarOpen ? "Sign Out" : undefined}
+            className={`flex items-center justify-center py-2.5 rounded-lg text-red-500 hover:bg-red-500/10 text-[10px] font-black uppercase tracking-widest transition-colors ${
+              isSidebarOpen ? 'w-full px-4 space-x-2' : 'w-12 h-12 px-0 space-x-0'
+            }`}
           >
-            <LogOut size={14} />
-            <span>Sign Out</span>
+            <LogOut size={16} />
+            {isSidebarOpen && <span>Sign Out</span>}
           </button>
         </div>
       </div>
