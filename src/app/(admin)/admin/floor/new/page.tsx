@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { createBrowserClient } from '@supabase/ssr'
-import { Send, Image as ImageIcon, Shield, Loader2, Target, FolderSearch, X, PlusCircle, Edit2, Trash2, Save, Activity, Radio, Megaphone, ZoomIn, Clock } from 'lucide-react'
+import { Send, Image as ImageIcon, Shield, Loader2, Target, FolderSearch, X, PlusCircle, Edit2, Trash2, Save, Activity, Radio, Megaphone, ZoomIn, Clock, PanelRightClose, PanelRightOpen } from 'lucide-react'
 import Image from 'next/image'
 
 // Telegram Markdown Formatter (Matching Client)
@@ -26,6 +26,9 @@ export default function AdminFloorControl() {
 
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
+  // --- UI STATE ---
+  const [isCommsOpen, setIsCommsOpen] = useState(true)
 
   // --- REAL-TIME FEED STATE ---
   const [posts, setPosts] = useState<any[]>([])
@@ -251,8 +254,17 @@ export default function AdminFloorControl() {
             <h1 className="text-xl font-bold text-white flex items-center gap-3 tracking-tight italic uppercase">
               <Shield className="text-emerald-500 w-5 h-5 not-italic" /> Admin Floor Control
             </h1>
-            <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-4 py-2 rounded-lg border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div> Live Sync Active
+            <div className="flex items-center gap-4">
+              <button 
+                onClick={() => setIsCommsOpen(!isCommsOpen)}
+                className="hidden lg:flex items-center justify-center text-neutral-500 hover:text-white transition-colors bg-white/[0.02] hover:bg-white/[0.06] w-9 h-9 rounded-lg border border-white/[0.04]"
+                title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
+              >
+                {isCommsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+              </button>
+              <div className="flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-4 py-2 rounded-lg border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]">
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div> Live Sync Active
+              </div>
             </div>
           </div>
 
@@ -408,63 +420,65 @@ export default function AdminFloorControl() {
 
 
             {/* RIGHT PANE: TELEGRAM SQUAWK MIRROR */}
-            <div className="hidden lg:flex flex-col w-[340px] xl:w-[400px] h-full shrink-0 relative bg-[#080808] rounded-2xl border border-white/[0.03] shadow-2xl">
-              
-              {/* Telegram Header */}
-              <div className="px-5 py-4 border-b border-[#2AABEE]/10 bg-[#2AABEE]/[0.02] flex items-center justify-between shrink-0 rounded-t-2xl">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-[#2AABEE]/10 flex items-center justify-center"><Send className="text-[#2AABEE] w-4 h-4 -ml-0.5" /></div>
-                  <div>
-                    <h3 className="text-sm font-bold text-[#2AABEE]">Sentinel Comms</h3>
-                    <p className="text-[10px] text-neutral-500 font-semibold tracking-wider uppercase mt-0.5">Live Telegram Mirror</p>
+            <div className={`hidden lg:block relative shrink-0 transition-[width,opacity] duration-500 ease-in-out ${isCommsOpen ? 'w-[340px] xl:w-[400px] opacity-100' : 'w-0 opacity-0 pointer-events-none'}`}>
+              <div className={`absolute top-0 right-0 w-[340px] xl:w-[400px] h-full flex flex-col bg-[#080808] rounded-2xl border border-white/[0.03] shadow-2xl transition-transform duration-500 ease-out origin-right ${isCommsOpen ? 'translate-x-0' : 'translate-x-[150%]'}`}>
+                
+                {/* Telegram Header */}
+                <div className="px-5 py-4 border-b border-[#2AABEE]/10 bg-[#2AABEE]/[0.02] flex items-center justify-between shrink-0 rounded-t-2xl">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#2AABEE]/10 flex items-center justify-center"><Send className="text-[#2AABEE] w-4 h-4 -ml-0.5" /></div>
+                    <div>
+                      <h3 className="text-sm font-bold text-[#2AABEE]">Sentinel Comms</h3>
+                      <p className="text-[10px] text-neutral-500 font-semibold tracking-wider uppercase mt-0.5">Live Telegram Mirror</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Telegram Feed */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#050505]">
-                {squawks.map((squawk) => (
-                   <div key={squawk.id} className="flex flex-col items-end relative group/squawk animate-in fade-in slide-in-from-bottom-2">
-                     {/* ADMIN INLINE CONTROLS */}
-                     <div className="absolute top-1/2 -translate-y-1/2 -left-16 opacity-0 group-hover/squawk:opacity-100 transition-opacity flex gap-1 bg-[#111] p-1 rounded-lg border border-white/[0.1] shadow-lg">
-                        <button onClick={() => setEditingSquawk(squawk)} className="p-1.5 text-amber-500 hover:bg-amber-500/20 rounded-md transition-colors"><Edit2 size={12} /></button>
-                        <button onClick={() => handleDeleteSquawk(squawk.id)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 size={12} /></button>
-                     </div>
-
-                     <div className="px-4 py-3 rounded-2xl max-w-[92%] text-[13px] font-medium leading-relaxed bg-gradient-to-br from-[#2AABEE] to-[#1E88E5] text-white rounded-tr-sm shadow-md">
-                       <div className="flex items-center gap-2 mb-1.5">
-                         {squawk.tag && <span className="bg-white/20 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">{squawk.tag}</span>}
-                         <span className="text-[10px] font-bold tracking-wider text-blue-100 ml-auto">You</span>
-                         <span className="text-[9px] font-medium text-blue-100/70">{new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                {/* Telegram Feed */}
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#050505]">
+                  {squawks.map((squawk) => (
+                     <div key={squawk.id} className="flex flex-col items-end relative group/squawk animate-in fade-in slide-in-from-bottom-2">
+                       {/* ADMIN INLINE CONTROLS */}
+                       <div className="absolute top-1/2 -translate-y-1/2 -left-16 opacity-0 group-hover/squawk:opacity-100 transition-opacity flex gap-1 bg-[#111] p-1 rounded-lg border border-white/[0.1] shadow-lg">
+                          <button onClick={() => setEditingSquawk(squawk)} className="p-1.5 text-amber-500 hover:bg-amber-500/20 rounded-md transition-colors"><Edit2 size={12} /></button>
+                          <button onClick={() => handleDeleteSquawk(squawk.id)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 size={12} /></button>
                        </div>
-                       <span className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formatTelegramText(squawk.message) }} />
-                     </div>
-                   </div>
-                ))}
-                <div ref={squawkEndRef} className="h-2" />
-              </div>
 
-              {/* Chat Input Bar (Right) */}
-              <div className="p-3 bg-[#0a0a0a] border-t border-white/[0.05] rounded-b-2xl shrink-0">
-                <div className="flex items-center gap-2 mb-2 px-1">
-                   <select value={commsTag} onChange={e=>setCommsTag(e.target.value)} className="bg-[#111] text-[10px] font-bold uppercase tracking-widest text-neutral-400 border border-white/[0.05] rounded-md px-2 py-1 outline-none">
-                     <option value="">No Tag</option>
-                     <option value="Execution">Live Execution</option>
-                     <option value="Alert">Critical Alert</option>
-                     <option value="News">Macro News</option>
-                   </select>
+                       <div className="px-4 py-3 rounded-2xl max-w-[92%] text-[13px] font-medium leading-relaxed bg-gradient-to-br from-[#2AABEE] to-[#1E88E5] text-white rounded-tr-sm shadow-md">
+                         <div className="flex items-center gap-2 mb-1.5">
+                           {squawk.tag && <span className="bg-white/20 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest">{squawk.tag}</span>}
+                           <span className="text-[10px] font-bold tracking-wider text-blue-100 ml-auto">You</span>
+                           <span className="text-[9px] font-medium text-blue-100/70">{new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                         </div>
+                         <span className="whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: formatTelegramText(squawk.message) }} />
+                       </div>
+                     </div>
+                  ))}
+                  <div ref={squawkEndRef} className="h-2" />
                 </div>
-                <div className="flex items-end gap-2">
-                  <textarea 
-                    value={commsMessage} 
-                    onChange={e => setCommsMessage(e.target.value)} 
-                    placeholder="Broadcast to Telegram..."
-                    className="flex-1 max-h-32 min-h-[44px] bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-[#2AABEE] custom-scrollbar resize-none"
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCommsSubmit(); } }}
-                  />
-                  <button onClick={handleCommsSubmit} disabled={isPostingComms || !commsMessage.trim()} className="p-3 bg-[#2AABEE]/10 text-[#2AABEE] rounded-xl hover:bg-[#2AABEE] hover:text-white disabled:opacity-50 transition-all shrink-0">
-                    {isPostingComms ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                  </button>
+
+                {/* Chat Input Bar (Right) */}
+                <div className="p-3 bg-[#0a0a0a] border-t border-white/[0.05] rounded-b-2xl shrink-0">
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                     <select value={commsTag} onChange={e=>setCommsTag(e.target.value)} className="bg-[#111] text-[10px] font-bold uppercase tracking-widest text-neutral-400 border border-white/[0.05] rounded-md px-2 py-1 outline-none">
+                       <option value="">No Tag</option>
+                       <option value="Execution">Live Execution</option>
+                       <option value="Alert">Critical Alert</option>
+                       <option value="News">Macro News</option>
+                     </select>
+                  </div>
+                  <div className="flex items-end gap-2">
+                    <textarea 
+                      value={commsMessage} 
+                      onChange={e => setCommsMessage(e.target.value)} 
+                      placeholder="Broadcast to Telegram..."
+                      className="flex-1 max-h-32 min-h-[44px] bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-[#2AABEE] custom-scrollbar resize-none"
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCommsSubmit(); } }}
+                    />
+                    <button onClick={handleCommsSubmit} disabled={isPostingComms || !commsMessage.trim()} className="p-3 bg-[#2AABEE]/10 text-[#2AABEE] rounded-xl hover:bg-[#2AABEE] hover:text-white disabled:opacity-50 transition-all shrink-0">
+                      {isPostingComms ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -524,7 +538,6 @@ export default function AdminFloorControl() {
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-8">
           <div className="absolute inset-0 bg-[#050505]/90 backdrop-blur-sm" onClick={() => setIsLibraryOpen(false)}></div>
           <div className="relative w-full max-w-6xl h-[85vh] bg-[#0a0a0a] rounded-3xl border border-white/[0.05] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
-             {/* Unchanged Library Modal Content from previous implementation */}
             <div className="px-8 py-6 border-b border-white/[0.05] bg-[#0c0c0c] flex justify-between items-center shrink-0">
                <h2 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-3"><FolderSearch className="text-blue-500 w-5 h-5"/> Master Playbook</h2>
                <button onClick={() => setIsLibraryOpen(false)} className="p-2 bg-[#111] hover:bg-[#151515] rounded-lg text-neutral-400"><X size={20}/></button>
