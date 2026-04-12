@@ -27,8 +27,11 @@ export default function SecurityClient({ userEmail }: { userEmail: string }) {
     setIsSendingReset(true)
 
     try {
+      // 🚨 FIX: Dynamic routing to perfectly match 'www', non-'www', or localhost domains
+      const targetUrl = `${window.location.origin}/update-password`;
+
       const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
-        redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
+        redirectTo: targetUrl,
       })
 
       if (error) {

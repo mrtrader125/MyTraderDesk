@@ -14,10 +14,11 @@ export default function Signup() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   
-  // 🚨 NEW: State to track if signup was successful
+  // State to track if signup was successful
   const [isSuccess, setIsSuccess] = useState(false)
 
-  async function signup() {
+  async function signup(e?: React.FormEvent) {
+    if (e) e.preventDefault()
     if (!fullName) return setError("Full Name is required.")
     
     setLoading(true)
@@ -29,7 +30,9 @@ export default function Signup() {
       options: {
         data: {
           full_name: fullName,
-        }
+        },
+        // 🚨 THE FIX: Tell Supabase to send them to the callback, which pushes them to /verified
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/verified`
       }
     })
 
@@ -39,7 +42,7 @@ export default function Signup() {
       return
     }
 
-    // 🚨 FIX: Instead of pushing to the dashboard, we trigger the success screen!
+    // Trigger the success screen!
     setIsSuccess(true)
     setLoading(false)
   }
@@ -54,7 +57,7 @@ export default function Signup() {
 
         <div className="relative bg-[#0a0a0f]/90 backdrop-blur-2xl border border-white/5 p-8 md:p-10 rounded-[2.5rem] shadow-2xl">
           
-          {/* 🚨 NEW: SUCCESS SCREEN */}
+          {/* SUCCESS SCREEN */}
           {isSuccess ? (
             <div className="flex flex-col items-center text-center py-4 animate-in fade-in zoom-in-95 duration-500">
               <div className="w-20 h-20 bg-blue-500/10 border border-blue-500/20 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(59,130,246,0.2)] mb-8">
@@ -88,7 +91,7 @@ export default function Signup() {
                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mt-2">Join MyTraderDesk</p>
               </div>
 
-              <div className="space-y-4">
+              <form onSubmit={signup} className="space-y-4">
                 {/* FULL NAME INPUT */}
                 <div>
                   <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1 mb-2 block">Full Name</label>
@@ -96,6 +99,7 @@ export default function Signup() {
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600" size={16} />
                     <input 
                       type="text" 
+                      required
                       placeholder="John Doe"
                       className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-white text-sm focus:border-blue-500/40 outline-none transition-all placeholder:text-neutral-700"
                       onChange={(e) => setFullName(e.target.value)}
@@ -110,6 +114,7 @@ export default function Signup() {
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600" size={16} />
                     <input 
                       type="email" 
+                      required
                       placeholder="name@example.com"
                       className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-white text-sm focus:border-blue-500/40 outline-none transition-all placeholder:text-neutral-700"
                       onChange={(e) => setEmail(e.target.value)}
@@ -124,6 +129,8 @@ export default function Signup() {
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600" size={16} />
                     <input 
                       type="password" 
+                      required
+                      minLength={6}
                       placeholder="••••••••"
                       className="w-full bg-black/40 border border-white/5 rounded-xl py-4 pl-12 pr-6 text-white text-sm focus:border-blue-500/40 outline-none transition-all placeholder:text-neutral-700"
                       onChange={(e) => setPassword(e.target.value)}
@@ -139,19 +146,19 @@ export default function Signup() {
                 )}
 
                 <button 
-                  onClick={signup}
+                  type="submit"
                   disabled={loading}
                   className="w-full bg-white hover:bg-neutral-200 py-4 rounded-xl text-black font-bold uppercase tracking-widest text-xs shadow-xl flex items-center justify-center transition-all active:scale-[0.98] disabled:opacity-50 mt-6"
                 >
                   {loading ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
                   {loading ? 'Creating Account...' : 'Sign Up'}
                 </button>
+              </form>
 
-                <div className="mt-8 pt-8 border-t border-white/5 text-center">
-                  <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                    Already have an account? <Link href="/login" className="ml-2 text-white hover:text-blue-500 transition-colors underline decoration-white/20 underline-offset-4">Log In</Link>
-                  </p>
-                </div>
+              <div className="mt-8 pt-8 border-t border-white/5 text-center">
+                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
+                  Already have an account? <Link href="/login" className="ml-2 text-white hover:text-blue-500 transition-colors underline decoration-white/20 underline-offset-4">Log In</Link>
+                </p>
               </div>
             </>
           )}

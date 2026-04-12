@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react' // 🚨 ADDED useEffect
+import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Save, Lock, Smartphone, RefreshCw, CheckCircle2 } from 'lucide-react'
 
@@ -18,7 +18,7 @@ export default function SettingsClient({ userId, initialFullName, initialUsernam
   const [code, setCode] = useState<string | null>(null)
   const [generatingCode, setGeneratingCode] = useState(false)
 
-  // 🚨 FLAW 2 FIX: Realtime Auto-Refresh when Bot confirms linking
+  // Realtime Auto-Refresh when Bot confirms linking
   useEffect(() => {
     if (!userId || isTelegramLinked) return
 
@@ -43,12 +43,21 @@ export default function SettingsClient({ userId, initialFullName, initialUsernam
     return () => { supabase.removeChannel(channel) }
   }, [userId, isTelegramLinked])
 
-  // 1. Save General Info
+  // 1. Save General Info (Using Upsert to guarantee the row is created)
   const handleSaveGeneral = async () => {
     setSavingGeneral(true)
-    await supabase.from('profiles').update({ full_name: fullName }).eq('id', userId)
+    
+    // Upsert ensures if the row is missing, it creates it. If it exists, it updates it.
+    await supabase.from('profiles').upsert({ 
+      id: userId, 
+      full_name: fullName 
+    })
+    
+    // Keep auth metadata in sync
     await supabase.auth.updateUser({ data: { full_name: fullName } })
+    
     setSavingGeneral(false)
+    window.location.reload()
   }
 
   // 2. Lock in Username
@@ -72,8 +81,7 @@ export default function SettingsClient({ userId, initialFullName, initialUsernam
     setGeneratingCode(true)
     const newCode = Math.floor(100000 + Math.random() * 900000).toString()
     
-    // 🚨 We changed .update() to .upsert()
-    // Upsert means: "If the user row exists, update the code. If the row is missing, CREATE the row AND save the code!"
+    // Upsert guarantees the code is saved even if the user profile row was missing
     const { error } = await supabase
       .from('profiles')
       .upsert({ 
@@ -89,6 +97,7 @@ export default function SettingsClient({ userId, initialFullName, initialUsernam
     }
     setGeneratingCode(false)
   }
+
   return (
     <div className="max-w-3xl space-y-6 md:space-y-8 animate-in fade-in duration-500">
       

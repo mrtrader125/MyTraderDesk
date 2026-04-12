@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useMemo } from 'react'
 import Script from 'next/script'
-import { Lock, Smartphone, Loader2, Target, TrendingUp, TrendingDown, Minus, Activity, Clock, ArrowLeft } from 'lucide-react'
+import { Lock, Smartphone, Loader2, Target, TrendingUp, TrendingDown, Minus, Activity, Clock, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
 // 🚨 THE EPOCH CUTOFF: Only setups created AFTER this date will ever show the "NEW" tag.
@@ -61,7 +61,6 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
     else if (touchMode.current === 'one-finger-zoom' && e.touches.length === 1) {
       hasMovedSinceTap.current = true
       const deltaY = e.touches[0].clientY - swipeZoomStartY.current
-      // Google Maps style: Drag DOWN to zoom IN (+), Drag UP to zoom OUT (-)
       const zoomSensitivity = 0.012 
       const newScale = Math.min(Math.max(0.5, initialScale.current + (deltaY * zoomSensitivity)), 5)
       setScale(newScale)
@@ -76,15 +75,12 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
 
   const handleTouchEnd = () => {
     if (touchMode.current === 'one-finger-zoom' && !hasMovedSinceTap.current) {
-      // Quick double tap toggle!
       if (scale > 1) { setScale(1); setPos({ x: 0, y: 0 }) } 
       else { setScale(2.5) }
     }
     
     touchMode.current = 'none'
     setIsDragging(false)
-    
-    // Record exactly when the finger left the screen for the double-tap timer
     lastTouchTime.current = Date.now()
   }
 
@@ -94,9 +90,7 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
       {/* TOP HEADER */}
       <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-black/80 to-transparent z-50 flex items-center justify-between px-4 pointer-events-none">
         <div className="flex items-center gap-3 pointer-events-auto">
-          <button onClick={onClose} className="w-10 h-10 bg-black/50 backdrop-blur-md rounded-full flex items-center justify-center border border-white/10 text-white active:scale-95 transition-all shadow-lg">
-            <ArrowLeft size={20} />
-          </button>
+          {/* Top back button removed to avoid clashing with iOS UI */}
           <div className="flex flex-col">
             <span className="text-white font-black uppercase tracking-widest text-sm leading-tight drop-shadow-md">{setup.asset_symbol}</span>
             <span className="text-blue-400 font-bold text-[10px] tracking-widest uppercase leading-tight drop-shadow-md">{setup.timeframe}</span>
@@ -137,6 +131,14 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
           </div>
         )}
       </div>
+
+      {/* 🚨 FIX: THUMB-FRIENDLY CLOSE BUTTON (Moved to bottom right) */}
+      <button 
+        onClick={onClose} 
+        className="absolute bottom-24 right-5 z-50 w-12 h-12 bg-[#050505]/80 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/10 text-white active:scale-95 shadow-xl pointer-events-auto transition-transform"
+      >
+        <X size={20} />
+      </button>
 
       {/* BOTTOM THESIS DRAWER */}
       <div className={`absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-3xl transition-transform duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 ${showThesis ? 'translate-y-0' : 'translate-y-[calc(100%-4.5rem)]'}`}>
@@ -214,9 +216,32 @@ export default function MiniAppPage() {
     return () => clearTimeout(timer)
   }, [])
 
-  // 🚨 FIXED: Fetch Setups & Seen Receipts Concurrently to stop flashing!
+  // 🚨 FIX: NATIVE TELEGRAM BACK BUTTON INTERCEPTOR
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp;
+      
+      const handleBack = () => {
+        setSelectedSetup(null);
+      };
+
+      if (selectedSetup) {
+        // Show Telegram's native back button. If pressed, it fires handleBack instead of closing the app!
+        tg.BackButton.show();
+        tg.onEvent('backButtonClicked', handleBack);
+      } else {
+        tg.BackButton.hide();
+        tg.offEvent('backButtonClicked', handleBack);
+      }
+
+      return () => {
+        tg.offEvent('backButtonClicked', handleBack);
+      };
+    }
+  }, [selectedSetup]);
+
+  // Fetch Setups & Seen Receipts Concurrently
   const fetchData = async (userId: string) => {
-    // A. Sync LocalStorage instantly
     let localIds: string[] = [];
     if (typeof window !== 'undefined') {
       const localSeen = localStorage.getItem('sentinel_archive_seen');
@@ -226,13 +251,11 @@ export default function MiniAppPage() {
       }
     }
 
-    // B. Fetch Supabase Data concurrently
     const [setupsRes, seenRes] = await Promise.all([
       supabase.from('analyses').select('*').in('status', ['ACTIVE', 'WAITING']).order('created_at', { ascending: false }).limit(50),
       supabase.from('user_seen_setups').select('analysis_id').eq('user_id', userId)
     ]);
 
-    // C. Reconcile Database Truth
     if (seenRes.data) {
       const dbIds = seenRes.data.map(d => d.analysis_id);
       const mergedIds = Array.from(new Set([...localIds, ...dbIds]));
@@ -247,7 +270,6 @@ export default function MiniAppPage() {
     }
   }
 
-  // Calculate the absolute latest setup per asset so the Viewport badge works
   const latestSetupIds = useMemo(() => {
     const map = new Map<string, string>();
     setups.forEach(s => {
@@ -290,7 +312,6 @@ export default function MiniAppPage() {
     setSelectedSetup(setup)
   }
 
-  // --- FORMATTING HELPERS ---
   const getTimeAgo = (dateStr: string) => {
     const hours = Math.floor((new Date().getTime() - new Date(dateStr).getTime()) / (1000 * 60 * 60))
     if (hours < 1) return 'Just now'
@@ -305,7 +326,6 @@ export default function MiniAppPage() {
     return <span className="flex items-center text-neutral-500 gap-1"><Minus size={12}/> Neutral</span>
   }
 
-  // --- RENDER ERROR/LOADING STATES ---
   if (status === 'loading') {
     return (
       <div className="w-full h-[100dvh] bg-[#050505] flex flex-col items-center justify-center">
@@ -331,7 +351,6 @@ export default function MiniAppPage() {
     )
   }
 
-  // --- RENDER MAIN APP ---
   return (
     <div className="w-full min-h-[100dvh] bg-[#030303] text-white flex flex-col pb-6">
       
@@ -365,6 +384,7 @@ export default function MiniAppPage() {
             const isEligibleForNewTag = setupTime >= NEW_TAG_EPOCH;
             const isOlderThanAWeek = setupTime < Date.now() - SEVEN_DAYS_MS;
             
+            // 🚨 Check if the user has opened this specific setup yet
             const isUnseen = isEligibleForNewTag && !isOlderThanAWeek && !seenIds.includes(setup.id);
             const isActive = setup.status === 'ACTIVE'
 
@@ -372,13 +392,15 @@ export default function MiniAppPage() {
               <button 
                 key={setup.id}
                 onClick={() => handleOpenSetup(setup)}
-                className={`w-full text-left bg-[#0a0a0a] border rounded-2xl p-4 flex items-center justify-between transition-transform active:scale-95 relative overflow-hidden shadow-sm
-                  ${isUnseen ? 'border-blue-500/30' : 'border-white/[0.04]'}
+                className={`w-full text-left border rounded-2xl p-4 flex items-center justify-between transition-transform active:scale-95 relative overflow-hidden shadow-sm
+                  ${isUnseen 
+                    ? 'bg-[#0a1526] border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)] animate-pulse' 
+                    : 'bg-[#0a0a0a] border-white/[0.04]'}
                 `}
               >
-                {/* Unseen Glowing Edge */}
+                {/* 🚨 FIX: BLINKING UNSEEN UI */}
                 {isUnseen && (
-                  <div className="absolute top-1/2 -translate-y-1/2 left-0 w-1 h-8 bg-blue-500 rounded-r-full shadow-[0_0_10px_rgba(59,130,246,0.8)]" />
+                  <div className="absolute top-0 bottom-0 left-0 w-1 bg-blue-500 shadow-[0_0_20px_rgba(59,130,246,1)]" />
                 )}
 
                 <div className="flex items-center gap-4 pl-2">
@@ -388,7 +410,13 @@ export default function MiniAppPage() {
                   </div>
 
                   <div className="flex flex-col flex-1 min-w-0">
-                    <span className="text-sm font-black uppercase tracking-wider text-white mb-1 truncate">{setup.asset_symbol}</span>
+                    <span className="text-sm font-black uppercase tracking-wider text-white mb-1 truncate flex items-center gap-2">
+                      {setup.asset_symbol}
+                      {/* BOUNCING NEW BADGE */}
+                      {isUnseen && (
+                        <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-blue-500 text-white animate-bounce shadow-[0_0_8px_#3b82f6]">NEW</span>
+                      )}
+                    </span>
                     <div className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2">
                       {getBiasUI(setup.bias)}
                       <span className="text-neutral-700">•</span>

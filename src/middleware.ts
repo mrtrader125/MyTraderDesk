@@ -57,7 +57,7 @@ export async function middleware(request: NextRequest) {
   }
 }
 
-// 🚨 THE FIX: This Regex pattern protects your app but creates a secure tunnel for your Webhooks
+// 🚨 THE FIX: Added update-password and auth/callback to the secure tunnel!
 export const config = {
   matcher: [
     /*
@@ -67,7 +67,9 @@ export const config = {
      * - favicon.ico (favicon file)
      * - api/telegram (Let Telegram bots pass through!)
      * - api/webhook (Let Lemon Squeezy pass through!)
+     * - update-password (Let Supabase read the reset token!)
+     * - auth/callback (Protect old reset links)
      */
-    '/((?!_next/static|_next/image|favicon.ico|api/telegram|api/webhook).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api/telegram|api/webhook|update-password|auth/callback).*)',
   ],
 }
