@@ -64,7 +64,6 @@ export default function Home() {
   const [activeFeaturedSlide, setActiveFeaturedSlide] = useState(0)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
-  // ORIGINAL Terminal Slider Text
   const terminalSlides = [
     { id: 'mtd1', title: 'Dashboard', desc: 'Your central intelligence hub for daily market structure and active setups.' },
     { id: 'mtd2', title: 'Markets', desc: 'Deep, multi-timeframe analysis across Forex, Crypto, Indices, and Commodities.' },
@@ -73,7 +72,6 @@ export default function Home() {
     { id: 'mtd5', title: 'Account', desc: 'Manage your terminal preferences, secure data, and subscription access.' }
   ]
 
-  // ORIGINAL FAQs + New Ones
   const faqs = [
     { q: "Is this a signal group?", a: "No. Signal groups create dependency. Sentinel Vortex provides institutional-grade structural analysis so you can validate your own bias and execute with confluence." },
     { q: "Do I need my own charting software?", a: "You should still execute trades on your preferred broker, but all of our structural mapping is provided in high-resolution directly within our platform." },
@@ -178,7 +176,7 @@ export default function Home() {
               <div className="w-5 h-5 rounded-full border-2 border-[#050505] bg-neutral-700"></div>
               <div className="w-5 h-5 rounded-full border-2 border-[#050505] bg-neutral-600"></div>
             </div>
-            <p className="text-[9px] font-bold text-neutral-500 tracking-widest uppercase">Join active operators validating setups.</p>
+            <p className="text-[9px] font-bold text-neutral-500 tracking-widest uppercase">Join active operators validating setups today.</p>
           </div>
         </div>
       </section>
@@ -201,7 +199,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 🚀 NEW VISUAL MINDMAP SECTION */}
       <section className="relative z-10 w-full py-16 md:py-24 px-6 overflow-hidden">
         <div className="text-center mb-16 relative z-20">
           <h2 className="text-2xl font-black text-white uppercase tracking-widest">The Operator's Blueprint</h2>
@@ -209,12 +206,11 @@ export default function Home() {
         </div>
 
         <div className="relative max-w-4xl mx-auto px-2 sm:px-0">
-          {/* Central Vertical Spine (Mindmap Connector) */}
           <div className="absolute top-4 bottom-4 left-[27px] md:left-1/2 w-px bg-neutral-800 md:-translate-x-[0.5px] z-0"></div>
 
           <div className="space-y-10 md:space-y-16 relative z-10">
             
-            {/* Node 1: Identity (Left on Desktop) */}
+            {/* Node 1 */}
             <div className="relative flex flex-col md:flex-row items-center w-full">
               <div className="absolute left-[22px] md:hidden w-3 h-3 rounded-full bg-blue-500 ring-4 ring-[#050505] z-10"></div>
               <div className="hidden md:block absolute left-1/2 w-3 h-3 rounded-full bg-blue-500 ring-4 ring-[#050505] -translate-x-1.5 z-10 shadow-[0_0_15px_rgba(59,130,246,0.6)]"></div>
@@ -231,7 +227,7 @@ export default function Home() {
               <div className="hidden md:block w-1/2"></div>
             </div>
 
-            {/* Node 2: Strategy (Right on Desktop) */}
+            {/* Node 2 */}
             <div className="relative flex flex-col md:flex-row items-center w-full">
               <div className="absolute left-[22px] md:hidden w-3 h-3 rounded-full bg-cyan-500 ring-4 ring-[#050505] z-10"></div>
               <div className="hidden md:block absolute left-1/2 w-3 h-3 rounded-full bg-cyan-500 ring-4 ring-[#050505] -translate-x-1.5 z-10 shadow-[0_0_15px_rgba(6,182,212,0.6)]"></div>
@@ -248,7 +244,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Node 3: System (Left on Desktop) */}
+            {/* Node 3 */}
             <div className="relative flex flex-col md:flex-row items-center w-full">
               <div className="absolute left-[22px] md:hidden w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-[#050505] z-10"></div>
               <div className="hidden md:block absolute left-1/2 w-3 h-3 rounded-full bg-emerald-500 ring-4 ring-[#050505] -translate-x-1.5 z-10 shadow-[0_0_15px_rgba(16,185,129,0.6)]"></div>
@@ -265,7 +261,7 @@ export default function Home() {
               <div className="hidden md:block w-1/2"></div>
             </div>
 
-            {/* Node 4: Routine (Right on Desktop) */}
+            {/* Node 4 */}
             <div className="relative flex flex-col md:flex-row items-center w-full">
               <div className="absolute left-[22px] md:hidden w-3 h-3 rounded-full bg-purple-500 ring-4 ring-[#050505] z-10"></div>
               <div className="hidden md:block absolute left-1/2 w-3 h-3 rounded-full bg-purple-500 ring-4 ring-[#050505] -translate-x-1.5 z-10 shadow-[0_0_15px_rgba(168,85,247,0.6)]"></div>
@@ -401,13 +397,14 @@ export default function Home() {
               );
             })}
 
+            {/* REMOVED: hidden sm:block from these buttons so they work on Mobile */}
             {analyses.length > 1 && (
               <>
-                <button onClick={prevFeatured} className="absolute left-2 md:left-12 top-1/2 -translate-y-1/2 p-2 md:p-3 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-xl ring-1 ring-white/[0.05] transition-colors z-40 shadow-xl hidden sm:block">
-                  <ChevronLeft className="w-5 h-5 text-neutral-400" />
+                <button onClick={prevFeatured} className="absolute left-2 md:left-12 top-1/2 -translate-y-1/2 p-2 sm:p-3 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-xl ring-1 ring-white/[0.05] transition-colors z-40 shadow-xl">
+                  <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
                 </button>
-                <button onClick={nextFeatured} className="absolute right-2 md:right-12 top-1/2 -translate-y-1/2 p-2 md:p-3 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-xl ring-1 ring-white/[0.05] transition-colors z-40 shadow-xl hidden sm:block">
-                  <ChevronRight className="w-5 h-5 text-neutral-400" />
+                <button onClick={nextFeatured} className="absolute right-2 md:right-12 top-1/2 -translate-y-1/2 p-2 sm:p-3 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-xl ring-1 ring-white/[0.05] transition-colors z-40 shadow-xl">
+                  <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-400" />
                 </button>
               </>
             )}
@@ -526,9 +523,12 @@ export default function Home() {
         </div>
       </section>
 
+      {/* 🚀 UPDATED 5-COLUMN FOOTER */}
       <footer className="bg-[#020202] border-t border-neutral-900 pt-16 pb-8 px-6">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-10 mb-12">
-          <div className="col-span-2 md:col-span-1">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-10 mb-12">
+          
+          {/* Logo / Tagline */}
+          <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center shrink-0 group mb-6 relative w-28 h-8">
               <Image 
                 src="/logo.png" 
@@ -542,6 +542,8 @@ export default function Home() {
               Institutional-grade structural analysis and crowdsourced market confluence.
             </p>
           </div>
+
+          {/* New Mindmap Links */}
           <div>
             <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">The Blueprint</h4>
             <ul className="space-y-3">
@@ -551,6 +553,17 @@ export default function Home() {
               <li><Link href="/protocol/routine" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">The 3-Level Routine</Link></li>
             </ul>
           </div>
+
+          {/* Restored Old Links */}
+          <div>
+            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">Live Markets</h4>
+            <ul className="space-y-3">
+              <li><Link href="/analysis/eurusd" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">EUR/USD Analysis</Link></li>
+              <li><Link href="/analysis/xauusd" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Gold (XAUUSD) Setups</Link></li>
+              <li><Link href="/analysis/btcusd" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Bitcoin (BTC) Structure</Link></li>
+            </ul>
+          </div>
+
           <div>
             <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">Resources</h4>
             <ul className="space-y-3">
@@ -559,6 +572,7 @@ export default function Home() {
               <li><Link href="/about" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">About Us</Link></li>
             </ul>
           </div>
+
           <div>
             <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">Legal</h4>
             <ul className="space-y-3">
@@ -567,7 +581,9 @@ export default function Home() {
               <li><Link href="/disclaimer" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">Risk Disclaimer</Link></li>
             </ul>
           </div>
+
         </div>
+
         <div className="max-w-6xl mx-auto border-t border-neutral-900 pt-6 flex flex-col sm:flex-row items-center justify-between text-center sm:text-left gap-2">
           <p className="text-[9px] font-bold text-neutral-700 uppercase tracking-widest">
             &copy; {new Date().getFullYear()} Sentinel Vortex. All rights reserved.
