@@ -15,7 +15,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// 🌟 SLEEK HOVER-WIPE BEFORE/AFTER COMPONENT (Unchanged)
+// 🌟 SLEEK HOVER-WIPE BEFORE/AFTER COMPONENT
 const HoverRevealSlider = ({ before, after }: { before: string, after: string }) => {
   const [isHovered, setIsHovered] = useState(false)
 
@@ -44,7 +44,7 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false)
   const [analyses, setAnalyses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly') // Default to monthly for $29 focus
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'annual'>('monthly')
   
   const [activeSlide, setActiveSlide] = useState(0)
   const [activeFeaturedSlide, setActiveFeaturedSlide] = useState(0)
@@ -112,8 +112,9 @@ export default function Home() {
           </Link>
 
           <div className="hidden md:flex items-center space-x-8 shrink-0">
-            <Link href="/operator" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Philosophy</Link>
-            <Link href="/routine" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">The Routine</Link>
+            {/* UPDATED LINKS HERE */}
+            <Link href="/protocol/identity" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Philosophy</Link>
+            <Link href="/protocol/routine" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">The Routine</Link>
             <Link href="#pricing" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Access</Link>
           </div>
 
@@ -166,7 +167,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. THE MINDMAP (Replaces Mechanism) */}
+      {/* 2. THE MINDMAP */}
       <section className="relative z-10 max-w-6xl mx-auto py-24 px-6">
         <div className="text-center mb-12">
           <h2 className="text-2xl font-black text-white uppercase tracking-widest">The Operator's Blueprint</h2>
@@ -174,32 +175,29 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-          {/* Node 1 */}
-          <Link href="/operator" className="bg-[#080808] p-8 rounded-sm border border-neutral-900 hover:border-blue-500/50 transition-colors group hover:-translate-y-1 duration-300 relative overflow-hidden">
+          {/* UPDATED LINKS HERE */}
+          <Link href="/protocol/identity" className="bg-[#080808] p-8 rounded-sm border border-neutral-900 hover:border-blue-500/50 transition-colors group hover:-translate-y-1 duration-300 relative overflow-hidden">
             <User className="w-6 h-6 mb-5 text-blue-500 group-hover:scale-110 transition-transform" />
             <h3 className="text-xs font-black mb-3 text-white uppercase tracking-widest">1. The Identity</h3>
             <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">Trader vs. Operator. Stop guessing. Start executing. Discover why 99% of intermediates stay unprofitable.</p>
             <div className="mt-6 flex items-center text-[9px] font-bold text-blue-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
           </Link>
 
-          {/* Node 2 */}
-          <Link href="/strategy" className="bg-[#080808] p-8 rounded-sm border border-neutral-900 hover:border-cyan-500/50 transition-colors group hover:-translate-y-1 duration-300 relative overflow-hidden">
+          <Link href="/protocol/strategy" className="bg-[#080808] p-8 rounded-sm border border-neutral-900 hover:border-cyan-500/50 transition-colors group hover:-translate-y-1 duration-300 relative overflow-hidden">
             <Map className="w-6 h-6 mb-5 text-cyan-500 group-hover:scale-110 transition-transform" />
             <h3 className="text-xs font-black mb-3 text-white uppercase tracking-widest">2. The Strategy</h3>
             <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">Market Demystified. Strategy isn't magic; it's just finding your place in the market's endless journey.</p>
             <div className="mt-6 flex items-center text-[9px] font-bold text-cyan-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
           </Link>
 
-          {/* Node 3 */}
-          <Link href="/system" className="bg-[#080808] p-8 rounded-sm border border-neutral-900 hover:border-emerald-500/50 transition-colors group hover:-translate-y-1 duration-300 relative overflow-hidden">
+          <Link href="/protocol/system" className="bg-[#080808] p-8 rounded-sm border border-neutral-900 hover:border-emerald-500/50 transition-colors group hover:-translate-y-1 duration-300 relative overflow-hidden">
             <ShieldCheck className="w-6 h-6 mb-5 text-emerald-500 group-hover:scale-110 transition-transform" />
             <h3 className="text-xs font-black mb-3 text-white uppercase tracking-widest">3. The System</h3>
             <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">Rules of Engagement. A strategy tells you how to trade. A system tells you exactly where and when.</p>
             <div className="mt-6 flex items-center text-[9px] font-bold text-emerald-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
           </Link>
 
-          {/* Node 4 */}
-          <Link href="/routine" className="bg-[#080808] p-8 rounded-sm border border-neutral-900 hover:border-purple-500/50 transition-colors group hover:-translate-y-1 duration-300 relative overflow-hidden">
+          <Link href="/protocol/routine" className="bg-[#080808] p-8 rounded-sm border border-neutral-900 hover:border-purple-500/50 transition-colors group hover:-translate-y-1 duration-300 relative overflow-hidden">
             <Filter className="w-6 h-6 mb-5 text-purple-500 group-hover:scale-110 transition-transform" />
             <h3 className="text-xs font-black mb-3 text-white uppercase tracking-widest">4. The Routine</h3>
             <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">Caging the Chaos. The ultimate 3-Level Filtration process to kill emotional noise and FOMO.</p>
@@ -257,9 +255,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. FEATURED RESEARCH (Kept as proof of concept/results) */}
+      {/* 4. FEATURED RESEARCH */}
       <section className="relative z-10 py-24 overflow-hidden bg-[#020202] border-b border-neutral-900">
-        {/* ... (Kept exactly identical to your provided code to pull from Supabase) ... */}
         <div className="max-w-6xl mx-auto px-6 mb-12 flex flex-col md:flex-row items-end justify-between">
           <div>
             <h2 className="text-2xl font-black text-neutral-100 tracking-tight mb-2">Operator Executions</h2>
@@ -360,14 +357,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6. PRICING (Updated with Scarcity) */}
+      {/* 6. PRICING */}
       <section id="pricing" className="relative z-10 max-w-5xl mx-auto py-24 px-6 border-t border-neutral-900/50">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Founding Member Access</h2>
           <p className="text-neutral-500 text-xs font-medium tracking-wide max-w-lg mx-auto">To ensure the highest quality community and server stability, we are strictly capping this initial cohort.</p>
         </div>
 
-        {/* Scarcity Bar */}
         <div className="max-w-sm mx-auto mb-12 bg-[#080808] border border-neutral-900 p-3 rounded-sm flex flex-col items-center">
             <div className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mb-2 flex justify-between w-full px-2">
                 <span>Seats Filled</span>
@@ -390,7 +386,6 @@ export default function Home() {
         </div>
         
         <div className="grid md:grid-cols-2 gap-5 items-start max-w-4xl mx-auto">
-          {/* TIER 1: FREE */}
           <div className="bg-[#080808] p-8 md:p-10 rounded-sm border border-neutral-900 text-center">
             <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Playbook Access</h3>
             <p className="text-4xl font-black text-white my-6">$0</p>
@@ -400,7 +395,6 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* TIER 2: PROFESSIONAL */}
           <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] p-8 md:p-10 rounded-sm border border-blue-500/30 relative text-center shadow-[0_0_20px_rgba(59,130,246,0.05)] md:-mt-2 md:mb-[-0.5rem]">
             <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-sm shadow-md animate-pulse">36 Seats Left</span>
             <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-2">Operator Terminal</h3>
@@ -470,11 +464,12 @@ export default function Home() {
           </div>
           <div>
             <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">The Blueprint</h4>
+            {/* UPDATED LINKS HERE */}
             <ul className="space-y-3">
-              <li><Link href="/operator" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Trader vs Operator</Link></li>
-              <li><Link href="/strategy" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Strategy Simplification</Link></li>
-              <li><Link href="/system" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">System Building</Link></li>
-              <li><Link href="/routine" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">The 3-Level Routine</Link></li>
+              <li><Link href="/protocol/identity" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Trader vs Operator</Link></li>
+              <li><Link href="/protocol/strategy" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Strategy Simplification</Link></li>
+              <li><Link href="/protocol/system" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">System Building</Link></li>
+              <li><Link href="/protocol/routine" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">The 3-Level Routine</Link></li>
             </ul>
           </div>
           <div>
