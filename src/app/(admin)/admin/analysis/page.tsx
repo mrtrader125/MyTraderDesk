@@ -7,7 +7,8 @@ import {
   Plus, Trash2, Edit2, Activity, TrendingUp, TrendingDown, 
   Clock, Search, ExternalLink, Image as ImageIcon, Minus, 
   Target, CheckCircle2, LayoutList, Star, 
-  UploadCloud, Loader2, Shield, SplitSquareHorizontal
+  UploadCloud, Loader2, Shield, SplitSquareHorizontal,
+  Lock, Unlock, Save // 🚨 Added new icons for the controls
 } from 'lucide-react'
 
 export default function AdminAnalysisPage() {
@@ -21,6 +22,10 @@ export default function AdminAnalysisPage() {
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+
+  // 🚨 New state variables for Notes editing
+  const [localNotes, setLocalNotes] = useState('')
+  const [isSavingNotes, setIsSavingNotes] = useState(false)
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean; title: string; message: string; actionText: string;
@@ -160,6 +165,29 @@ export default function AdminAnalysisPage() {
     }
   }
 
+  // 🚨 NEW: Toggle Lock Status Logic
+  const toggleLockStatus = async (id: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    setSetups(prev => prev.map(s => s.id === id ? { ...s, is_locked: newStatus } : s));
+    const { error } = await supabase.from('analyses').update({ is_locked: newStatus }).eq('id', id);
+    if (error) {
+      alert("Failed to update access control.");
+      fetchSetups();
+    }
+  }
+
+  // 🚨 NEW: Save Notes Logic
+  const saveNotes = async (id: string) => {
+    setIsSavingNotes(true);
+    const { error } = await supabase.from('analyses').update({ notes: localNotes }).eq('id', id);
+    if (error) {
+      alert("Failed to save notes.");
+    } else {
+      setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: localNotes } : s));
+    }
+    setIsSavingNotes(false);
+  }
+
   const filteredSetups = setups.filter(s => 
     (s.asset_symbol || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (s.category || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -167,7 +195,13 @@ export default function AdminAnalysisPage() {
 
   const selectedSetup = setups.find(s => s.id === selectedSetupId)
 
-  useEffect(() => { setPreviewMode('before') }, [selectedSetupId])
+  useEffect(() => { 
+    setPreviewMode('before')
+    // 🚨 Sync local notes state when setup changes
+    if (selectedSetup) {
+      setLocalNotes(selectedSetup.notes || '');
+    }
+  }, [selectedSetupId, selectedSetup?.notes])
 
 
   // ==========================================
@@ -252,8 +286,10 @@ export default function AdminAnalysisPage() {
                   if (status === 'waiting') statusColor = "bg-amber-500/10 text-amber-400"
                   if (status === 'done') statusColor = "bg-emerald-500/10 text-emerald-400"
                   if (status === 'invalid') statusColor = "bg-red-500/10 text-red-400"
-                  // 🚨 Added ARCHIVED color handling
                   if (status === 'archived') statusColor = "bg-zinc-800/50 text-zinc-500 border border-zinc-800"
+
+                  // Treat null/undefined as true (locked) to be safe
+                  const isLockedIcon = setup.is_locked !== false; 
 
                   return (
                     <div 
@@ -282,6 +318,7 @@ export default function AdminAnalysisPage() {
                           {setup.tier_access === 'free' && <Shield size={14} className="text-emerald-500/80" />}
                           {setup.is_featured && <Star size={14} className="text-amber-500/80 fill-amber-500/20" />}
                           {setup.is_prime && <Target size={14} className="text-blue-500/80" />}
+                          {!isLockedIcon && <Unlock size={14} className="text-emerald-400/80" />}
                         </div>
                         <div className="text-xs text-zinc-500">
                           {new Date(setup.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
@@ -423,6 +460,22 @@ export default function AdminAnalysisPage() {
                       </button>
                     </div>
 
+                    {/* 🚨 NEW: Access Control (Lock/Unlock) */}
+                    <div>
+                      <h4 className="text-sm font-medium text-zinc-400 mb-2">Access Control</h4>
+                      <button
+                        onClick={() => toggleLockStatus(selectedSetup.id, selectedSetup.is_locked !== false)}
+                        className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+                          selectedSetup.is_locked !== false
+                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                        }`}
+                      >
+                        {selectedSetup.is_locked !== false ? <Lock size={16} /> : <Unlock size={16} />}
+                        {selectedSetup.is_locked !== false ? 'Locked (Paywall)' : 'Public (Free)'}
+                      </button>
+                    </div>
+
                   </div>
                 </div>
               </div>
@@ -430,25 +483,35 @@ export default function AdminAnalysisPage() {
               {/* BOTTOM SPLIT: NOTES & STATUS */}
               <div className="p-6 md:p-8 flex flex-col xl:flex-row gap-8">
                 
-                {/* Notes Section */}
-                <div className="flex-1">
-                  <h4 className="text-sm font-medium text-zinc-400 mb-3">Analytical Thesis</h4>
-                  <div className="bg-zinc-950 p-5 rounded-xl border border-zinc-800/50 min-h-[120px]">
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap text-zinc-300">
-                      {selectedSetup.content || (!selectedSetup.title?.includes('[SCHEDULED') && selectedSetup.title) || <span className="italic text-zinc-600">No notes provided for this setup.</span>}
-                    </p>
+                {/* 🚨 NEW: Interactive Notes Section */}
+                <div className="flex-1 flex flex-col">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-medium text-zinc-400">Structural Notes</h4>
+                    <button
+                      onClick={() => saveNotes(selectedSetup.id)}
+                      disabled={isSavingNotes || localNotes === (selectedSetup.notes || '')}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 rounded-md transition-all shadow-sm"
+                    >
+                      {isSavingNotes ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                      Save Notes
+                    </button>
                   </div>
+                  <textarea 
+                    value={localNotes}
+                    onChange={(e) => setLocalNotes(e.target.value)}
+                    placeholder="Enter detailed structural breakdown here... (e.g. Identifying liquidity grabs, order blocks, and directional bias.)"
+                    className="flex-1 w-full bg-zinc-950 p-4 rounded-xl border border-zinc-800/50 min-h-[160px] text-sm text-zinc-300 resize-none focus:outline-none focus:border-blue-500/50 transition-colors custom-scrollbar"
+                  />
                 </div>
 
                 {/* Status Update */}
                 <div className="w-full xl:w-[450px] shrink-0">
                   <h4 className="text-sm font-medium text-zinc-400 mb-3">Set Live Status</h4>
                   <div className="flex flex-wrap gap-2">
-                    {/* 🚨 Added ARCHIVED to the list of status options */}
                     {['WAITING', 'ACTIVE', 'DONE', 'INVALID', 'CANCELED', 'ARCHIVED'].map((statusOption) => {
                       const isActive = (selectedSetup.status || 'WAITING').toUpperCase() === statusOption;
                       
-                      let activeClasses = "bg-zinc-700 text-white"; // default fallback
+                      let activeClasses = "bg-zinc-700 text-white"; 
                       if (statusOption === 'WAITING') activeClasses = "bg-amber-500/10 text-amber-400 border-amber-500/30";
                       if (statusOption === 'ACTIVE') activeClasses = "bg-blue-500/10 text-blue-400 border-blue-500/30";
                       if (statusOption === 'DONE') activeClasses = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
