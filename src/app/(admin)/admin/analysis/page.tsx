@@ -15,18 +15,20 @@ export default function AdminAnalysisPage() {
   const router = useRouter()
   const [setups, setSetups] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  
+  // Filters
   const [searchTerm, setSearchTerm] = useState('')
+  const [timeframeFilter, setTimeframeFilter] = useState('ALL')
+  
   const [selectedSetupId, setSelectedSetupId] = useState<string | null>(null)
   
   const [previewMode, setPreviewMode] = useState<'before' | 'after'>('before')
+  const [isChartExpanded, setIsChartExpanded] = useState(false) // 🚨 Inline image toggle
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
-  // Modals State
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false)
-
   const [localNotes, setLocalNotes] = useState('')
   const [isSavingNotes, setIsSavingNotes] = useState(false)
 
@@ -190,15 +192,36 @@ export default function AdminAnalysisPage() {
     setIsSavingNotes(false);
   }
 
-  const filteredSetups = setups.filter(s => 
-    (s.asset_symbol || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (s.category || '').toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  // 🚨 Filtering Logic
+  const filteredSetups = setups.filter(s => {
+    const matchesSearch = (s.asset_symbol || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTF = timeframeFilter === 'ALL' || (s.timeframe || '').toLowerCase() === timeframeFilter.toLowerCase();
+    return matchesSearch && matchesTF;
+  });
+
+  // 🚨 Date Grouping Logic
+  const groupedSetups = (() => {
+    const groups: { [key: string]: any[] } = { 'Today': [], 'Yesterday': [], 'This Week': [], 'Older': [] };
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterday = today - 86400000;
+    const lastWeek = today - (86400000 * 7);
+
+    filteredSetups.forEach(setup => {
+      const d = new Date(setup.created_at).getTime();
+      if (d >= today) groups['Today'].push(setup);
+      else if (d >= yesterday) groups['Yesterday'].push(setup);
+      else if (d >= lastWeek) groups['This Week'].push(setup);
+      else groups['Older'].push(setup);
+    });
+    return groups;
+  })();
 
   const selectedSetup = setups.find(s => s.id === selectedSetupId)
 
   useEffect(() => { 
     setPreviewMode('before')
+    setIsChartExpanded(false) // Collapse chart when changing setups
     if (selectedSetup) {
       setLocalNotes(selectedSetup.notes || '');
     }
@@ -244,81 +267,106 @@ export default function AdminAnalysisPage() {
 
       <div className="flex flex-col flex-1 gap-6 min-h-0 overflow-hidden lg:flex-row">
         
-        {/* --- LEFT COLUMN: REDUCED WIDTH --- */}
+        {/* --- LEFT COLUMN: LIST --- */}
         <div className="flex flex-col shrink-0 w-full lg:w-[260px] xl:w-[300px] bg-zinc-900/50 border border-zinc-800/50 rounded-xl overflow-hidden">
           
-          <div className="p-4 border-b border-zinc-800/50 shrink-0">
-            <div className="relative">
+          <div className="flex gap-2 p-4 border-b border-zinc-800/50 shrink-0">
+            <div className="relative flex-1">
               <Search className="absolute text-zinc-500 -translate-y-1/2 left-3 top-1/2" size={16} />
               <input 
                 type="text" 
                 placeholder="Search..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full py-2.5 pl-9 pr-4 text-sm text-zinc-200 bg-zinc-950 border border-zinc-800 rounded-lg outline-none focus:border-zinc-700 transition-colors placeholder:text-zinc-600"
+                className="w-full py-2 pl-9 pr-2 text-xs text-zinc-200 bg-zinc-950 border border-zinc-800 rounded-lg outline-none focus:border-zinc-700 transition-colors placeholder:text-zinc-600"
               />
             </div>
+            {/* 🚨 TF Filter */}
+            <select 
+              value={timeframeFilter} 
+              onChange={(e) => setTimeframeFilter(e.target.value)}
+              className="w-[72px] shrink-0 bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs rounded-lg px-2 outline-none focus:border-zinc-700 cursor-pointer"
+            >
+              <option value="ALL">All TF</option>
+              <option value="MN">MN</option>
+              <option value="W">W</option>
+              <option value="D">D</option>
+              <option value="4H">4H</option>
+              <option value="1H">1H</option>
+              <option value="15m">15m</option>
+              <option value="5m">5m</option>
+            </select>
           </div>
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar">
-            <div className="p-2 space-y-1">
-              {filteredSetups.length === 0 ? (
-                <div className="flex flex-col items-center py-12 text-zinc-500">
-                  <LayoutList size={24} className="mb-2 opacity-50" />
-                  <span className="text-sm font-medium">No setups</span>
-                </div>
-              ) : (
-                filteredSetups.map((setup) => {
-                  const isSelected = selectedSetupId === setup.id
-                  const status = (setup.status || 'WAITING').toLowerCase()
-                  
-                  let statusColor = "bg-zinc-800 text-zinc-400"
-                  if (status === 'active') statusColor = "bg-blue-500/10 text-blue-400"
-                  if (status === 'waiting') statusColor = "bg-amber-500/10 text-amber-400"
-                  if (status === 'done') statusColor = "bg-emerald-500/10 text-emerald-400"
-                  if (status === 'invalid') statusColor = "bg-red-500/10 text-red-400"
-                  if (status === 'archived') statusColor = "bg-zinc-800/50 text-zinc-500 border border-zinc-800"
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-3">
+            {filteredSetups.length === 0 ? (
+              <div className="flex flex-col items-center py-12 text-zinc-500">
+                <LayoutList size={24} className="mb-2 opacity-50" />
+                <span className="text-sm font-medium">No setups</span>
+              </div>
+            ) : (
+              // 🚨 Grouped List Rendering
+              Object.entries(groupedSetups).map(([groupName, groupSetups]) => {
+                if (groupSetups.length === 0) return null;
+                return (
+                  <div key={groupName} className="mb-5 last:mb-0">
+                    <h4 className="px-2 mb-2 text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{groupName}</h4>
+                    <div className="space-y-1">
+                      {groupSetups.map((setup) => {
+                        const isSelected = selectedSetupId === setup.id
+                        const status = (setup.status || 'WAITING').toUpperCase()
+                        
+                        let statusColor = "bg-zinc-800 text-zinc-400"
+                        if (status === 'ACTIVE') statusColor = "bg-blue-500/10 text-blue-400"
+                        if (status === 'WAITING') statusColor = "bg-amber-500/10 text-amber-400"
+                        if (status === 'DONE') statusColor = "bg-emerald-500/10 text-emerald-400"
+                        if (status === 'INVALID') statusColor = "bg-red-500/10 text-red-400"
+                        if (status === 'ARCHIVED') statusColor = "bg-zinc-800/50 text-zinc-500 border border-zinc-800"
 
-                  const isLockedIcon = setup.is_locked !== false; 
+                        const isLockedIcon = setup.is_locked !== false; 
 
-                  return (
-                    <div 
-                      key={setup.id}
-                      onClick={() => setSelectedSetupId(setup.id)}
-                      className={`flex flex-col p-3 rounded-lg cursor-pointer transition-all ${
-                        isSelected ? 'bg-zinc-800/80 shadow-sm border border-zinc-700/50' : 'hover:bg-zinc-800/40 text-zinc-400 border border-transparent'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-sm font-semibold ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>
-                            {setup.asset_symbol}
-                          </span>
-                          <span className="text-[10px] font-medium text-zinc-500 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800/50">
-                            {setup.timeframe}
-                          </span>
-                        </div>
-                        <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${statusColor}`}>
-                          {status.slice(0,4)}
-                        </div>
-                      </div>
+                        return (
+                          <div 
+                            key={setup.id}
+                            onClick={() => setSelectedSetupId(setup.id)}
+                            className={`flex flex-col p-3 rounded-lg cursor-pointer transition-all ${
+                              isSelected ? 'bg-zinc-800/80 shadow-sm border border-zinc-700/50' : 'hover:bg-zinc-800/40 text-zinc-400 border border-transparent'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2">
+                                <span className={`text-sm font-semibold ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>
+                                  {setup.asset_symbol}
+                                </span>
+                                <span className="text-[10px] font-medium text-zinc-500 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800/50">
+                                  {setup.timeframe}
+                                </span>
+                              </div>
+                              {/* 🚨 Full Status Text */}
+                              <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${statusColor}`}>
+                                {status}
+                              </div>
+                            </div>
 
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          {setup.tier_access === 'free' && <Shield size={12} className="text-emerald-500/80" />}
-                          {setup.is_featured && <Star size={12} className="text-amber-500/80 fill-amber-500/20" />}
-                          {setup.is_prime && <Target size={12} className="text-blue-500/80" />}
-                          {!isLockedIcon && <Unlock size={12} className="text-emerald-400/80" />}
-                        </div>
-                        <div className="text-[10px] text-zinc-500">
-                          {new Date(setup.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                        </div>
-                      </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {setup.tier_access === 'free' && <Shield size={12} className="text-emerald-500/80" />}
+                                {setup.is_featured && <Star size={12} className="text-amber-500/80 fill-amber-500/20" />}
+                                {setup.is_prime && <Target size={12} className="text-blue-500/80" />}
+                                {!isLockedIcon && <Unlock size={12} className="text-emerald-400/80" />}
+                              </div>
+                              <div className="text-[10px] text-zinc-500">
+                                {new Date(setup.created_at).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
-                  )
-                })
-              )}
-            </div>
+                  </div>
+                )
+              })
+            )}
           </div>
         </div>
 
@@ -328,7 +376,7 @@ export default function AdminAnalysisPage() {
             <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex flex-col gap-8 h-full">
               
               {/* Header Row */}
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-zinc-800/50 pb-6">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-zinc-800/50 pb-6 shrink-0">
                 <div>
                   <h3 className="text-3xl font-black text-white mb-2">{selectedSetup.asset_symbol}</h3>
                   <div className="flex items-center gap-2">
@@ -354,23 +402,47 @@ export default function AdminAnalysisPage() {
                 </div>
               </div>
 
-              {/* Media & Notes Row */}
-              <div className="flex items-center gap-6">
+              {/* 🚨 Media & Notes Row (Responsive Inline Toggle) */}
+              <div className={`flex ${isChartExpanded ? 'flex-col' : 'flex-row items-center'} gap-6 shrink-0`}>
                 
-                {/* Compact Hover-to-Enlarge Thumbnail */}
+                {/* Image Container (Click to toggle size) */}
                 <div 
-                  onClick={() => selectedSetup.image_url && setIsImageModalOpen(true)}
-                  className="relative w-20 h-20 shrink-0 group z-10 hover:z-40"
+                  onClick={() => selectedSetup.image_url && setIsChartExpanded(!isChartExpanded)}
+                  className={`relative cursor-pointer transition-all duration-500 group z-10 ${
+                    isChartExpanded 
+                      ? 'w-full aspect-[16/9] max-h-[450px] bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center'
+                      : 'w-24 h-16 sm:w-32 sm:h-20 shrink-0 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl overflow-hidden'
+                  }`}
                 >
                   {selectedSetup.image_url ? (
-                    <img 
-                      src={previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url} 
-                      alt="Thumbnail" 
-                      className="absolute inset-0 w-full h-full object-cover rounded-xl border border-zinc-700 shadow-xl transition-transform duration-300 group-hover:scale-[2.5] origin-top-left cursor-pointer bg-zinc-950" 
-                    />
+                    <>
+                      <img 
+                        src={previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url} 
+                        alt="Chart Thumbnail" 
+                        className={isChartExpanded ? "object-contain w-full h-full p-2" : "object-cover w-full h-full"}
+                      />
+                      
+                      {/* Before/After Toggles (Only visible when expanded) */}
+                      {isChartExpanded && selectedSetup.after_image_url && (
+                        <div className="absolute z-20 flex p-1 overflow-hidden border rounded-lg bottom-4 left-4 bg-zinc-900/90 backdrop-blur border-zinc-700/50 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                          <button 
+                            onClick={() => setPreviewMode('before')}
+                            className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-md ${previewMode === 'before' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
+                          >
+                            Before
+                          </button>
+                          <button 
+                            onClick={() => setPreviewMode('after')}
+                            className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-md ${previewMode === 'after' ? 'bg-zinc-700 text-emerald-400' : 'text-zinc-400 hover:text-emerald-400'}`}
+                          >
+                            After
+                          </button>
+                        </div>
+                      )}
+                    </>
                   ) : (
-                    <div className="w-full h-full bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-600">
-                      <ImageIcon size={24} />
+                    <div className="w-full h-full flex items-center justify-center text-zinc-600">
+                      <ImageIcon size={isChartExpanded ? 40 : 20} />
                     </div>
                   )}
                 </div>
@@ -378,25 +450,25 @@ export default function AdminAnalysisPage() {
                 {/* Notes Modal Trigger Button */}
                 <button 
                   onClick={() => setIsNotesModalOpen(true)}
-                  className="flex-1 flex items-center justify-between p-4 bg-zinc-900 border border-zinc-800 hover:border-blue-500/50 rounded-xl transition-all group text-left h-20"
+                  className={`flex items-center justify-between p-4 bg-zinc-900 border border-zinc-800 hover:border-blue-500/50 rounded-xl transition-all group text-left ${isChartExpanded ? 'w-full' : 'flex-1 h-16 sm:h-20'}`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-500/10 rounded-lg text-blue-400 group-hover:scale-110 transition-transform">
-                      <FileText size={20} />
+                    <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg text-blue-400 group-hover:scale-110 transition-transform">
+                      <FileText size={18} className="sm:w-5 sm:h-5" />
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-white mb-1">Structural Notes</p>
-                      <p className="text-xs text-zinc-500 line-clamp-1">
+                      <p className="text-sm font-bold text-white mb-0.5 sm:mb-1">Structural Notes</p>
+                      <p className="text-[10px] sm:text-xs text-zinc-500 line-clamp-1">
                         {selectedSetup.notes ? "Notes saved. Click to view or edit..." : "No notes added yet. Click to write..."}
                       </p>
                     </div>
                   </div>
-                  <Edit2 size={18} className="text-zinc-600 group-hover:text-blue-400" />
+                  <Edit2 size={16} className="text-zinc-600 group-hover:text-blue-400 hidden sm:block" />
                 </button>
               </div>
 
               {/* Controls Dashboard */}
-              <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-6 mt-2">
+              <div className="bg-zinc-900/30 border border-zinc-800/50 rounded-xl p-6 mt-auto">
                  
                  {/* Full Text Status Row */}
                  <div className="mb-8">
@@ -441,8 +513,9 @@ export default function AdminAnalysisPage() {
                      </div>
                    </div>
 
+                   {/* 🚨 Wording Fixed */}
                    <div>
-                     <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Paywall</h4>
+                     <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Public View</h4>
                      <button
                        onClick={() => toggleLockStatus(selectedSetup.id, selectedSetup.is_locked !== false)}
                        className={`w-full h-[42px] rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 border ${
@@ -470,8 +543,9 @@ export default function AdminAnalysisPage() {
                      </button>
                    </div>
 
+                   {/* 🚨 Wording Fixed */}
                    <div>
-                     <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Home Page</h4>
+                     <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Featured Setup</h4>
                      <button
                        onClick={() => toggleFeaturedStatus(selectedSetup.id, selectedSetup.asset_symbol, selectedSetup.is_featured)}
                        className={`w-full h-[42px] rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 border ${
@@ -481,7 +555,7 @@ export default function AdminAnalysisPage() {
                        }`}
                      >
                        {selectedSetup.after_image_url ? <SplitSquareHorizontal size={14} className="text-emerald-400"/> : <Star size={14} className={selectedSetup.is_featured ? "text-amber-400" : "text-zinc-500"}/>}
-                       {selectedSetup.is_featured ? 'Featured' : 'Push Home'}
+                       {selectedSetup.is_featured ? 'Featured' : 'Feature'}
                      </button>
                    </div>
 
@@ -499,49 +573,6 @@ export default function AdminAnalysisPage() {
         </div>
 
       </div>
-
-      {/* --- IMAGE LIGHTBOX MODAL --- */}
-      {isImageModalOpen && selectedSetup && (
-        <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-200">
-          <button 
-            onClick={() => setIsImageModalOpen(false)} 
-            className="absolute top-4 right-4 md:top-6 md:right-6 p-3 bg-zinc-900 text-white rounded-full hover:bg-zinc-800 transition-colors shadow-2xl"
-          >
-            <X size={24}/>
-          </button>
-          
-          <img 
-            src={previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url} 
-            alt="Full Preview" 
-            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl"
-          />
-
-          <div className="absolute bottom-6 flex gap-4 items-center">
-            {selectedSetup.after_image_url && (
-              <div className="flex p-1 border rounded-lg bg-zinc-900/90 backdrop-blur border-zinc-700/50 shadow-2xl">
-                <button 
-                  onClick={() => setPreviewMode('before')}
-                  className={`px-6 py-2 text-sm font-bold uppercase tracking-widest transition-colors rounded-md ${previewMode === 'before' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
-                >
-                  Before
-                </button>
-                <button 
-                  onClick={() => setPreviewMode('after')}
-                  className={`px-6 py-2 text-sm font-bold uppercase tracking-widest transition-colors rounded-md ${previewMode === 'after' ? 'bg-zinc-700 text-emerald-400' : 'text-zinc-400 hover:text-emerald-400'}`}
-                >
-                  After
-                </button>
-              </div>
-            )}
-            <button 
-              onClick={() => window.open(previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url, '_blank')} 
-              className="flex items-center gap-2 px-6 py-2 bg-zinc-900 text-white text-sm uppercase tracking-widest font-bold rounded-lg hover:bg-zinc-800 transition-colors shadow-2xl border border-zinc-800"
-            >
-              <ExternalLink size={18} /> Open HD
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* --- NOTES EDITOR MODAL --- */}
       {isNotesModalOpen && selectedSetup && (
