@@ -135,9 +135,9 @@ export default function Home() {
         </div>
 
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white uppercase mb-6">
-          You Don't Need A New Strategy.<br />
+          Not A New Strategy.<br />
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500">
-            You Need An Operating System.
+            An Operating System.
           </span>
         </h1>
 
