@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { createBrowserClient } from '@supabase/ssr'
 import Image from 'next/image'
-import { Activity, Clock, Target, X, ZoomIn, PanelRightClose, PanelRightOpen, Image as ImageIcon, Megaphone, Send, Edit2, Trash2, Shield, FolderSearch, Loader2, Save, PlusCircle } from 'lucide-react'
+import { Activity, Clock, Target, X, ZoomIn, PanelRightClose, PanelRightOpen, Image as ImageIcon, Megaphone, Send, Edit2, Trash2, Shield, FolderSearch, Loader2, Save, PlusCircle, Bell, BellOff } from 'lucide-react'
 
 // Lightweight Telegram Markdown to Web HTML Parser
 const formatTelegramText = (text: string) => {
@@ -30,14 +30,12 @@ export default function AdminFloorControl() {
   // --- UI STATES ---
   const [isCommsOpen, setIsCommsOpen] = useState(true)
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
-  
+  const [notifyTelegram, setNotifyTelegram] = useState(true) // 🚨 NEW: Notification Toggle
+
   // 🚨 NOTIFICATION STATE
   const [unreadCount, setUnreadCount] = useState(0)
-  
   const isCommsOpenRef = useRef(isCommsOpen)
-  useEffect(() => {
-    isCommsOpenRef.current = isCommsOpen
-  }, [isCommsOpen])
+  useEffect(() => { isCommsOpenRef.current = isCommsOpen }, [isCommsOpen])
 
   // --- REAL-TIME DATA STATES ---
   const [posts, setPosts] = useState<any[]>([])
@@ -101,7 +99,7 @@ export default function AdminFloorControl() {
     return () => { supabase.removeChannel(channel) }
   }, [supabase])
 
-  // 🚨 FIXED: Scroll Behavior
+  // 🚨 FIXED: Scroll Behavior (Only scroll if open)
   useEffect(() => { 
     if (isCommsOpen) squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) 
   }, [squawks, isCommsOpen])
@@ -228,14 +226,17 @@ export default function AdminFloorControl() {
         admin_align_pct: (imagePreview && overrideSentiment) ? adminAlignPct : null
       }
 
+      // 1. Always insert into the Floor (terminal_posts)
       await supabase.from('terminal_posts').insert(payload)
       
-      // Auto-broadcast to Telegram
-      await fetch('/api/admin/broadcast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      }).catch(err => console.error("Telegram broadcast failed", err))
+      // 2. Conditionally broadcast to Telegram
+      if (notifyTelegram) {
+        await fetch('/api/admin/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...payload, type: 'manual' }) // Using 'manual' so the API knows it's a quick floor drop
+        }).catch(err => console.error("Telegram broadcast failed", err))
+      }
 
       setThesis(''); clearSetupState(); setOverrideSentiment(false); setAdminAlignPct(75);
     } catch (error: any) { alert(`Failed to post: ${error.message}`) } 
@@ -520,13 +521,26 @@ export default function AdminFloorControl() {
                     </button>
                   </div>
                   
-                  <textarea 
-                    value={thesis} 
-                    onChange={e => setThesis(e.target.value)} 
-                    placeholder={imagePreview ? "Detail your setup thesis..." : "Send a quick desk update (supports Telegram Markdown)..."}
-                    className="flex-1 max-h-40 min-h-[52px] bg-[#111] border border-white/[0.05] rounded-xl px-5 py-3.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed shadow-inner"
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFloorSubmit(); } }}
-                  />
+                  <div className="flex-1 relative">
+                    <textarea 
+                      value={thesis} 
+                      onChange={e => setThesis(e.target.value)} 
+                      placeholder={imagePreview ? "Detail your setup thesis..." : "Send a quick desk update (supports Telegram Markdown)..."}
+                      className="w-full max-h-40 min-h-[52px] bg-[#111] border border-white/[0.05] rounded-xl px-5 py-3.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed shadow-inner pb-10"
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFloorSubmit(); } }}
+                    />
+                    {/* 🚨 NEW: Notification Toggle Switch */}
+                    <div className="absolute bottom-2 left-4 flex items-center gap-2">
+                      <button 
+                        type="button"
+                        onClick={() => setNotifyTelegram(!notifyTelegram)}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest transition-colors ${notifyTelegram ? 'bg-blue-500/20 text-blue-400' : 'bg-neutral-800 text-neutral-500'}`}
+                      >
+                        {notifyTelegram ? <Bell size={12}/> : <BellOff size={12}/>}
+                        {notifyTelegram ? 'Broadcast TG' : 'Silent Drop'}
+                      </button>
+                    </div>
+                  </div>
 
                   <button onClick={handleFloorSubmit} disabled={isPostingFloor || (!thesis.trim() && !imagePreview)} className="p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-500 disabled:opacity-50 transition-all shrink-0 shadow-[0_0_15px_rgba(37,99,235,0.3)]">
                     {isPostingFloor ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
@@ -544,7 +558,7 @@ export default function AdminFloorControl() {
               isCommsOpen ? 'w-[340px] xl:w-[400px] opacity-100 ml-6 lg:ml-8' : 'w-0 opacity-0 ml-0 pointer-events-none'
             }`}>
               
-              <div className="w-[340px] xl:w-[400px] h-full bg-[#080808] rounded-2xl border border-white/[0.03] flex flex-col shadow-2xl relative">
+              <div className="w-[340px] xl:w-[400px] h-full bg-[#080808] rounded-2xl border border-white/[0.04] shadow-2xl flex flex-col relative">
                 
                 {/* HEADER */}
                 <div className="px-5 py-5 border-b border-[#2AABEE]/20 bg-[#2AABEE]/[0.03] flex items-center justify-between shrink-0 rounded-t-2xl">
