@@ -19,11 +19,8 @@ const formatTelegramText = (text: string) => {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    // Convert **bold**
     .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>')
-    // Convert _italic_
     .replace(/_(.*?)_/g, '<em class="italic opacity-90">$1</em>')
-    // Convert [Links](https...)
     .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-[#2AABEE] hover:text-blue-400 hover:underline underline-offset-2">$1</a>');
   
   return formatted;
@@ -45,13 +42,19 @@ export default function LiveFloorClient({
   const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'all'>('today')
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
 
+  // 🚨 NOTIFICATION STATE
+  const [unreadCount, setUnreadCount] = useState(0)
+  
+  // Ref to track comms state inside the Supabase listener without causing re-renders
+  const isCommsOpenRef = useRef(isCommsOpen)
+  useEffect(() => {
+    isCommsOpenRef.current = isCommsOpen
+  }, [isCommsOpen])
+
   // Real Database State
   const [interactions, setInteractions] = useState<Record<string, PostInteraction>>({})
   
-  // Prevent Server Hydration Crash by starting as null
   const [currentTime, setCurrentTime] = useState<number | null>(null)
-
-  // Notion-style inline editing state
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null) 
   const [tempNote, setTempNote] = useState<string>('') 
 
@@ -63,10 +66,7 @@ export default function LiveFloorClient({
   useEffect(() => {
     const fetchUserInteractions = async () => {
       if (!userId) return;
-      const { data, error } = await supabase
-        .from('user_post_interactions')
-        .select('*')
-        .eq('user_id', userId)
+      const { data, error } = await supabase.from('user_post_interactions').select('*').eq('user_id', userId)
 
       if (data && !error) {
         const dbInteractions: Record<string, PostInteraction> = {}
@@ -84,32 +84,40 @@ export default function LiveFloorClient({
     fetchUserInteractions()
   }, [userId])
 
-  // Start the clock only on the browser
   useEffect(() => {
     setCurrentTime(Date.now())
     const interval = setInterval(() => setCurrentTime(Date.now()), 60000)
     return () => clearInterval(interval)
   }, [])
 
-  // Chat Feed Auto-Scroll Behavior
-  useEffect(() => { squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [squawks])
+  // 🚨 FIXED: ONLY AUTO-SCROLL IF THE PANEL IS ACTUALLY OPEN
+  // This prevents the browser from ripping the layout sideways to view an off-screen hidden element
+  useEffect(() => { 
+    if (isCommsOpen) {
+      squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) 
+    }
+  }, [squawks, isCommsOpen])
+  
   useEffect(() => { floorEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [posts, activeFloorTab])
 
-  // 🚨 SUPABASE LIVE SYNC: NOW HANDLES INSERTS AND DELETES INSTANTLY
+  // SUPABASE LIVE SYNC
   useEffect(() => {
     const channel = supabase.channel('public:desk_feed')
-      // Watch Live Squawks (Telegram Broadcast Mirror)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (p) => setSquawks((c) => [...c, p.new]))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (p) => {
+        setSquawks((c) => [...c, p.new])
+        // If comms are closed when message arrives, increment badge
+        if (!isCommsOpenRef.current) {
+          setUnreadCount((prev) => prev + 1)
+        }
+      })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_squawk' }, (p) => setSquawks((c) => c.filter(s => s.id !== p.old.id)))
-      // Watch Terminal Posts (Setups)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'terminal_posts' }, (p) => setPosts((c) => [...c, p.new]))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'terminal_posts' }, (p) => setPosts((c) => c.filter(post => post.id !== p.old.id)))
       .subscribe()
       
     return () => { supabase.removeChannel(channel) }
-  }, [])
+  }, [supabase])
 
-  // Auto-focus the note textarea when it opens
   useEffect(() => {
     if (editingNoteId && noteInputRef.current) {
       noteInputRef.current.focus()
@@ -119,7 +127,6 @@ export default function LiveFloorClient({
 
   const isProUser = userPlan === 'pro' || userPlan === 'premium'
 
-  // THE OPTIMISTIC DATABASE SAVE FUNCTION
   const handleInteractionUpdate = async (postId: string, updates: Partial<PostInteraction>) => {
     if (!userId) return;
 
@@ -146,7 +153,6 @@ export default function LiveFloorClient({
     })
   }
 
-  // THE ORGANIC VOTING ENGINE (Time-Based & Deterministic)
   const getVoteStats = (post: any, userVote: 'align' | 'counter' | null) => {
     if (currentTime === null) return 50;
 
@@ -202,8 +208,14 @@ export default function LiveFloorClient({
     if (e.key === 'Escape') setEditingNoteId(null)
   }
 
+  const toggleComms = () => {
+    setIsCommsOpen(!isCommsOpen);
+    if (!isCommsOpen) {
+      // We are opening it, reset badge
+      setUnreadCount(0);
+    }
+  }
 
-  // 🚨 NEW RULE: FREE USERS ARE COMPLETELY BLOCKED FROM THE FLOOR
   if (!isProUser) {
     return (
       <div className="w-full h-[calc(100dvh-65px)] bg-[#050505] flex items-center justify-center p-6">
@@ -271,16 +283,23 @@ export default function LiveFloorClient({
                   </button>
                 </div>
 
+                {/* 🚨 UPDATED TOGGLE BUTTON WITH NOTIFICATION BADGE */}
                 <button 
-                  onClick={() => setIsCommsOpen(!isCommsOpen)}
-                  className="hidden lg:flex items-center justify-center text-neutral-500 hover:text-white transition-colors bg-white/[0.02] hover:bg-white/[0.06] w-9 h-9 rounded-lg mb-3 border border-white/[0.04]"
+                  onClick={toggleComms}
+                  className="hidden lg:flex relative items-center justify-center text-neutral-500 hover:text-white transition-colors bg-white/[0.02] hover:bg-white/[0.06] w-9 h-9 rounded-lg mb-3 border border-white/[0.04]"
                   title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
                 >
                   {isCommsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+                  
+                  {!isCommsOpen && unreadCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 bg-[#2AABEE] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[16px] text-center border border-[#030303] animate-in zoom-in shadow-sm">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </button>
               </div>
 
-              {/* TAB 1: DESK FEED (Chat Style Bottom-Up) */}
+              {/* TAB 1: DESK FEED */}
               {activeFloorTab === 'feed' && (
                 <div key="tab-feed" className="flex-1 overflow-y-auto pb-8 custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out px-1">
                   {posts.length === 0 ? (
@@ -317,7 +336,6 @@ export default function LiveFloorClient({
                                   {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
-                              {/* 🚨 FIX: Applied markdown formatter to Floor Text Broadcasts */}
                               <p 
                                 className="text-sm text-neutral-400 font-medium whitespace-pre-wrap leading-relaxed pl-11"
                                 dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }}
@@ -359,7 +377,6 @@ export default function LiveFloorClient({
                                   {/* ACTIONS PANEL */}
                                   <div className="flex-1 flex flex-col p-6 lg:p-8">
                                     
-                                    {/* HEADER */}
                                     <div className="flex justify-between items-start mb-8">
                                       <div className="flex items-center gap-3">
                                         <span className="px-2.5 py-1 text-blue-400 text-[11px] font-bold tracking-wider uppercase rounded bg-blue-500/10 border border-blue-500/20">
@@ -374,7 +391,6 @@ export default function LiveFloorClient({
                                       </span>
                                     </div>
 
-                                    {/* Action Row */}
                                     <div className="flex flex-wrap items-center gap-3 mb-8">
                                       <button 
                                         onClick={() => handleInteractionUpdate(post.id, { taken: !pInt.taken })}
@@ -413,7 +429,6 @@ export default function LiveFloorClient({
                                       )}
                                     </div>
 
-                                    {/* Sentiment Global Vote */}
                                     <div className="flex items-center gap-4 mb-auto">
                                       <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Sentiment</span>
                                       <div className="flex items-center bg-[#050505] p-1 rounded-xl border border-white/[0.04]">
@@ -445,7 +460,6 @@ export default function LiveFloorClient({
                                       </div>
                                     </div>
 
-                                    {/* NOTION-STYLE PERSONAL NOTE */}
                                     <div className="mt-8 pt-6 border-t border-white/[0.03]">
                                       {editingNoteId === post.id ? (
                                         <div className="animate-in fade-in duration-300">
@@ -484,9 +498,7 @@ export default function LiveFloorClient({
                                   </div>
                                 </div>
 
-                                {/* THESIS (Bottom) */}
                                 <div className="px-6 lg:px-8 py-6 bg-[#050505]">
-                                  {/* 🚨 FIX: Applied markdown formatter to Full Setup Thesis */}
                                   <p 
                                     className="text-sm text-neutral-400 whitespace-pre-wrap leading-relaxed"
                                     dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }}
@@ -661,7 +673,6 @@ export default function LiveFloorClient({
                               : 'bg-[#111] text-neutral-300 rounded-tl-sm border border-white/[0.03]'
                           }`}>
                             
-                            {/* Author/Time Inline Header */}
                             <div className="flex items-center gap-2 mb-2">
                               <span className={`text-[10px] font-bold tracking-wider ${isMe ? 'text-blue-100' : 'text-[#2AABEE]'}`}>
                                 {isMe ? 'You' : squawk.author_username || 'Sentinel Admin'}
@@ -680,7 +691,6 @@ export default function LiveFloorClient({
                               </div>
                             )}
                             
-                            {/* 🚨 FIX: Applied markdown formatter to Live Squawk Feed */}
                             {squawk.message && (
                               <span 
                                 className="whitespace-pre-wrap"
