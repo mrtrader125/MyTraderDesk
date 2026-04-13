@@ -86,6 +86,7 @@ export default function AdminFloorControl() {
   const [recentImages, setRecentImages] = useState<{url: string, ticker: string, timeframe: string}[]>([])
   const [modalPreview, setModalPreview] = useState<{url: string, ticker: string, timeframe: string} | null>(null)
 
+  // 1. Initial Fetch & Sync
   useEffect(() => {
     const fetchInitialData = async () => {
       const { data: initialPosts } = await supabase.from('terminal_posts').select('*').order('created_at', { ascending: false }).limit(20)
@@ -113,12 +114,19 @@ export default function AdminFloorControl() {
     return () => { supabase.removeChannel(channel) }
   }, [supabase])
 
+  // 🚨 STABILIZED SCROLL BEHAVIOR: Delays scroll to prevent flexbox layout shaking
   useEffect(() => { 
-    if (isCommsOpen) squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) 
+    if (isCommsOpen) {
+      const timeout = setTimeout(() => {
+        squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) 
+      }, 400) // matches the CSS transition duration
+      return () => clearTimeout(timeout)
+    }
   }, [squawks, isCommsOpen])
   
   useEffect(() => { floorEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [posts])
 
+  // Master Playbook Fetch
   useEffect(() => {
     const fetchMasterAnalysisImages = async () => {
       const { data, error } = await supabase.from('analyses').select('asset_symbol, timeframe, image_url').not('image_url', 'is', null).order('created_at', { ascending: false }).limit(40) 
@@ -240,7 +248,7 @@ export default function AdminFloorControl() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: 'manual' }) 
-        })
+        }).catch(err => console.error("Telegram broadcast failed", err))
       }
 
       setThesis(''); clearSetupState(); setOverrideSentiment(false); setAdminAlignPct(75);
@@ -248,7 +256,7 @@ export default function AdminFloorControl() {
     finally { setIsPostingFloor(false) }
   }
 
-  // 🚨 TELEGRAM OPEN/CLOSE ALERT BUTTONS
+  // TELEGRAM OPEN/CLOSE ALERT BUTTONS
   const handleSessionToggle = async (action: 'open' | 'close') => {
     const messageText = action === 'open' 
       ? `🟢 **LIVE DESK ACTIVE**\n\nThe trading floor is now open for the session. Monitoring active setups and market flow.`
@@ -269,7 +277,7 @@ export default function AdminFloorControl() {
     finally { setIsTogglingSession(false) }
   }
 
-  // 🚨 TELEGRAM INPUT BOX SUBMISSION
+  // TELEGRAM INPUT BOX SUBMISSION
   const handleCommsSubmit = async () => {
     if (!commsMessage.trim()) return
     setIsPostingComms(true)
@@ -303,18 +311,19 @@ export default function AdminFloorControl() {
         </div>
       )}
 
-      {/* 🚨 TIGHTENED LAYOUT SHELL (REMOVED OVERFLOW-HIDDEN TO PREVENT BADGE CLIPPING) */}
+      {/* 🚨 TIGHTENED LAYOUT SHELL */}
       <div className="w-full bg-[#030303] text-neutral-200 p-2 md:p-3 flex flex-col relative" style={{ height: 'calc(100dvh - 65px)' }}>
         <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
           
-          <div className="flex-1 flex min-h-0 h-full gap-4 lg:gap-6">
+          {/* Main Flex Wrapper - Gap removed, handled by margin in sidebar */}
+          <div className="flex-1 flex min-h-0 h-full">
             
             {/* ==================================================== */}
             {/* LEFT PANE: LIVE FLOOR FEED & CHAT INPUT              */}
             {/* ==================================================== */}
-            <div className="flex-1 flex flex-col h-full min-w-0 relative transition-all duration-500 ease-in-out bg-[#080808] border border-white/[0.04] rounded-2xl shadow-xl flex">
+            <div className="flex-1 flex flex-col h-full min-w-0 relative transition-all duration-500 ease-in-out bg-[#080808] border border-white/[0.04] rounded-2xl shadow-xl">
               
-              {/* INTEGRATED HEADER (ROUNDED TOP ONLY) */}
+              {/* INTEGRATED HEADER */}
               <div className="px-4 py-3 border-b border-white/[0.04] bg-[#0a0a0a] flex items-center justify-between shrink-0 z-10 rounded-t-2xl">
                 
                 {/* Left Controls */}
@@ -338,19 +347,21 @@ export default function AdminFloorControl() {
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
                   </div>
                   
-                  <button 
-                    onClick={toggleComms}
-                    className="flex relative items-center justify-center text-neutral-400 hover:text-white transition-colors bg-[#111] hover:bg-[#1a1a1a] w-8 h-8 rounded-lg border border-white/[0.04] shadow-sm"
-                    title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
-                  >
-                    {isCommsOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
-                    {/* Notification Badge now has space to breathe! */}
+                  <div className="relative">
+                    <button 
+                      onClick={toggleComms}
+                      className="flex items-center justify-center text-neutral-400 hover:text-white transition-colors bg-[#111] hover:bg-[#1a1a1a] w-8 h-8 rounded-lg border border-white/[0.04] shadow-sm relative z-10"
+                      title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
+                    >
+                      {isCommsOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+                    </button>
+                    {/* Badge moved completely outside button constraints */}
                     {!isCommsOpen && unreadCount > 0 && (
-                      <span className="absolute -top-1.5 -right-1.5 bg-[#2AABEE] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center border border-[#030303] animate-in zoom-in shadow-md z-20">
+                      <div className="absolute -top-1.5 -right-1.5 bg-[#2AABEE] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center border border-[#030303] animate-in zoom-in shadow-md z-20 pointer-events-none">
                         {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
+                      </div>
                     )}
-                  </button>
+                  </div>
                 </div>
               </div>
 
@@ -367,6 +378,7 @@ export default function AdminFloorControl() {
                       const isSetup = post.image_url && post.image_url.trim() !== ''
                       const isEditing = editingPost?.id === post.id;
 
+                      // --- INLINE EDIT MODE FOR FLOOR POSTS ---
                       if (isEditing) {
                         return (
                           <div key={post.id} className="bg-[#0f0f0f] rounded-2xl border border-blue-500/50 p-6 shadow-[0_0_30px_rgba(37,99,235,0.1)] relative animate-in zoom-in-95 duration-200">
@@ -415,6 +427,7 @@ export default function AdminFloorControl() {
                         )
                       }
 
+                      // --- NORMAL DISPLAY MODE FOR FLOOR POSTS ---
                       return (
                         <div key={post.id} className="relative group/post animate-in fade-in duration-300">
                           
@@ -564,7 +577,7 @@ export default function AdminFloorControl() {
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFloorSubmit(); } }}
                   />
 
-                  {/* 🚨 NOTIFICATION TOGGLE */}
+                  {/* NOTIFICATION TOGGLE */}
                   <div className="absolute right-[56px] bottom-2.5">
                     <button 
                       type="button"
@@ -587,12 +600,12 @@ export default function AdminFloorControl() {
             {/* RIGHT PANE: TELEGRAM BROADCAST MIRROR                */}
             {/* ==================================================== */}
             
-            {/* RIGID SIDEBAR SLIDE TRANSITION */}
-            <div className={`hidden lg:block h-full shrink-0 transition-[width,margin,opacity] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
-              isCommsOpen ? 'w-[320px] xl:w-[360px] opacity-100' : 'w-0 opacity-0 pointer-events-none'
+            {/* RIGID SIDEBAR SLIDE TRANSITION (WITH MARGIN) */}
+            <div className={`hidden lg:block h-full shrink-0 transition-[width,margin,opacity] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${
+              isCommsOpen ? 'w-[320px] xl:w-[360px] opacity-100 ml-4 lg:ml-6' : 'w-0 opacity-0 ml-0 pointer-events-none'
             }`}>
               
-              <div className="w-[320px] xl:w-[360px] h-full bg-[#080808] rounded-2xl border border-white/[0.04] shadow-2xl flex flex-col relative overflow-hidden">
+              <div className="w-[320px] xl:w-[360px] h-full bg-[#080808] rounded-2xl border border-white/[0.04] shadow-2xl flex flex-col relative">
                 
                 {/* HEADER */}
                 <div className="px-4 py-4 border-b border-[#2AABEE]/20 bg-[#2AABEE]/[0.03] flex items-center justify-between shrink-0 rounded-t-2xl">
@@ -647,8 +660,9 @@ export default function AdminFloorControl() {
 
                           <div className="px-3 py-2.5 rounded-2xl w-full max-w-[94%] text-[12px] font-medium leading-relaxed shadow-sm bg-gradient-to-br from-[#2AABEE] to-[#1E88E5] text-white rounded-tr-sm">
                             <div className="flex items-center gap-2 mb-1.5">
-                              <span className="text-[9px] font-bold tracking-wider text-blue-100">Sentinel Admin</span>
-                              <span className="text-[8px] font-medium text-blue-100/70 ml-auto">{new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                              {squawk.tag && squawk.tag !== 'Broadcast' && <span className="bg-white/20 px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest shadow-sm">{squawk.tag}</span>}
+                              <span className="text-[9px] font-bold tracking-wider text-blue-100 ml-auto">Sentinel Admin</span>
+                              <span className="text-[8px] font-medium text-blue-100/70">{new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             
                             {squawk.media_url && (
@@ -670,6 +684,14 @@ export default function AdminFloorControl() {
 
                 {/* SQUAWK INPUT BAR */}
                 <div className="p-3 bg-[#0a0a0a] border-t border-white/[0.04] shrink-0 rounded-b-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-20">
+                  <div className="flex items-center gap-2 mb-2 px-1">
+                     <select value={commsTag} onChange={e=>setCommsTag(e.target.value)} className="bg-[#111] text-[9px] font-bold uppercase tracking-widest text-neutral-400 border border-white/[0.05] rounded-md px-2 py-1.5 outline-none cursor-pointer appearance-none focus:border-[#2AABEE]">
+                       <option value="">No Tag</option>
+                       <option value="Execution">Live Execution</option>
+                       <option value="Alert">Critical Alert</option>
+                       <option value="News">Macro News</option>
+                     </select>
+                  </div>
                   <div className="flex items-end gap-2">
                     <textarea 
                       value={commsMessage} 
