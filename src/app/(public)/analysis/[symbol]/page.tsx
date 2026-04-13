@@ -4,8 +4,9 @@ import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { Lock, TrendingUp, TrendingDown, Minus, Shield, Users, Unlock, Clock, ArrowRight, Activity } from 'lucide-react'
 
-// Cache this page for 1 hour so it loads instantly for visitors
-export const revalidate = 3600;
+// 🚨 FIX: Force the page to fetch fresh data on every single load. No more caching delays.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 type Props = {
   params: Promise<{ symbol: string }>
