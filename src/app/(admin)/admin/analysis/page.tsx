@@ -288,7 +288,7 @@ export default function AdminAnalysisPage() {
               className="w-[72px] shrink-0 bg-zinc-950 border border-zinc-800 text-zinc-300 text-xs rounded-lg px-2 outline-none focus:border-zinc-700 cursor-pointer"
             >
               <option value="ALL">All TF</option>
-              <option value="MN">MN</option>
+              <option value="M">M</option>
               <option value="W">W</option>
               <option value="D">D</option>
               <option value="4H">4H</option>
