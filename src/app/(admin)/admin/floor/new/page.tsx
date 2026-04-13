@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { createBrowserClient } from '@supabase/ssr'
 import Image from 'next/image'
-import { Activity, Clock, Target, X, ZoomIn, PanelRightClose, PanelRightOpen, Image as ImageIcon, Megaphone, Send, Edit2, Trash2, FolderSearch, Loader2, Save, PlusCircle, Power, PowerOff } from 'lucide-react'
+import { Activity, Clock, Target, X, ZoomIn, PanelRightClose, PanelRightOpen, Image as ImageIcon, Megaphone, Send, Edit2, Trash2, Shield, FolderSearch, Loader2, Save, PlusCircle, Power, PowerOff, Bell, BellOff } from 'lucide-react'
 
 // Lightweight Telegram Markdown to Web HTML Parser
 const formatTelegramText = (text: string) => {
@@ -29,6 +29,7 @@ export default function AdminFloorControl() {
   // --- UI STATES (WITH PERSISTENCE) ---
   const [isCommsOpen, setIsCommsOpen] = useState(false)
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
+  const [notifyTelegram, setNotifyTelegram] = useState(false) 
   const [unreadCount, setUnreadCount] = useState(0)
 
   // Load sidebar state on mount
@@ -65,6 +66,7 @@ export default function AdminFloorControl() {
   const [overrideSentiment, setOverrideSentiment] = useState(false)
   const [adminAlignPct, setAdminAlignPct] = useState(75)
   const [isPostingFloor, setIsPostingFloor] = useState(false)
+  const [isTogglingSession, setIsTogglingSession] = useState(false)
 
   // --- ADMIN INPUT: IMAGE HANDLING ---
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -73,6 +75,7 @@ export default function AdminFloorControl() {
 
   // --- ADMIN INPUT: RIGHT (TELEGRAM) ---
   const [commsMessage, setCommsMessage] = useState('')
+  const [commsTag, setCommsTag] = useState('')
   const [isPostingComms, setIsPostingComms] = useState(false)
 
   // --- MANAGEMENT / DRAFTS ---
@@ -83,7 +86,6 @@ export default function AdminFloorControl() {
   const [recentImages, setRecentImages] = useState<{url: string, ticker: string, timeframe: string}[]>([])
   const [modalPreview, setModalPreview] = useState<{url: string, ticker: string, timeframe: string} | null>(null)
 
-  // 1. Initial Fetch & Sync
   useEffect(() => {
     const fetchInitialData = async () => {
       const { data: initialPosts } = await supabase.from('terminal_posts').select('*').order('created_at', { ascending: false }).limit(20)
@@ -111,14 +113,12 @@ export default function AdminFloorControl() {
     return () => { supabase.removeChannel(channel) }
   }, [supabase])
 
-  // Scroll Behavior (Only scroll if open)
   useEffect(() => { 
     if (isCommsOpen) squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) 
   }, [squawks, isCommsOpen])
   
   useEffect(() => { floorEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [posts])
 
-  // Master Playbook Fetch
   useEffect(() => {
     const fetchMasterAnalysisImages = async () => {
       const { data, error } = await supabase.from('analyses').select('asset_symbol, timeframe, image_url').not('image_url', 'is', null).order('created_at', { ascending: false }).limit(40) 
@@ -168,7 +168,7 @@ export default function AdminFloorControl() {
   const handleUpdateSquawk = async () => {
     if (!editingSquawk) return
     setIsUpdating(true)
-    await supabase.from('live_squawk').update({ message: editingSquawk.message }).eq('id', editingSquawk.id)
+    await supabase.from('live_squawk').update({ message: editingSquawk.message, tag: editingSquawk.tag }).eq('id', editingSquawk.id)
     setIsUpdating(false)
     setEditingSquawk(null)
   }
@@ -207,7 +207,6 @@ export default function AdminFloorControl() {
 
   // --- SUBMISSIONS ---
 
-  // Standard Post (Silent - Floor Only)
   const handleFloorSubmit = async () => {
     if (!thesis.trim()) return alert('Message body is required.')
     if (imagePreview && !ticker.trim()) return alert('Ticker is required when attaching a setup chart.')
@@ -232,35 +231,62 @@ export default function AdminFloorControl() {
         admin_align_pct: (imagePreview && overrideSentiment) ? adminAlignPct : null
       }
 
+      // 1. Insert into floor
       await supabase.from('terminal_posts').insert(payload)
+      
+      // 2. Alert Telegram ONLY if toggle is on (Manual Setup Drop)
+      if (notifyTelegram) {
+        await fetch('/api/admin/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: 'manual' }) 
+        })
+      }
+
       setThesis(''); clearSetupState(); setOverrideSentiment(false); setAdminAlignPct(75);
     } catch (error: any) { alert(`Failed to post: ${error.message}`) } 
     finally { setIsPostingFloor(false) }
   }
 
-  // 🚨 FIXED: Session Start/End Broadcaster (Telegram Only)
+  // 🚨 TELEGRAM OPEN/CLOSE ALERT BUTTONS
   const handleSessionToggle = async (action: 'open' | 'close') => {
     const messageText = action === 'open' 
       ? `🟢 **LIVE DESK ACTIVE**\n\nThe trading floor is now open for the session. Monitoring active setups and market flow.`
       : `🔴 **SESSION WRAP**\n\nThe trading desk is now closed. Risk management active on open positions.`;
 
-    setIsPostingComms(true)
+    setIsTogglingSession(true)
     try {
-      // Direct insertion into the squawk feed (Telegram mirror) instead of the Floor
-      await supabase.from('live_squawk').insert({ 
-        message: messageText,
-        tag: 'Alert' 
+      await fetch('/api/admin/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: 'custom', 
+          message: messageText, 
+          tag: 'Alert' 
+        })
       })
     } catch(err) { console.error(err) }
-    finally { setIsPostingComms(false) }
+    finally { setIsTogglingSession(false) }
   }
 
+  // 🚨 TELEGRAM INPUT BOX SUBMISSION
   const handleCommsSubmit = async () => {
     if (!commsMessage.trim()) return
     setIsPostingComms(true)
-    await supabase.from('live_squawk').insert({ message: commsMessage })
-    setCommsMessage('')
-    setIsPostingComms(false)
+    try {
+      await fetch('/api/admin/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          type: 'custom', 
+          message: commsMessage, 
+          tag: commsTag || 'Broadcast' 
+        })
+      })
+      setCommsMessage('')
+      setCommsTag('')
+    } catch(err) { console.error(err) }
+    finally { setIsPostingComms(false) }
   }
 
   return (
@@ -277,18 +303,19 @@ export default function AdminFloorControl() {
         </div>
       )}
 
-      <div className="w-full bg-[#030303] text-neutral-200 p-2 md:p-4 flex flex-col relative" style={{ height: 'calc(100dvh - 65px)' }}>
+      {/* 🚨 TIGHTENED LAYOUT SHELL (REMOVED OVERFLOW-HIDDEN TO PREVENT BADGE CLIPPING) */}
+      <div className="w-full bg-[#030303] text-neutral-200 p-2 md:p-3 flex flex-col relative" style={{ height: 'calc(100dvh - 65px)' }}>
         <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
           
-          <div className="flex-1 flex min-h-0 overflow-hidden h-full">
+          <div className="flex-1 flex min-h-0 h-full gap-4 lg:gap-6">
             
             {/* ==================================================== */}
             {/* LEFT PANE: LIVE FLOOR FEED & CHAT INPUT              */}
             {/* ==================================================== */}
-            <div className="flex-1 flex flex-col h-full min-w-0 relative transition-all duration-500 ease-in-out bg-[#080808] border border-white/[0.04] rounded-2xl overflow-hidden shadow-xl">
+            <div className="flex-1 flex flex-col h-full min-w-0 relative transition-all duration-500 ease-in-out bg-[#080808] border border-white/[0.04] rounded-2xl shadow-xl flex">
               
-              {/* INTEGRATED HEADER */}
-              <div className="px-5 py-3 border-b border-white/[0.04] bg-[#0a0a0a] flex items-center justify-between shrink-0 z-10">
+              {/* INTEGRATED HEADER (ROUNDED TOP ONLY) */}
+              <div className="px-4 py-3 border-b border-white/[0.04] bg-[#0a0a0a] flex items-center justify-between shrink-0 z-10 rounded-t-2xl">
                 
                 {/* Left Controls */}
                 <div className="flex items-center gap-4">
@@ -296,17 +323,17 @@ export default function AdminFloorControl() {
                     <Activity size={16} className="text-blue-400" /> Floor Terminal
                   </div>
                   <div className="flex items-center gap-2 pl-4 border-l border-white/[0.1]">
-                    <button onClick={() => handleSessionToggle('open')} disabled={isPostingComms} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20 transition-colors disabled:opacity-50">
+                    <button onClick={() => handleSessionToggle('open')} disabled={isTogglingSession} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20 transition-colors disabled:opacity-50">
                       <Power size={12}/> Open Desk
                     </button>
-                    <button onClick={() => handleSessionToggle('close')} disabled={isPostingComms} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-colors disabled:opacity-50">
+                    <button onClick={() => handleSessionToggle('close')} disabled={isTogglingSession} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-colors disabled:opacity-50">
                       <PowerOff size={12}/> Wrap Desk
                     </button>
                   </div>
                 </div>
 
                 {/* Right Controls */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <div className="hidden md:flex items-center gap-2 text-[9px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
                   </div>
@@ -317,6 +344,7 @@ export default function AdminFloorControl() {
                     title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
                   >
                     {isCommsOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+                    {/* Notification Badge now has space to breathe! */}
                     {!isCommsOpen && unreadCount > 0 && (
                       <span className="absolute -top-1.5 -right-1.5 bg-[#2AABEE] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center border border-[#030303] animate-in zoom-in shadow-md z-20">
                         {unreadCount > 99 ? '99+' : unreadCount}
@@ -327,7 +355,7 @@ export default function AdminFloorControl() {
               </div>
 
               {/* FLOOR FEED (SCROLLABLE) */}
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar bg-[#030303]">
+              <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-[#030303]">
                 {posts.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center opacity-40">
                     <Target className="w-12 h-12 text-neutral-600 mb-4 stroke-1" />
@@ -339,7 +367,6 @@ export default function AdminFloorControl() {
                       const isSetup = post.image_url && post.image_url.trim() !== ''
                       const isEditing = editingPost?.id === post.id;
 
-                      // --- INLINE EDIT MODE FOR FLOOR POSTS ---
                       if (isEditing) {
                         return (
                           <div key={post.id} className="bg-[#0f0f0f] rounded-2xl border border-blue-500/50 p-6 shadow-[0_0_30px_rgba(37,99,235,0.1)] relative animate-in zoom-in-95 duration-200">
@@ -388,7 +415,6 @@ export default function AdminFloorControl() {
                         )
                       }
 
-                      // --- NORMAL DISPLAY MODE FOR FLOOR POSTS ---
                       return (
                         <div key={post.id} className="relative group/post animate-in fade-in duration-300">
                           
@@ -478,7 +504,7 @@ export default function AdminFloorControl() {
               </div>
 
               {/* ADMIN CHAT INPUT BAR (COMPACT & ANCHORED) */}
-              <div className="shrink-0 bg-[#0a0a0a] border-t border-white/[0.04] p-3 flex flex-col relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+              <div className="shrink-0 bg-[#0a0a0a] border-t border-white/[0.04] p-3 flex flex-col relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] rounded-b-2xl">
                 
                 {/* COMPACT SETUP THUMBNAIL BAR */}
                 {imagePreview && (
@@ -519,7 +545,7 @@ export default function AdminFloorControl() {
                 )}
 
                 {/* MAIN CHAT INPUT */}
-                <div className="flex items-end gap-2.5 max-w-[1000px] w-full mx-auto">
+                <div className="flex items-end gap-2.5 max-w-[1000px] w-full mx-auto relative">
                   <div className="flex bg-[#111] rounded-xl border border-white/[0.05] p-1 shrink-0 shadow-inner">
                     <label className="p-2.5 text-neutral-400 hover:text-white hover:bg-[#1a1a1a] rounded-lg cursor-pointer transition-colors" title="Upload Image">
                        <ImageIcon size={18} />
@@ -533,10 +559,22 @@ export default function AdminFloorControl() {
                   <textarea 
                     value={thesis} 
                     onChange={e => setThesis(e.target.value)} 
-                    placeholder={imagePreview ? "Detail setup thesis..." : "Send desk update..."}
-                    className="flex-1 max-h-32 min-h-[44px] bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-[13px] text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed shadow-inner"
+                    placeholder={imagePreview ? "Detail setup thesis..." : "Send desk update (Silent by default)..."}
+                    className="flex-1 max-h-32 min-h-[44px] bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-[13px] text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed shadow-inner pr-24"
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFloorSubmit(); } }}
                   />
+
+                  {/* 🚨 NOTIFICATION TOGGLE */}
+                  <div className="absolute right-[56px] bottom-2.5">
+                    <button 
+                      type="button"
+                      onClick={() => setNotifyTelegram(!notifyTelegram)}
+                      className={`flex items-center justify-center p-1.5 rounded-lg transition-colors ${notifyTelegram ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'text-neutral-500 hover:text-white'}`}
+                      title={notifyTelegram ? "Will alert Telegram channel" : "Silent drop (Floor only)"}
+                    >
+                      {notifyTelegram ? <Bell size={14}/> : <BellOff size={14}/>}
+                    </button>
+                  </div>
 
                   <button onClick={handleFloorSubmit} disabled={isPostingFloor || (!thesis.trim() && !imagePreview)} className="p-3.5 bg-blue-600 text-white rounded-xl hover:bg-blue-500 disabled:opacity-50 transition-all shrink-0 shadow-[0_0_15px_rgba(37,99,235,0.3)]">
                     {isPostingFloor ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
@@ -550,11 +588,11 @@ export default function AdminFloorControl() {
             {/* ==================================================== */}
             
             {/* RIGID SIDEBAR SLIDE TRANSITION */}
-            <div className={`hidden lg:block h-full shrink-0 transition-[width,margin,opacity] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${
-              isCommsOpen ? 'w-[320px] xl:w-[360px] opacity-100 ml-4 lg:ml-6' : 'w-0 opacity-0 ml-0 pointer-events-none'
+            <div className={`hidden lg:block h-full shrink-0 transition-[width,margin,opacity] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] ${
+              isCommsOpen ? 'w-[320px] xl:w-[360px] opacity-100' : 'w-0 opacity-0 pointer-events-none'
             }`}>
               
-              <div className="w-[320px] xl:w-[360px] h-full bg-[#080808] rounded-2xl border border-white/[0.04] shadow-2xl flex flex-col relative">
+              <div className="w-[320px] xl:w-[360px] h-full bg-[#080808] rounded-2xl border border-white/[0.04] shadow-2xl flex flex-col relative overflow-hidden">
                 
                 {/* HEADER */}
                 <div className="px-4 py-4 border-b border-[#2AABEE]/20 bg-[#2AABEE]/[0.03] flex items-center justify-between shrink-0 rounded-t-2xl">
