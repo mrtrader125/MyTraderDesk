@@ -8,7 +8,7 @@ import {
   Clock, Search, ExternalLink, Image as ImageIcon, Minus, 
   Target, CheckCircle2, LayoutList, Star, 
   UploadCloud, Loader2, Shield, SplitSquareHorizontal,
-  Lock, Unlock, Save, FileText, X
+  Lock, Unlock, Save, FileText, X, Maximize2
 } from 'lucide-react'
 
 export default function AdminAnalysisPage() {
@@ -23,12 +23,14 @@ export default function AdminAnalysisPage() {
   const [selectedSetupId, setSelectedSetupId] = useState<string | null>(null)
   
   const [previewMode, setPreviewMode] = useState<'before' | 'after'>('before')
-  const [isChartExpanded, setIsChartExpanded] = useState(false) // 🚨 Inline image toggle
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
+  // Modals State
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false)
+
   const [localNotes, setLocalNotes] = useState('')
   const [isSavingNotes, setIsSavingNotes] = useState(false)
 
@@ -192,14 +194,14 @@ export default function AdminAnalysisPage() {
     setIsSavingNotes(false);
   }
 
-  // 🚨 Filtering Logic
+  // Filtering Logic
   const filteredSetups = setups.filter(s => {
     const matchesSearch = (s.asset_symbol || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTF = timeframeFilter === 'ALL' || (s.timeframe || '').toLowerCase() === timeframeFilter.toLowerCase();
     return matchesSearch && matchesTF;
   });
 
-  // 🚨 Date Grouping Logic
+  // Date Grouping Logic
   const groupedSetups = (() => {
     const groups: { [key: string]: any[] } = { 'Today': [], 'Yesterday': [], 'This Week': [], 'Older': [] };
     const now = new Date();
@@ -221,7 +223,6 @@ export default function AdminAnalysisPage() {
 
   useEffect(() => { 
     setPreviewMode('before')
-    setIsChartExpanded(false) // Collapse chart when changing setups
     if (selectedSetup) {
       setLocalNotes(selectedSetup.notes || '');
     }
@@ -281,7 +282,6 @@ export default function AdminAnalysisPage() {
                 className="w-full py-2 pl-9 pr-2 text-xs text-zinc-200 bg-zinc-950 border border-zinc-800 rounded-lg outline-none focus:border-zinc-700 transition-colors placeholder:text-zinc-600"
               />
             </div>
-            {/* 🚨 TF Filter */}
             <select 
               value={timeframeFilter} 
               onChange={(e) => setTimeframeFilter(e.target.value)}
@@ -305,7 +305,6 @@ export default function AdminAnalysisPage() {
                 <span className="text-sm font-medium">No setups</span>
               </div>
             ) : (
-              // 🚨 Grouped List Rendering
               Object.entries(groupedSetups).map(([groupName, groupSetups]) => {
                 if (groupSetups.length === 0) return null;
                 return (
@@ -342,7 +341,6 @@ export default function AdminAnalysisPage() {
                                   {setup.timeframe}
                                 </span>
                               </div>
-                              {/* 🚨 Full Status Text */}
                               <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider ${statusColor}`}>
                                 {status}
                               </div>
@@ -402,47 +400,28 @@ export default function AdminAnalysisPage() {
                 </div>
               </div>
 
-              {/* 🚨 Media & Notes Row (Responsive Inline Toggle) */}
-              <div className={`flex ${isChartExpanded ? 'flex-col' : 'flex-row items-center'} gap-6 shrink-0`}>
+              {/* Media & Notes Row */}
+              <div className="flex flex-row items-center gap-4 sm:gap-6 shrink-0">
                 
-                {/* Image Container (Click to toggle size) */}
+                {/* Fixed Thumbnail (Click to Open Lightbox) */}
                 <div 
-                  onClick={() => selectedSetup.image_url && setIsChartExpanded(!isChartExpanded)}
-                  className={`relative cursor-pointer transition-all duration-500 group z-10 ${
-                    isChartExpanded 
-                      ? 'w-full aspect-[16/9] max-h-[450px] bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden shadow-2xl flex items-center justify-center'
-                      : 'w-24 h-16 sm:w-32 sm:h-20 shrink-0 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl overflow-hidden'
-                  }`}
+                  onClick={() => selectedSetup.image_url && setIsImageModalOpen(true)}
+                  className="relative w-24 h-16 sm:w-36 sm:h-20 shrink-0 bg-zinc-900 border border-zinc-800 hover:border-zinc-600 rounded-xl overflow-hidden cursor-pointer group"
                 >
                   {selectedSetup.image_url ? (
                     <>
                       <img 
                         src={previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url} 
                         alt="Chart Thumbnail" 
-                        className={isChartExpanded ? "object-contain w-full h-full p-2" : "object-cover w-full h-full"}
+                        className="object-cover w-full h-full transition-transform duration-500 group-hover:scale-105"
                       />
-                      
-                      {/* Before/After Toggles (Only visible when expanded) */}
-                      {isChartExpanded && selectedSetup.after_image_url && (
-                        <div className="absolute z-20 flex p-1 overflow-hidden border rounded-lg bottom-4 left-4 bg-zinc-900/90 backdrop-blur border-zinc-700/50 shadow-xl" onClick={(e) => e.stopPropagation()}>
-                          <button 
-                            onClick={() => setPreviewMode('before')}
-                            className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-md ${previewMode === 'before' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
-                          >
-                            Before
-                          </button>
-                          <button 
-                            onClick={() => setPreviewMode('after')}
-                            className={`px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-md ${previewMode === 'after' ? 'bg-zinc-700 text-emerald-400' : 'text-zinc-400 hover:text-emerald-400'}`}
-                          >
-                            After
-                          </button>
-                        </div>
-                      )}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[1px]">
+                         <Maximize2 size={20} className="text-white" />
+                      </div>
                     </>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-zinc-600">
-                      <ImageIcon size={isChartExpanded ? 40 : 20} />
+                      <ImageIcon size={20} />
                     </div>
                   )}
                 </div>
@@ -450,10 +429,10 @@ export default function AdminAnalysisPage() {
                 {/* Notes Modal Trigger Button */}
                 <button 
                   onClick={() => setIsNotesModalOpen(true)}
-                  className={`flex items-center justify-between p-4 bg-zinc-900 border border-zinc-800 hover:border-blue-500/50 rounded-xl transition-all group text-left ${isChartExpanded ? 'w-full' : 'flex-1 h-16 sm:h-20'}`}
+                  className="flex-1 h-16 sm:h-20 flex items-center justify-between p-3 sm:p-4 bg-zinc-900 border border-zinc-800 hover:border-blue-500/50 rounded-xl transition-all group text-left"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg text-blue-400 group-hover:scale-110 transition-transform">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="p-2 sm:p-3 bg-blue-500/10 rounded-lg text-blue-400 group-hover:scale-110 transition-transform hidden xs:block">
                       <FileText size={18} className="sm:w-5 sm:h-5" />
                     </div>
                     <div>
@@ -513,7 +492,6 @@ export default function AdminAnalysisPage() {
                      </div>
                    </div>
 
-                   {/* 🚨 Wording Fixed */}
                    <div>
                      <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Public View</h4>
                      <button
@@ -543,9 +521,8 @@ export default function AdminAnalysisPage() {
                      </button>
                    </div>
 
-                   {/* 🚨 Wording Fixed */}
                    <div>
-                     <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Featured Setup</h4>
+                     <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Featured</h4>
                      <button
                        onClick={() => toggleFeaturedStatus(selectedSetup.id, selectedSetup.asset_symbol, selectedSetup.is_featured)}
                        className={`w-full h-[42px] rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 border ${
@@ -573,6 +550,56 @@ export default function AdminAnalysisPage() {
         </div>
 
       </div>
+
+      {/* --- IMAGE LIGHTBOX MODAL --- */}
+      {isImageModalOpen && selectedSetup && (
+        <div 
+          className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setIsImageModalOpen(false)} // Clicking background closes it
+        >
+          <button 
+            onClick={() => setIsImageModalOpen(false)} 
+            className="absolute top-4 right-4 md:top-6 md:right-6 p-3 bg-zinc-900 text-white rounded-full hover:bg-zinc-800 transition-colors shadow-2xl z-50"
+          >
+            <X size={24}/>
+          </button>
+          
+          <img 
+            src={previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url} 
+            alt="Full Preview" 
+            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl cursor-zoom-out relative z-40"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent background click from firing
+              setIsImageModalOpen(false); // Clicking image also closes it
+            }}
+          />
+
+          <div className="absolute bottom-6 flex gap-4 items-center z-50" onClick={(e) => e.stopPropagation()}>
+            {selectedSetup.after_image_url && (
+              <div className="flex p-1 border rounded-lg bg-zinc-900/90 backdrop-blur border-zinc-700/50 shadow-2xl">
+                <button 
+                  onClick={() => setPreviewMode('before')}
+                  className={`px-6 py-2 text-sm font-bold uppercase tracking-widest transition-colors rounded-md ${previewMode === 'before' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
+                >
+                  Before
+                </button>
+                <button 
+                  onClick={() => setPreviewMode('after')}
+                  className={`px-6 py-2 text-sm font-bold uppercase tracking-widest transition-colors rounded-md ${previewMode === 'after' ? 'bg-zinc-700 text-emerald-400' : 'text-zinc-400 hover:text-emerald-400'}`}
+                >
+                  After
+                </button>
+              </div>
+            )}
+            <button 
+              onClick={() => window.open(previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url, '_blank')} 
+              className="flex items-center gap-2 px-6 py-2 bg-zinc-900 text-white text-sm uppercase tracking-widest font-bold rounded-lg hover:bg-zinc-800 transition-colors shadow-2xl border border-zinc-800"
+            >
+              <ExternalLink size={18} /> Open HD
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* --- NOTES EDITOR MODAL --- */}
       {isNotesModalOpen && selectedSetup && (
