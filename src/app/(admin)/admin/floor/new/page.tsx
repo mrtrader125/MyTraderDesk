@@ -238,38 +238,26 @@ export default function AdminFloorControl() {
     finally { setIsPostingFloor(false) }
   }
 
-  // Session Start/End Broadcaster
+  // 🚨 FIXED: Session Start/End Broadcaster (Telegram Only)
   const handleSessionToggle = async (action: 'open' | 'close') => {
     const messageText = action === 'open' 
       ? `🟢 **LIVE DESK ACTIVE**\n\nThe trading floor is now open for the session. Monitoring active setups and market flow.`
       : `🔴 **SESSION WRAP**\n\nThe trading desk is now closed. Risk management active on open positions.`;
 
-    setIsPostingFloor(true)
+    setIsPostingComms(true)
     try {
-      const payload = {
-        ticker: 'SYSTEM',
-        timeframe: 'NOW',
-        thesis: messageText,
-        tier_access: 'free',
-        image_url: null,
-        admin_align_pct: null
-      }
-      // Write to floor
-      await supabase.from('terminal_posts').insert(payload)
-      // Broadcast to TG
-      await fetch('/api/admin/broadcast', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...payload, type: 'manual' }) 
+      // Direct insertion into the squawk feed (Telegram mirror) instead of the Floor
+      await supabase.from('live_squawk').insert({ 
+        message: messageText,
+        tag: 'Alert' 
       })
     } catch(err) { console.error(err) }
-    finally { setIsPostingFloor(false) }
+    finally { setIsPostingComms(false) }
   }
 
   const handleCommsSubmit = async () => {
     if (!commsMessage.trim()) return
     setIsPostingComms(true)
-    // Removed tag entirely from insertion logic
     await supabase.from('live_squawk').insert({ message: commsMessage })
     setCommsMessage('')
     setIsPostingComms(false)
@@ -289,7 +277,6 @@ export default function AdminFloorControl() {
         </div>
       )}
 
-      {/* 🚨 TIGHTENED LAYOUT SHELL */}
       <div className="w-full bg-[#030303] text-neutral-200 p-2 md:p-4 flex flex-col relative" style={{ height: 'calc(100dvh - 65px)' }}>
         <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
           
@@ -309,10 +296,10 @@ export default function AdminFloorControl() {
                     <Activity size={16} className="text-blue-400" /> Floor Terminal
                   </div>
                   <div className="flex items-center gap-2 pl-4 border-l border-white/[0.1]">
-                    <button onClick={() => handleSessionToggle('open')} disabled={isPostingFloor} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20 transition-colors disabled:opacity-50">
+                    <button onClick={() => handleSessionToggle('open')} disabled={isPostingComms} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20 transition-colors disabled:opacity-50">
                       <Power size={12}/> Open Desk
                     </button>
-                    <button onClick={() => handleSessionToggle('close')} disabled={isPostingFloor} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-colors disabled:opacity-50">
+                    <button onClick={() => handleSessionToggle('close')} disabled={isPostingComms} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-colors disabled:opacity-50">
                       <PowerOff size={12}/> Wrap Desk
                     </button>
                   </div>
@@ -380,7 +367,7 @@ export default function AdminFloorControl() {
                               </div>
                               <div className="bg-[#050505] p-2 rounded-xl border border-white/[0.05] flex-1 min-w-[160px]">
                                 <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest flex justify-between items-center w-full px-1">
-                                  Force Sentiment <input type="checkbox" checked={editingPost.overrideSentiment} onChange={()=>setEditingPost({...editingPost, overrideSentiment: !editingPost.overrideSentiment})} className="accent-blue-500" />
+                                  Force Sentiment <input type="checkbox" checked={editingPost.overrideSentiment} onChange={()=>setEditingPost({...editingPost, overrideSentiment: !editingPost.overrideSentiment})} className="accent-blue-500 w-3 h-3" />
                                 </label>
                                 {editingPost.overrideSentiment && (
                                    <input type="range" min="0" max="100" value={editingPost.admin_align_pct} onChange={e=>setEditingPost({...editingPost, admin_align_pct: Number(e.target.value)})} className="w-full mt-2 h-1 bg-white/[0.2] rounded-full appearance-none accent-blue-500" />
