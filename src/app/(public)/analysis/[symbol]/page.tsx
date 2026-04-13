@@ -1,7 +1,8 @@
 import { Metadata, ResolvingMetadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
-import { Lock, TrendingUp, TrendingDown, Minus, Shield, Users, Unlock } from 'lucide-react'
+import { Lock, TrendingUp, TrendingDown, Minus, Shield, Users, Unlock, Clock, ArrowRight, Activity } from 'lucide-react'
 
 // Cache this page for 1 hour so it loads instantly for visitors
 export const revalidate = 3600;
@@ -71,11 +72,28 @@ export async function generateMetadata(
   }
 }
 
+// Helper to format "Today", "Yesterday", or Date
+function formatRelativeDate(dateString: string) {
+  const date = new Date(dateString);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return `Today at ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return `Yesterday at ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+  } else {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+}
+
 // 2. THE PAGE UI
 export default async function PublicAnalysisTeaser({ params }: Props) {
   const resolvedParams = await params
   const symbol = resolvedParams.symbol.toUpperCase()
 
+  // Fetch the main setup
   const { data: setup, error } = await supabase
     .from('analyses')
     .select('*')
@@ -83,6 +101,25 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
     .order('created_at', { ascending: false })
     .limit(1)
     .single()
+
+  // 🚨 SEO BOOST: Fetch other recent analyses for internal linking and UX navigation
+  const { data: rawRecent } = await supabase
+    .from('analyses')
+    .select('asset_symbol, timeframe, created_at, bias')
+    .neq('asset_symbol', symbol) // Don't show the one we are currently looking at
+    .order('created_at', { ascending: false })
+    .limit(15);
+
+  // Filter to get only the latest unique symbols for the bottom grid
+  const recentSetups = [];
+  const seenSymbols = new Set();
+  for (const item of (rawRecent || [])) {
+    if (!seenSymbols.has(item.asset_symbol)) {
+      seenSymbols.add(item.asset_symbol);
+      recentSetups.push(item);
+      if (recentSetups.length === 3) break; // Limit to 3 cards
+    }
+  }
 
   if (error || !setup) {
     return (
@@ -98,20 +135,25 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
   const isBull = setup.bias?.toUpperCase() === 'BULLISH'
   const isBear = setup.bias?.toUpperCase() === 'BEARISH'
   
-  // Admin Control: Default to locked to protect content unless explicitly set to false
   const isLocked = setup.is_locked !== false; 
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans pt-24 pb-20 px-6">
+    <div className="min-h-screen bg-[#050505] text-white font-sans pt-24 pb-20 px-6 selection:bg-blue-500/30 selection:text-white">
       <div className="max-w-5xl mx-auto">
         
-        {/* Header */}
+        {/* Header with Exact Context */}
         <div className="mb-10 text-center md:text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-full mb-4">
+            <Activity size={12} className="text-blue-400" />
+            <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">
+              Latest Release: {formatRelativeDate(setup.created_at)}
+            </span>
+          </div>
           <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic">
             {symbol} <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Analysis</span>
           </h1>
-          <p className="text-neutral-500 mt-2 font-bold uppercase tracking-widest text-sm">
-            Live Market Overview & Institutional Confluence • {new Date(setup.created_at).toLocaleDateString()}
+          <p className="text-neutral-500 mt-2 font-bold uppercase tracking-widest text-sm flex items-center justify-center md:justify-start gap-2">
+            Institutional Market Structure
           </p>
         </div>
 
@@ -131,7 +173,7 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
                 </span>
               </div>
 
-              {/* Dynamic Chart Rendering (FIXED NEXT.JS IMAGE ISSUE) */}
+              {/* Dynamic Chart Rendering */}
               <div className="relative aspect-video bg-[#111] overflow-hidden flex items-center justify-center">
                 {setup.image_url ? (
                   <img 
@@ -160,7 +202,7 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
                       Unlock for $29/mo
                     </Link>
                     <p className="mt-4 text-[9px] font-bold text-cyan-400 uppercase tracking-widest animate-pulse">
-                      Founding Cohort strictly capped at 20 members.
+                      Founding Cohort strictly capped at 150 members.
                     </p>
                   </div>
                 )}
@@ -203,8 +245,51 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
               </div>
             </div>
           </div>
-
         </div>
+
+        {/* 🚨 SEO & UX ADDITION: Recent Market Intelligence Grid */}
+        {recentSetups.length > 0 && (
+          <div className="mt-20 pt-12 border-t border-zinc-800/50">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-xl font-black uppercase tracking-widest text-white">Recent Market Intelligence</h2>
+              <Link href="/" className="text-[10px] font-bold text-neutral-500 hover:text-white transition-colors uppercase tracking-widest flex items-center gap-1">
+                View All <ArrowRight size={12} />
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {recentSetups.map((recent, idx) => (
+                <Link 
+                  key={idx} 
+                  href={`/analysis/${recent.asset_symbol.toLowerCase()}`}
+                  className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 rounded-2xl p-6 transition-all group flex flex-col"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <h3 className="text-lg font-black text-white group-hover:text-blue-400 transition-colors">{recent.asset_symbol}</h3>
+                    <span className="bg-zinc-900 border border-zinc-800 px-2 py-1 rounded text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                      {recent.timeframe}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-auto pt-4 border-t border-zinc-800/50">
+                    <span className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 ${
+                      recent.bias?.toUpperCase() === 'BULLISH' ? 'text-emerald-500' : 
+                      recent.bias?.toUpperCase() === 'BEARISH' ? 'text-red-500' : 'text-zinc-500'
+                    }`}>
+                      {recent.bias?.toUpperCase() === 'BULLISH' ? <TrendingUp size={12} /> : 
+                       recent.bias?.toUpperCase() === 'BEARISH' ? <TrendingDown size={12} /> : <Minus size={12} />}
+                      {recent.bias || 'NEUTRAL'}
+                    </span>
+                    <span className="text-[10px] font-medium text-zinc-500 flex items-center gap-1">
+                      <Clock size={10} /> {formatRelativeDate(recent.created_at)}
+                    </span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        
       </div>
     </div>
   )
