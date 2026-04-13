@@ -8,7 +8,7 @@ import {
   Clock, Search, ExternalLink, Image as ImageIcon, Minus, 
   Target, CheckCircle2, LayoutList, Star, 
   UploadCloud, Loader2, Shield, SplitSquareHorizontal,
-  Lock, Unlock, Save // 🚨 Added new icons for the controls
+  Lock, Unlock, Save, FileText, Maximize2, X
 } from 'lucide-react'
 
 export default function AdminAnalysisPage() {
@@ -23,7 +23,10 @@ export default function AdminAnalysisPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
 
-  // 🚨 New state variables for Notes editing
+  // Modals State
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false)
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false)
+
   const [localNotes, setLocalNotes] = useState('')
   const [isSavingNotes, setIsSavingNotes] = useState(false)
 
@@ -165,7 +168,6 @@ export default function AdminAnalysisPage() {
     }
   }
 
-  // 🚨 NEW: Toggle Lock Status Logic
   const toggleLockStatus = async (id: string, currentStatus: boolean) => {
     const newStatus = !currentStatus;
     setSetups(prev => prev.map(s => s.id === id ? { ...s, is_locked: newStatus } : s));
@@ -176,7 +178,6 @@ export default function AdminAnalysisPage() {
     }
   }
 
-  // 🚨 NEW: Save Notes Logic
   const saveNotes = async (id: string) => {
     setIsSavingNotes(true);
     const { error } = await supabase.from('analyses').update({ notes: localNotes }).eq('id', id);
@@ -184,6 +185,7 @@ export default function AdminAnalysisPage() {
       alert("Failed to save notes.");
     } else {
       setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: localNotes } : s));
+      setIsNotesModalOpen(false); // Close modal on save
     }
     setIsSavingNotes(false);
   }
@@ -197,16 +199,11 @@ export default function AdminAnalysisPage() {
 
   useEffect(() => { 
     setPreviewMode('before')
-    // 🚨 Sync local notes state when setup changes
     if (selectedSetup) {
       setLocalNotes(selectedSetup.notes || '');
     }
   }, [selectedSetupId, selectedSetup?.notes])
 
-
-  // ==========================================
-  // RENDER: LOADING STATE
-  // ==========================================
 
   if (loading) {
     return (
@@ -216,10 +213,6 @@ export default function AdminAnalysisPage() {
       </div>
     )
   }
-
-  // ==========================================
-  // RENDER: MAIN LAYOUT
-  // ==========================================
 
   return (
     <div className="flex flex-col h-[calc(100vh-70px)] max-w-[1600px] mx-auto p-4 md:p-6 bg-zinc-950 animate-in fade-in duration-500">
@@ -252,9 +245,8 @@ export default function AdminAnalysisPage() {
       <div className="flex flex-col flex-1 gap-6 min-h-0 overflow-hidden lg:flex-row">
         
         {/* --- LEFT COLUMN: SETUP LIST --- */}
-        <div className="flex flex-col shrink-0 w-full lg:w-1/3 xl:w-1/4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl overflow-hidden">
+        <div className="flex flex-col shrink-0 w-full lg:w-[320px] xl:w-[380px] bg-zinc-900/50 border border-zinc-800/50 rounded-xl overflow-hidden">
           
-          {/* Search Bar */}
           <div className="p-4 border-b border-zinc-800/50 shrink-0">
             <div className="relative">
               <Search className="absolute text-zinc-500 -translate-y-1/2 left-3 top-1/2" size={16} />
@@ -268,7 +260,6 @@ export default function AdminAnalysisPage() {
             </div>
           </div>
 
-          {/* List Items */}
           <div className="flex-1 overflow-y-auto custom-scrollbar">
             <div className="p-2 space-y-1">
               {filteredSetups.length === 0 ? (
@@ -288,7 +279,6 @@ export default function AdminAnalysisPage() {
                   if (status === 'invalid') statusColor = "bg-red-500/10 text-red-400"
                   if (status === 'archived') statusColor = "bg-zinc-800/50 text-zinc-500 border border-zinc-800"
 
-                  // Treat null/undefined as true (locked) to be safe
                   const isLockedIcon = setup.is_locked !== false; 
 
                   return (
@@ -296,7 +286,7 @@ export default function AdminAnalysisPage() {
                       key={setup.id}
                       onClick={() => setSelectedSetupId(setup.id)}
                       className={`flex flex-col p-3 rounded-lg cursor-pointer transition-all ${
-                        isSelected ? 'bg-zinc-800/80 shadow-sm' : 'hover:bg-zinc-800/40 text-zinc-400'
+                        isSelected ? 'bg-zinc-800/80 shadow-sm border border-zinc-700/50' : 'hover:bg-zinc-800/40 text-zinc-400 border border-transparent'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
@@ -304,23 +294,23 @@ export default function AdminAnalysisPage() {
                           <span className={`text-sm font-semibold ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>
                             {setup.asset_symbol}
                           </span>
-                          <span className="text-xs font-medium text-zinc-500 bg-zinc-950 px-1.5 py-0.5 rounded-md border border-zinc-800/50">
+                          <span className="text-[10px] font-medium text-zinc-500 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800/50">
                             {setup.timeframe}
                           </span>
                         </div>
-                        <div className={`text-[10px] font-bold px-2 py-0.5 rounded-md uppercase tracking-wider ${statusColor}`}>
+                        <div className={`text-[9px] font-bold px-2 py-0.5 rounded uppercase tracking-wider ${statusColor}`}>
                           {status}
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 shrink-0">
-                          {setup.tier_access === 'free' && <Shield size={14} className="text-emerald-500/80" />}
-                          {setup.is_featured && <Star size={14} className="text-amber-500/80 fill-amber-500/20" />}
-                          {setup.is_prime && <Target size={14} className="text-blue-500/80" />}
-                          {!isLockedIcon && <Unlock size={14} className="text-emerald-400/80" />}
+                          {setup.tier_access === 'free' && <Shield size={12} className="text-emerald-500/80" />}
+                          {setup.is_featured && <Star size={12} className="text-amber-500/80 fill-amber-500/20" />}
+                          {setup.is_prime && <Target size={12} className="text-blue-500/80" />}
+                          {!isLockedIcon && <Unlock size={12} className="text-emerald-400/80" />}
                         </div>
-                        <div className="text-xs text-zinc-500">
+                        <div className="text-[10px] text-zinc-500">
                           {new Date(setup.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                         </div>
                       </div>
@@ -332,215 +322,201 @@ export default function AdminAnalysisPage() {
           </div>
         </div>
 
-        {/* --- RIGHT COLUMN: VIEWPORT & CONTROLS --- */}
-        <div className="flex flex-col flex-1 min-w-0 bg-zinc-900/30 border border-zinc-800/50 rounded-xl overflow-hidden relative">
+        {/* --- RIGHT COLUMN: COMPACT VIEWPORT & SIDEBAR CONTROLS --- */}
+        <div className="flex flex-col flex-1 min-w-0 bg-zinc-950 rounded-xl overflow-hidden relative">
           {selectedSetup ? (
-            <div className="flex flex-col h-full overflow-y-auto custom-scrollbar">
+            <div className="flex flex-col lg:flex-row h-full overflow-y-auto custom-scrollbar border border-zinc-800/50 rounded-xl">
               
-              {/* TOP SPLIT: IMAGE (Left) & CONTROLS (Right) */}
-              <div className="flex flex-col xl:flex-row border-b border-zinc-800/50 min-h-[400px]">
-                
-                {/* 1. Left Side: Stable Image Viewer */}
-                <div className="flex-1 relative bg-zinc-950 min-h-[350px] xl:border-r border-zinc-800/50 group overflow-hidden flex items-center justify-center">
-                  
-                  {selectedSetup.after_image_url && (
-                    <div className="absolute z-20 flex p-1 overflow-hidden border rounded-lg top-4 left-4 bg-zinc-900/90 backdrop-blur border-zinc-700/50">
-                      <button 
-                        onClick={() => setPreviewMode('before')}
-                        className={`px-4 py-1.5 text-xs font-medium transition-colors rounded-md ${previewMode === 'before' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
-                      >
-                        Before
-                      </button>
-                      <button 
-                        onClick={() => setPreviewMode('after')}
-                        className={`px-4 py-1.5 text-xs font-medium transition-colors rounded-md ${previewMode === 'after' ? 'bg-zinc-700 text-emerald-400' : 'text-zinc-400 hover:text-emerald-400'}`}
-                      >
-                        After
-                      </button>
-                    </div>
-                  )}
-
-                  {selectedSetup.image_url ? (
-                    <img 
-                      src={previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url} 
-                      alt="Chart Setup" 
-                      className="object-contain w-full h-full p-6 transition-opacity duration-300" 
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center text-zinc-700">
-                      <ImageIcon className="w-12 h-12 mb-2 opacity-50" />
-                      <span className="text-sm">No chart uploaded</span>
-                    </div>
-                  )}
-                  
-                  <div className="absolute z-20 flex gap-2 top-4 right-4">
-                    <button 
-                      onClick={() => window.open(previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url, '_blank')} 
-                      className="p-2 transition-colors rounded-lg bg-zinc-900/80 backdrop-blur border border-zinc-700/50 text-zinc-400 hover:text-zinc-100" 
-                      title="Open in new tab"
-                    >
-                      <ExternalLink size={16} />
-                    </button>
-                  </div>
-                </div>
-
-                {/* 2. Right Side: Control Column */}
-                <div className="w-full xl:w-[360px] shrink-0 flex flex-col bg-zinc-900/20">
-                  
-                  {/* Header & Actions */}
-                  <div className="p-6 border-b border-zinc-800/50">
-                    <div className="flex items-start justify-between mb-4">
-                      <div>
-                        <h3 className="text-2xl font-bold text-zinc-100 mb-1">
-                          {selectedSetup.asset_symbol}
-                        </h3>
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 bg-zinc-800 text-zinc-300 rounded text-xs font-medium">
-                            {selectedSetup.timeframe}
-                          </span>
-                          <span className="flex items-center gap-1.5 px-2 py-0.5 bg-zinc-950 border border-zinc-800 text-zinc-300 rounded text-xs font-medium capitalize">
-                            {selectedSetup.bias?.toLowerCase() === 'bullish' ? <TrendingUp size={12} className="text-emerald-400"/> : selectedSetup.bias?.toLowerCase() === 'bearish' ? <TrendingDown size={12} className="text-red-400"/> : <Minus size={12} className="text-zinc-500" />}
-                            {selectedSetup.bias || 'Neutral'}
-                          </span>
+              {/* CENTRAL VIEW: Image & Notes Button */}
+              <div className="flex-1 flex flex-col p-4 lg:p-6 lg:border-r border-zinc-800/50 overflow-y-auto">
+                 
+                 {/* Compact Image Viewer */}
+                 <div 
+                   onClick={() => selectedSetup.image_url && setIsImageModalOpen(true)}
+                   className="relative w-full bg-zinc-900 border border-zinc-800/50 rounded-xl aspect-[16/9] max-h-[350px] flex items-center justify-center overflow-hidden group cursor-pointer shadow-inner mb-4"
+                 >
+                    {selectedSetup.image_url ? (
+                      <>
+                        <img 
+                          src={previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url} 
+                          alt="Chart Setup" 
+                          className="object-contain w-full h-full p-2" 
+                        />
+                        <div className="absolute inset-0 bg-zinc-950/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-[2px]">
+                           <span className="flex items-center gap-2 bg-zinc-100 text-zinc-900 px-4 py-2 rounded-lg font-bold text-sm shadow-xl">
+                             <Maximize2 size={16} /> Click to Enlarge
+                           </span>
                         </div>
+                        
+                        {/* Before/After Toggles inside Image */}
+                        {selectedSetup.after_image_url && (
+                          <div className="absolute z-20 flex p-1 overflow-hidden border rounded-lg bottom-3 left-3 bg-zinc-900/90 backdrop-blur border-zinc-700/50" onClick={(e) => e.stopPropagation()}>
+                            <button 
+                              onClick={() => setPreviewMode('before')}
+                              className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-md ${previewMode === 'before' ? 'bg-zinc-700 text-white' : 'text-zinc-400 hover:text-zinc-200'}`}
+                            >
+                              Before
+                            </button>
+                            <button 
+                              onClick={() => setPreviewMode('after')}
+                              className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors rounded-md ${previewMode === 'after' ? 'bg-zinc-700 text-emerald-400' : 'text-zinc-400 hover:text-emerald-400'}`}
+                            >
+                              After
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center text-zinc-600">
+                        <ImageIcon className="w-10 h-10 mb-2 opacity-50" />
+                        <span className="text-xs font-medium uppercase tracking-widest">No chart uploaded</span>
                       </div>
-                      
-                      <div className="flex gap-1.5 shrink-0">
-                        <button onClick={() => router.push(`/admin/analysis/${selectedSetup.id}/edit`)} className="p-2 transition-colors rounded-lg bg-zinc-800/50 hover:bg-zinc-700 text-zinc-400 hover:text-zinc-100">
-                          <Edit2 size={16}/>
-                        </button>
-                        <button onClick={() => handleDelete(selectedSetup.id, selectedSetup.asset_symbol)} className="p-2 transition-colors rounded-lg bg-zinc-800/50 hover:bg-red-500/20 text-zinc-400 hover:text-red-400">
-                          <Trash2 size={16}/>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                    )}
+                 </div>
 
-                  {/* Toggles Column */}
-                  <div className="flex flex-col flex-1 p-6 gap-6">
-                    
-                    {/* Tier Access */}
-                    <div>
-                      <h4 className="text-sm font-medium text-zinc-400 mb-2">Content Tier</h4>
-                      <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800/50">
-                        <button onClick={() => updateTierAccess(selectedSetup.id, 'free')} className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${selectedSetup.tier_access === 'free' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>Free</button>
-                        <button onClick={() => updateTierAccess(selectedSetup.id, 'pro')} className={`flex-1 py-1.5 text-sm font-medium rounded-md transition-all ${selectedSetup.tier_access !== 'free' ? 'bg-zinc-800 text-blue-400 shadow-sm' : 'text-zinc-500 hover:text-zinc-300'}`}>Pro</button>
-                      </div>
-                    </div>
-
-                    {/* Prime Badge */}
-                    <div>
-                      <h4 className="text-sm font-medium text-zinc-400 mb-2">Priority Alert</h4>
-                      <button
-                        onClick={() => togglePrimeStatus(selectedSetup.id, selectedSetup.asset_symbol, selectedSetup.is_prime)}
-                        className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                          selectedSetup.is_prime
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                            : 'bg-zinc-800/50 text-zinc-300 border border-zinc-700/50 hover:bg-zinc-800'
-                        }`}
-                      >
-                        <Target size={16} className={selectedSetup.is_prime ? "text-blue-400" : "text-zinc-500"}/>
-                        {selectedSetup.is_prime ? 'Prime Active' : 'Set as Prime'}
-                      </button>
-                    </div>
-
-                    {/* Featured Status */}
-                    <div>
-                      <h4 className="text-sm font-medium text-zinc-400 mb-2">Public Display</h4>
-                      <button
-                        onClick={() => toggleFeaturedStatus(selectedSetup.id, selectedSetup.asset_symbol, selectedSetup.is_featured)}
-                        className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                          selectedSetup.is_featured
-                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                            : 'bg-zinc-800/50 text-zinc-300 border border-zinc-700/50 hover:bg-zinc-800'
-                        }`}
-                      >
-                        {selectedSetup.after_image_url ? <SplitSquareHorizontal size={16} className="text-emerald-400"/> : <Star size={16} className={selectedSetup.is_featured ? "text-amber-400" : "text-zinc-500"}/>}
-                        {selectedSetup.is_featured ? 'Featured on Home' : 'Push to Homepage'}
-                      </button>
-                    </div>
-
-                    {/* 🚨 NEW: Access Control (Lock/Unlock) */}
-                    <div>
-                      <h4 className="text-sm font-medium text-zinc-400 mb-2">Access Control</h4>
-                      <button
-                        onClick={() => toggleLockStatus(selectedSetup.id, selectedSetup.is_locked !== false)}
-                        className={`w-full py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-                          selectedSetup.is_locked !== false
-                            ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-                            : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                        }`}
-                      >
-                        {selectedSetup.is_locked !== false ? <Lock size={16} /> : <Unlock size={16} />}
-                        {selectedSetup.is_locked !== false ? 'Locked (Paywall)' : 'Public (Free)'}
-                      </button>
-                    </div>
-
-                  </div>
-                </div>
+                 {/* Notes Button */}
+                 <button 
+                   onClick={() => setIsNotesModalOpen(true)}
+                   className="w-full flex items-center justify-between p-4 bg-blue-500/5 border border-blue-500/20 hover:bg-blue-500/10 rounded-xl transition-all text-blue-400 group"
+                 >
+                   <div className="flex items-center gap-3">
+                     <div className="p-2 bg-blue-500/10 rounded-lg group-hover:scale-110 transition-transform">
+                       <FileText size={18} className="text-blue-400" />
+                     </div>
+                     <div className="text-left">
+                       <p className="text-sm font-bold text-zinc-200">Structural Notes</p>
+                       <p className="text-xs text-zinc-500 line-clamp-1 max-w-[300px]">
+                         {selectedSetup.notes ? selectedSetup.notes : "Click to add or edit thesis notes..."}
+                       </p>
+                     </div>
+                   </div>
+                   <Edit2 size={16} className="text-zinc-500 group-hover:text-blue-400" />
+                 </button>
               </div>
 
-              {/* BOTTOM SPLIT: NOTES & STATUS */}
-              <div className="p-6 md:p-8 flex flex-col xl:flex-row gap-8">
-                
-                {/* 🚨 NEW: Interactive Notes Section */}
-                <div className="flex-1 flex flex-col">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-zinc-400">Structural Notes</h4>
-                    <button
-                      onClick={() => saveNotes(selectedSetup.id)}
-                      disabled={isSavingNotes || localNotes === (selectedSetup.notes || '')}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 rounded-md transition-all shadow-sm"
-                    >
-                      {isSavingNotes ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                      Save Notes
-                    </button>
-                  </div>
-                  <textarea 
-                    value={localNotes}
-                    onChange={(e) => setLocalNotes(e.target.value)}
-                    placeholder="Enter detailed structural breakdown here... (e.g. Identifying liquidity grabs, order blocks, and directional bias.)"
-                    className="flex-1 w-full bg-zinc-950 p-4 rounded-xl border border-zinc-800/50 min-h-[160px] text-sm text-zinc-300 resize-none focus:outline-none focus:border-blue-500/50 transition-colors custom-scrollbar"
-                  />
-                </div>
+              {/* RIGHT SIDEBAR: Controls & Settings */}
+              <div className="w-full lg:w-[340px] shrink-0 bg-zinc-900/30 overflow-y-auto custom-scrollbar">
+                 <div className="p-5 border-b border-zinc-800/50">
+                    <div className="flex items-start justify-between mb-1">
+                      <h3 className="text-xl font-bold text-zinc-100">{selectedSetup.asset_symbol}</h3>
+                      <div className="flex gap-1.5 shrink-0">
+                        <button onClick={() => router.push(`/admin/analysis/${selectedSetup.id}/edit`)} className="p-1.5 transition-colors rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white" title="Edit Setup">
+                          <Edit2 size={14}/>
+                        </button>
+                        <button onClick={() => handleDelete(selectedSetup.id, selectedSetup.asset_symbol)} className="p-1.5 transition-colors rounded-md bg-zinc-800 hover:bg-red-500/20 text-zinc-400 hover:text-red-400" title="Delete Setup">
+                          <Trash2 size={14}/>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-1.5 py-0.5 bg-zinc-800 text-zinc-300 rounded text-[10px] font-bold tracking-wider uppercase">
+                        {selectedSetup.timeframe}
+                      </span>
+                      <span className="flex items-center gap-1 px-1.5 py-0.5 bg-zinc-950 border border-zinc-800 text-zinc-300 rounded text-[10px] font-bold tracking-wider uppercase">
+                        {selectedSetup.bias?.toLowerCase() === 'bullish' ? <TrendingUp size={12} className="text-emerald-400"/> : selectedSetup.bias?.toLowerCase() === 'bearish' ? <TrendingDown size={12} className="text-red-400"/> : <Minus size={12} className="text-zinc-500" />}
+                        {selectedSetup.bias || 'NEUTRAL'}
+                      </span>
+                    </div>
+                 </div>
 
-                {/* Status Update */}
-                <div className="w-full xl:w-[450px] shrink-0">
-                  <h4 className="text-sm font-medium text-zinc-400 mb-3">Set Live Status</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {['WAITING', 'ACTIVE', 'DONE', 'INVALID', 'CANCELED', 'ARCHIVED'].map((statusOption) => {
-                      const isActive = (selectedSetup.status || 'WAITING').toUpperCase() === statusOption;
-                      
-                      let activeClasses = "bg-zinc-700 text-white"; 
-                      if (statusOption === 'WAITING') activeClasses = "bg-amber-500/10 text-amber-400 border-amber-500/30";
-                      if (statusOption === 'ACTIVE') activeClasses = "bg-blue-500/10 text-blue-400 border-blue-500/30";
-                      if (statusOption === 'DONE') activeClasses = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
-                      if (statusOption === 'INVALID') activeClasses = "bg-red-500/10 text-red-400 border-red-500/30";
-                      if (statusOption === 'CANCELED') activeClasses = "bg-zinc-800 text-zinc-300 border-zinc-600";
-                      if (statusOption === 'ARCHIVED') activeClasses = "bg-zinc-800/80 text-zinc-400 border-zinc-600";
+                 <div className="p-5 space-y-6">
+                    
+                    {/* Compact Status Grid */}
+                    <div>
+                      <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Live Status</h4>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['WAITING', 'ACTIVE', 'DONE', 'INVALID', 'CANCELED', 'ARCHIVED'].map((statusOption) => {
+                          const isActive = (selectedSetup.status || 'WAITING').toUpperCase() === statusOption;
+                          
+                          let activeClasses = "bg-zinc-700 text-white"; 
+                          if (statusOption === 'WAITING') activeClasses = "bg-amber-500/10 text-amber-400 border-amber-500/30";
+                          if (statusOption === 'ACTIVE') activeClasses = "bg-blue-500/10 text-blue-400 border-blue-500/30";
+                          if (statusOption === 'DONE') activeClasses = "bg-emerald-500/10 text-emerald-400 border-emerald-500/30";
+                          if (statusOption === 'INVALID') activeClasses = "bg-red-500/10 text-red-400 border-red-500/30";
+                          if (statusOption === 'CANCELED') activeClasses = "bg-zinc-800 text-zinc-300 border-zinc-600";
+                          if (statusOption === 'ARCHIVED') activeClasses = "bg-zinc-800/80 text-zinc-400 border-zinc-600";
 
-                      return (
-                        <button 
-                          key={statusOption}
-                          onClick={() => updateSetupStatus(selectedSetup.id, statusOption)} 
-                          className={`px-4 py-2 rounded-lg text-[10px] font-bold tracking-wider uppercase transition-all border ${
-                            isActive 
-                              ? activeClasses 
-                              : 'bg-zinc-950 text-zinc-500 border-zinc-800/50 hover:bg-zinc-900 hover:text-zinc-300'
+                          return (
+                            <button 
+                              key={statusOption}
+                              onClick={() => updateSetupStatus(selectedSetup.id, statusOption)} 
+                              className={`py-2 rounded text-[9px] font-bold tracking-wider uppercase transition-all border ${
+                                isActive 
+                                  ? activeClasses 
+                                  : 'bg-zinc-950 text-zinc-500 border-zinc-800/50 hover:bg-zinc-800 hover:text-zinc-300'
+                              }`}
+                            >
+                              {statusOption.slice(0,4)}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Settings Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* Tier Access */}
+                      <div className="col-span-2">
+                        <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Content Tier</h4>
+                        <div className="flex bg-zinc-950 p-1 rounded-lg border border-zinc-800/50">
+                          <button onClick={() => updateTierAccess(selectedSetup.id, 'free')} className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-widest rounded-md transition-all ${selectedSetup.tier_access === 'free' ? 'bg-zinc-800 text-zinc-100 shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}>Free</button>
+                          <button onClick={() => updateTierAccess(selectedSetup.id, 'pro')} className={`flex-1 py-1.5 text-xs font-bold uppercase tracking-widest rounded-md transition-all ${selectedSetup.tier_access !== 'free' ? 'bg-blue-600 text-white shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}>Pro</button>
+                        </div>
+                      </div>
+
+                      {/* Lock Toggle */}
+                      <div className="col-span-2">
+                        <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Paywall</h4>
+                        <button
+                          onClick={() => toggleLockStatus(selectedSetup.id, selectedSetup.is_locked !== false)}
+                          className={`w-full py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-2 border ${
+                            selectedSetup.is_locked !== false
+                              ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                              : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                           }`}
                         >
-                          {statusOption === 'ARCHIVED' ? 'OLD/ARCHIVED' : statusOption}
+                          {selectedSetup.is_locked !== false ? <><Lock size={14} /> Locked</> : <><Unlock size={14} /> Public</>}
                         </button>
-                      )
-                    })}
-                  </div>
-                </div>
+                      </div>
 
+                      {/* Prime Badge */}
+                      <div className="col-span-1">
+                        <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Priority</h4>
+                        <button
+                          onClick={() => togglePrimeStatus(selectedSetup.id, selectedSetup.asset_symbol, selectedSetup.is_prime)}
+                          className={`w-full py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 border ${
+                            selectedSetup.is_prime
+                              ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                              : 'bg-zinc-950 text-zinc-500 border-zinc-800/50 hover:bg-zinc-800'
+                          }`}
+                        >
+                          <Target size={14} /> Prime
+                        </button>
+                      </div>
+
+                      {/* Featured Status */}
+                      <div className="col-span-1">
+                        <h4 className="text-xs font-semibold text-zinc-400 mb-2 uppercase tracking-widest">Home Pg</h4>
+                        <button
+                          onClick={() => toggleFeaturedStatus(selectedSetup.id, selectedSetup.asset_symbol, selectedSetup.is_featured)}
+                          className={`w-full py-2.5 rounded-lg text-xs font-bold uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 border ${
+                            selectedSetup.is_featured
+                              ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                              : 'bg-zinc-950 text-zinc-500 border-zinc-800/50 hover:bg-zinc-800'
+                          }`}
+                        >
+                          {selectedSetup.after_image_url ? <SplitSquareHorizontal size={14} /> : <Star size={14}/>}
+                          Feature
+                        </button>
+                      </div>
+
+                    </div>
+                 </div>
               </div>
 
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center flex-1 p-12 text-center text-zinc-500">
+            <div className="flex flex-col items-center justify-center flex-1 p-12 text-center text-zinc-500 border border-zinc-800/50 rounded-xl">
               <Target size={40} className="mb-3 opacity-20" />
               <p className="text-base font-medium text-zinc-400">No Setup Selected</p>
               <p className="text-sm mt-1">Select an item from the sidebar to review.</p>
@@ -550,9 +526,77 @@ export default function AdminAnalysisPage() {
 
       </div>
 
+      {/* --- IMAGE LIGHTBOX MODAL --- */}
+      {isImageModalOpen && selectedSetup && (
+        <div className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center p-4 backdrop-blur-md animate-in fade-in duration-200">
+          <button 
+            onClick={() => setIsImageModalOpen(false)} 
+            className="absolute top-4 right-4 md:top-6 md:right-6 p-3 bg-zinc-900 text-white rounded-full hover:bg-zinc-800 transition-colors shadow-2xl"
+          >
+            <X size={24}/>
+          </button>
+          
+          <img 
+            src={previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url} 
+            alt="Full Preview" 
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+          />
+
+          <div className="absolute bottom-6 flex gap-2">
+            <button 
+              onClick={() => window.open(previewMode === 'before' ? selectedSetup.image_url : selectedSetup.after_image_url, '_blank')} 
+              className="flex items-center gap-2 px-6 py-3 bg-zinc-900 text-white font-bold rounded-lg hover:bg-zinc-800 transition-colors shadow-2xl border border-zinc-800"
+            >
+              <ExternalLink size={18} /> Open Original
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* --- NOTES EDITOR MODAL --- */}
+      {isNotesModalOpen && selectedSetup && (
+        <div className="fixed inset-0 z-[150] bg-black/80 flex items-center justify-center p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-2xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b border-zinc-800 bg-zinc-900/50">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <FileText size={18} className="text-blue-500"/> Structural Notes: {selectedSetup.asset_symbol}
+              </h3>
+              <button onClick={() => setIsNotesModalOpen(false)} className="text-zinc-400 hover:text-white transition-colors">
+                <X size={20}/>
+              </button>
+            </div>
+            
+            <div className="p-4">
+              <textarea 
+                value={localNotes}
+                onChange={(e) => setLocalNotes(e.target.value)}
+                placeholder="Enter detailed structural breakdown here... (e.g. Identifying liquidity grabs, order blocks, and directional bias.)"
+                className="w-full bg-zinc-900 p-4 rounded-xl border border-zinc-800 min-h-[250px] text-sm text-zinc-300 resize-none focus:outline-none focus:border-blue-500/50 transition-colors custom-scrollbar"
+              />
+            </div>
+
+            <div className="p-4 border-t border-zinc-800 bg-zinc-900/50 flex justify-end gap-3">
+              <button 
+                onClick={() => setIsNotesModalOpen(false)}
+                className="px-6 py-2.5 rounded-lg text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => saveNotes(selectedSetup.id)}
+                disabled={isSavingNotes || localNotes === (selectedSetup.notes || '')}
+                className="flex items-center justify-center min-w-[120px] px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-bold tracking-wide hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500"
+              >
+                {isSavingNotes ? <Loader2 size={16} className="animate-spin" /> : "Save Notes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- CONFIRMATION MODAL --- */}
       {confirmModal.isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl flex flex-col relative overflow-hidden">
             
             <h3 className="mb-2 text-lg font-semibold text-zinc-100">{confirmModal.title}</h3>
