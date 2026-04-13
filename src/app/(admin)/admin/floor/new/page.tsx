@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { createBrowserClient } from '@supabase/ssr'
 import Image from 'next/image'
-import { Activity, Clock, Target, X, ZoomIn, PanelRightClose, PanelRightOpen, Image as ImageIcon, Megaphone, Send, Edit2, Trash2, Shield, FolderSearch, Loader2, Save, PlusCircle, Bell, BellOff } from 'lucide-react'
+import { Activity, Clock, Target, X, ZoomIn, PanelRightClose, PanelRightOpen, Image as ImageIcon, Megaphone, Send, Edit2, Trash2, FolderSearch, Loader2, Save, PlusCircle, Power, PowerOff } from 'lucide-react'
 
 // Lightweight Telegram Markdown to Web HTML Parser
 const formatTelegramText = (text: string) => {
@@ -25,17 +25,30 @@ export default function AdminFloorControl() {
   ))
 
   const [mounted, setMounted] = useState(false)
-  useEffect(() => setMounted(true), [])
-
-  // --- UI STATES ---
-  const [isCommsOpen, setIsCommsOpen] = useState(true)
+  
+  // --- UI STATES (WITH PERSISTENCE) ---
+  const [isCommsOpen, setIsCommsOpen] = useState(false)
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
-  const [notifyTelegram, setNotifyTelegram] = useState(true) // 🚨 NEW: Notification Toggle
-
-  // 🚨 NOTIFICATION STATE
   const [unreadCount, setUnreadCount] = useState(0)
+
+  // Load sidebar state on mount
+  useEffect(() => {
+    setMounted(true)
+    const storedState = localStorage.getItem('adminCommsOpen')
+    if (storedState !== null) setIsCommsOpen(storedState === 'true')
+  }, [])
+
   const isCommsOpenRef = useRef(isCommsOpen)
   useEffect(() => { isCommsOpenRef.current = isCommsOpen }, [isCommsOpen])
+
+  const toggleComms = () => {
+    setIsCommsOpen(prev => {
+      const newState = !prev;
+      localStorage.setItem('adminCommsOpen', String(newState));
+      if (newState) setUnreadCount(0);
+      return newState;
+    });
+  }
 
   // --- REAL-TIME DATA STATES ---
   const [posts, setPosts] = useState<any[]>([])
@@ -60,7 +73,6 @@ export default function AdminFloorControl() {
 
   // --- ADMIN INPUT: RIGHT (TELEGRAM) ---
   const [commsMessage, setCommsMessage] = useState('')
-  const [commsTag, setCommsTag] = useState('')
   const [isPostingComms, setIsPostingComms] = useState(false)
 
   // --- MANAGEMENT / DRAFTS ---
@@ -99,7 +111,7 @@ export default function AdminFloorControl() {
     return () => { supabase.removeChannel(channel) }
   }, [supabase])
 
-  // 🚨 FIXED: Scroll Behavior (Only scroll if open)
+  // Scroll Behavior (Only scroll if open)
   useEffect(() => { 
     if (isCommsOpen) squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) 
   }, [squawks, isCommsOpen])
@@ -135,7 +147,7 @@ export default function AdminFloorControl() {
   }
 
   const handleDeleteSquawk = async (id: string) => {
-    if (!confirm('Delete this Global Comms message permanently?')) return
+    if (!confirm('Delete this Telegram message permanently?')) return
     await supabase.from('live_squawk').delete().eq('id', id)
   }
 
@@ -156,10 +168,7 @@ export default function AdminFloorControl() {
   const handleUpdateSquawk = async () => {
     if (!editingSquawk) return
     setIsUpdating(true)
-    await supabase.from('live_squawk').update({ 
-      message: editingSquawk.message, 
-      tag: editingSquawk.tag 
-    }).eq('id', editingSquawk.id)
+    await supabase.from('live_squawk').update({ message: editingSquawk.message }).eq('id', editingSquawk.id)
     setIsUpdating(false)
     setEditingSquawk(null)
   }
@@ -196,12 +205,9 @@ export default function AdminFloorControl() {
     setImageFile(null); setLibraryImageUrl(null); setImagePreview(null); setTicker('');
   }
 
-  const toggleComms = () => {
-    setIsCommsOpen(!isCommsOpen);
-    if (!isCommsOpen) setUnreadCount(0);
-  }
-
   // --- SUBMISSIONS ---
+
+  // Standard Post (Silent - Floor Only)
   const handleFloorSubmit = async () => {
     if (!thesis.trim()) return alert('Message body is required.')
     if (imagePreview && !ticker.trim()) return alert('Ticker is required when attaching a setup chart.')
@@ -218,36 +224,54 @@ export default function AdminFloorControl() {
       }
 
       const payload = {
-        ticker: (ticker || 'UNKNOWN').toUpperCase(),
-        timeframe: imagePreview ? timeframe : null,
+        ticker: (ticker || 'UPDATE').toUpperCase(),
+        timeframe: imagePreview ? timeframe : 'NOW',
         thesis,
         image_url: finalImageUrl,
         tier_access: imagePreview ? tier : 'free', 
         admin_align_pct: (imagePreview && overrideSentiment) ? adminAlignPct : null
       }
 
-      // 1. Always insert into the Floor (terminal_posts)
       await supabase.from('terminal_posts').insert(payload)
-      
-      // 2. Conditionally broadcast to Telegram
-      if (notifyTelegram) {
-        await fetch('/api/admin/broadcast', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...payload, type: 'manual' }) // Using 'manual' so the API knows it's a quick floor drop
-        }).catch(err => console.error("Telegram broadcast failed", err))
-      }
-
       setThesis(''); clearSetupState(); setOverrideSentiment(false); setAdminAlignPct(75);
     } catch (error: any) { alert(`Failed to post: ${error.message}`) } 
+    finally { setIsPostingFloor(false) }
+  }
+
+  // Session Start/End Broadcaster
+  const handleSessionToggle = async (action: 'open' | 'close') => {
+    const messageText = action === 'open' 
+      ? `🟢 **LIVE DESK ACTIVE**\n\nThe trading floor is now open for the session. Monitoring active setups and market flow.`
+      : `🔴 **SESSION WRAP**\n\nThe trading desk is now closed. Risk management active on open positions.`;
+
+    setIsPostingFloor(true)
+    try {
+      const payload = {
+        ticker: 'SYSTEM',
+        timeframe: 'NOW',
+        thesis: messageText,
+        tier_access: 'free',
+        image_url: null,
+        admin_align_pct: null
+      }
+      // Write to floor
+      await supabase.from('terminal_posts').insert(payload)
+      // Broadcast to TG
+      await fetch('/api/admin/broadcast', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, type: 'manual' }) 
+      })
+    } catch(err) { console.error(err) }
     finally { setIsPostingFloor(false) }
   }
 
   const handleCommsSubmit = async () => {
     if (!commsMessage.trim()) return
     setIsPostingComms(true)
-    await supabase.from('live_squawk').insert({ message: commsMessage, tag: commsTag || null })
-    setCommsMessage(''); setCommsTag('');
+    // Removed tag entirely from insertion logic
+    await supabase.from('live_squawk').insert({ message: commsMessage })
+    setCommsMessage('')
     setIsPostingComms(false)
   }
 
@@ -265,37 +289,10 @@ export default function AdminFloorControl() {
         </div>
       )}
 
-      {/* 🚨 RIGID LAYOUT SHELL */}
-      <div className="w-full bg-[#030303] text-neutral-200 p-4 md:p-6 flex flex-col relative" style={{ height: 'calc(100dvh - 65px)' }}>
+      {/* 🚨 TIGHTENED LAYOUT SHELL */}
+      <div className="w-full bg-[#030303] text-neutral-200 p-2 md:p-4 flex flex-col relative" style={{ height: 'calc(100dvh - 65px)' }}>
         <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
           
-          {/* HEADER */}
-          <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.04] shrink-0">
-            <h1 className="text-xl font-bold text-white flex items-center gap-3 tracking-tight italic uppercase">
-              <Shield className="text-emerald-500 w-5 h-5 not-italic" /> Admin Desk
-            </h1>
-            <div className="flex items-center gap-4">
-              <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
-              </div>
-              
-              {/* 🚨 FIXED TOGGLE BUTTON WITH NOTIFICATION BADGE */}
-              <button 
-                onClick={toggleComms}
-                className="flex relative items-center justify-center text-neutral-400 hover:text-white transition-colors bg-[#111] hover:bg-[#1a1a1a] w-10 h-10 rounded-xl border border-white/[0.04] shadow-sm"
-                title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
-              >
-                {isCommsOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
-                
-                {!isCommsOpen && unreadCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 bg-[#2AABEE] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center border border-[#030303] animate-in zoom-in shadow-md z-20">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-
           <div className="flex-1 flex min-h-0 overflow-hidden h-full">
             
             {/* ==================================================== */}
@@ -303,9 +300,42 @@ export default function AdminFloorControl() {
             {/* ==================================================== */}
             <div className="flex-1 flex flex-col h-full min-w-0 relative transition-all duration-500 ease-in-out bg-[#080808] border border-white/[0.04] rounded-2xl overflow-hidden shadow-xl">
               
-              <div className="px-5 py-4 border-b border-white/[0.04] bg-[#0a0a0a] flex items-center justify-between shrink-0">
-                <div className="flex items-center gap-2 text-sm font-bold text-white">
-                  <Activity size={16} className="text-blue-400" /> Floor Terminal
+              {/* INTEGRATED HEADER */}
+              <div className="px-5 py-3 border-b border-white/[0.04] bg-[#0a0a0a] flex items-center justify-between shrink-0 z-10">
+                
+                {/* Left Controls */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2 text-sm font-bold text-white">
+                    <Activity size={16} className="text-blue-400" /> Floor Terminal
+                  </div>
+                  <div className="flex items-center gap-2 pl-4 border-l border-white/[0.1]">
+                    <button onClick={() => handleSessionToggle('open')} disabled={isPostingFloor} className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-emerald-500/20 transition-colors disabled:opacity-50">
+                      <Power size={12}/> Open Desk
+                    </button>
+                    <button onClick={() => handleSessionToggle('close')} disabled={isPostingFloor} className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-[10px] font-black uppercase tracking-widest rounded-lg border border-red-500/20 transition-colors disabled:opacity-50">
+                      <PowerOff size={12}/> Wrap Desk
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Controls */}
+                <div className="flex items-center gap-4">
+                  <div className="hidden md:flex items-center gap-2 text-[9px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
+                  </div>
+                  
+                  <button 
+                    onClick={toggleComms}
+                    className="flex relative items-center justify-center text-neutral-400 hover:text-white transition-colors bg-[#111] hover:bg-[#1a1a1a] w-8 h-8 rounded-lg border border-white/[0.04] shadow-sm"
+                    title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
+                  >
+                    {isCommsOpen ? <PanelRightClose size={14} /> : <PanelRightOpen size={14} />}
+                    {!isCommsOpen && unreadCount > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 bg-[#2AABEE] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center border border-[#030303] animate-in zoom-in shadow-md z-20">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -317,7 +347,7 @@ export default function AdminFloorControl() {
                     <h3 className="text-sm font-medium tracking-wide text-neutral-400">Awaiting Transmissions</h3>
                   </div>
                 ) : (
-                  <div className="space-y-8 max-w-[900px] mx-auto pb-4">
+                  <div className="space-y-6 max-w-[900px] mx-auto pb-2">
                     {posts.map((post) => {
                       const isSetup = post.image_url && post.image_url.trim() !== ''
                       const isEditing = editingPost?.id === post.id;
@@ -330,41 +360,41 @@ export default function AdminFloorControl() {
                               <Edit2 size={16}/> Editing Active Floor Post
                             </div>
                             
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-5">
-                              <div>
-                                <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-2 block">Ticker</label>
-                                <input type="text" value={editingPost.ticker} onChange={(e) => setEditingPost({...editingPost, ticker: e.target.value.toUpperCase()})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500" required />
+                            <div className="flex flex-wrap gap-4 mb-5">
+                              <div className="flex-1 min-w-[120px]">
+                                <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Ticker</label>
+                                <input type="text" value={editingPost.ticker} onChange={(e) => setEditingPost({...editingPost, ticker: e.target.value.toUpperCase()})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-blue-500" required />
                               </div>
-                              <div>
-                                <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-2 block">Timeframe</label>
-                                <select value={editingPost.timeframe || '1D'} onChange={(e) => setEditingPost({...editingPost, timeframe: e.target.value})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
+                              <div className="flex-1 min-w-[120px]">
+                                <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Timeframe</label>
+                                <select value={editingPost.timeframe || '1D'} onChange={(e) => setEditingPost({...editingPost, timeframe: e.target.value})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
                                   <option value="15M">15M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option>
+                                  <option value="NOW">NOW</option>
                                 </select>
                               </div>
-                              <div>
-                                <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-2 block">Access Tier</label>
-                                <select value={editingPost.tier_access} onChange={e=>setEditingPost({...editingPost, tier_access: e.target.value})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2.5 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
+                              <div className="flex-1 min-w-[120px]">
+                                <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Access Tier</label>
+                                <select value={editingPost.tier_access} onChange={e=>setEditingPost({...editingPost, tier_access: e.target.value})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
                                   <option value="free">Free Preview</option><option value="pro">Pro Exclusive</option>
                                 </select>
                               </div>
-                              <div className="bg-[#050505] p-2.5 rounded-xl border border-white/[0.05]">
-                                <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest flex justify-between items-center w-full">
-                                  Override Sentiment
-                                  <input type="checkbox" checked={editingPost.overrideSentiment} onChange={()=>setEditingPost({...editingPost, overrideSentiment: !editingPost.overrideSentiment})} className="accent-blue-500" />
+                              <div className="bg-[#050505] p-2 rounded-xl border border-white/[0.05] flex-1 min-w-[160px]">
+                                <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest flex justify-between items-center w-full px-1">
+                                  Force Sentiment <input type="checkbox" checked={editingPost.overrideSentiment} onChange={()=>setEditingPost({...editingPost, overrideSentiment: !editingPost.overrideSentiment})} className="accent-blue-500" />
                                 </label>
                                 {editingPost.overrideSentiment && (
-                                   <input type="range" min="0" max="100" value={editingPost.admin_align_pct} onChange={e=>setEditingPost({...editingPost, admin_align_pct: Number(e.target.value)})} className="w-full mt-2.5 h-1 bg-white/[0.2] rounded-full appearance-none accent-blue-500" />
+                                   <input type="range" min="0" max="100" value={editingPost.admin_align_pct} onChange={e=>setEditingPost({...editingPost, admin_align_pct: Number(e.target.value)})} className="w-full mt-2 h-1 bg-white/[0.2] rounded-full appearance-none accent-blue-500" />
                                 )}
                               </div>
                             </div>
                             
-                            <label className="text-[10px] text-neutral-500 uppercase font-bold tracking-widest mb-2 block">Thesis / Breakdown</label>
-                            <textarea value={editingPost.thesis} onChange={(e) => setEditingPost({...editingPost, thesis: e.target.value})} className="w-full h-32 bg-[#050505] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed" required />
+                            <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Thesis / Breakdown</label>
+                            <textarea value={editingPost.thesis} onChange={(e) => setEditingPost({...editingPost, thesis: e.target.value})} className="w-full h-24 bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed" required />
                             
-                            <div className="flex justify-end gap-3 mt-5">
-                              <button onClick={() => setEditingPost(null)} className="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-neutral-400 bg-[#111] hover:bg-[#1a1a1a] border border-white/[0.05] rounded-xl transition-all">Cancel</button>
-                              <button onClick={handleUpdatePost} disabled={isUpdating} className="px-6 py-2.5 text-[10px] font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] disabled:opacity-50">
-                                {isUpdating ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save Post
+                            <div className="flex justify-end gap-3 mt-4">
+                              <button onClick={() => setEditingPost(null)} className="px-5 py-2 text-[9px] font-black uppercase tracking-widest text-neutral-400 bg-[#111] hover:bg-[#1a1a1a] border border-white/[0.05] rounded-xl transition-all">Cancel</button>
+                              <button onClick={handleUpdatePost} disabled={isUpdating} className="px-5 py-2 text-[9px] font-black uppercase tracking-widest text-white bg-blue-600 hover:bg-blue-500 rounded-xl flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(37,99,235,0.4)] disabled:opacity-50">
+                                {isUpdating ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save
                               </button>
                             </div>
                           </div>
@@ -377,69 +407,69 @@ export default function AdminFloorControl() {
                           
                           {/* FLOATING ACTION BUTTONS */}
                           <div className="absolute -top-3 -right-3 z-20 flex items-center gap-1 opacity-0 group-hover/post:opacity-100 transition-opacity bg-[#111] p-1.5 rounded-xl border border-white/[0.1] shadow-2xl">
-                            <button onClick={() => setEditingPost({...post, overrideSentiment: post.admin_align_pct !== null, admin_align_pct: post.admin_align_pct || 75})} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded-md transition-colors"><Edit2 size={14} /></button>
-                            <button onClick={() => handleDeletePost(post.id)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 size={14} /></button>
+                            <button onClick={() => setEditingPost({...post, overrideSentiment: post.admin_align_pct !== null, admin_align_pct: post.admin_align_pct || 75})} className="p-1.5 text-blue-400 hover:bg-blue-500/20 rounded-md transition-colors"><Edit2 size={12} /></button>
+                            <button onClick={() => handleDeletePost(post.id)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 size={12} /></button>
                           </div>
 
                           {/* TEXT ONLY BROADCAST */}
                           {!isSetup ? (
-                            <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] p-6 flex flex-col gap-3 shadow-sm group-hover/post:border-white/[0.08] transition-colors">
+                            <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] p-5 flex flex-col gap-3 shadow-sm group-hover/post:border-white/[0.08] transition-colors">
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                                    <Megaphone size={14} className="text-blue-400" />
+                                  <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center">
+                                    <Megaphone size={12} className="text-blue-400" />
                                   </div>
-                                  <span className="text-xs font-bold text-neutral-200 tracking-wide uppercase">Desk Update</span>
-                                  {post.ticker && post.ticker !== 'UNKNOWN' && (
-                                    <span className="px-2 py-0.5 bg-white/[0.03] text-neutral-400 text-[10px] font-bold tracking-wider uppercase rounded border border-white/[0.05]">
+                                  <span className="text-[11px] font-bold text-neutral-200 tracking-wide uppercase">Desk Update</span>
+                                  {post.ticker && post.ticker !== 'UNKNOWN' && post.ticker !== 'SYSTEM' && post.ticker !== 'UPDATE' && (
+                                    <span className="px-2 py-0.5 bg-white/[0.03] text-neutral-400 text-[9px] font-bold tracking-wider uppercase rounded border border-white/[0.05]">
                                       {post.ticker}
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-xs text-neutral-500 font-medium">
+                                <span className="text-[10px] text-neutral-500 font-medium">
                                   {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
-                              <p className="text-sm text-neutral-400 font-medium whitespace-pre-wrap leading-relaxed pl-11" dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }} />
+                              <p className="text-[13px] text-neutral-400 font-medium whitespace-pre-wrap leading-relaxed pl-10" dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }} />
                             </div>
                           ) : (
                             /* FULL SETUP POST */
                             <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] overflow-hidden shadow-sm flex flex-col group-hover/post:border-white/[0.08] transition-colors">
                               <div className="flex flex-col lg:flex-row border-b border-white/[0.02]">
                                 
-                                <div className="relative w-full lg:w-[480px] shrink-0 aspect-[16/10] bg-[#000000] cursor-pointer group/img border-r border-white/[0.02]" onClick={() => setExpandedImage(post.image_url)}>
-                                  <Image src={post.image_url} alt="Setup" fill className="object-contain p-2" unoptimized />
+                                <div className="relative w-full lg:w-[400px] shrink-0 aspect-[16/10] bg-[#000000] cursor-pointer group/img border-r border-white/[0.02]" onClick={() => setExpandedImage(post.image_url)}>
+                                  <Image src={post.image_url} alt="Setup" fill className="object-contain p-1.5" unoptimized />
                                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
-                                    <div className="w-12 h-12 rounded-full bg-black/60 flex items-center justify-center border border-white/20">
-                                      <ZoomIn className="text-white w-5 h-5" />
+                                    <div className="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center border border-white/20">
+                                      <ZoomIn className="text-white w-4 h-4" />
                                     </div>
                                   </div>
                                 </div>
 
-                                <div className="flex-1 flex flex-col p-6 lg:p-8">
-                                  <div className="flex justify-between items-start mb-8">
-                                    <div className="flex items-center gap-3">
-                                      <span className="px-2.5 py-1 text-blue-400 text-[11px] font-bold tracking-wider uppercase rounded bg-blue-500/10 border border-blue-500/20">{post.ticker}</span>
-                                      <span className="text-neutral-400 text-xs font-semibold tracking-wider uppercase">{post.timeframe}</span>
+                                <div className="flex-1 flex flex-col p-5 lg:p-6">
+                                  <div className="flex justify-between items-start mb-6">
+                                    <div className="flex items-center gap-2.5">
+                                      <span className="px-2 py-1 text-blue-400 text-[10px] font-bold tracking-wider uppercase rounded bg-blue-500/10 border border-blue-500/20">{post.ticker}</span>
+                                      <span className="text-neutral-400 text-[10px] font-semibold tracking-wider uppercase">{post.timeframe}</span>
                                     </div>
-                                    <span className="text-xs text-neutral-500 font-medium flex items-center gap-1.5"><Clock size={12} className="opacity-70" /> {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    <span className="text-[10px] text-neutral-500 font-medium flex items-center gap-1.5"><Clock size={10} className="opacity-70" /> {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                   </div>
 
-                                  <div className="flex flex-col gap-4 mt-auto">
-                                    <div className="flex items-center gap-3 bg-[#050505] p-3 rounded-xl border border-white/[0.02]">
-                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest w-24">Access Tier</span>
-                                      <span className={`px-2.5 py-1 text-[9px] font-bold tracking-wider uppercase rounded border ${post.tier_access === 'free' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20'}`}>
+                                  <div className="flex flex-col gap-3 mt-auto">
+                                    <div className="flex items-center gap-3 bg-[#050505] px-3 py-2 rounded-xl border border-white/[0.02]">
+                                      <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest w-20">Access</span>
+                                      <span className={`px-2 py-0.5 text-[8px] font-bold tracking-wider uppercase rounded border ${post.tier_access === 'free' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20'}`}>
                                         {post.tier_access === 'pro' ? 'Pro Exclusive' : 'Free Preview'}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-3 bg-[#050505] p-3 rounded-xl border border-white/[0.02]">
-                                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest w-24">Sentiment</span>
+                                    <div className="flex items-center gap-3 bg-[#050505] px-3 py-2 rounded-xl border border-white/[0.02]">
+                                      <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest w-20">Sentiment</span>
                                       {post.admin_align_pct !== null ? (
-                                        <span className="px-2.5 py-1 text-[9px] font-bold tracking-wider uppercase rounded border bg-amber-500/10 text-amber-500 border-amber-500/20">
+                                        <span className="px-2 py-0.5 text-[8px] font-bold tracking-wider uppercase rounded border bg-amber-500/10 text-amber-500 border-amber-500/20">
                                           Forced: {post.admin_align_pct}% Align
                                         </span>
                                       ) : (
-                                        <span className="px-2.5 py-1 text-[9px] font-bold tracking-wider uppercase rounded border bg-neutral-500/10 text-neutral-400 border-neutral-500/20">Organic Engine Active</span>
+                                        <span className="px-2 py-0.5 text-[8px] font-bold tracking-wider uppercase rounded border bg-neutral-500/10 text-neutral-400 border-neutral-500/20">Organic Active</span>
                                       )}
                                     </div>
                                   </div>
@@ -447,8 +477,8 @@ export default function AdminFloorControl() {
                                 </div>
                               </div>
 
-                              <div className="px-6 lg:px-8 py-6 bg-[#050505]">
-                                <p className="text-sm text-neutral-400 whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }} />
+                              <div className="px-5 lg:px-6 py-5 bg-[#050505]">
+                                <p className="text-[13px] text-neutral-400 whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }} />
                               </div>
                             </div>
                           )}
@@ -460,90 +490,69 @@ export default function AdminFloorControl() {
                 )}
               </div>
 
-              {/* ADMIN CHAT INPUT BAR (ANCHORED BOTTOM) */}
-              <div className="shrink-0 bg-[#0a0a0a] border-t border-white/[0.04] p-4 flex flex-col relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
+              {/* ADMIN CHAT INPUT BAR (COMPACT & ANCHORED) */}
+              <div className="shrink-0 bg-[#0a0a0a] border-t border-white/[0.04] p-3 flex flex-col relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)]">
                 
-                {/* EXPANDED SETUP CONFIG (Only shows if image attached) */}
+                {/* COMPACT SETUP THUMBNAIL BAR */}
                 {imagePreview && (
-                  <div className="mb-4 p-5 bg-[#111] rounded-2xl border border-blue-500/20 animate-in slide-in-from-bottom-2 duration-300 shadow-inner">
-                    <div className="flex justify-between items-start mb-4 pb-3 border-b border-white/[0.05]">
-                      <h4 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2"><ImageIcon size={14} className="text-blue-400"/> Trade Setup Attached</h4>
-                      <button onClick={clearSetupState} className="text-neutral-500 hover:text-white bg-white/[0.05] p-1.5 rounded-lg"><X size={14}/></button>
+                  <div className="mb-3 p-3 bg-[#111] rounded-xl border border-blue-500/20 animate-in slide-in-from-bottom-2 duration-300 shadow-inner flex flex-wrap gap-4 items-center relative pr-8">
+                    <button onClick={clearSetupState} className="absolute top-2 right-2 text-neutral-500 hover:text-white bg-black/50 p-1 rounded-full"><X size={12}/></button>
+                    
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-white/[0.1] bg-black shrink-0">
+                       <Image src={imagePreview} alt="Preview" fill className="object-cover" unoptimized />
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-                      <div className="relative aspect-video rounded-xl overflow-hidden border border-white/[0.05] bg-black">
-                         <Image src={imagePreview} alt="Preview" fill className="object-contain p-1" unoptimized />
+                    
+                    <div className="flex flex-1 gap-3 items-center overflow-x-auto custom-scrollbar pb-1">
+                      <div className="w-24 shrink-0">
+                        <label className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest mb-1 block">Ticker</label>
+                        <input type="text" value={ticker} onChange={e=>setTicker(e.target.value.toUpperCase())} placeholder="BTCUSD" className="w-full bg-[#050505] border border-white/[0.05] rounded-md px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-blue-500" />
                       </div>
-                      
-                      <div className="flex flex-col gap-4">
-                        <div>
-                          <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Ticker</label>
-                          <input type="text" value={ticker} onChange={e=>setTicker(e.target.value.toUpperCase())} placeholder="BTCUSD" className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500" />
-                        </div>
-                        <div>
-                          <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Timeframe</label>
-                          <select value={timeframe} onChange={e=>setTimeframe(e.target.value)} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
-                            <option value="15M">15M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option>
-                          </select>
-                        </div>
+                      <div className="w-24 shrink-0">
+                        <label className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest mb-1 block">Timeframe</label>
+                        <select value={timeframe} onChange={e=>setTimeframe(e.target.value)} className="w-full bg-[#050505] border border-white/[0.05] rounded-md px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
+                          <option value="15M">15M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option>
+                        </select>
                       </div>
-
-                      <div className="flex flex-col gap-4">
-                        <div>
-                          <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Tier Access</label>
-                          <select value={tier} onChange={e=>setTier(e.target.value)} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
-                            <option value="pro">Pro Exclusive</option><option value="free">Free Preview</option>
-                          </select>
-                        </div>
-                        <div className="bg-[#050505] p-2.5 rounded-xl border border-white/[0.05]">
-                          <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest flex justify-between items-center w-full">
-                            Force Sentiment
-                            <input type="checkbox" checked={overrideSentiment} onChange={()=>setOverrideSentiment(!overrideSentiment)} className="accent-blue-500 w-3.5 h-3.5" />
-                          </label>
-                          {overrideSentiment && (
-                             <input type="range" min="0" max="100" value={adminAlignPct} onChange={e=>setAdminAlignPct(Number(e.target.value))} className="w-full mt-3 h-1.5 bg-white/[0.1] rounded-full appearance-none accent-blue-500" />
-                          )}
-                        </div>
+                      <div className="w-28 shrink-0">
+                        <label className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest mb-1 block">Access</label>
+                        <select value={tier} onChange={e=>setTier(e.target.value)} className="w-full bg-[#050505] border border-white/[0.05] rounded-md px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
+                          <option value="pro">Pro Exclusive</option><option value="free">Free Preview</option>
+                        </select>
+                      </div>
+                      <div className="bg-[#050505] px-3 py-1.5 rounded-md border border-white/[0.05] flex-1 min-w-[140px] max-w-[200px] shrink-0">
+                        <label className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest flex justify-between items-center w-full mb-1 cursor-pointer">
+                          Force Sentiment <input type="checkbox" checked={overrideSentiment} onChange={()=>setOverrideSentiment(!overrideSentiment)} className="accent-blue-500 w-3 h-3" />
+                        </label>
+                        {overrideSentiment && (
+                           <input type="range" min="0" max="100" value={adminAlignPct} onChange={e=>setAdminAlignPct(Number(e.target.value))} className="w-full h-1 bg-white/[0.1] rounded-full appearance-none accent-blue-500" />
+                        )}
                       </div>
                     </div>
                   </div>
                 )}
 
                 {/* MAIN CHAT INPUT */}
-                <div className="flex items-end gap-3 max-w-[1000px] w-full mx-auto">
+                <div className="flex items-end gap-2.5 max-w-[1000px] w-full mx-auto">
                   <div className="flex bg-[#111] rounded-xl border border-white/[0.05] p-1 shrink-0 shadow-inner">
-                    <label className="p-3 text-neutral-400 hover:text-white hover:bg-[#1a1a1a] rounded-lg cursor-pointer transition-colors" title="Upload Image">
-                       <ImageIcon size={20} />
+                    <label className="p-2.5 text-neutral-400 hover:text-white hover:bg-[#1a1a1a] rounded-lg cursor-pointer transition-colors" title="Upload Image">
+                       <ImageIcon size={18} />
                        <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
                     </label>
-                    <button onClick={() => setIsLibraryOpen(true)} className="p-3 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors" title="Open Master Playbook">
-                      <FolderSearch size={20} />
+                    <button onClick={() => setIsLibraryOpen(true)} className="p-2.5 text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 rounded-lg transition-colors" title="Open Master Playbook">
+                      <FolderSearch size={18} />
                     </button>
                   </div>
                   
-                  <div className="flex-1 relative">
-                    <textarea 
-                      value={thesis} 
-                      onChange={e => setThesis(e.target.value)} 
-                      placeholder={imagePreview ? "Detail your setup thesis..." : "Send a quick desk update (supports Telegram Markdown)..."}
-                      className="w-full max-h-40 min-h-[52px] bg-[#111] border border-white/[0.05] rounded-xl px-5 py-3.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed shadow-inner pb-10"
-                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFloorSubmit(); } }}
-                    />
-                    {/* 🚨 NEW: Notification Toggle Switch */}
-                    <div className="absolute bottom-2 left-4 flex items-center gap-2">
-                      <button 
-                        type="button"
-                        onClick={() => setNotifyTelegram(!notifyTelegram)}
-                        className={`flex items-center gap-1.5 px-2 py-1 rounded text-[9px] font-bold uppercase tracking-widest transition-colors ${notifyTelegram ? 'bg-blue-500/20 text-blue-400' : 'bg-neutral-800 text-neutral-500'}`}
-                      >
-                        {notifyTelegram ? <Bell size={12}/> : <BellOff size={12}/>}
-                        {notifyTelegram ? 'Broadcast TG' : 'Silent Drop'}
-                      </button>
-                    </div>
-                  </div>
+                  <textarea 
+                    value={thesis} 
+                    onChange={e => setThesis(e.target.value)} 
+                    placeholder={imagePreview ? "Detail setup thesis..." : "Send desk update..."}
+                    className="flex-1 max-h-32 min-h-[44px] bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-[13px] text-white placeholder:text-neutral-600 outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed shadow-inner"
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleFloorSubmit(); } }}
+                  />
 
-                  <button onClick={handleFloorSubmit} disabled={isPostingFloor || (!thesis.trim() && !imagePreview)} className="p-4 bg-blue-600 text-white rounded-xl hover:bg-blue-500 disabled:opacity-50 transition-all shrink-0 shadow-[0_0_15px_rgba(37,99,235,0.3)]">
-                    {isPostingFloor ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
+                  <button onClick={handleFloorSubmit} disabled={isPostingFloor || (!thesis.trim() && !imagePreview)} className="p-3.5 bg-blue-600 text-white rounded-xl hover:bg-blue-500 disabled:opacity-50 transition-all shrink-0 shadow-[0_0_15px_rgba(37,99,235,0.3)]">
+                    {isPostingFloor ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                   </button>
                 </div>
               </div>
@@ -553,33 +562,33 @@ export default function AdminFloorControl() {
             {/* RIGHT PANE: TELEGRAM BROADCAST MIRROR                */}
             {/* ==================================================== */}
             
-            {/* 🚨 FIXED RIGID SIDEBAR SLIDE TRANSITION */}
+            {/* RIGID SIDEBAR SLIDE TRANSITION */}
             <div className={`hidden lg:block h-full shrink-0 transition-[width,margin,opacity] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${
-              isCommsOpen ? 'w-[340px] xl:w-[400px] opacity-100 ml-6 lg:ml-8' : 'w-0 opacity-0 ml-0 pointer-events-none'
+              isCommsOpen ? 'w-[320px] xl:w-[360px] opacity-100 ml-4 lg:ml-6' : 'w-0 opacity-0 ml-0 pointer-events-none'
             }`}>
               
-              <div className="w-[340px] xl:w-[400px] h-full bg-[#080808] rounded-2xl border border-white/[0.04] shadow-2xl flex flex-col relative">
+              <div className="w-[320px] xl:w-[360px] h-full bg-[#080808] rounded-2xl border border-white/[0.04] shadow-2xl flex flex-col relative">
                 
                 {/* HEADER */}
-                <div className="px-5 py-5 border-b border-[#2AABEE]/20 bg-[#2AABEE]/[0.03] flex items-center justify-between shrink-0 rounded-t-2xl">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-[#2AABEE]/10 flex items-center justify-center border border-[#2AABEE]/30">
-                      <Send className="text-[#2AABEE] w-4 h-4 -ml-0.5" />
+                <div className="px-4 py-4 border-b border-[#2AABEE]/20 bg-[#2AABEE]/[0.03] flex items-center justify-between shrink-0 rounded-t-2xl">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-full bg-[#2AABEE]/10 flex items-center justify-center border border-[#2AABEE]/30">
+                      <Send className="text-[#2AABEE] w-3.5 h-3.5 -ml-0.5" />
                     </div>
                     <div>
-                      <h3 className="text-sm font-bold text-[#2AABEE]">Sentinel Broadcast</h3>
-                      <p className="text-[10px] text-neutral-500 font-semibold tracking-wider uppercase mt-0.5">Live Telegram Mirror</p>
+                      <h3 className="text-[13px] font-bold text-[#2AABEE]">Sentinel Comms</h3>
+                      <p className="text-[9px] text-neutral-500 font-semibold tracking-wider uppercase mt-0.5">Live Telegram Mirror</p>
                     </div>
                   </div>
-                  <div className="w-2 h-2 rounded-full bg-[#2AABEE] animate-pulse shadow-[0_0_8px_#2AABEE]" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#2AABEE] animate-pulse shadow-[0_0_8px_#2AABEE]" />
                 </div>
 
                 {/* SQUAWK FEED (SCROLLABLE) */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-5 custom-scrollbar bg-[#050505]">
+                <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar bg-[#050505]">
                   {squawks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full opacity-40">
-                      <Send className="w-8 h-8 text-neutral-600 mb-3 stroke-1" />
-                      <p className="text-xs font-medium text-neutral-500">Awaiting Channel Broadcasts</p>
+                      <Send className="w-6 h-6 text-neutral-600 mb-2 stroke-1" />
+                      <p className="text-[11px] font-medium text-neutral-500">Awaiting Channel Broadcasts</p>
                     </div>
                   ) : (
                     squawks.map((squawk) => {
@@ -589,24 +598,14 @@ export default function AdminFloorControl() {
                       if (isEditing) {
                         return (
                           <div key={squawk.id} className="w-full bg-[#0f0f0f] rounded-2xl border border-amber-500/50 p-4 shadow-[0_0_20px_rgba(245,158,11,0.1)] animate-in zoom-in-95 duration-200">
-                            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-white/[0.05] text-amber-500 text-[10px] font-bold uppercase tracking-widest">
-                              <Edit2 size={14}/> Editing Broadcast
+                            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/[0.05] text-amber-500 text-[9px] font-bold uppercase tracking-widest">
+                              <Edit2 size={12}/> Editing Broadcast
                             </div>
-                            <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Transmission Tag</label>
-                            <select value={editingSquawk.tag || ''} onChange={e=>setEditingSquawk({...editingSquawk, tag: e.target.value})} className="w-full bg-[#050505] text-[10px] font-bold uppercase tracking-widest text-neutral-300 border border-white/[0.05] rounded-lg px-3 py-2 outline-none focus:border-amber-500 appearance-none mb-4">
-                              <option value="">No Tag (Standard)</option>
-                              <option value="Execution">Live Execution</option>
-                              <option value="Alert">Critical Alert</option>
-                              <option value="News">Macro News</option>
-                            </select>
-                            
-                            <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Message</label>
-                            <textarea value={editingSquawk.message} onChange={(e) => setEditingSquawk({...editingSquawk, message: e.target.value})} className="w-full h-24 bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-amber-500 custom-scrollbar resize-none leading-relaxed" required />
-                            
-                            <div className="flex justify-end gap-2 mt-4">
-                              <button onClick={() => setEditingSquawk(null)} className="px-4 py-2 text-[9px] font-black uppercase tracking-widest text-neutral-400 bg-[#111] hover:bg-[#1a1a1a] rounded-lg border border-white/[0.05]">Cancel</button>
-                              <button onClick={handleUpdateSquawk} disabled={isUpdating} className="px-4 py-2 text-[9px] font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 rounded-lg flex items-center justify-center gap-1.5">
-                                {isUpdating ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save
+                            <textarea value={editingSquawk.message} onChange={(e) => setEditingSquawk({...editingSquawk, message: e.target.value})} className="w-full h-20 bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-[12px] text-white outline-none focus:border-amber-500 custom-scrollbar resize-none leading-relaxed" required />
+                            <div className="flex justify-end gap-2 mt-3">
+                              <button onClick={() => setEditingSquawk(null)} className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-neutral-400 bg-[#111] hover:bg-[#1a1a1a] rounded-lg border border-white/[0.05]">Cancel</button>
+                              <button onClick={handleUpdateSquawk} disabled={isUpdating} className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 rounded-lg flex items-center justify-center gap-1.5">
+                                {isUpdating ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />} Save
                               </button>
                             </div>
                           </div>
@@ -616,23 +615,20 @@ export default function AdminFloorControl() {
                       // --- NORMAL DISPLAY MODE FOR SQUAWKS ---
                       return (
                         <div key={squawk.id} className="flex flex-col items-end relative group/squawk animate-in fade-in duration-300">
-                          
-                          {/* FLOATING ACTION BUTTONS */}
-                          <div className="absolute top-1/2 -translate-y-1/2 -left-14 opacity-0 group-hover/squawk:opacity-100 transition-opacity flex gap-1 bg-[#111] p-1.5 rounded-xl border border-white/[0.1] shadow-xl">
-                            <button onClick={() => setEditingSquawk(squawk)} className="p-1.5 text-amber-500 hover:bg-amber-500/20 rounded-md transition-colors"><Edit2 size={12} /></button>
-                            <button onClick={() => handleDeleteSquawk(squawk.id)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 size={12} /></button>
+                          <div className="absolute top-1/2 -translate-y-1/2 -left-12 opacity-0 group-hover/squawk:opacity-100 transition-opacity flex gap-1 bg-[#111] p-1 rounded-xl border border-white/[0.1] shadow-xl">
+                            <button onClick={() => setEditingSquawk(squawk)} className="p-1.5 text-amber-500 hover:bg-amber-500/20 rounded-md transition-colors"><Edit2 size={10} /></button>
+                            <button onClick={() => handleDeleteSquawk(squawk.id)} className="p-1.5 text-red-400 hover:bg-red-500/20 rounded-md transition-colors"><Trash2 size={10} /></button>
                           </div>
 
-                          <div className="px-4 py-3.5 rounded-2xl w-full max-w-[92%] text-[13px] font-medium leading-relaxed shadow-sm bg-gradient-to-br from-[#2AABEE] to-[#1E88E5] text-white rounded-tr-sm">
-                            <div className="flex items-center gap-2 mb-2">
-                              {squawk.tag && <span className="bg-white/20 px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest shadow-sm">{squawk.tag}</span>}
-                              <span className="text-[10px] font-bold tracking-wider text-blue-100 ml-auto">Sentinel Admin</span>
-                              <span className="text-[9px] font-medium text-blue-100/70">{new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          <div className="px-3 py-2.5 rounded-2xl w-full max-w-[94%] text-[12px] font-medium leading-relaxed shadow-sm bg-gradient-to-br from-[#2AABEE] to-[#1E88E5] text-white rounded-tr-sm">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="text-[9px] font-bold tracking-wider text-blue-100">Sentinel Admin</span>
+                              <span className="text-[8px] font-medium text-blue-100/70 ml-auto">{new Date(squawk.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             
                             {squawk.media_url && (
-                              <div className="mb-3 relative rounded-xl overflow-hidden cursor-pointer group shadow-sm border border-white/10" onClick={() => setExpandedImage(squawk.media_url)}>
-                                <Image src={squawk.media_url} width={300} height={200} alt="Media" className="object-cover w-full h-auto max-h-[250px] group-hover:opacity-90 transition-opacity" unoptimized />
+                              <div className="mb-2 relative rounded-xl overflow-hidden cursor-pointer group shadow-sm border border-white/10" onClick={() => setExpandedImage(squawk.media_url)}>
+                                <Image src={squawk.media_url} width={300} height={200} alt="Media" className="object-cover w-full h-auto max-h-[200px] group-hover:opacity-90 transition-opacity" unoptimized />
                               </div>
                             )}
                             
@@ -647,26 +643,18 @@ export default function AdminFloorControl() {
                   <div ref={squawkEndRef} className="h-1" />
                 </div>
 
-                {/* SQUAWK INPUT BAR (ANCHORED BOTTOM) */}
-                <div className="p-4 bg-[#0a0a0a] border-t border-white/[0.04] shrink-0 rounded-b-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-20">
-                  <div className="flex items-center gap-2 mb-3">
-                     <select value={commsTag} onChange={e=>setCommsTag(e.target.value)} className="bg-[#111] text-[10px] font-bold uppercase tracking-widest text-neutral-400 border border-white/[0.05] rounded-md px-3 py-2 outline-none cursor-pointer appearance-none focus:border-[#2AABEE]">
-                       <option value="">No Tag (Standard Update)</option>
-                       <option value="Execution">Live Execution</option>
-                       <option value="Alert">Critical Alert</option>
-                       <option value="News">Macro News</option>
-                     </select>
-                  </div>
+                {/* SQUAWK INPUT BAR */}
+                <div className="p-3 bg-[#0a0a0a] border-t border-white/[0.04] shrink-0 rounded-b-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-20">
                   <div className="flex items-end gap-2">
                     <textarea 
                       value={commsMessage} 
                       onChange={e => setCommsMessage(e.target.value)} 
-                      placeholder="Broadcast to Telegram..."
-                      className="flex-1 max-h-32 min-h-[44px] bg-[#111] border border-white/[0.05] rounded-xl px-4 py-3 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-[#2AABEE] custom-scrollbar resize-none shadow-inner"
+                      placeholder="Broadcast to TG..."
+                      className="flex-1 max-h-24 min-h-[40px] bg-[#111] border border-white/[0.05] rounded-xl px-3 py-2.5 text-[13px] text-white placeholder:text-neutral-600 outline-none focus:border-[#2AABEE] custom-scrollbar resize-none shadow-inner"
                       onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCommsSubmit(); } }}
                     />
-                    <button onClick={handleCommsSubmit} disabled={isPostingComms || !commsMessage.trim()} className="p-3 bg-[#2AABEE]/10 text-[#2AABEE] rounded-xl hover:bg-[#2AABEE] hover:text-white disabled:opacity-50 transition-all shrink-0 shadow-[0_0_15px_rgba(42,171,238,0.2)]">
-                      {isPostingComms ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+                    <button onClick={handleCommsSubmit} disabled={isPostingComms || !commsMessage.trim()} className="p-2.5 bg-[#2AABEE]/10 text-[#2AABEE] rounded-xl hover:bg-[#2AABEE] hover:text-white disabled:opacity-50 transition-all shrink-0 shadow-[0_0_15px_rgba(42,171,238,0.2)]">
+                      {isPostingComms ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                     </button>
                   </div>
                 </div>
