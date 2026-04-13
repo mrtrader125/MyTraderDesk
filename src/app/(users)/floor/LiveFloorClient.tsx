@@ -12,7 +12,7 @@ type PostInteraction = {
   note: string;
 }
 
-// 🚨 NEW: Lightweight Telegram Markdown to Web HTML Parser
+// Lightweight Telegram Markdown to Web HTML Parser
 const formatTelegramText = (text: string) => {
   if (!text) return '';
   let formatted = text
@@ -44,8 +44,8 @@ export default function LiveFloorClient({
 
   // 🚨 NOTIFICATION STATE
   const [unreadCount, setUnreadCount] = useState(0)
-  
-  // Ref to track comms state inside the Supabase listener without causing re-renders
+
+  // Ref to track comms state safely inside Supabase listeners
   const isCommsOpenRef = useRef(isCommsOpen)
   useEffect(() => {
     isCommsOpenRef.current = isCommsOpen
@@ -53,7 +53,6 @@ export default function LiveFloorClient({
 
   // Real Database State
   const [interactions, setInteractions] = useState<Record<string, PostInteraction>>({})
-  
   const [currentTime, setCurrentTime] = useState<number | null>(null)
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null) 
   const [tempNote, setTempNote] = useState<string>('') 
@@ -84,20 +83,20 @@ export default function LiveFloorClient({
     fetchUserInteractions()
   }, [userId])
 
+  // Start the clock only on the browser
   useEffect(() => {
     setCurrentTime(Date.now())
     const interval = setInterval(() => setCurrentTime(Date.now()), 60000)
     return () => clearInterval(interval)
   }, [])
 
-  // 🚨 FIXED: ONLY AUTO-SCROLL IF THE PANEL IS ACTUALLY OPEN
-  // This prevents the browser from ripping the layout sideways to view an off-screen hidden element
+  // 🚨 FIXED AUTO-SCROLL: Only scrolls if the panel is actively open
   useEffect(() => { 
     if (isCommsOpen) {
       squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) 
     }
   }, [squawks, isCommsOpen])
-  
+
   useEffect(() => { floorEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [posts, activeFloorTab])
 
   // SUPABASE LIVE SYNC
@@ -105,7 +104,7 @@ export default function LiveFloorClient({
     const channel = supabase.channel('public:desk_feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (p) => {
         setSquawks((c) => [...c, p.new])
-        // If comms are closed when message arrives, increment badge
+        // Silently increment badge if panel is closed
         if (!isCommsOpenRef.current) {
           setUnreadCount((prev) => prev + 1)
         }
@@ -118,6 +117,7 @@ export default function LiveFloorClient({
     return () => { supabase.removeChannel(channel) }
   }, [supabase])
 
+  // Auto-focus the note textarea when it opens
   useEffect(() => {
     if (editingNoteId && noteInputRef.current) {
       noteInputRef.current.focus()
@@ -127,6 +127,7 @@ export default function LiveFloorClient({
 
   const isProUser = userPlan === 'pro' || userPlan === 'premium'
 
+  // THE OPTIMISTIC DATABASE SAVE FUNCTION
   const handleInteractionUpdate = async (postId: string, updates: Partial<PostInteraction>) => {
     if (!userId) return;
 
@@ -153,6 +154,7 @@ export default function LiveFloorClient({
     })
   }
 
+  // THE ORGANIC VOTING ENGINE
   const getVoteStats = (post: any, userVote: 'align' | 'counter' | null) => {
     if (currentTime === null) return 50;
 
@@ -208,11 +210,11 @@ export default function LiveFloorClient({
     if (e.key === 'Escape') setEditingNoteId(null)
   }
 
+  // 🚨 UPDATED TOGGLE LOGIC
   const toggleComms = () => {
     setIsCommsOpen(!isCommsOpen);
     if (!isCommsOpen) {
-      // We are opening it, reset badge
-      setUnreadCount(0);
+      setUnreadCount(0); // Clear notifications when opening
     }
   }
 
@@ -245,8 +247,8 @@ export default function LiveFloorClient({
     <>
       {/* FULLSCREEN IMAGE MODAL */}
       {expandedImage && (
-        <div className="fixed inset-0 z-[99999] bg-[#000000]/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setExpandedImage(null)}>
-          <div className="relative w-full max-w-7xl aspect-[16/9] rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl animate-in zoom-in-95 duration-300">
+        <div className="fixed inset-0 z-[99999] bg-[#000000]/95 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={() => setExpandedImage(null)}>
+          <div className="relative w-full max-w-7xl aspect-[16/9] rounded-2xl overflow-hidden ring-1 ring-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
             <Image src={expandedImage} alt="Expanded Chart" fill className="object-contain" unoptimized />
             <button className="absolute top-4 right-4 p-2.5 bg-black/60 hover:bg-black rounded-full text-neutral-400 hover:text-white transition-all ring-1 ring-white/10 backdrop-blur-md">
               <X size={20} />
@@ -255,15 +257,18 @@ export default function LiveFloorClient({
         </div>
       )}
 
-      <div className="w-full bg-[#030303] text-neutral-200 p-4 md:p-6 flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
+      {/* 🚨 RIGID LAYOUT SHELL */}
+      <div className="w-full bg-[#030303] text-neutral-200 p-4 md:p-6 flex flex-col relative" style={{ height: 'calc(100dvh - 65px)' }}>
         <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
-          <div className="flex-1 flex gap-6 lg:gap-8 min-h-0 overflow-hidden h-full">
+          
+          {/* Main Flex Row Without Gaps (Managed by Sidebar Margin) */}
+          <div className="flex-1 flex min-h-0 overflow-hidden h-full">
             
-            {/* LEFT PANE: NATIVE PAGE STYLE */}
-            <div className="flex flex-col h-full overflow-hidden relative transition-all duration-500 ease-in-out flex-1">
+            {/* LEFT PANE: LIVE FLOOR */}
+            <div className="flex flex-col h-full relative transition-all duration-500 ease-in-out flex-1 min-w-0">
               
               {/* PAGE-STYLE TABS */}
-              <div className="flex items-end justify-between border-b border-white/[0.04] shrink-0 z-10 mb-4">
+              <div className="flex items-end justify-between border-b border-white/[0.04] shrink-0 z-10 mb-4 pt-2">
                 <div className="flex gap-8 px-2">
                   <button 
                     onClick={() => setActiveFloorTab('feed')}
@@ -283,16 +288,16 @@ export default function LiveFloorClient({
                   </button>
                 </div>
 
-                {/* 🚨 UPDATED TOGGLE BUTTON WITH NOTIFICATION BADGE */}
+                {/* 🚨 FIXED TOGGLE BUTTON & NOTIFICATION BADGE */}
                 <button 
                   onClick={toggleComms}
-                  className="hidden lg:flex relative items-center justify-center text-neutral-500 hover:text-white transition-colors bg-white/[0.02] hover:bg-white/[0.06] w-9 h-9 rounded-lg mb-3 border border-white/[0.04]"
+                  className="hidden lg:flex relative items-center justify-center text-neutral-500 hover:text-white transition-colors bg-white/[0.02] hover:bg-white/[0.06] w-9 h-9 rounded-lg mb-3 mr-2 border border-white/[0.04]"
                   title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
                 >
                   {isCommsOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
                   
                   {!isCommsOpen && unreadCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 bg-[#2AABEE] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[16px] text-center border border-[#030303] animate-in zoom-in shadow-sm">
+                    <span className="absolute -top-1.5 -right-1.5 bg-[#2AABEE] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center border border-[#030303] animate-in zoom-in shadow-md z-20">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}
@@ -391,6 +396,7 @@ export default function LiveFloorClient({
                                       </span>
                                     </div>
 
+                                    {/* Action Row */}
                                     <div className="flex flex-wrap items-center gap-3 mb-8">
                                       <button 
                                         onClick={() => handleInteractionUpdate(post.id, { taken: !pInt.taken })}
@@ -429,6 +435,7 @@ export default function LiveFloorClient({
                                       )}
                                     </div>
 
+                                    {/* Sentiment Global Vote */}
                                     <div className="flex items-center gap-4 mb-auto">
                                       <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Sentiment</span>
                                       <div className="flex items-center bg-[#050505] p-1 rounded-xl border border-white/[0.04]">
@@ -460,6 +467,7 @@ export default function LiveFloorClient({
                                       </div>
                                     </div>
 
+                                    {/* NOTION-STYLE PERSONAL NOTE */}
                                     <div className="mt-8 pt-6 border-t border-white/[0.03]">
                                       {editingNoteId === post.id ? (
                                         <div className="animate-in fade-in duration-300">
@@ -635,10 +643,12 @@ export default function LiveFloorClient({
               )}
             </div>
 
-            {/* RIGHT PANE: TELEGRAM BROADCAST MIRROR */}
-            <div className={`hidden lg:block relative shrink-0 transition-[width,opacity] duration-500 ease-in-out ${isCommsOpen ? 'w-[340px] xl:w-[400px] opacity-100' : 'w-0 opacity-0 pointer-events-none'}`}>
+            {/* 🚨 FIXED RIGID SIDEBAR SLIDE TRANSITION */}
+            <div className={`hidden lg:block h-full shrink-0 transition-[width,margin,opacity] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${
+              isCommsOpen ? 'w-[340px] xl:w-[400px] opacity-100 ml-6 lg:ml-8' : 'w-0 opacity-0 ml-0 pointer-events-none'
+            }`}>
               
-              <div className={`absolute top-0 right-0 w-[340px] xl:w-[400px] h-full bg-[#080808] rounded-2xl border border-white/[0.03] flex flex-col shadow-2xl transition-transform duration-500 ease-out origin-right ${isCommsOpen ? 'translate-x-0' : 'translate-x-[150%]'}`}>
+              <div className="w-[340px] xl:w-[400px] h-full bg-[#080808] rounded-2xl border border-white/[0.03] flex flex-col shadow-2xl relative">
                 
                 {/* TELEGRAM BRANDED HEADER */}
                 <div className="px-5 py-5 border-b border-[#2AABEE]/10 bg-[#2AABEE]/[0.02] flex items-center justify-between shrink-0 rounded-t-2xl">
