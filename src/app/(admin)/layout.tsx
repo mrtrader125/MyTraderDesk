@@ -22,11 +22,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [adminEmail, setAdminEmail] = useState('')
+  
+  // Initialize to true, but we will override it immediately before rendering
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   useEffect(() => {
+    // 1. Load Sidebar Preference instantly
+    const savedSidebarState = localStorage.getItem('adminSidebarOpen')
+    if (savedSidebarState !== null) {
+      setIsSidebarOpen(savedSidebarState === 'true')
+    }
+
+    // 2. Verify Admin
     async function verifyAdmin() {
-      // 1. Get the currently authenticated user
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       
       if (authError || !user) {
@@ -34,26 +42,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         return
       }
 
-      // 2. Fetch their specific profile from the database to check their role
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user.id)
         .single()
 
-      // 3. If there is an error fetching the profile, or they aren't an admin, kick them out
       if (profileError || profile?.role !== 'admin') {
-        router.replace('/dashboard') // Redirect non-admins to the standard user dashboard
+        router.replace('/dashboard') 
         return
       }
 
-      // 4. If they pass the database check, authorize them
       setAdminEmail(user.email || 'Admin')
       setIsAuthorized(true)
     }
     
     verifyAdmin()
   }, [router])
+
+  // 🚨 NEW: Toggle function that saves to localStorage
+  const toggleSidebar = () => {
+    setIsSidebarOpen(prev => {
+      const newState = !prev;
+      localStorage.setItem('adminSidebarOpen', String(newState));
+      return newState;
+    });
+  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -70,6 +84,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'System Logs', path: '/admin/logs', icon: Activity },
   ]
 
+  // This loading state hides the sidebar until we know exactly what state it should be in
   if (!isAuthorized) {
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
@@ -97,7 +112,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
           )}
           <button 
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+            onClick={toggleSidebar} 
             className="text-neutral-500 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/5 shrink-0"
             title={isSidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}
           >
