@@ -2,17 +2,16 @@ import { Metadata, ResolvingMetadata } from 'next'
 import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Lock, TrendingUp, TrendingDown, Minus, Shield, Users } from 'lucide-react'
+import { Lock, TrendingUp, TrendingDown, Minus, Shield, Users, Unlock } from 'lucide-react'
 
-// 🚨 NEW: Cache this page for 1 hour (3600 seconds) so it loads instantly for the next 10,000 visitors
+// Cache this page for 1 hour so it loads instantly for visitors
 export const revalidate = 3600;
 
-// 1. EXPECTED PARAMETERS
 type Props = {
   params: Promise<{ symbol: string }>
 }
 
-// 2. THE SEO ENGINE (Runs on the server for Google's bots)
+// 1. THE SEO ENGINE
 export async function generateMetadata(
   { params }: Props,
   parent: ResolvingMetadata
@@ -22,7 +21,7 @@ export async function generateMetadata(
 
   const { data: setup } = await supabase
     .from('analyses')
-    .select('bias, timeframe, created_at, image_url') 
+    .select('bias, timeframe, created_at, image_url, is_locked') 
     .eq('asset_symbol', symbol)
     .order('created_at', { ascending: false })
     .limit(1)
@@ -34,7 +33,7 @@ export async function generateMetadata(
 
   let description = `Get the latest institutional-grade technical analysis, execution zones, and crowdsourced retail sentiment for ${symbol}.`
   if (setup) {
-    description = `Live ${setup.timeframe} market structure analysis for ${symbol}. Current desk bias is ${setup.bias || 'Neutral'}. Join to see exact execution zones and community confluence.`
+    description = `Live ${setup.timeframe} market structure analysis for ${symbol}. Current desk bias is ${setup.bias || 'Neutral'}. ${setup.is_locked === false ? 'View the full structural breakdown.' : 'Join to see exact execution zones and community confluence.'}`
   }
 
   return {
@@ -73,12 +72,11 @@ export async function generateMetadata(
   }
 }
 
-// 3. THE PAGE UI (Server Rendered for maximum speed)
+// 2. THE PAGE UI
 export default async function PublicAnalysisTeaser({ params }: Props) {
   const resolvedParams = await params
   const symbol = resolvedParams.symbol.toUpperCase()
 
-  // Fetch the data on the server
   const { data: setup, error } = await supabase
     .from('analyses')
     .select('*')
@@ -87,13 +85,12 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
     .limit(1)
     .single()
 
-  // Handle Missing Data
   if (error || !setup) {
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white font-sans">
         <h1 className="text-2xl font-black uppercase tracking-widest mb-4">Market Not Found</h1>
         <Link href="/" className="text-blue-500 hover:text-white transition-colors text-sm font-bold uppercase tracking-widest">
-          Return Home
+          Return to Desk
         </Link>
       </div>
     )
@@ -101,6 +98,9 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
 
   const isBull = setup.bias?.toUpperCase() === 'BULLISH'
   const isBear = setup.bias?.toUpperCase() === 'BEARISH'
+  
+  // Admin Control: Default to locked to protect content unless explicitly set to false
+  const isLocked = setup.is_locked !== false; 
 
   return (
     <div className="min-h-screen bg-[#050505] text-white font-sans pt-24 pb-20 px-6">
@@ -118,7 +118,7 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Left Column: The Teaser Chart */}
+          {/* Left Column: The Chart */}
           <div className="lg:col-span-2 relative group">
             <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl relative">
               
@@ -132,37 +132,41 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
                 </span>
               </div>
 
-              {/* The Chart (Blurred for public) */}
+              {/* Dynamic Chart Rendering */}
               <div className="relative aspect-video bg-[#111] overflow-hidden">
-                {/* 🚨 NEW: Next.js Optimized Image */}
                 <Image 
                   src={setup.image_url} 
                   alt={`${symbol} Technical Analysis`}
                   fill
-                  className="object-cover filter blur-md opacity-40 scale-105"
+                  className={`object-cover transition-all duration-500 ${isLocked ? 'filter blur-md opacity-40 scale-105' : 'opacity-90'}`}
                 />
                 
-                {/* The Paywall Overlay */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm p-6 text-center">
-                  <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
-                    <Lock size={24} className="text-blue-500" />
+                {/* Dynamic Paywall Overlay */}
+                {isLocked && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm p-6 text-center z-20">
+                    <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+                      <Lock size={24} className="text-blue-500" />
+                    </div>
+                    <h2 className="text-2xl font-black text-white tracking-tight uppercase mb-2">Execution Zones Locked</h2>
+                    <p className="text-xs font-medium text-neutral-300 max-w-sm mb-8 leading-relaxed">
+                      Unlock the exact entry probabilities, multi-timeframe charting, and real-time community sentiment for {symbol}.
+                    </p>
+                    <Link 
+                      href="/signup"
+                      className="px-8 py-4 bg-white text-black text-xs font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-105 inline-block"
+                    >
+                      Unlock for $29/mo
+                    </Link>
+                    <p className="mt-4 text-[9px] font-bold text-cyan-400 uppercase tracking-widest animate-pulse">
+                      Founding Cohort strictly capped at 20 members.
+                    </p>
                   </div>
-                  <h2 className="text-2xl font-black text-white tracking-tight uppercase mb-2">Execution Zones Locked</h2>
-                  <p className="text-xs font-medium text-neutral-300 max-w-sm mb-8 leading-relaxed">
-                    Unlock the exact entry probabilities, multi-timeframe charting, and real-time community sentiment for {symbol}.
-                  </p>
-                  <Link 
-                    href="/signup"
-                    className="px-8 py-4 bg-white text-black text-xs font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] hover:scale-105 inline-block"
-                  >
-                    Unlock {symbol} for $4.99/mo
-                  </Link>
-                </div>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Right Column: Public Metadata */}
+          {/* Right Column: Public Metadata & Dynamic Notes */}
           <div className="space-y-6">
             <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 shadow-xl">
               <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4">Directional Bias</h3>
@@ -173,15 +177,27 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
             </div>
 
             <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 shadow-xl">
-              <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4">Analysis Teaser</h3>
-              <p className="text-xs font-medium text-neutral-400 leading-relaxed mb-6">
-                Our trading desk has evaluated the current institutional market structure for {symbol}. Significant liquidity pools and imbalance zones have been identified on the {setup.timeframe} chart.
-              </p>
+              <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4">
+                {isLocked ? 'Analysis Teaser' : 'Structural Notes'}
+              </h3>
+              
+              <div className="text-xs font-medium text-neutral-400 leading-relaxed mb-6 space-y-3">
+                {isLocked ? (
+                  <p>Our trading desk has evaluated the current institutional market structure for {symbol}. Significant liquidity pools and imbalance zones have been identified on the {setup.timeframe} chart.</p>
+                ) : (
+                  <p className="whitespace-pre-wrap">{setup.notes || `Full structural breakdown for ${symbol} confirming our current directional bias.`}</p>
+                )}
+              </div>
+
               <div className="pt-4 border-t border-neutral-800 flex items-center justify-between">
-                <span className="text-[10px] font-bold text-neutral-500 flex items-center uppercase tracking-widest"><Shield size={12} className="mr-1.5" /> Secure Desk</span>
-                <Link href="/signup" className="text-[10px] font-bold text-blue-500 uppercase tracking-widest hover:text-white transition-colors">
-                  Join to read full notes
-                </Link>
+                <span className="text-[10px] font-bold text-neutral-500 flex items-center uppercase tracking-widest">
+                  {isLocked ? <><Shield size={12} className="mr-1.5" /> Secure Desk</> : <><Unlock size={12} className="mr-1.5 text-emerald-500" /> Public Access</>}
+                </span>
+                {isLocked && (
+                  <Link href="/signup" className="text-[10px] font-bold text-blue-500 uppercase tracking-widest hover:text-white transition-colors">
+                    Join to read full notes
+                  </Link>
+                )}
               </div>
             </div>
           </div>
