@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Clock, CheckSquare, Square, Target, Loader2, ArrowLeft, Trash2, ListPlus, Edit2, X, Rocket, Server } from 'lucide-react'
+import { Clock, CheckSquare, Square, Target, Loader2, ArrowLeft, Trash2, ListPlus, Edit2, X, Rocket, Server, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 
 export default function AdminQueueManager() {
   const router = useRouter()
@@ -163,7 +163,7 @@ export default function AdminQueueManager() {
     setSelectedIds(newSelected)
   }
 
-  // 🚀 FORCE DROP (WITH AUTO-ARCHIVE AND TELEGRAM BROADCAST)
+  // 🚀 FORCE DROP (WITH PERSISTENT STATUS, AUTO-ARCHIVE AND TELEGRAM BROADCAST)
   const handlePushLive = async () => {
     if (selectedIds.size === 0) return alert("Select at least one setup to push live.")
     
@@ -191,7 +191,8 @@ export default function AdminQueueManager() {
         tier_access: item.tier_access,
         is_featured: item.is_featured,
         image_url: item.image_url,
-        status: 'ACTIVE' 
+        // 🚨 BUG FIX: Use the item's actual status instead of hardcoding 'ACTIVE'
+        status: item.status || 'WAITING' 
       }))
 
       // 🚨 AUTO-ARCHIVE LOGIC: Clean the floor before dropping new setups manually
@@ -251,7 +252,7 @@ export default function AdminQueueManager() {
             Dark Pool Queue
           </h2>
           <p className="text-sm text-zinc-400">
-            {queuedSetups.length} {queuedSetups.length === 1 ? 'setup' : 'setups'} staging for automated deployment.
+            {queuedSetups.length} {queuedSetups.length === 1 ? 'setup' : 'setups'} staging for deployment.
           </p>
         </div>
 
@@ -285,7 +286,7 @@ export default function AdminQueueManager() {
           <button 
             onClick={handlePushLive}
             disabled={isDeploying || selectedIds.size === 0}
-            className="w-full sm:w-auto flex items-center justify-center px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="w-full sm:w-auto flex items-center justify-center px-5 py-2.5 bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-bold uppercase tracking-widest rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
           >
             {isDeploying ? <Loader2 size={16} className="animate-spin mr-2" /> : <Rocket size={16} className="mr-2" />}
             {isDeploying ? 'Deploying...' : `Force Drop (${selectedIds.size})`}
@@ -315,10 +316,25 @@ export default function AdminQueueManager() {
               queuedSetups.map(setup => {
                 const isSelected = selectedIds.has(setup.id)
                 
+                // 🚨 Added Status Styling for Queue Review
+                const status = (setup.status || 'WAITING').toUpperCase()
+                let statusColor = "bg-zinc-800 text-zinc-400"
+                if (status === 'ACTIVE') statusColor = "bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                if (status === 'WAITING') statusColor = "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+                if (status === 'DONE') statusColor = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                if (status === 'INVALID') statusColor = "bg-red-500/10 text-red-400 border border-red-500/20"
+                if (status === 'CANCELED') statusColor = "bg-zinc-800 text-zinc-300 border border-zinc-600"
+
+                // 🚨 Added Bias Styling
+                const bias = (setup.bias || 'NEUTRAL').toUpperCase()
+                let biasColor = "text-zinc-500"
+                if (bias === 'BULLISH') biasColor = "text-emerald-400"
+                if (bias === 'BEARISH') biasColor = "text-red-400"
+                
                 return (
                   <div 
                     key={setup.id} 
-                    className={`px-4 py-3.5 flex items-center gap-4 rounded-lg transition-colors ${isSelected ? 'bg-zinc-800/80 shadow-sm' : 'hover:bg-zinc-800/40'}`}
+                    className={`px-4 py-3.5 flex items-center gap-4 rounded-lg transition-colors ${isSelected ? 'bg-zinc-800/80 shadow-sm border border-zinc-700/50' : 'hover:bg-zinc-800/40 border border-transparent'}`}
                   >
                     <div className="shrink-0 cursor-pointer text-zinc-500 hover:text-zinc-300 transition-colors" onClick={() => toggleSelect(setup.id)}>
                       {isSelected ? <CheckSquare size={16} className="text-zinc-200" /> : <Square size={16} />}
@@ -326,19 +342,28 @@ export default function AdminQueueManager() {
                     
                     <div className="flex-1 flex flex-col sm:flex-row sm:items-center justify-between gap-4 min-w-0 cursor-pointer" onClick={() => toggleSelect(setup.id)}>
                       <div className="flex items-center gap-4 truncate">
-                        <div className="flex items-baseline gap-2.5 shrink-0 min-w-[100px]">
-                          <span className={`text-sm font-semibold ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>{setup.asset_symbol}</span>
-                          <span className="text-xs font-medium text-zinc-500 bg-zinc-950 px-1.5 py-0.5 rounded-md border border-zinc-800/50">{setup.timeframe}</span>
+                        <div className="flex items-baseline gap-2 shrink-0 min-w-[120px]">
+                          <span className={`text-sm font-bold ${isSelected ? 'text-zinc-100' : 'text-zinc-300'}`}>{setup.asset_symbol}</span>
+                          <span className="text-[10px] font-bold text-zinc-500 bg-zinc-950 px-1.5 py-0.5 rounded border border-zinc-800/50">{setup.timeframe}</span>
+                          <span className={`flex items-center ${biasColor}`}>
+                            {bias === 'BULLISH' ? <TrendingUp size={14}/> : bias === 'BEARISH' ? <TrendingDown size={14}/> : <Minus size={14}/>}
+                          </span>
                         </div>
+
+                        {/* 🚨 Status Tag Displayed */}
+                        <div className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0 ${statusColor}`}>
+                          {status}
+                        </div>
+
                         <span className="text-sm text-zinc-500 truncate max-w-md hidden md:block">
                           {setup.content || setup.title || <span className="italic opacity-50">No notes attached</span>}
                         </span>
                       </div>
                       
                       <div className="flex items-center gap-6 shrink-0">
-                        <span className="text-xs text-zinc-500 font-medium flex items-center gap-1.5">
+                        <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest flex items-center gap-1.5">
                           <Server size={14} className="opacity-50" />
-                          Pending Backend Drop
+                          Ready
                         </span>
                       </div>
                     </div>
