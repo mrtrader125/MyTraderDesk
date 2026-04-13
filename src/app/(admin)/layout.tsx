@@ -23,14 +23,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isAuthorized, setIsAuthorized] = useState(false)
   const [adminEmail, setAdminEmail] = useState('')
   
-  // Initialize to true, but we will override it immediately before rendering
+  // Default to true, but we update it from localStorage before rendering
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   useEffect(() => {
-    // 1. Load Sidebar Preference instantly
-    const savedSidebarState = localStorage.getItem('adminSidebarOpen')
-    if (savedSidebarState !== null) {
-      setIsSidebarOpen(savedSidebarState === 'true')
+    // 🚨 1. Load persistent sidebar state instantly
+    const savedState = localStorage.getItem('adminSidebarState')
+    if (savedState !== null) {
+      setIsSidebarOpen(savedState === 'true')
     }
 
     // 2. Verify Admin
@@ -54,17 +54,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       }
 
       setAdminEmail(user.email || 'Admin')
-      setIsAuthorized(true)
+      setIsAuthorized(true) // UI renders after this, so no flashing!
     }
     
     verifyAdmin()
   }, [router])
 
-  // 🚨 NEW: Toggle function that saves to localStorage
+  // 🚨 3. Safe toggle function that saves to localStorage
   const toggleSidebar = () => {
     setIsSidebarOpen(prev => {
       const newState = !prev;
-      localStorage.setItem('adminSidebarOpen', String(newState));
+      localStorage.setItem('adminSidebarState', String(newState));
       return newState;
     });
   }
@@ -84,7 +84,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'System Logs', path: '/admin/logs', icon: Activity },
   ]
 
-  // This loading state hides the sidebar until we know exactly what state it should be in
   if (!isAuthorized) {
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center space-y-4">
