@@ -30,6 +30,14 @@ export default function AdminFloorControl() {
   // --- UI STATES ---
   const [isCommsOpen, setIsCommsOpen] = useState(true)
   const [expandedImage, setExpandedImage] = useState<string | null>(null)
+  
+  // 🚨 NOTIFICATION STATE
+  const [unreadCount, setUnreadCount] = useState(0)
+  
+  const isCommsOpenRef = useRef(isCommsOpen)
+  useEffect(() => {
+    isCommsOpenRef.current = isCommsOpen
+  }, [isCommsOpen])
 
   // --- REAL-TIME DATA STATES ---
   const [posts, setPosts] = useState<any[]>([])
@@ -78,7 +86,10 @@ export default function AdminFloorControl() {
     fetchInitialData()
 
     const channel = supabase.channel('admin:desk_feed')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (p) => setSquawks((c) => [...c, p.new]))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (p) => {
+        setSquawks((c) => [...c, p.new])
+        if (!isCommsOpenRef.current) setUnreadCount((prev) => prev + 1)
+      })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'live_squawk' }, (p) => setSquawks((c) => c.map(s => s.id === p.new.id ? p.new : s)))
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_squawk' }, (p) => setSquawks((c) => c.filter(s => s.id !== p.old.id)))
       
@@ -90,8 +101,11 @@ export default function AdminFloorControl() {
     return () => { supabase.removeChannel(channel) }
   }, [supabase])
 
-  // Scroll Behavior
-  useEffect(() => { squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [squawks])
+  // 🚨 FIXED: Scroll Behavior
+  useEffect(() => { 
+    if (isCommsOpen) squawkEndRef.current?.scrollIntoView({ behavior: 'smooth' }) 
+  }, [squawks, isCommsOpen])
+  
   useEffect(() => { floorEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [posts])
 
   // Master Playbook Fetch
@@ -184,6 +198,11 @@ export default function AdminFloorControl() {
     setImageFile(null); setLibraryImageUrl(null); setImagePreview(null); setTicker('');
   }
 
+  const toggleComms = () => {
+    setIsCommsOpen(!isCommsOpen);
+    if (!isCommsOpen) setUnreadCount(0);
+  }
+
   // --- SUBMISSIONS ---
   const handleFloorSubmit = async () => {
     if (!thesis.trim()) return alert('Message body is required.')
@@ -246,8 +265,8 @@ export default function AdminFloorControl() {
       )}
 
       {/* 🚨 RIGID LAYOUT SHELL */}
-      <div className="w-full bg-[#030303] text-neutral-200 p-4 md:p-6 flex flex-col" style={{ height: 'calc(100dvh - 65px)' }}>
-        <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0">
+      <div className="w-full bg-[#030303] text-neutral-200 p-4 md:p-6 flex flex-col relative" style={{ height: 'calc(100dvh - 65px)' }}>
+        <div className="max-w-[1800px] mx-auto w-full h-full flex flex-col min-h-0 relative z-10">
           
           {/* HEADER */}
           <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.04] shrink-0">
@@ -258,22 +277,30 @@ export default function AdminFloorControl() {
               <div className="hidden md:flex items-center gap-2 text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> Live Sync
               </div>
+              
+              {/* 🚨 FIXED TOGGLE BUTTON WITH NOTIFICATION BADGE */}
               <button 
-                onClick={() => setIsCommsOpen(!isCommsOpen)}
-                className="flex items-center justify-center text-neutral-400 hover:text-white transition-colors bg-[#111] hover:bg-[#1a1a1a] w-10 h-10 rounded-xl border border-white/[0.04] shadow-sm"
+                onClick={toggleComms}
+                className="flex relative items-center justify-center text-neutral-400 hover:text-white transition-colors bg-[#111] hover:bg-[#1a1a1a] w-10 h-10 rounded-xl border border-white/[0.04] shadow-sm"
                 title={isCommsOpen ? "Collapse Telegram Feed" : "Expand Telegram Feed"}
               >
                 {isCommsOpen ? <PanelRightClose size={18} /> : <PanelRightOpen size={18} />}
+                
+                {!isCommsOpen && unreadCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 bg-[#2AABEE] text-white text-[9px] font-black px-1.5 py-0.5 rounded-full min-w-[18px] h-[18px] flex items-center justify-center border border-[#030303] animate-in zoom-in shadow-md z-20">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </button>
             </div>
           </div>
 
-          <div className="flex-1 flex gap-6 lg:gap-8 min-h-0">
+          <div className="flex-1 flex min-h-0 overflow-hidden h-full">
             
             {/* ==================================================== */}
             {/* LEFT PANE: LIVE FLOOR FEED & CHAT INPUT              */}
             {/* ==================================================== */}
-            <div className="flex-1 flex flex-col h-full min-w-0 bg-[#080808] border border-white/[0.04] rounded-2xl overflow-hidden shadow-xl">
+            <div className="flex-1 flex flex-col h-full min-w-0 relative transition-all duration-500 ease-in-out bg-[#080808] border border-white/[0.04] rounded-2xl overflow-hidden shadow-xl">
               
               <div className="px-5 py-4 border-b border-white/[0.04] bg-[#0a0a0a] flex items-center justify-between shrink-0">
                 <div className="flex items-center gap-2 text-sm font-bold text-white">
@@ -511,11 +538,16 @@ export default function AdminFloorControl() {
             {/* ==================================================== */}
             {/* RIGHT PANE: TELEGRAM BROADCAST MIRROR                */}
             {/* ==================================================== */}
-            {isCommsOpen && (
-              <div className="w-[350px] xl:w-[400px] shrink-0 h-full flex flex-col bg-[#080808] rounded-2xl border border-white/[0.04] shadow-2xl animate-in slide-in-from-right-8 duration-300">
+            
+            {/* 🚨 FIXED RIGID SIDEBAR SLIDE TRANSITION */}
+            <div className={`hidden lg:block h-full shrink-0 transition-[width,margin,opacity] duration-[400ms] ease-[cubic-bezier(0.4,0,0.2,1)] overflow-hidden ${
+              isCommsOpen ? 'w-[340px] xl:w-[400px] opacity-100 ml-6 lg:ml-8' : 'w-0 opacity-0 ml-0 pointer-events-none'
+            }`}>
+              
+              <div className="w-[340px] xl:w-[400px] h-full bg-[#080808] rounded-2xl border border-white/[0.03] flex flex-col shadow-2xl relative">
                 
                 {/* HEADER */}
-                <div className="px-5 py-4 border-b border-[#2AABEE]/20 bg-[#2AABEE]/[0.03] flex items-center justify-between shrink-0 rounded-t-2xl">
+                <div className="px-5 py-5 border-b border-[#2AABEE]/20 bg-[#2AABEE]/[0.03] flex items-center justify-between shrink-0 rounded-t-2xl">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-[#2AABEE]/10 flex items-center justify-center border border-[#2AABEE]/30">
                       <Send className="text-[#2AABEE] w-4 h-4 -ml-0.5" />
@@ -625,7 +657,7 @@ export default function AdminFloorControl() {
                   </div>
                 </div>
               </div>
-            )}
+            </div>
 
           </div>
         </div>
