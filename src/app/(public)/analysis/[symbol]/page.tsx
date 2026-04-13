@@ -1,5 +1,4 @@
 import { Metadata, ResolvingMetadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Lock, TrendingUp, TrendingDown, Minus, Shield, Users, Unlock } from 'lucide-react'
@@ -132,14 +131,17 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
                 </span>
               </div>
 
-              {/* Dynamic Chart Rendering */}
-              <div className="relative aspect-video bg-[#111] overflow-hidden">
-                <Image 
-                  src={setup.image_url} 
-                  alt={`${symbol} Technical Analysis`}
-                  fill
-                  className={`object-cover transition-all duration-500 ${isLocked ? 'filter blur-md opacity-40 scale-105' : 'opacity-90'}`}
-                />
+              {/* Dynamic Chart Rendering (FIXED NEXT.JS IMAGE ISSUE) */}
+              <div className="relative aspect-video bg-[#111] overflow-hidden flex items-center justify-center">
+                {setup.image_url ? (
+                  <img 
+                    src={setup.image_url} 
+                    alt={`${symbol} Technical Analysis`}
+                    className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${isLocked ? 'filter blur-md opacity-40 scale-105' : 'opacity-90'}`}
+                  />
+                ) : (
+                  <span className="text-neutral-700 text-xs font-bold uppercase tracking-widest">Awaiting Chart Data</span>
+                )}
                 
                 {/* Dynamic Paywall Overlay */}
                 {isLocked && (
