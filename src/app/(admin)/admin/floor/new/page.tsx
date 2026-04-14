@@ -256,12 +256,12 @@ export default function AdminFloorControl() {
     finally { setIsPostingFloor(false) }
   }
 
-  // TELEGRAM OPEN/CLOSE ALERT BUTTONS
-  const handleSessionToggle = async (action: 'open' | 'close') => {
-    const messageText = action === 'open' 
-      ? `🟢 **LIVE DESK ACTIVE**\n\nThe trading floor is now open for the session. Monitoring active setups and market flow.`
-      : `🔴 **SESSION WRAP**\n\nThe trading desk is now closed. Risk management active on open positions.`;
-
+// TELEGRAM OPEN/CLOSE ALERT BUTTONS
+const handleSessionToggle = async (action: 'open' | 'close') => {
+  const messageText = action === 'open' 
+    ? `🟢 **LIVE FLOOR: ACTIVE**\n━━━━━━━━━━━━━━━━━━━━\nThe trading desk is officially open for the session. Monitoring active setups and institutional market flow.\n\n\`SYSTEM  : ONLINE\`\n\`ROUTING : SECURE\``
+    : `🔴 **SESSION WRAP**\n━━━━━━━━━━━━━━━━━━━━\nThe trading desk is wrapped for the session.\n\n> 🛡️ *Risk management protocols active on all open positions. No new setups will be deployed.*\n\n\`SYSTEM  : STANDBY\``;
+    
     setIsTogglingSession(true)
     try {
       await fetch('/api/admin/broadcast', {

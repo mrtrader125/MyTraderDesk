@@ -77,7 +77,7 @@ export default function Home() {
     { q: "Do I need my own charting software?", a: "You should still execute trades on your preferred broker, but all of our structural mapping is provided in high-resolution directly within our platform." },
     { q: "What timeframes do you analyze?", a: "We take a top-down approach. Our daily analysis establishes the Weekly/Daily macro bias, identifies the 4H/1H structural framework, and pinpoints 15m execution zones." },
     { q: "Do I need a new strategy to use this?", a: "No. You bring your strategy. Our platform provides the routine to help you execute it without emotional interference." },
-    { q: "How does the software prevent overtrading?", a: "By enforcing our 3-Level Filtration Routine. Selecting specific daily pairs inside the dashboard helps eliminate the distraction of scanning 20 other charts." },
+    { q: "How does the terminal prevent overtrading?", a: "By enforcing our 3-Level Filtration Routine. Selecting specific daily pairs inside the dashboard helps eliminate the distraction of scanning 20 other charts." },
     { q: "Is this for beginners?", a: "No. This is built for intermediate traders—those who have survived a few years in the market, know how to trade, but want stricter systemic control to reach profitability." },
     { q: "Am I locked into a contract?", a: "Never. We operate on a strict month-to-month (or annual) basis. You can cancel your subscription instantly with two clicks from your Account Dashboard." }
   ]

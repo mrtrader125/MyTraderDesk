@@ -123,7 +123,7 @@ export async function GET(request: Request) {
         const channelId = process.env.TELEGRAM_BROADCAST_CHANNEL_ID;
 
         if (botToken && channelId) {
-          const messageText = `🟢 **Today's analysis is live.**\n\n⚡ Watch the live floor terminal for real-time execution and updates.\n\n⚠️ _Risk Advisory : Risk management is not optional. Keep your stops tight and size your positions responsibly._`;
+          const messageText = `🗓️ **DAILY ANALYSIS: LIVE**\n\nToday's market mapping and directional bias are now available.\n\n▪️ **Status:** Monitoring institutional flow\n▪️ **Access:** Live Terminal Dashboard\n\n_⚠️ Risk Advisory: Capital preservation is the primary objective. Keep stops tight and size responsibly._`;
 
           // Define the Keyboard with TWO buttons (Mini App & Website)
           const dualKeyboard = {
