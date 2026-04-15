@@ -22,7 +22,7 @@ export default function SideNav() {
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'My Desk', href: '/desk', icon: Briefcase, isPro: true }, // Added My Desk
+    { name: 'My Desk', href: '/desk', icon: Briefcase }, 
     { name: 'Markets', href: '/markets', icon: LineChart },
     { name: 'The Vault', href: '/vault', icon: Bookmark }, 
     { name: 'Live Floor', href: '/floor', icon: Users }, 
