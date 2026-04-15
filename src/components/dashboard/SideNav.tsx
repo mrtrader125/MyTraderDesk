@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { 
   LayoutDashboard, LineChart, Bookmark, 
-  Settings, LogOut, Menu, Users 
+  Settings, LogOut, Menu, Users, Briefcase 
 } from 'lucide-react'
 
 export default function SideNav() {
@@ -22,11 +22,11 @@ export default function SideNav() {
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'My Desk', href: '/desk', icon: Briefcase, isPro: true }, // Added My Desk
     { name: 'Markets', href: '/markets', icon: LineChart },
     { name: 'The Vault', href: '/vault', icon: Bookmark }, 
     { name: 'Live Floor', href: '/floor', icon: Users }, 
     { name: 'Account', href: '/account/profile', icon: Settings },
-    { name: 'My Desk', href: '/desk', icon: desk },
   ]
 
   const handleSignOut = async () => {
@@ -73,7 +73,16 @@ export default function SideNav() {
                 <div className={`flex items-center w-full p-3 rounded-xl transition-all mb-2
                   ${isActive ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20 shadow-inner' : 'text-neutral-500 border border-transparent hover:bg-[#111] hover:text-neutral-300'}`}>
                   <item.icon size={20} className="shrink-0" />
-                  {isOpen && <span className="ml-3 font-black text-xs uppercase tracking-widest truncate">{item.name}</span>}
+                  {isOpen && (
+                    <>
+                      <span className="ml-3 font-black text-xs uppercase tracking-widest truncate">{item.name}</span>
+                      {item.isPro && (
+                        <span className="ml-auto text-[8px] uppercase tracking-wider font-bold bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20">
+                          PRO
+                        </span>
+                      )}
+                    </>
+                  )}
                 </div>
               </Link>
             )
@@ -110,7 +119,7 @@ export default function SideNav() {
                 size={20} 
                 className={`transition-all duration-300 ${isActive ? 'text-blue-500 scale-110 drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'text-neutral-600 group-hover:text-neutral-400'}`} 
               />
-              <span className={`text-[8px] font-black uppercase tracking-widest transition-colors ${isActive ? 'text-blue-400' : 'text-neutral-600'}`}>
+              <span className={`text-[8px] font-black uppercase tracking-widest transition-colors flex items-center gap-0.5 ${isActive ? 'text-blue-400' : 'text-neutral-600'}`}>
                 {item.name}
               </span>
             </Link>
