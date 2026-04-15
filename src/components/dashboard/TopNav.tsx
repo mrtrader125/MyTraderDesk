@@ -1,14 +1,13 @@
 'use client'
 
 import { useState, useEffect, Suspense } from 'react'
-import { Search, LogOut, User } from 'lucide-react'
+import { Search, LogOut, User, Globe } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import NotificationBell from '@/components/notifications/NotificationBell'
 import Image from 'next/image'
 import Link from 'next/link'
 
-// 🚨 ADDED: We now accept the user object directly as a prop
 function TopNavContent({ user }: { user: any }) {
   const pathname = usePathname()
   const router = useRouter()
@@ -16,6 +15,9 @@ function TopNavContent({ user }: { user: any }) {
   const [mounted, setMounted] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  
+  // State for the dashboard toggle
+  const [dashboardView, setDashboardView] = useState<'general' | 'personal'>('general')
 
   useEffect(() => {
     setMounted(true)
@@ -26,8 +28,6 @@ function TopNavContent({ user }: { user: any }) {
     window.dispatchEvent(new CustomEvent('globalSearch', { detail: '' }))
   }, [pathname])
 
-  // Optional Activity Logging: This happens silently in the background
-  // and doesn't block the UI from rendering, so it's perfectly safe here.
   useEffect(() => {
     if (!searchTerm || !user?.id) return
     const timer = setTimeout(() => {
@@ -51,10 +51,16 @@ function TopNavContent({ user }: { user: any }) {
     router.push('/login')
   }
 
+  // Handle Dashboard Toggle Change
+  const handleViewSwitch = (view: 'general' | 'personal') => {
+    setDashboardView(view)
+    window.dispatchEvent(new CustomEvent('switchDashboardView', { detail: view }))
+  }
+
   if (pathname?.includes('/viewport')) return null
   
   const isAccountPage = pathname?.startsWith('/account')
-  // 🚨 OPTIMIZATION: Instantly grab the initial from the passed prop
+  const isDashboard = pathname === '/dashboard'
   const userInitial = user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'
 
   return (
@@ -83,6 +89,37 @@ function TopNavContent({ user }: { user: any }) {
           </div>
         )}
       </div>
+
+      {/* DASHBOARD VIEW TOGGLE (Only visible on /dashboard) */}
+      {mounted && isDashboard && (
+        <div className="hidden lg:flex items-center bg-[#050505] border border-neutral-800 p-1 rounded-xl w-max shadow-inner ml-4 shrink-0">
+          <button
+            onClick={() => handleViewSwitch('general')}
+            className={`relative flex items-center gap-1.5 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 z-10 ${
+              dashboardView === 'general' ? 'text-white' : 'text-neutral-600 hover:text-neutral-400'
+            }`}
+          >
+            <Globe className="w-3.5 h-3.5" />
+            General
+            {dashboardView === 'general' && (
+              <div className="absolute inset-0 bg-neutral-800 rounded-lg -z-10 shadow-sm transition-all duration-300"></div>
+            )}
+          </button>
+
+          <button
+            onClick={() => handleViewSwitch('personal')}
+            className={`relative flex items-center gap-1.5 px-4 py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 z-10 ${
+              dashboardView === 'personal' ? 'text-blue-400' : 'text-neutral-600 hover:text-neutral-400'
+            }`}
+          >
+            <User className="w-3.5 h-3.5" />
+            Personal
+            {dashboardView === 'personal' && (
+              <div className="absolute inset-0 bg-blue-600/10 border border-blue-500/20 rounded-lg -z-10 shadow-[0_0_15px_rgba(37,99,235,0.1)] transition-all duration-300"></div>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* ICONS & PROFILE */}
       <div className="flex items-center space-x-3 md:space-x-4 ml-3 md:ml-4 relative shrink-0">
@@ -127,7 +164,6 @@ function TopNavContent({ user }: { user: any }) {
   )
 }
 
-// 🚨 MODIFIED: TopNav now accepts the user prop
 export default function TopNav({ user }: { user: any }) {
   return (
     <Suspense fallback={<div className="h-14 md:h-16 w-full border-b border-neutral-900 bg-[#0a0a0a] shrink-0 z-40 sticky top-0"></div>}>
