@@ -11,7 +11,6 @@ export default function AssistantWidget() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   
-  // Ref to automatically scroll to the newest message
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -39,25 +38,24 @@ export default function AssistantWidget() {
       })
 
       const data = await res.json()
-
       if (!res.ok) throw new Error(data.error || 'Server error')
 
       setMessages((prev) => [...prev, { role: 'assistant', content: data.text }])
     } catch (error) {
       console.error("Chat error:", error)
-      setMessages((prev) => [...prev, { role: 'assistant', content: "Connection error. Please check your network or API key." }])
+      setMessages((prev) => [...prev, { role: 'assistant', content: "Connection error. Please check your network." }])
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    // Anchored to bottom-left. Adjusts for mobile bottom nav (bottom-[85px]) vs desktop (md:bottom-6)
-    <div className="fixed bottom-[85px] left-4 md:bottom-6 md:left-6 z-[9999] flex flex-col items-start">
+    // 🚨 UPDATED: Now fixed to the bottom-right
+    <div className="fixed bottom-[85px] right-4 md:bottom-6 md:right-6 z-[9999] flex flex-col items-end">
       
       {/* THE CHAT WINDOW */}
       <div 
-        className={`bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-300 origin-bottom-left mb-4 flex flex-col ${
+        className={`bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-300 origin-bottom-right mb-4 flex flex-col ${
           isOpen ? 'w-[calc(100vw-32px)] md:w-[380px] h-[500px] opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-95 pointer-events-none'
         }`}
       >
