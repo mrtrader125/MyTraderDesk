@@ -5,19 +5,33 @@ import { redirect } from 'next/navigation'
 import DeskClient from './DeskClient'
 
 export default async function MyDeskPage() {
-  const cookieStore = cookies()
+  // 1. You MUST await cookies() in newer Next.js versions
+  const cookieStore = await cookies()
+  
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        // 2. Use the modern getAll/setAll syntax for Supabase SSR
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              cookieStore.set(name, value, options)
+            })
+          } catch {
+            // The `setAll` method was called from a Server Component.
+            // This can be safely ignored as middleware handles refreshing user sessions.
+          }
         },
       },
     }
   )
 
+  // We are correctly using getUser() here, avoiding the security warning in your logs
   const { data: { user }, error: userError } = await supabase.auth.getUser()
 
   if (userError || !user) {
@@ -32,7 +46,7 @@ export default async function MyDeskPage() {
     .single()
 
   if (profile?.plan !== 'pro') {
-    redirect('/account/billing') // Or wherever your upgrade page is
+    redirect('/account/billing')
   }
 
   return (
