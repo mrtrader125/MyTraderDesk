@@ -26,6 +26,7 @@ export default function SideNav() {
     { name: 'The Vault', href: '/vault', icon: Bookmark }, 
     { name: 'Live Floor', href: '/floor', icon: Users }, 
     { name: 'Account', href: '/account/profile', icon: Settings },
+    { name: 'My Desk', href: '/desk', icon: desk },
   ]
 
   const handleSignOut = async () => {
