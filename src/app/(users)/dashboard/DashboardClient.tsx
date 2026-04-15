@@ -19,16 +19,17 @@ export default function DashboardClient(props: any) {
   }, [])
 
   return (
-    <div className="flex flex-col h-full bg-[#050505]">
+    // THE FIX: Lock height to viewport minus TopNav (56px mobile, 64px desktop) + kill outer scroll
+    <div className="flex flex-col h-[calc(100dvh-56px)] md:h-[calc(100dvh-64px)] bg-[#050505] overflow-hidden w-full">
       
       {/* ========================================= */}
       {/* TRANSITION CONTAINER                      */}
       {/* ========================================= */}
-      <div className="relative flex-1 bg-[#050505]">
+      <div className="relative flex-1 bg-[#050505] overflow-hidden w-full h-full">
         
         {/* GENERAL VIEW */}
         <div 
-          className={`absolute inset-0 transition-all duration-500 ease-in-out ${
+          className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${
             activeView === 'general' 
               ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' 
               : 'opacity-0 translate-y-4 -z-10 pointer-events-none'
@@ -39,7 +40,7 @@ export default function DashboardClient(props: any) {
 
         {/* PERSONAL VIEW */}
         <div 
-          className={`absolute inset-0 transition-all duration-500 ease-in-out ${
+          className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${
             activeView === 'personal' 
               ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' 
               : 'opacity-0 translate-y-4 -z-10 pointer-events-none'
