@@ -4,8 +4,10 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import DeskClient from './DeskClient'
 
+// 🚨 1. Force Next.js to NEVER cache this page so it always checks live DB status
+export const dynamic = 'force-dynamic'
+
 export default async function MyDeskPage() {
-  // 1. Next.js 15+ requires awaiting cookies()
   const cookieStore = await cookies()
   
   const supabase = createServerClient(
@@ -29,22 +31,26 @@ export default async function MyDeskPage() {
     }
   )
 
-  // 2. Authenticate the User
   const { data: { user }, error: userError } = await supabase.auth.getUser()
 
   if (userError || !user) {
     redirect('/login')
   }
 
-  // 3. Verify 'pro' plan using your existing profiles table
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('plan')
     .eq('id', user.id)
     .single()
 
-  if (profile?.plan !== 'pro') {
-    // Kick free users to the billing/upgrade page
+  if (profileError) {
+    console.error("Error fetching profile in My Desk:", profileError)
+  }
+
+  // 🚨 2. Make the check case-insensitive and remove accidental spaces
+  const userPlan = (profile?.plan || 'free').toLowerCase().trim()
+
+  if (userPlan !== 'pro') {
     redirect('/account/billing')
   }
 
@@ -58,7 +64,6 @@ export default async function MyDeskPage() {
           </p>
         </header>
         
-        {/* Pass the authenticated user ID to the client component */}
         <DeskClient userId={user.id} />
       </div>
     </main>
