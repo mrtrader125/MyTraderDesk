@@ -28,7 +28,9 @@ export async function middleware(request: NextRequest) {
 
     const isAuthRoute = path === '/login' || path === '/signup'
     const isAdminRoute = path.startsWith('/admin')
-    const isUserRoute = path.startsWith('/floor') || path.startsWith('/dashboard') || path.startsWith('/markets') || path.startsWith('/settings') || path.startsWith('/profile') || path.startsWith('/vault')
+    
+    // 🚨 ADDED /desk right here
+    const isUserRoute = path.startsWith('/floor') || path.startsWith('/dashboard') || path.startsWith('/markets') || path.startsWith('/settings') || path.startsWith('/profile') || path.startsWith('/vault') || path.startsWith('/desk')
 
     // 1. Not logged in? Kick to login
     if (!user && (isUserRoute || isAdminRoute)) {
