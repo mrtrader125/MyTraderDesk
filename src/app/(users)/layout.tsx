@@ -5,6 +5,7 @@ import { createServerClient } from '@supabase/ssr'
 import SideNav from '@/components/dashboard/SideNav'
 import TopNav from '@/components/dashboard/TopNav'
 import PresenceHeartbeat from '@/components/dashboard/PresenceHeartbeat'
+import AssistantWidget from '@/components/dashboard/AssistantWidget' // 🚨 ADDED: Import the AI Widget
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies()
@@ -23,9 +24,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     }
   )
 
-  // 1. Get Session instantly from Edge
-  const { data: { session } } = await supabase.auth.getSession()
-  const user = session?.user
+  // 1. Get User securely from the Supabase server (Fixes the warning in your logs)
+  const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
     redirect('/login?error=Unauthorized')
@@ -63,6 +63,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </main>
         </div>
       </div>
+
+      {/* 🚨 THE AI WIDGET: Placed outside the layout flow so it floats on top globally */}
+      <AssistantWidget />
     </div>
   )
 }
