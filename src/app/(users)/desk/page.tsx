@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
-  CheckCircle2, Clock, Activity, Target, ArrowRight, ArrowLeft,
-  Globe2, BarChart2, Image as ImageIcon, Trash2, Menu
+  Clock, Target, ArrowRight, ArrowLeft,
+  BarChart2, Image as ImageIcon, Trash2, Menu
 } from 'lucide-react'
 
 // --- BULK UPLOAD MODAL COMPONENT ---
@@ -207,13 +207,11 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   )
 }
 
-// --- MAIN DASHBOARD COMPONENT ---
-export default function PersonalDashboard() {
+// --- MAIN DESK COMPONENT ---
+export default function DeskPage() {
   const [isVaultOpen, setIsVaultOpen] = useState(true)
   const [mounted, setMounted] = useState(false)
-
   const [time, setTime] = useState<Date | null>(null) 
-  const [sessionInfo, setSessionInfo] = useState({ name: 'Determining...', localTime: '--:--:--' })
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   
   const [setups, setSetups] = useState<any[]>([
@@ -235,40 +233,16 @@ export default function PersonalDashboard() {
     }
   }, [todaySetups.length, activeTodayId])
 
-  const [routine, setRoutine] = useState([
-    { id: 1, label: 'Sunday Macro Prep', completed: true },
-    { id: 2, label: 'Daily Filtering', completed: false },
-    { id: 3, label: 'Weekly Wind-up', completed: false }
-  ])
-
+  // Real-time Clock (SSR Safe)
   useEffect(() => {
     setMounted(true);
     setTime(new Date());
 
     const timer = setInterval(() => {
-      const now = new Date();
-      setTime(now);
-      
-      const utcHour = now.getUTCHours();
-      let sName = 'Interbank';
-      let tz = 'UTC';
-
-      if (utcHour >= 13 && utcHour < 22) { sName = 'New York'; tz = 'America/New_York'; }
-      else if (utcHour >= 8 && utcHour < 17) { sName = 'London'; tz = 'Europe/London'; }
-      else if (utcHour >= 0 && utcHour < 9) { sName = 'Tokyo'; tz = 'Asia/Tokyo'; }
-      else { sName = 'Sydney'; tz = 'Australia/Sydney'; }
-
-      setSessionInfo({
-        name: sName,
-        localTime: now.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      });
+      setTime(new Date());
     }, 1000)
     return () => clearInterval(timer)
   }, [])
-
-  const toggleRoutine = (id: number) => {
-    setRoutine(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item))
-  }
 
   const toggleTodayStatus = (id: string) => {
     setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday } : s))
@@ -294,149 +268,109 @@ export default function PersonalDashboard() {
       {/* 🔴 LEFT/MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
 
-        {/* Inner Content Wrapper: Strictly split 50% Top, 50% Bottom */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-
-          {/* 🟢 TOP ROW: COMPACT METRICS & ROUTINE (STRICTLY 50% HEIGHT) */}
-          <div className="h-1/2 shrink-0 p-3 sm:p-4 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
-            
-            <div className="flex flex-col gap-4 w-full md:w-64 shrink-0 min-h-0 overflow-y-auto custom-scrollbar">
-              {/* Metric 1: Local Time */}
-              <div className="bg-[#0a0a0a] border border-zinc-800/60 rounded-lg flex flex-col items-center justify-center p-3 shadow-sm h-24 shrink-0">
-                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-1">
-                  <Clock size={12}/> Local Time
-                </span>
-                <span className="text-lg font-mono text-zinc-100 tracking-wide">
+        {/* 🟢 SLEEK TOP BAR */}
+        <div className="flex items-center justify-between p-3 border-b border-zinc-800/60 bg-[#0a0a0a] shrink-0">
+          <div className="flex items-center gap-3">
+             <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800/60 px-3 py-1.5 rounded-lg shadow-sm">
+                <Clock size={14} className="text-zinc-500" />
+                <span className="text-sm font-mono text-zinc-200 tracking-wide">
                   {mounted && time ? time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
                 </span>
-              </div>
-              
-              {/* Metric 2: Active Session */}
-              <div className="bg-[#0a0a0a] border border-zinc-800/60 rounded-lg flex flex-col items-center justify-center p-3 shadow-sm h-24 shrink-0 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                <span className="text-[9px] font-bold text-blue-400/80 uppercase tracking-widest mb-1 flex items-center gap-1 relative z-10">
-                  <Globe2 size={12}/> Active Session: {sessionInfo.name}
-                </span>
-                <span className="text-lg font-mono text-white tracking-tight leading-tight relative z-10">
-                  {sessionInfo.localTime}
-                </span>
-              </div>
-            </div>
+             </div>
+          </div>
+          <button 
+            onClick={() => setIsVaultOpen(!isVaultOpen)} 
+            className="text-zinc-400 hover:text-white transition-colors bg-zinc-950 border border-zinc-800/60 p-2 rounded-lg"
+            title="Toggle Weekly Vault"
+          >
+            <Menu size={16} />
+          </button>
+        </div>
 
-            {/* Metric 3: Routine Checklist & Hamburger Toggle */}
-            <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-4 flex flex-col shadow-sm min-h-0">
-              <div className="flex justify-between items-center mb-2 border-b border-zinc-800/50 pb-2 shrink-0">
-                <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                  <CheckCircle2 size={14} className="text-emerald-500/70" /> Execution Routine
-                </h3>
-                <button 
-                  onClick={() => setIsVaultOpen(!isVaultOpen)} 
-                  className="text-zinc-500 hover:text-white transition-colors"
-                  title="Toggle Weekly Vault"
-                >
-                  <Menu size={16} />
-                </button>
-              </div>
-              <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar flex-1 pr-2">
-                {routine.map(item => (
-                  <div key={item.id} onClick={() => toggleRoutine(item.id)} className="flex items-center gap-3 cursor-pointer group py-1.5">
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${item.completed ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700 text-transparent group-hover:border-zinc-500'}`}>
-                      <CheckCircle2 size={12} />
-                    </div>
-                    <span className={`text-xs font-medium tracking-wide transition-all ${item.completed ? 'text-zinc-600 line-through' : 'text-zinc-300 group-hover:text-white'}`}>
-                      {item.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* 🟢 TODAY WORKSPACE (Now fills 100% of vertical space) */}
+        <div className="flex-1 flex flex-col bg-[#080808] min-h-0">
+          
+          <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
+            <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+              <Crosshair size={14} className="text-blue-500" /> Today's Focus
+            </h2>
+            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+              {todaySetups.length} Pairs Locked
+            </span>
           </div>
 
-          {/* 🟢 BOTTOM ROW: TODAY WORKSPACE (STRICTLY 50% HEIGHT) */}
-          <div className="h-1/2 shrink-0 flex flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0">
+          <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
             
-            <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
-              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                <Crosshair size={14} className="text-blue-500" /> Today's Focus
-              </h2>
-              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-                {todaySetups.length} Pairs Locked
-              </span>
-            </div>
-
-            <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
-              
-              {/* PANE 1: List */}
-              <div className="w-48 sm:w-56 shrink-0 border-r border-zinc-800/60 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5">
-                {todaySetups.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
-                    <Target size={20} className="mb-2 opacity-50" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
-                  </div>
-                ) : (
-                  todaySetups.map(setup => (
-                    <div 
-                      key={`today-${setup.id}`}
-                      onClick={() => setActiveTodayId(setup.id)}
-                      className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
-                        activeTodayId === setup.id 
-                          ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
-                          : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
-                      }`}
-                    >
-                      <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
-                        {setup.symbol}
-                      </span>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }}
-                        className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                        title="Push back to Vault"
-                      >
-                        <ArrowLeft size={12} />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* PANE 2: Chart */}
-              <div className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60">
-                {activeSetup ? (
-                  <div className="absolute inset-0 p-2 flex items-center justify-center">
-                    <img src={activeSetup.imageUrl} alt={`${activeSetup.symbol} Chart`} className="w-full h-full object-contain rounded-lg border border-zinc-800/50 shadow-2xl" />
-                  </div>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-zinc-700">
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair to view</span>
-                  </div>
-                )}
-              </div>
-
-              {/* PANE 3: Editable Notes Box */}
-              <div className="w-64 sm:w-72 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
-                <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-3 shadow-sm flex flex-col min-h-0">
-                  {activeSetup ? (
-                    <textarea 
-                      value={activeSetup.notes}
-                      onChange={(e) => handleUpdateNotes(activeSetup.id, e.target.value)}
-                      placeholder="Type notes, levels, or invalidation here..."
-                      className="w-full h-full bg-transparent border-none focus:outline-none resize-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-center">
-                      <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p>
-                    </div>
-                  )}
+            {/* PANE 1: List */}
+            <div className="w-48 sm:w-56 shrink-0 border-r border-zinc-800/60 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5">
+              {todaySetups.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
+                  <Target size={20} className="mb-2 opacity-50" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
                 </div>
-              </div>
-
+              ) : (
+                todaySetups.map(setup => (
+                  <div 
+                    key={`today-${setup.id}`}
+                    onClick={() => setActiveTodayId(setup.id)}
+                    className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
+                      activeTodayId === setup.id 
+                        ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
+                        : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
+                    }`}
+                  >
+                    <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                      {setup.symbol}
+                    </span>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }}
+                      className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Push back to Vault"
+                    >
+                      <ArrowLeft size={12} />
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
+
+            {/* PANE 2: Chart */}
+            <div className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60">
+              {activeSetup ? (
+                <div className="absolute inset-0 p-3 flex items-center justify-center">
+                   <img src={activeSetup.imageUrl} alt={`${activeSetup.symbol} Chart`} className="w-full h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl bg-[#0a0a0a]" />
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-zinc-700">
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair to view</span>
+                </div>
+              )}
+            </div>
+
+            {/* PANE 3: Editable Notes Box */}
+            <div className="w-64 sm:w-72 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
+              <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
+                {activeSetup ? (
+                  <textarea 
+                    value={activeSetup.notes}
+                    onChange={(e) => handleUpdateNotes(activeSetup.id, e.target.value)}
+                    placeholder="Type notes, levels, or invalidation here..."
+                    className="w-full h-full bg-transparent border-none focus:outline-none resize-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-center">
+                    <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
 
       </div>
 
-      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT (Takes 100% height) */}
+      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT */}
       <div 
         className={`h-full bg-[#080808] border-l border-zinc-800/60 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${
           isVaultOpen ? 'w-[280px] lg:w-[300px] xl:w-[320px] opacity-100' : 'w-0 opacity-0 border-l-0'
