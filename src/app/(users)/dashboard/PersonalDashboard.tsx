@@ -4,8 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
   CheckCircle2, Clock, Activity, Target, ArrowRight, ArrowLeft,
-  FileText, Globe2, BarChart2, PanelRightClose, PanelRightOpen,
-  Image as ImageIcon, Trash2
+  Globe2, BarChart2, Image as ImageIcon, Trash2, Menu
 } from 'lucide-react'
 
 // --- BULK UPLOAD MODAL COMPONENT ---
@@ -212,16 +211,16 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 export default function PersonalDashboard() {
   // Layout State
   const [isVaultOpen, setIsVaultOpen] = useState(true)
-  const [mounted, setMounted] = useState(false) // 🚨 ADDED MOUNTED STATE
+  const [mounted, setMounted] = useState(false)
 
   // Data State
-  const [time, setTime] = useState<Date | null>(null) // 🚨 FIX: Start null to avoid hydration mismatch
+  const [time, setTime] = useState<Date | null>(null) 
   const [sessionInfo, setSessionInfo] = useState({ name: 'Determining...', localTime: '--:--:--', tz: 'UTC' })
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   
   // Workspace State
   const [setups, setSetups] = useState<any[]>([
-    { id: '1', symbol: 'GBPJPY', notes: 'Macro structure shows clear sweep of weekly high. Waiting for 1H displacement and fair value gap tap to enter short. Target is the 4H unmitigated demand zone below.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder1.png', isToday: true },
+    { id: '1', symbol: 'GBPJPY', notes: 'Macro structure shows clear sweep of weekly high. Waiting for 1H displacement and fair value gap tap to enter short.\n\n• Target is the 4H unmitigated demand zone below.\n• Invalidation is a candle close above 192.500.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder1.png', isToday: true },
     { id: '2', symbol: 'XAUUSD', notes: 'Gold respecting daily trendline. CPI data coming up, playing it safe until NY session volume steps in. Look for sweep of Asian session lows.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder2.png', isToday: true },
     { id: '3', symbol: 'GBPCAD', notes: 'Consolidating in a tight 4H range. Needs to break structure before committing capital.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder3.png', isToday: false },
     { id: '4', symbol: 'EURUSD', notes: 'Bullish order flow intact. Limit order set at the 1.08500 discount zone.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder4.png', isToday: false }
@@ -241,12 +240,12 @@ export default function PersonalDashboard() {
   }, [todaySetups.length, activeTodayId])
 
   const [routine, setRoutine] = useState([
-    { id: 1, label: 'Sunday Macro Prep (The Vault)', completed: true },
-    { id: 2, label: 'Daily Filtering (Select Today\'s Pairs)', completed: false },
-    { id: 3, label: 'Weekly Wind-up (PnL & RR Review)', completed: false }
+    { id: 1, label: 'Sunday Macro Prep', completed: true },
+    { id: 2, label: 'Daily Filtering', completed: false },
+    { id: 3, label: 'Weekly Wind-up', completed: false }
   ])
 
-  // 🚨 FIX: Real-time Clock & Session Engine (Now SSR Safe)
+  // Real-time Clock & Session
   useEffect(() => {
     setMounted(true);
     setTime(new Date());
@@ -293,30 +292,12 @@ export default function PersonalDashboard() {
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
 
-  // ==========================================
-  // HIGH DENSITY RENDER LAYOUT
-  // ==========================================
   return (
-    <div className="flex h-[calc(100vh-64px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
+    <div className="flex h-screen w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
       
       {/* 🔴 LEFT/MAIN WORKSPACE */}
-      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative pt-2">
         
-        {/* Header Bar */}
-        <div className="h-12 border-b border-zinc-800/60 bg-[#080808] flex items-center justify-between px-4 shrink-0">
-          <div className="flex items-center gap-3">
-            <h1 className="text-sm font-bold text-zinc-100 tracking-wide uppercase">Operator Terminal</h1>
-            <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest">Live Desk</span>
-          </div>
-          
-          <button 
-            onClick={() => setIsVaultOpen(!isVaultOpen)}
-            className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-3 py-1.5 rounded transition-all"
-          >
-            {isVaultOpen ? <><PanelRightClose size={14}/> Close Vault</> : <><PanelRightOpen size={14}/> Open Vault</>}
-          </button>
-        </div>
-
         {/* TOP ROW: METRICS & ROUTINE */}
         <div className="flex-1 p-3 sm:p-4 flex flex-col md:flex-row gap-4 min-h-0 overflow-y-auto custom-scrollbar">
           
@@ -327,7 +308,6 @@ export default function PersonalDashboard() {
                 <Clock size={12}/> Local Time
               </span>
               <span className="text-lg font-mono text-zinc-100 tracking-wide">
-                {/* 🚨 FIX: Only render clock if mounted to prevent hydration errors */}
                 {mounted && time ? time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
               </span>
             </div>
@@ -344,11 +324,21 @@ export default function PersonalDashboard() {
             </div>
           </div>
 
-          {/* Metric: Routine Checklist */}
+          {/* Metric: Routine Checklist & Vault Toggle */}
           <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-4 flex flex-col shadow-sm min-h-0">
-            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-1.5 shrink-0 border-b border-zinc-800/50 pb-2">
-              <CheckCircle2 size={14} className="text-emerald-500/70" /> Execution Routine
-            </h3>
+            <div className="flex justify-between items-center mb-3 border-b border-zinc-800/50 pb-2 shrink-0">
+              <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
+                <CheckCircle2 size={14} className="text-emerald-500/70" /> Execution Routine
+              </h3>
+              <button 
+                onClick={() => setIsVaultOpen(!isVaultOpen)} 
+                className="text-zinc-500 hover:text-white transition-colors"
+                title="Toggle Weekly Vault"
+              >
+                <Menu size={16} />
+              </button>
+            </div>
+            
             <div className="flex flex-col gap-2.5 overflow-y-auto custom-scrollbar flex-1 pr-2">
               {routine.map(item => (
                 <div key={item.id} onClick={() => toggleRoutine(item.id)} className="flex items-center gap-3 cursor-pointer group py-1">
@@ -369,7 +359,7 @@ export default function PersonalDashboard() {
           
           <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
             <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-              <Crosshair size={14} className="text-blue-500" /> Today's Focus (Level 2)
+              <Crosshair size={14} className="text-blue-500" /> Today's Focus
             </h2>
             <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
               {todaySetups.length} Pairs Locked
@@ -384,7 +374,6 @@ export default function PersonalDashboard() {
                 <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
                   <Target size={20} className="mb-2 opacity-50" />
                   <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
-                  <span className="text-[10px] mt-2">Filter from Weekly Prep →</span>
                 </div>
               ) : (
                 todaySetups.map(setup => (
@@ -425,14 +414,9 @@ export default function PersonalDashboard() {
               )}
             </div>
 
-            {/* PANE 3: Notes */}
-            <div className="w-64 sm:w-72 shrink-0 bg-[#080808] flex flex-col min-h-0">
-              <div className="p-3 border-b border-zinc-800/60 bg-[#0a0a0a] shrink-0">
-                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5">
-                  <FileText size={12} className="text-emerald-500"/> Structural Notes
-                </span>
-              </div>
-              <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+            {/* PANE 3: Notes Simple Box */}
+            <div className="w-64 sm:w-72 shrink-0 flex flex-col min-h-0 p-3 pl-0 bg-[#030303]">
+              <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg overflow-y-auto custom-scrollbar p-4 shadow-sm">
                 {activeSetup ? (
                   <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap font-medium">
                     {activeSetup.notes || <span className="italic text-zinc-600">No notes provided...</span>}
@@ -459,9 +443,6 @@ export default function PersonalDashboard() {
           <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
             <UploadCloud size={14} className="text-zinc-400" /> Weekly Vault
           </h2>
-          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
-            Level 1
-          </span>
         </div>
         
         {/* Instrument List */}
