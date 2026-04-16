@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
-  CheckCircle2, Clock, Activity, Target, ArrowRight, 
+  CheckCircle2, Clock, Activity, Target, ArrowRight, ArrowLeft,
   FileText, Globe2, BarChart2, PanelRightClose, PanelRightOpen,
   Image as ImageIcon, Trash2
 } from 'lucide-react'
