@@ -8,7 +8,7 @@ import {
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save
 } from 'lucide-react'
 
-// Initialize standard Supabase client directly
+// 🚨 FIX 1: Initialize Supabase OUTSIDE the component to prevent the "Multiple GoTrueClient instances" warning.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
@@ -250,7 +250,7 @@ export default function DeskClient() {
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   const [previewSetup, setPreviewSetup] = useState<any | null>(null)
   
-  // Supabase State - Completely empty to avoid flashing dummy data
+  // Supabase State - Completely empty
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
 
@@ -273,7 +273,7 @@ export default function DeskClient() {
             id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null
           })))
         }
-        // Fetch Logs (Reconciliation Queue)
+        // Fetch Logs
         const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).eq('is_reconciled', false).order('created_at', { ascending: false })
         if (logsData) {
           setPendingReconciliation(logsData.map(d => ({
@@ -332,7 +332,7 @@ export default function DeskClient() {
   const deleteSetup = async (id: string) => {
     if (!user) return
     const setupToDelete = setups.find(s => s.id === id);
-    if (setupToDelete && setupToDelete.imageUrl) {
+    if (setupToDelete && setupToDelete.imageUrl && setupToDelete.imageUrl.includes('supabase')) {
         const urlParts = setupToDelete.imageUrl.split('/');
         const fileName = urlParts[urlParts.length - 1];
         if (fileName) await supabase.storage.from('user-desk-images').remove([`${user.id}/${fileName}`])
@@ -341,24 +341,41 @@ export default function DeskClient() {
     await supabase.from('user_desk_setups').delete().eq('id', id)
   }
 
+  // 🚨 FIX 2: Added strict error handling to ensure uploads don't fail silently
   const handleBulkUpload = async (draftsToSave: any[]) => {
     if (!user) return
     const newSetups = []
+
     for (const draft of draftsToSave) {
-      let finalImageUrl = draft.imageSource
+      let finalImageUrl = draft.imageSource // Starts as the URL input (or blob)
+
       if (draft.file) {
         const fileExt = draft.file.name.split('.').pop()
         const fileName = `${Math.random()}.${fileExt}`
-        const { data } = await supabase.storage.from('user-desk-images').upload(`${user.id}/${fileName}`, draft.file)
-        if (data) {
+        
+        const { data, error } = await supabase.storage.from('user-desk-images').upload(`${user.id}/${fileName}`, draft.file)
+        
+        if (error) {
+          console.error("Supabase Storage Error:", error.message)
+          alert(`Failed to upload ${draft.symbol} image: ${error.message}\nMake sure your 'user-desk-images' bucket allows INSERT access for users.`)
+          finalImageUrl = '' // Fallback to empty if it fails so we don't save a broken blob URL
+        } else if (data) {
           const { data: publicUrlData } = supabase.storage.from('user-desk-images').getPublicUrl(`${user.id}/${fileName}`)
           finalImageUrl = publicUrlData.publicUrl
         }
+      } else if (draft.imageSource && draft.imageSource.startsWith('blob:')) {
+         // Failsafe: Do not save temporary local blob URLs to the database
+         finalImageUrl = ''
       }
+
       newSetups.push({ user_id: user.id, symbol: draft.instrument, notes: draft.notes, image_url: finalImageUrl, is_today: false })
     }
-    const { data: insertedData } = await supabase.from('user_desk_setups').insert(newSetups).select()
-    if (insertedData) {
+
+    const { data: insertedData, error: dbError } = await supabase.from('user_desk_setups').insert(newSetups).select()
+    if (dbError) {
+      console.error("Database Insert Error:", dbError)
+      alert(`Failed to save setups: ${dbError.message}`)
+    } else if (insertedData) {
       const formatted = insertedData.map(d => ({ id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url, isToday: false, addedToTodayAt: null }))
       setSetups(prev => [...formatted, ...prev])
     }
