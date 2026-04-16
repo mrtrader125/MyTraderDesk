@@ -246,24 +246,30 @@ export default function DeskClient() {
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   const [previewSetup, setPreviewSetup] = useState<any | null>(null)
   
+  // 🚨 SUPABASE STATE: Starts 100% empty, waiting for real data
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
+  
+  // Journal State
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
   const [logPair, setLogPair] = useState<string>('') 
   const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
   const [logReason, setLogReason] = useState('')
 
+  // Init Data from Supabase
   useEffect(() => {
     const initData = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
+        // Fetch Setups
         const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         if (setupsData) {
           setSetups(setupsData.map(d => ({
             id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null
           })))
         }
+        // Fetch Logs (Reconciliation Queue)
         const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).eq('is_reconciled', false).order('created_at', { ascending: false })
         if (logsData) {
           setPendingReconciliation(logsData.map(d => ({
@@ -276,7 +282,7 @@ export default function DeskClient() {
       }
     }
     initData()
-  }, []);
+  }, [])
 
   const todaySetups = setups.filter(s => s.isToday)
   const weeklySetups = setups.filter(s => !s.isToday)
@@ -286,11 +292,12 @@ export default function DeskClient() {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
       setActiveTodayId(todaySetups[0].id)
     } else if (todaySetups.length === 0) {
-      setActiveTodayId(null);
-      if(logPair) setLogPair('');
+      setActiveTodayId(null)
+      if(logPair) setLogPair('') 
     }
-  }, [todaySetups.length, activeTodayId]);
+  }, [todaySetups.length, activeTodayId])
 
+  // Auto-Save Notes Debounce
   useEffect(() => {
     const activeSetup = setups.find(s => s.id === activeTodayId)
     if (activeSetup && user) {
@@ -380,8 +387,11 @@ export default function DeskClient() {
 
   return (
     <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
+      
+      {/* 🔴 LEFT/MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 transition-all duration-300 relative">
         <div className="flex-1 flex flex-col overflow-hidden">
+          
           {/* TOP 50%: TODAY's FOCUS */}
           <div className="h-1/2 shrink-0 flex flex-col min-h-0 border-b border-zinc-800/60 bg-[#080808]">
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
@@ -416,6 +426,7 @@ export default function DeskClient() {
               <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 min-w-0 p-3 bg-[#030303]"><div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-3 shadow-sm flex flex-col min-h-0"><RichNotesEditor activeSetup={activeSetup} onUpdate={handleUpdateNotes} /></div></div>
             </div>
           </div>
+          
           {/* BOTTOM 50%: OPERATOR'S AUDIT */}
           <div className="h-1/2 shrink-0 flex flex-col min-h-0 bg-[#050505]">
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]"><h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Activity size={14} className="text-emerald-500" /> Operator's Audit</h2></div>
