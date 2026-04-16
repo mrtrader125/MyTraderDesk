@@ -93,7 +93,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[80vh] min-h-[500px]">
-        
         <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
           <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
             <UploadCloud size={16} className="text-blue-500" /> Bulk Upload Weekly Setups
@@ -102,7 +101,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
             <X size={18} />
           </button>
         </div>
-
         <div className="flex flex-1 min-h-0 overflow-hidden">
           <div className="w-[200px] border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
             <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
@@ -201,17 +199,16 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
             </button>
           </div>
         </div>
-        
       </div>
     </div>
   )
 }
 
-// --- RICH TEXT EDITOR COMPONENT ---
+// --- PROFESSIONAL RICH TEXT EDITOR ---
 function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate: (id: string, notes: string) => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
 
-  // Sync content only when the active setup ID changes to prevent cursor jumping
+  // Sync content only when the active setup ID changes
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.innerHTML = activeSetup?.notes || '';
@@ -239,17 +236,16 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   }
 
   return (
-    <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl shadow-sm flex flex-col min-h-0 overflow-hidden">
-      
-      {/* Editor Toolbar */}
-      <div className="flex items-center gap-1 p-2 border-b border-zinc-800/60 bg-[#050505] shrink-0">
-        <button onClick={() => handleCommand('bold')} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors" title="Bold">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      {/* Sleek Formatting Toolbar */}
+      <div className="flex items-center gap-1 pb-2 mb-2 border-b border-zinc-800/60 shrink-0">
+        <button onClick={() => handleCommand('bold')} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors" title="Bold Text">
           <Bold size={14} />
         </button>
-        <button onClick={() => handleCommand('insertUnorderedList')} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors" title="Bullet List">
+        <button onClick={() => handleCommand('insertUnorderedList')} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors" title="Bullet Points">
           <List size={14} />
         </button>
-        <span className="ml-auto text-[9px] text-zinc-600 font-bold uppercase tracking-widest px-2">Editor</span>
+        <span className="ml-auto text-[9px] text-zinc-600 font-bold uppercase tracking-widest px-1">Notes Editor</span>
       </div>
 
       {/* ContentEditable Area */}
@@ -257,15 +253,16 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
         ref={editorRef}
         contentEditable
         onInput={handleInput}
-        className="flex-1 w-full bg-transparent border-none focus:outline-none p-4 text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar overflow-y-auto"
+        className="flex-1 w-full bg-transparent border-none focus:outline-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar overflow-y-auto"
         style={{ outline: 'none' }}
       />
       
-      {/* Essential styles for the contentEditable lists to render properly */}
+      {/* CSS injection to make bullets render beautifully in contentEditable */}
       <style dangerouslySetInnerHTML={{__html: `
         div[contenteditable] ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
         div[contenteditable] li { margin-bottom: 0.25rem; }
-        div[contenteditable]:empty:before { content: "Type structural notes, levels, or invalidation here..."; color: #52525b; pointer-events: none; display: block; }
+        div[contenteditable] b { color: #f4f4f5; font-weight: 800; }
+        div[contenteditable]:empty:before { content: "Type notes, levels, or invalidation here..."; color: #52525b; pointer-events: none; display: block; }
       `}} />
     </div>
   )
@@ -277,12 +274,12 @@ export default function DeskClient() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   
-  // Lightbox Preview State
+  // Weekly Lightbox State
   const [previewSetup, setPreviewSetup] = useState<any | null>(null)
   
   const [setups, setSetups] = useState<any[]>([
     { id: '1', symbol: 'GBPJPY', notes: 'Macro structure shows clear sweep of weekly high.<br/><br/><ul><li>Waiting for 1H displacement and fair value gap tap to enter short.</li><li><b>Target:</b> 4H unmitigated demand zone below.</li></ul>', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder1.png', isToday: true, addedToTodayAt: Date.now() },
-    { id: '2', symbol: 'XAUUSD', notes: 'Gold respecting daily trendline.<br/>CPI data coming up, playing it safe until NY session volume steps in.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder2.png', isToday: true, addedToTodayAt: Date.now() },
+    { id: '2', symbol: 'XAUUSD', notes: 'Gold respecting daily trendline.<br/><br/><ul><li>CPI data coming up, playing it safe until NY session volume steps in.</li></ul>', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder2.png', isToday: true, addedToTodayAt: Date.now() },
     { id: '3', symbol: 'GBPCAD', notes: 'Consolidating in a tight 4H range. Needs to break structure before committing capital.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder3.png', isToday: false }
   ])
 
@@ -351,6 +348,8 @@ export default function DeskClient() {
   }
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
+  
+  // 🚨 Security Check: Is the selected pair already logged in the queue?
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
   return (
@@ -380,12 +379,11 @@ export default function DeskClient() {
               TOP 50%: TODAY's FOCUS
           ========================================= */}
           <div className="h-1/2 shrink-0 flex flex-col min-h-0 border-b border-zinc-800/60 bg-[#080808]">
-            
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
               <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
                 <Crosshair size={14} className="text-blue-500" /> Today's Focus
               </h2>
-              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">
+              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
                 {todaySetups.length} Pairs Locked
               </span>
             </div>
@@ -457,10 +455,12 @@ export default function DeskClient() {
 
               {/* PANE 3: Rich Editable Notes Box */}
               <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 min-w-0 p-3 bg-[#030303]">
-                <RichNotesEditor 
-                  activeSetup={activeSetup} 
-                  onUpdate={handleUpdateNotes} 
-                />
+                <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-3 shadow-sm flex flex-col min-h-0">
+                  <RichNotesEditor 
+                    activeSetup={activeSetup} 
+                    onUpdate={handleUpdateNotes} 
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -468,7 +468,7 @@ export default function DeskClient() {
           {/* =========================================
               BOTTOM 50%: OPERATOR'S AUDIT / JOURNAL
           ========================================= */}
-          <div className="h-1/2 shrink-0 flex flex-col min-h-0 bg-[#050505]">
+          <div className="flex-1 flex flex-col min-h-0 bg-[#050505]">
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
               <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
                 <Activity size={14} className="text-emerald-500" /> Operator's Audit
@@ -481,7 +481,7 @@ export default function DeskClient() {
               <div className="flex-1 border-r border-zinc-800/60 p-4 sm:p-6 flex flex-col relative bg-[#030303] overflow-y-auto custom-scrollbar min-h-0 min-w-0">
                 <div className="w-full max-w-sm flex flex-col gap-4 m-auto shrink-0">
                   
-                  <div className="flex justify-between items-end">
+                  <div className="flex justify-between items-end mb-2">
                     <h3 className="text-sm font-bold text-zinc-200">Log Execution Reality</h3>
                     <span className={`text-xs font-bold tracking-widest px-2 py-1 rounded bg-zinc-900 border ${tradesTakenToday >= 2 ? 'border-red-500 text-red-400' : 'border-zinc-700 text-zinc-400'}`}>
                       {tradesTakenToday}/2 TRADES
@@ -537,16 +537,17 @@ export default function DeskClient() {
                     </select>
                   )}
 
+                  {/* 🚨 DYNAMIC BUTTON TEXT */}
                   <button 
                     disabled={!logPair || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged}
                     onClick={handleLockEntry}
-                    className={`w-full py-3 text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+                    className={`w-full py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
                       isAlreadyLogged 
-                        ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
-                        : 'bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600'
+                        ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed border border-zinc-700' 
+                        : 'bg-blue-600 text-white hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600'
                     }`}
                   >
-                    {isAlreadyLogged ? 'Setup Already Logged' : 'Lock Entry Without Outcome'}
+                    {isAlreadyLogged ? 'Setup Already Logged Today' : 'Lock Entry Without Outcome'}
                   </button>
                 </div>
               </div>
