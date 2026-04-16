@@ -1,12 +1,17 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createClient } from '@supabase/supabase-js'
 import { 
   Plus, X, UploadCloud, Crosshair, 
   Target, ArrowRight, ArrowLeft, Eye, Bold, List,
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save
 } from 'lucide-react'
+
+// Initialize standard Supabase client directly
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // --- BULK UPLOAD MODAL COMPONENT ---
 type DraftSetup = {
@@ -239,17 +244,16 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
 
 // --- MAIN DESK COMPONENT ---
 export default function DeskClient() {
-  const supabase = createClientComponentClient()
   const [user, setUser] = useState<any>(null)
   const [isVaultOpen, setIsVaultOpen] = useState(true)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   const [previewSetup, setPreviewSetup] = useState<any | null>(null)
   
-  // 🚨 SUPABASE STATE: Starts 100% empty, waiting for real data
+  // Supabase State - Completely empty to avoid flashing dummy data
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
-  
+
   // Journal State
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
   const [logPair, setLogPair] = useState<string>('') 
@@ -387,11 +391,8 @@ export default function DeskClient() {
 
   return (
     <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
-      
-      {/* 🔴 LEFT/MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 transition-all duration-300 relative">
         <div className="flex-1 flex flex-col overflow-hidden">
-          
           {/* TOP 50%: TODAY's FOCUS */}
           <div className="h-1/2 shrink-0 flex flex-col min-h-0 border-b border-zinc-800/60 bg-[#080808]">
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
@@ -426,7 +427,6 @@ export default function DeskClient() {
               <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 min-w-0 p-3 bg-[#030303]"><div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-3 shadow-sm flex flex-col min-h-0"><RichNotesEditor activeSetup={activeSetup} onUpdate={handleUpdateNotes} /></div></div>
             </div>
           </div>
-          
           {/* BOTTOM 50%: OPERATOR'S AUDIT */}
           <div className="h-1/2 shrink-0 flex flex-col min-h-0 bg-[#050505]">
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]"><h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Activity size={14} className="text-emerald-500" /> Operator's Audit</h2></div>
