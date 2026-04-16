@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { 
   Crosshair, CheckCircle2, Clock, 
-  Target, Globe2, Image as ImageIcon
+  Target, Globe2, Activity, Lock, X, AlertTriangle
 } from 'lucide-react'
 
 export default function PersonalDashboard() {
@@ -30,11 +30,20 @@ export default function PersonalDashboard() {
 
   const [activeTodayId, setActiveTodayId] = useState<string | null>(todaySetups.length > 0 ? todaySetups[0].id : null)
 
-  const [routine, setRoutine] = useState([
-    { id: 1, label: 'Sunday Macro Prep', completed: true },
-    { id: 2, label: 'Daily Filtering', completed: false },
-    { id: 3, label: 'Weekly Wind-up', completed: false }
+  // --- NEW: OPERATING RHYTHM STATE ---
+  // Status types: 'perfect', 'imperfect', 'missed', 'current', 'pending'
+  const [weekProgress] = useState([
+    { day: 'M', label: 'Mon', status: 'perfect' },
+    { day: 'T', label: 'Tue', status: 'missed' },
+    { day: 'W', label: 'Wed', status: 'current' },
+    { day: 'T', label: 'Thu', status: 'pending' },
+    { day: 'F', label: 'Fri', status: 'pending' },
   ])
+
+  const [sundayPrepDone, setSundayPrepDone] = useState(true)
+  const [todayFiltered, setTodayFiltered] = useState(false)
+  const [executionGrade, setExecutionGrade] = useState<'perfect' | 'imperfect' | null>(null)
+  const [isWeekend, setIsWeekend] = useState(false) // Determines if Wind-up is unlocked
 
   useEffect(() => {
     setMounted(true);
@@ -57,23 +66,31 @@ export default function PersonalDashboard() {
         name: sName,
         localTime: now.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })
       });
+
+      // Simple mock logic for weekend detection
+      const dayOfWeek = now.getDay();
+      setIsWeekend(dayOfWeek === 5 || dayOfWeek === 6); // Friday or Saturday
     }, 1000)
     return () => clearInterval(timer)
   }, [])
 
-  const toggleRoutine = (id: number) => {
-    setRoutine(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item))
-  }
-
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
+
+  // Helper for rendering week tracker icons
+  const renderDayStatus = (status: string) => {
+    switch (status) {
+      case 'perfect': return <CheckCircle2 size={12} className="text-emerald-500" />;
+      case 'missed': return <X size={12} className="text-red-500" />;
+      case 'imperfect': return <AlertTriangle size={10} className="text-amber-500" />;
+      case 'current': return <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />;
+      default: return null;
+    }
+  }
 
   return (
     <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
       
-      {/* 🔴 FULL WIDTH WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
-
-        {/* Inner Content Wrapper: Strictly split 50% Top, 50% Bottom */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
           {/* 🟢 TOP ROW: COMPACT METRICS & ROUTINE (STRICTLY 50% HEIGHT) */}
@@ -102,24 +119,106 @@ export default function PersonalDashboard() {
               </div>
             </div>
 
-            {/* Metric 3: Routine Checklist */}
+            {/* Metric 3: Operating Rhythm */}
             <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-4 flex flex-col shadow-sm min-h-0">
-              <div className="flex justify-between items-center mb-2 border-b border-zinc-800/50 pb-2 shrink-0">
+              
+              {/* Header & Week Log */}
+              <div className="flex justify-between items-center mb-3 border-b border-zinc-800/50 pb-3 shrink-0">
                 <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                  <CheckCircle2 size={14} className="text-emerald-500/70" /> Execution Routine
+                  <Activity size={14} className="text-blue-500" /> Operating Rhythm
                 </h3>
-              </div>
-              <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar flex-1 pr-2">
-                {routine.map(item => (
-                  <div key={item.id} onClick={() => toggleRoutine(item.id)} className="flex items-center gap-3 cursor-pointer group py-1.5">
-                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${item.completed ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700 text-transparent group-hover:border-zinc-500'}`}>
-                      <CheckCircle2 size={12} />
+                
+                {/* Week Tracker */}
+                <div className="flex gap-1.5">
+                  {weekProgress.map((day, idx) => (
+                    <div key={idx} className="flex flex-col items-center gap-1">
+                      <div className={`w-5 h-5 rounded flex items-center justify-center border transition-colors ${
+                        day.status === 'current' ? 'border-blue-500/50 bg-blue-500/10' : 
+                        day.status !== 'pending' ? 'border-zinc-800 bg-zinc-900/50' : 
+                        'border-zinc-800/30 bg-transparent text-zinc-700'
+                      }`}>
+                        {day.status === 'pending' ? <span className="text-[8px] font-bold">{day.day}</span> : renderDayStatus(day.status)}
+                      </div>
                     </div>
-                    <span className={`text-xs font-medium tracking-wide transition-all ${item.completed ? 'text-zinc-600 line-through' : 'text-zinc-300 group-hover:text-white'}`}>
-                      {item.label}
+                  ))}
+                </div>
+              </div>
+
+              {/* Actionable Content */}
+              <div className="flex flex-col gap-3 overflow-y-auto custom-scrollbar flex-1 pr-2">
+                
+                {/* 1. Macro Prep */}
+                <div className="flex items-center justify-between group">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center ${sundayPrepDone ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700'}`}>
+                      {sundayPrepDone && <CheckCircle2 size={10} />}
+                    </div>
+                    <span className={`text-xs font-bold tracking-wide ${sundayPrepDone ? 'text-zinc-500' : 'text-zinc-300'}`}>Weekly Macro Prep</span>
+                  </div>
+                  <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Sunday</span>
+                </div>
+
+                {/* 2. Today's Protocol Box */}
+                <div className="bg-[#050505] border border-zinc-800/60 rounded-lg p-3 flex flex-col gap-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] text-blue-400/80 uppercase font-bold tracking-widest flex items-center gap-1">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+                      Today's Protocol
                     </span>
                   </div>
-                ))}
+                  
+                  {/* Filter Action */}
+                  <div 
+                    onClick={() => setTodayFiltered(!todayFiltered)}
+                    className="flex items-center gap-2 cursor-pointer group"
+                  >
+                    <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center transition-colors ${todayFiltered ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'bg-zinc-900 border-zinc-600 text-transparent'}`}>
+                      <CheckCircle2 size={10} />
+                    </div>
+                    <span className={`text-xs font-medium tracking-wide transition-colors ${todayFiltered ? 'text-zinc-500' : 'text-zinc-300 group-hover:text-white'}`}>
+                      Filter 2-4 High-Probability Pairs
+                    </span>
+                  </div>
+
+                  {/* Execution Action */}
+                  <div className="flex flex-col gap-1.5 mt-1 pt-3 border-t border-zinc-800/50">
+                    <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest">Execution Grading (Max 2 Trades)</span>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => setExecutionGrade('perfect')}
+                        className={`flex-1 py-1.5 rounded text-[9px] font-bold uppercase tracking-widest transition-all ${
+                          executionGrade === 'perfect' 
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50' 
+                            : 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-emerald-500/30 hover:text-emerald-500'
+                        }`}
+                      >
+                        Perfect
+                      </button>
+                      <button 
+                        onClick={() => setExecutionGrade('imperfect')}
+                        className={`flex-1 py-1.5 rounded text-[9px] font-bold uppercase tracking-widest transition-all ${
+                          executionGrade === 'imperfect' 
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50' 
+                            : 'bg-zinc-900 text-zinc-500 border border-zinc-800 hover:border-amber-500/30 hover:text-amber-500'
+                        }`}
+                      >
+                        Imperfect
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Weekend Wind-up */}
+                <div className={`flex items-center justify-between group mt-auto pt-2 ${!isWeekend ? 'opacity-40 grayscale' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3.5 h-3.5 rounded-sm border bg-zinc-950 border-zinc-700 flex items-center justify-center">
+                      {!isWeekend && <Lock size={8} className="text-zinc-500" />}
+                    </div>
+                    <span className="text-xs font-bold tracking-wide text-zinc-400">Journaling & RR Audit</span>
+                  </div>
+                  <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">Fri/Sat</span>
+                </div>
+
               </div>
             </div>
           </div>
