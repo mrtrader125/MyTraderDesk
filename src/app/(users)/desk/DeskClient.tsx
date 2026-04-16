@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { 
-  Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
+  Plus, X, UploadCloud, Crosshair, 
   Target, ArrowRight, ArrowLeft, Eye, Bold, List,
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save
 } from 'lucide-react'
@@ -358,20 +358,6 @@ export default function DeskClient() {
       {/* 🔴 LEFT/MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 transition-all duration-300 relative">
 
-        {/* 🟢 SLEEK TOP BAR */}
-        <div className="flex items-center justify-between p-3 border-b border-zinc-800/60 bg-[#0a0a0a] shrink-0 h-12">
-          <div className="flex items-center gap-3">
-             <span className="text-xs font-black text-zinc-400 uppercase tracking-widest ml-2">Operator's Desk</span>
-          </div>
-          <button 
-            onClick={() => setIsVaultOpen(!isVaultOpen)} 
-            className="text-zinc-400 hover:text-white transition-colors bg-zinc-950 border border-zinc-800/60 p-1.5 rounded-lg shadow-sm"
-            title="Toggle Weekly Vault"
-          >
-            <Menu size={16} />
-          </button>
-        </div>
-
         {/* 🟢 MAIN SPLIT CONTAINER - EXACT 50/50 LOCK */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           
@@ -379,13 +365,24 @@ export default function DeskClient() {
               TOP 50%: TODAY's FOCUS
           ========================================= */}
           <div className="h-1/2 shrink-0 flex flex-col min-h-0 border-b border-zinc-800/60 bg-[#080808]">
+            
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
-              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                <Crosshair size={14} className="text-blue-500" /> Today's Focus
-              </h2>
-              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-                {todaySetups.length} Pairs Locked
-              </span>
+              <div className="flex items-center gap-4">
+                <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                  <Crosshair size={14} className="text-blue-500" /> Today's Focus
+                </h2>
+                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">
+                  {todaySetups.length} Pairs Locked
+                </span>
+              </div>
+              
+              <button 
+                onClick={() => setIsVaultOpen(!isVaultOpen)} 
+                className="text-zinc-500 hover:text-white transition-colors p-1"
+                title="Toggle Weekly Vault"
+              >
+                <Menu size={16} />
+              </button>
             </div>
 
             <div className="flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden">
@@ -468,7 +465,7 @@ export default function DeskClient() {
           {/* =========================================
               BOTTOM 50%: OPERATOR'S AUDIT / JOURNAL
           ========================================= */}
-          <div className="flex-1 flex flex-col min-h-0 bg-[#050505]">
+          <div className="h-1/2 shrink-0 flex flex-col min-h-0 bg-[#050505]">
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
               <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
                 <Activity size={14} className="text-emerald-500" /> Operator's Audit
@@ -537,7 +534,7 @@ export default function DeskClient() {
                     </select>
                   )}
 
-                  {/* 🚨 DYNAMIC BUTTON TEXT */}
+                  {/* DYNAMIC BUTTON TEXT */}
                   <button 
                     disabled={!logPair || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged}
                     onClick={handleLockEntry}
@@ -620,7 +617,7 @@ export default function DeskClient() {
           isVaultOpen ? 'w-[280px] lg:w-[300px] xl:w-[320px] opacity-100' : 'w-0 opacity-0 border-l-0'
         }`}
       >
-        <div className="h-12 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
+        <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
           <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
             <UploadCloud size={14} className="text-zinc-400" /> Weekly Vault
           </h2>
@@ -643,7 +640,7 @@ export default function DeskClient() {
                   <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span>
                 </div>
                 <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  {/* 🚨 NEW: View Full Setup Button */}
+                  {/* 🚨 VIEW FULL SETUP BUTTON */}
                   <button 
                     onClick={() => setPreviewSetup(setup)}
                     className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white transition-colors"
@@ -694,7 +691,7 @@ export default function DeskClient() {
         </div>
       )}
 
-      {/* 🚨 NEW: WEEKLY VAULT PREVIEW MODAL */}
+      {/* WEEKLY VAULT PREVIEW MODAL */}
       {previewSetup && (
         <div 
           onClick={() => setPreviewSetup(null)} 
