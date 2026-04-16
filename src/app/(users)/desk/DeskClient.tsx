@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
-  Clock, Target, ArrowRight, ArrowLeft,
-  Image as ImageIcon, Trash2, Menu
+  Target, ArrowRight, ArrowLeft,
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save
 } from 'lucide-react'
 
 // --- BULK UPLOAD MODAL COMPONENT ---
@@ -210,8 +210,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 // --- MAIN DESK COMPONENT ---
 export default function DeskClient() {
   const [isVaultOpen, setIsVaultOpen] = useState(true)
-  const [mounted, setMounted] = useState(false)
-  const [time, setTime] = useState<Date | null>(null) 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   
   const [setups, setSetups] = useState<any[]>([
@@ -222,27 +220,29 @@ export default function DeskClient() {
 
   const todaySetups = setups.filter(s => s.isToday)
   const weeklySetups = setups.filter(s => !s.isToday)
-  
   const [activeTodayId, setActiveTodayId] = useState<string | null>(todaySetups.length > 0 ? todaySetups[0].id : null)
+
+  // --- JOURNAL STATE ---
+  const [tradesTakenToday, setTradesTakenToday] = useState(0)
+  const [logPair, setLogPair] = useState(todaySetups.length > 0 ? todaySetups[0].symbol : '')
+  const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
+  const [logReason, setLogReason] = useState('')
+
+  // Mock pending trades for Weekend Review
+  const [pendingReconciliation, setPendingReconciliation] = useState([
+    { id: 't1', day: 'Mon', symbol: 'EURUSD', execution: 'Perfect', reason: null },
+    { id: 't2', day: 'Wed', symbol: 'GBPJPY', execution: 'Imperfect', reason: 'Revenge Trading' },
+  ])
 
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
       setActiveTodayId(todaySetups[0].id)
+      setLogPair(todaySetups[0].symbol)
     } else if (todaySetups.length === 0) {
       setActiveTodayId(null)
+      setLogPair('')
     }
   }, [todaySetups.length, activeTodayId])
-
-  // SSR Safe Clock
-  useEffect(() => {
-    setMounted(true);
-    setTime(new Date());
-
-    const timer = setInterval(() => {
-      setTime(new Date());
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
 
   const toggleTodayStatus = (id: string) => {
     setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday } : s))
@@ -271,12 +271,7 @@ export default function DeskClient() {
         {/* 🟢 SLEEK TOP BAR */}
         <div className="flex items-center justify-between p-3 border-b border-zinc-800/60 bg-[#0a0a0a] shrink-0">
           <div className="flex items-center gap-3">
-             <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800/60 px-3 py-1.5 rounded-lg shadow-sm">
-                <Clock size={14} className="text-zinc-500" />
-                <span className="text-sm font-mono text-zinc-200 tracking-wide">
-                  {mounted && time ? time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
-                </span>
-             </div>
+             <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest ml-2">Operator's Desk</span>
           </div>
           <button 
             onClick={() => setIsVaultOpen(!isVaultOpen)} 
@@ -287,90 +282,231 @@ export default function DeskClient() {
           </button>
         </div>
 
-        {/* 🟢 TODAY WORKSPACE (Fills 100% of remaining height) */}
-        <div className="flex-1 flex flex-col bg-[#080808] min-h-0">
+        {/* 🟢 MAIN SPLIT CONTAINER */}
+        <div className="flex-1 flex flex-col overflow-hidden">
           
-          <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
-            <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-              <Crosshair size={14} className="text-blue-500" /> Today's Focus
-            </h2>
-            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-              {todaySetups.length} Pairs Locked
-            </span>
-          </div>
+          {/* =========================================
+              TOP 50%: TODAY's FOCUS
+          ========================================= */}
+          <div className="flex-1 flex flex-col min-h-0 border-b border-zinc-800/60 bg-[#080808]">
+            <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
+              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <Crosshair size={14} className="text-blue-500" /> Today's Focus
+              </h2>
+              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+                {todaySetups.length} Pairs Locked
+              </span>
+            </div>
 
-          <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
-            
-            {/* PANE 1: List */}
-            <div className="w-48 sm:w-56 shrink-0 border-r border-zinc-800/60 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5">
-              {todaySetups.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
-                  <Target size={20} className="mb-2 opacity-50" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
-                </div>
-              ) : (
-                todaySetups.map(setup => (
-                  <div 
-                    key={`today-${setup.id}`}
-                    onClick={() => setActiveTodayId(setup.id)}
-                    className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
-                      activeTodayId === setup.id 
-                        ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
-                        : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
-                    }`}
-                  >
-                    <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
-                      {setup.symbol}
-                    </span>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }}
-                      className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                      title="Push back to Vault"
-                    >
-                      <ArrowLeft size={12} />
-                    </button>
+            <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
+              {/* PANE 1: List */}
+              <div className="w-48 sm:w-56 shrink-0 border-r border-zinc-800/60 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5">
+                {todaySetups.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
+                    <Target size={20} className="mb-2 opacity-50" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
                   </div>
-                ))
-              )}
-            </div>
-
-            {/* PANE 2: Chart */}
-            <div className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60">
-              {activeSetup ? (
-                <div className="absolute inset-0 p-3 flex items-center justify-center">
-                   <img src={activeSetup.imageUrl} alt={`${activeSetup.symbol} Chart`} className="w-full h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl bg-[#0a0a0a]" />
-                </div>
-              ) : (
-                <div className="flex-1 flex items-center justify-center text-zinc-700">
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair to view</span>
-                </div>
-              )}
-            </div>
-
-            {/* PANE 3: Editable Notes Box */}
-            <div className="w-64 sm:w-72 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
-              <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
-                {activeSetup ? (
-                  <textarea 
-                    value={activeSetup.notes}
-                    onChange={(e) => handleUpdateNotes(activeSetup.id, e.target.value)}
-                    placeholder="Type notes, levels, or invalidation here..."
-                    className="w-full h-full bg-transparent border-none focus:outline-none resize-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar"
-                  />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-center">
-                    <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p>
+                  todaySetups.map(setup => (
+                    <div 
+                      key={`today-${setup.id}`}
+                      onClick={() => { setActiveTodayId(setup.id); setLogPair(setup.symbol); }}
+                      className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
+                        activeTodayId === setup.id 
+                          ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
+                          : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
+                      }`}
+                    >
+                      <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                        {setup.symbol}
+                      </span>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }}
+                        className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                        title="Push back to Vault"
+                      >
+                        <ArrowLeft size={12} />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* PANE 2: Chart */}
+              <div className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60">
+                {activeSetup ? (
+                  <div className="absolute inset-0 p-3 flex items-center justify-center">
+                     <img src={activeSetup.imageUrl} alt={`${activeSetup.symbol} Chart`} className="w-full h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl bg-[#0a0a0a]" />
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-zinc-700">
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair to view</span>
                   </div>
                 )}
               </div>
+
+              {/* PANE 3: Editable Notes Box */}
+              <div className="w-64 sm:w-72 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
+                <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
+                  {activeSetup ? (
+                    <textarea 
+                      value={activeSetup.notes}
+                      onChange={(e) => handleUpdateNotes(activeSetup.id, e.target.value)}
+                      placeholder="Type notes, levels, or invalidation here..."
+                      className="w-full h-full bg-transparent border-none focus:outline-none resize-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-center">
+                      <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* =========================================
+              BOTTOM 50%: OPERATOR'S AUDIT / JOURNAL
+          ========================================= */}
+          <div className="flex-1 flex flex-col min-h-0 bg-[#050505]">
+            <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
+              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <Activity size={14} className="text-emerald-500" /> Operator's Audit
+              </h2>
             </div>
 
-          </div>
-        </div>
+            <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
+              
+              {/* LEFT: QUICK CAPTURE (ACTIVE SESSION) */}
+              <div className="flex-1 border-r border-zinc-800/60 p-6 flex flex-col items-center justify-center relative bg-[#030303]">
+                <div className="absolute top-4 left-4">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Session Capture</span>
+                </div>
+                
+                <div className="w-full max-w-sm flex flex-col gap-6">
+                  <div className="flex justify-between items-end">
+                    <h3 className="text-sm font-bold text-zinc-200">Log Execution Reality</h3>
+                    <span className={`text-xs font-bold tracking-widest px-2 py-1 rounded bg-zinc-900 border ${tradesTakenToday >= 2 ? 'border-red-500 text-red-400' : 'border-zinc-700 text-zinc-400'}`}>
+                      {tradesTakenToday}/2 TRADES
+                    </span>
+                  </div>
 
+                  <select 
+                    value={logPair}
+                    onChange={(e) => setLogPair(e.target.value)}
+                    className="w-full bg-[#0a0a0a] border border-zinc-800/60 rounded-lg px-3 py-3 text-sm font-bold text-zinc-200 outline-none uppercase"
+                  >
+                    <option value="" disabled>Select Instrument</option>
+                    {todaySetups.map(s => <option key={s.id} value={s.symbol}>{s.symbol}</option>)}
+                  </select>
+
+                  <div className="flex gap-3">
+                    <button 
+                      onClick={() => setLogExecution('Perfect')}
+                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                    >
+                      <CheckCircle size={20} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Perfect Execution</span>
+                    </button>
+                    <button 
+                      onClick={() => setLogExecution('Imperfect')}
+                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                    >
+                      <AlertTriangle size={20} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Imperfect Execution</span>
+                    </button>
+                  </div>
+
+                  {logExecution === 'Imperfect' && (
+                    <select 
+                      value={logReason}
+                      onChange={(e) => setLogReason(e.target.value)}
+                      className="w-full bg-[#0a0a0a] border border-red-500/30 rounded-lg px-3 py-2 text-xs font-bold text-zinc-300 outline-none uppercase"
+                    >
+                      <option value="" disabled>Select Catalyst</option>
+                      <option value="FOMO">FOMO / Rushed Entry</option>
+                      <option value="Revenge">Revenge Trading</option>
+                      <option value="Boredom">Boredom / Forced Setup</option>
+                      <option value="Ignored Plan">Ignored Trading Plan</option>
+                    </select>
+                  )}
+
+                  <button 
+                    disabled={!logPair || !logExecution || (logExecution === 'Imperfect' && !logReason) || tradesTakenToday >= 2}
+                    onClick={() => {
+                      if (tradesTakenToday < 2) setTradesTakenToday(prev => prev + 1);
+                      setLogExecution(null); setLogReason('');
+                    }}
+                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-colors"
+                  >
+                    Lock Entry Without Outcome
+                  </button>
+                </div>
+              </div>
+
+              {/* RIGHT: END OF WEEK RECONCILER */}
+              <div className="flex-[1.2] p-6 overflow-y-auto custom-scrollbar relative bg-[#050505]">
+                <div className="absolute top-4 left-4">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
+                </div>
+
+                <div className="mt-8 flex flex-col gap-3">
+                  {pendingReconciliation.length === 0 ? (
+                    <div className="text-center py-10 text-zinc-600">
+                      <span className="text-[10px] font-bold uppercase tracking-widest">No pending setups to reconcile</span>
+                    </div>
+                  ) : (
+                    pendingReconciliation.map((trade) => (
+                      <div key={trade.id} className="bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 flex items-center justify-between shadow-sm">
+                        
+                        <div className="flex flex-col gap-1 w-1/3">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-zinc-400">{trade.day}</span>
+                            <span className="text-sm font-bold text-zinc-200">{trade.symbol}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                              {trade.execution}
+                            </span>
+                            {trade.reason && <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">• {trade.reason}</span>}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 w-2/3 justify-end">
+                          <select className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs font-bold text-zinc-300 outline-none uppercase w-28">
+                            <option value="">Outcome</option>
+                            <option value="TP">Hit TP</option>
+                            <option value="SL">Hit SL</option>
+                            <option value="BE">Break Even</option>
+                          </select>
+                          
+                          <div className="relative w-24">
+                            <input 
+                              type="number" 
+                              placeholder="0.0"
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-8 pr-3 py-2 text-xs font-bold text-zinc-300 outline-none placeholder:text-zinc-600"
+                            />
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">RR</span>
+                          </div>
+
+                          <button className="p-2 bg-zinc-800 hover:bg-emerald-600 text-zinc-400 hover:text-white rounded-lg transition-colors" title="Save Reconciled Data">
+                            <Save size={16} />
+                          </button>
+                        </div>
+
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
+          
+        </div>
       </div>
 
-      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT (Takes 100% height) */}
+      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT */}
       <div 
         className={`h-full bg-[#080808] border-l border-zinc-800/60 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${
           isVaultOpen ? 'w-[280px] lg:w-[300px] xl:w-[320px] opacity-100' : 'w-0 opacity-0 border-l-0'
