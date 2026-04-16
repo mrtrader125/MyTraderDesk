@@ -28,7 +28,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
     return match ? match[0] : ''
   }
 
-  // Handle Multiple Files
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
@@ -44,7 +43,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
     }
   }
 
-  // Handle Single Link
   const handleAddLink = () => {
     if (!linkInput) return
     const newDraft: DraftSetup = {
@@ -75,7 +73,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
       symbol: d.instrument.toUpperCase(),
       notes: d.notes,
       imageUrl: d.imageSource,
-      isToday: false // Always goes to weekly vault first
+      isToday: false
     }))
     onSave(formattedSetups)
     onClose()
@@ -107,7 +105,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
         </div>
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
-          {/* LEFT: Drafts List */}
           <div className="w-[200px] border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
             <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
               <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5">
@@ -151,7 +148,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
             </div>
           </div>
 
-          {/* RIGHT: Edit Active Draft */}
           <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
             {drafts.length > 0 && drafts[activeIndex] ? (
               <div className="p-6 flex flex-col gap-6 max-w-2xl mx-auto w-full">
@@ -216,9 +212,10 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 export default function PersonalDashboard() {
   // Layout State
   const [isVaultOpen, setIsVaultOpen] = useState(true)
+  const [mounted, setMounted] = useState(false) // 🚨 ADDED MOUNTED STATE
 
   // Data State
-  const [time, setTime] = useState(new Date())
+  const [time, setTime] = useState<Date | null>(null) // 🚨 FIX: Start null to avoid hydration mismatch
   const [sessionInfo, setSessionInfo] = useState({ name: 'Determining...', localTime: '--:--:--', tz: 'UTC' })
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   
@@ -249,8 +246,11 @@ export default function PersonalDashboard() {
     { id: 3, label: 'Weekly Wind-up (PnL & RR Review)', completed: false }
   ])
 
-  // Real-time Clock & Session
+  // 🚨 FIX: Real-time Clock & Session Engine (Now SSR Safe)
   useEffect(() => {
+    setMounted(true);
+    setTime(new Date());
+
     const timer = setInterval(() => {
       const now = new Date();
       setTime(now);
@@ -317,7 +317,7 @@ export default function PersonalDashboard() {
           </button>
         </div>
 
-        {/* TOP ROW: METRICS & ROUTINE (Flexible, takes remaining top space) */}
+        {/* TOP ROW: METRICS & ROUTINE */}
         <div className="flex-1 p-3 sm:p-4 flex flex-col md:flex-row gap-4 min-h-0 overflow-y-auto custom-scrollbar">
           
           <div className="flex flex-col gap-4 w-full md:w-64 shrink-0">
@@ -327,7 +327,8 @@ export default function PersonalDashboard() {
                 <Clock size={12}/> Local Time
               </span>
               <span className="text-lg font-mono text-zinc-100 tracking-wide">
-                {time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                {/* 🚨 FIX: Only render clock if mounted to prevent hydration errors */}
+                {mounted && time ? time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
               </span>
             </div>
             
@@ -348,13 +349,13 @@ export default function PersonalDashboard() {
             <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-1.5 shrink-0 border-b border-zinc-800/50 pb-2">
               <CheckCircle2 size={14} className="text-emerald-500/70" /> Execution Routine
             </h3>
-            <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar flex-1 pr-2">
+            <div className="flex flex-col gap-2.5 overflow-y-auto custom-scrollbar flex-1 pr-2">
               {routine.map(item => (
                 <div key={item.id} onClick={() => toggleRoutine(item.id)} className="flex items-center gap-3 cursor-pointer group py-1">
                   <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors shrink-0 ${item.completed ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700 text-transparent group-hover:border-zinc-500'}`}>
                     <CheckCircle2 size={10} />
                   </div>
-                  <span className={`text-xs font-medium transition-all ${item.completed ? 'text-zinc-600 line-through' : 'text-zinc-300 group-hover:text-white'}`}>
+                  <span className={`text-xs font-semibold tracking-wide transition-all ${item.completed ? 'text-zinc-600 line-through' : 'text-zinc-300 group-hover:text-white'}`}>
                     {item.label}
                   </span>
                 </div>
@@ -383,6 +384,7 @@ export default function PersonalDashboard() {
                 <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
                   <Target size={20} className="mb-2 opacity-50" />
                   <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
+                  <span className="text-[10px] mt-2">Filter from Weekly Prep →</span>
                 </div>
               ) : (
                 todaySetups.map(setup => (
