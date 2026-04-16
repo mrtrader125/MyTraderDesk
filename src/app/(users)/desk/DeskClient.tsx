@@ -94,8 +94,8 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[80vh] min-h-[500px]">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px]">
         <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
           <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
             <UploadCloud size={16} className="text-blue-500" /> Bulk Upload Weekly Setups
@@ -104,8 +104,8 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
             <X size={18} />
           </button>
         </div>
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          <div className="w-[200px] border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
+        <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
+          <div className="w-full lg:w-[200px] border-b lg:border-b-0 lg:border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
             <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
               <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5" disabled={isUploading}>
                 <Plus size={14} /> Add Images
@@ -121,11 +121,11 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
               <input type="file" multiple ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
             </div>
             
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-2 text-white">
+            <div className="flex-1 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-2 flex flex-row lg:flex-col gap-2 text-white">
               {drafts.map((draft, idx) => (
                 <div 
                   key={draft.id} onClick={() => setActiveIndex(idx)}
-                  className={`p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-zinc-800 border-zinc-600' : 'bg-zinc-950 border-zinc-800/50 hover:bg-zinc-900'}`}
+                  className={`min-w-[150px] lg:min-w-0 p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-zinc-800 border-zinc-600' : 'bg-zinc-950 border-zinc-800/50 hover:bg-zinc-900'}`}
                 >
                   <div className="w-8 h-8 rounded bg-zinc-900 border border-zinc-700 overflow-hidden shrink-0">
                     {draft.imageSource ? <img src={draft.imageSource} className="w-full h-full object-cover opacity-80" /> : <ImageIcon size={12} className="m-auto mt-2 text-zinc-600"/>}
@@ -142,7 +142,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 
           <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
             {drafts.length > 0 && drafts[activeIndex] ? (
-              <div className="p-6 flex flex-col gap-6 max-w-2xl mx-auto w-full text-white">
+              <div className="p-4 lg:p-6 flex flex-col gap-4 lg:gap-6 max-w-2xl mx-auto w-full text-white">
                 <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center">
                   {drafts[activeIndex].imageSource ? <img src={drafts[activeIndex].imageSource!} alt="Preview" className="w-full h-full object-contain p-2" /> : <ImageIcon className="w-10 h-10 text-zinc-700" />}
                 </div>
@@ -167,9 +167,9 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                 </div>
               </div>
             ) : (
-              <div className="flex-1 flex flex-col items-center justify-center text-zinc-600">
+              <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 p-6">
                 <UploadCloud size={40} className="mb-4 opacity-50" />
-                <p className="text-sm font-medium">Add images or links to start bulk uploading.</p>
+                <p className="text-sm font-medium text-center">Add images or links to start bulk uploading.</p>
               </div>
             )}
           </div>
@@ -246,13 +246,14 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   )
 }
 
+// 🚨 RECONCILIATION ITEM: Mobile Responsive Grid
 function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string, outcome: string, rr: string) => void }) {
   const [outcome, setOutcome] = useState(''); 
   const [rr, setRr] = useState('');
 
   return (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 flex items-center justify-between shadow-sm shrink-0 hover:border-zinc-700 transition-colors">
-      <div className="flex flex-col gap-1 w-1/3 min-w-0 pr-2">
+    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm shrink-0 hover:border-zinc-700 transition-colors gap-3 sm:gap-2">
+      <div className="flex flex-row sm:flex-col gap-1 w-full sm:w-1/3 min-w-0 pr-2 justify-between sm:justify-start items-center sm:items-start">
         <div className="flex items-center gap-2 truncate">
           <span className="text-[11px] font-bold text-zinc-400">{trade.day}</span>
           <span className="text-xs font-bold text-zinc-200">{trade.symbol}</span>
@@ -261,19 +262,19 @@ function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string
           <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded shrink-0 ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
             {trade.execution}
           </span>
-          {trade.reason && <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest truncate">• {trade.reason}</span>}
+          {trade.reason && <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest truncate hidden sm:block">• {trade.reason}</span>}
         </div>
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        <select value={outcome} onChange={e => setOutcome(e.target.value)} className="bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-[10px] font-bold text-zinc-300 outline-none uppercase w-20 sm:w-24 focus:border-blue-500 transition-colors">
+      <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
+        <select value={outcome} onChange={e => setOutcome(e.target.value)} className="flex-1 sm:flex-none bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-[10px] font-bold text-zinc-300 outline-none uppercase w-full sm:w-24 focus:border-blue-500 transition-colors">
           <option value="">Outcome</option>
           <option value="TP">Hit TP</option>
           <option value="SL">Hit SL</option>
           <option value="BE">Break Even</option>
         </select>
         
-        <div className="relative w-16 sm:w-20">
+        <div className="relative flex-1 sm:flex-none w-full sm:w-20">
           <input 
             type="number" 
             value={rr} 
@@ -287,7 +288,7 @@ function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string
         <button 
           disabled={!outcome || !rr} 
           onClick={() => onSave(trade.id, outcome, rr)} 
-          className="p-1.5 bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 rounded-lg transition-colors shadow-sm"
+          className="p-1.5 px-3 sm:px-1.5 bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 rounded-lg transition-colors shadow-sm"
           title="Save Reconciled Data"
         >
           <Save size={12} />
@@ -301,8 +302,8 @@ function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string
 export default function DeskClient() {
   const [user, setUser] = useState<any>(null)
   
-  const [isVaultOpen, setIsVaultOpen] = useState(true)
-  const [isAuditOpen, setIsAuditOpen] = useState(false) // Audit starts closed
+  const [isVaultOpen, setIsVaultOpen] = useState(false) // Start closed on mobile for clean entry
+  const [isAuditOpen, setIsAuditOpen] = useState(false)
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
@@ -312,11 +313,18 @@ export default function DeskClient() {
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
 
-  // Journal State
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
   const [logPair, setLogPair] = useState<string>('') 
   const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
   const [logReason, setLogReason] = useState('')
+
+  // Handle Default Vault State (Open on desktop, closed on mobile)
+  useEffect(() => {
+    const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
+    handleResize(); // Set initially
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Init Data from Supabase
   useEffect(() => {
@@ -454,7 +462,7 @@ export default function DeskClient() {
         setPendingReconciliation(prev => [{ id: data[0].id, day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }), symbol: data[0].symbol, execution: data[0].execution_type, reason: data[0].reason, rr: '', outcome: '' }, ...prev]);
       }
       setLogPair(''); setLogExecution(null); setLogReason('');
-      setIsAuditOpen(false); // Auto-close audit after saving
+      setIsAuditOpen(false); 
     }
   }
 
@@ -467,17 +475,25 @@ export default function DeskClient() {
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
-  // 🚨 STRICT LAYOUT ENGINE 🚨
+  // 🚨 STRICT MOBILE-FIRST + DESKTOP LOCK LAYOUT 🚨
   return (
-    <div className="flex h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-hidden">
+    <div className="relative flex flex-col lg:flex-row h-auto min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
       
+      {/* MOBILE VAULT BACKDROP */}
+      {isVaultOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[40]" 
+          onClick={() => setIsVaultOpen(false)} 
+        />
+      )}
+
       {/* LEFT/MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
         
         {/* =========================================
-            TOP SECTION: TODAY's FOCUS (STRICT 50%)
+            TOP SECTION: TODAY's FOCUS
         ========================================= */}
-        <div className="h-[calc(50%-4px)] shrink-0 flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0">
+        <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 lg:h-[calc(50%-4px)]">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
           
           {/* Header */}
@@ -499,9 +515,9 @@ export default function DeskClient() {
             </button>
           </div>
 
-          <div className="flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden">
-            {/* Pane 1: List Container */}
-            <div className="w-56 shrink-0 border-r border-zinc-800 flex flex-col bg-zinc-950/50 overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
+          <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
+            {/* Pane 1: List (Horizontal scroll on mobile, Vertical on Desktop) */}
+            <div className="w-full lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-800 flex flex-row lg:flex-col bg-zinc-950/50 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
               {todaySetups.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
                   <Target size={20} className="mb-2 opacity-50" />
@@ -514,7 +530,7 @@ export default function DeskClient() {
                     <div 
                       key={`today-${setup.id}`} 
                       onClick={() => setActiveTodayId(setup.id)} 
-                      className={`p-3 rounded-lg border flex items-center justify-between transition-all cursor-pointer group shrink-0 ${
+                      className={`min-w-[140px] lg:min-w-0 p-3 rounded-lg border flex items-center justify-between transition-all cursor-pointer group shrink-0 ${
                         activeTodayId === setup.id 
                           ? 'bg-zinc-800 border-zinc-600 shadow-md' 
                           : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'
@@ -523,7 +539,7 @@ export default function DeskClient() {
                       <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                         {setup.symbol}
                       </span>
-                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1.5 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
                           onClick={(e) => { 
                             e.stopPropagation(); 
@@ -548,7 +564,7 @@ export default function DeskClient() {
             </div>
 
             {/* Pane 2: Chart Container */}
-            <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner">
+            <div className="w-full h-[250px] sm:h-[300px] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner">
               {activeSetup?.imageUrl ? (
                 <div className="absolute inset-0 p-4 flex items-center justify-center">
                   <img src={activeSetup.imageUrl} alt={activeSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950" />
@@ -561,7 +577,7 @@ export default function DeskClient() {
             </div>
 
             {/* Pane 3: Notes Container */}
-            <div className="w-80 shrink-0 flex flex-col min-h-0 min-w-0 p-4 border-l border-zinc-800 bg-zinc-950/50">
+            <div className="w-full lg:w-80 shrink-0 flex flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
               <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0">
                 <RichNotesEditor activeSetup={activeSetup} onUpdate={handleUpdateNotes} />
               </div>
@@ -572,7 +588,7 @@ export default function DeskClient() {
         {/* =========================================
             BOTTOM SECTION: OPERATOR'S AUDIT (COLLAPSIBLE)
         ========================================= */}
-        <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-[calc(50%-4px)]' : 'h-12'}`}>
+        <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
           
           {/* Header (Clickable Toggle) */}
@@ -593,11 +609,11 @@ export default function DeskClient() {
             </button>
           </div>
 
-          {/* Collapsible Inner Content - Fades out to prevent squishing */}
-          <div className={`flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0'}`}>
+          {/* Collapsible Inner Content */}
+          <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
             
             {/* Capture Panel */}
-            <div className="flex-1 border-r border-zinc-800 p-4 flex flex-col items-center justify-center relative bg-zinc-950/50">
+            <div className="w-full lg:flex-1 border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
               <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
                 <div className="flex justify-between items-end">
                   <h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3>
@@ -668,7 +684,7 @@ export default function DeskClient() {
             </div>
 
             {/* Queue Panel */}
-            <div className="flex-[1.2] p-4 overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
+            <div className="w-full lg:flex-[1.2] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
               <div className="mb-3 shrink-0 flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
               </div>
@@ -690,15 +706,19 @@ export default function DeskClient() {
       </div>
       
       {/* =========================================
-          RIGHT WORKSPACE: WEEKLY VAULT CARD
+          RIGHT WORKSPACE: WEEKLY VAULT (OVERLAY ON MOBILE)
       ========================================= */}
-      <div className={`h-full bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'w-[280px] lg:w-[340px] opacity-100' : 'w-0 opacity-0 border-none'}`}>
+      <div className={`fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-zinc-950 border-l border-zinc-800 lg:rounded-xl shadow-2xl transition-transform lg:transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-600/50 to-transparent"></div>
         
-        <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 text-white">
+        <div className="h-14 lg:h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 text-white">
           <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
             <UploadCloud size={14} className="text-purple-400" /> Weekly Vault
           </h2>
+          {/* Close button for mobile inside Vault */}
+          <button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-zinc-500 hover:text-white p-1">
+            <X size={18} />
+          </button>
         </div>
         
         <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3 text-white">
@@ -716,7 +736,7 @@ export default function DeskClient() {
                   <span className="text-[13px] font-bold tracking-wide text-zinc-300 group-hover:text-white transition-colors truncate">{setup.symbol}</span>
                   <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span>
                 </div>
-                <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                   <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details">
                     <Eye size={14} />
                   </button>
@@ -732,7 +752,7 @@ export default function DeskClient() {
           )}
         </div>
         
-        <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0">
+        <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4">
           <button 
             onClick={() => setIsUploadModalOpen(true)} 
             className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none"
@@ -762,15 +782,15 @@ export default function DeskClient() {
         <div onClick={() => setPreviewSetup(null)} className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4 sm:p-8 cursor-zoom-out">
           <div onClick={e => e.stopPropagation()} className="max-w-6xl w-full h-full max-h-[800px] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden cursor-default">
             
-            <div className="flex-[2.5] bg-black border-r border-zinc-800 p-4 sm:p-6 flex items-center justify-center relative shadow-inner">
+            <div className="flex-[2.5] bg-black border-b md:border-b-0 md:border-r border-zinc-800 p-4 sm:p-6 flex items-center justify-center relative shadow-inner min-h-[300px]">
               {previewSetup.imageUrl ? (
-                <img src={previewSetup.imageUrl} alt={previewSetup.symbol} className="w-full h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl" />
+                <img src={previewSetup.imageUrl} alt={previewSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl" />
               ) : (
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No Image Data</span>
               )}
             </div>
             
-            <div className="flex-1 flex flex-col min-w-[300px] overflow-hidden bg-zinc-950">
+            <div className="flex-1 flex flex-col min-w-0 md:min-w-[300px] overflow-hidden bg-zinc-950">
               <div className="p-5 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between shrink-0">
                 <span className="text-base font-black text-white tracking-widest">{previewSetup.symbol} Setup</span>
                 <button onClick={() => setPreviewSetup(null)} className="text-zinc-500 hover:text-white p-1 bg-black border border-zinc-800 rounded shadow-sm">
