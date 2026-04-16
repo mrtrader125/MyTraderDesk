@@ -361,31 +361,35 @@ export default function DeskClient() {
   }
 
   const handleBulkUpload = async (draftsToSave: any[]) => {
-    if (!user) return
-    const newSetups = []
+  if (!user) return
+  const newSetups = []
+  
+  for (const draft of draftsToSave) {
+    let finalImageUrl = draft.imageUrl
     
-    for (const draft of draftsToSave) {
-      let finalImageUrl = draft.imageUrl
+    // If it's a raw file, upload to Supabase Storage
+    if (draft.file) {
+      const fileExt = draft.file.name.split('.').pop()
+      const fileName = `${Math.random()}.${fileExt}`
       
-      // If it's a raw file, upload to Supabase Storage
-      if (draft.file) {
-        const fileExt = draft.file.name.split('.').pop()
-        const fileName = `${Math.random()}.${fileExt}`
-        const { data, error } = await supabase.storage.from('desk-images').upload(`${user.id}/${fileName}`, draft.file)
-        if (data) {
-          const { data: publicUrlData } = supabase.storage.from('desk-images').getPublicUrl(`${user.id}/${fileName}`)
-          finalImageUrl = publicUrlData.publicUrl
-        }
+      // 🚨 UPDATE THIS LINE: Replace 'desk-images' with your existing bucket name
+      const { data, error } = await supabase.storage.from('YOUR_EXISTING_BUCKET_NAME').upload(`${user.id}/${fileName}`, draft.file)
+      
+      if (data) {
+        // 🚨 AND UPDATE THIS LINE: Replace 'desk-images' here too
+        const { data: publicUrlData } = supabase.storage.from('YOUR_EXISTING_BUCKET_NAME').getPublicUrl(`${user.id}/${fileName}`)
+        finalImageUrl = publicUrlData.publicUrl
       }
-
-      newSetups.push({
-        user_id: user.id,
-        symbol: draft.symbol,
-        notes: draft.notes,
-        image_url: finalImageUrl,
-        is_today: false
-      })
     }
+
+    newSetups.push({
+      user_id: user.id,
+      symbol: draft.symbol,
+      notes: draft.notes,
+      image_url: finalImageUrl,
+      is_today: false
+    })
+  }
 
     const { data: insertedData } = await supabase.from('user_desk_setups').insert(newSetups).select()
     if (insertedData) {
