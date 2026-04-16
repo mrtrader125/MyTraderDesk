@@ -1,17 +1,18 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import { 
   Plus, X, UploadCloud, Crosshair, 
   Target, ArrowRight, ArrowLeft, Eye, Bold, List,
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save
 } from 'lucide-react'
 
-// 🚨 FIX 1: Initialize Supabase OUTSIDE the component to prevent the "Multiple GoTrueClient instances" warning.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// 🚨 Initialize the Next.js SSR Browser Client so it can read your Auth Cookies
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 // --- BULK UPLOAD MODAL COMPONENT ---
 type DraftSetup = {
@@ -263,7 +264,9 @@ export default function DeskClient() {
   // Init Data from Supabase
   useEffect(() => {
     const initData = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
+      
       if (user) {
         setUser(user)
         // Fetch Setups
@@ -341,31 +344,24 @@ export default function DeskClient() {
     await supabase.from('user_desk_setups').delete().eq('id', id)
   }
 
-  // 🚨 FIX 2: Added strict error handling to ensure uploads don't fail silently
   const handleBulkUpload = async (draftsToSave: any[]) => {
-    // 1. Check if user is actually logged in
     if (!user) {
       alert("Authentication Error: No active user session found. Please make sure you are logged in to Supabase.")
       return
     }
-    
     const newSetups = []
-    
     for (const draft of draftsToSave) {
       let finalImageUrl = draft.imageSource
       
       if (draft.file) {
         const fileExt = draft.file.name.split('.').pop()
         const fileName = `${Math.random()}.${fileExt}`
-        
-        // 2. Attempt Storage Upload
         const { data, error } = await supabase.storage.from('user-desk-images').upload(`${user.id}/${fileName}`, draft.file)
         
-        // 🚨 LOUD ERROR: If upload fails, tell the user WHY
         if (error) {
-          console.error("Storage Error:", error)
-          alert(`Image Upload Failed for ${draft.instrument}:\n\n${error.message}\n\nPlease check your Storage RLS policies.`)
-          return // Stop the process so the modal stays open
+          console.error("Supabase Storage Error:", error)
+          alert(`Failed to upload ${draft.instrument} image:\n${error.message}`)
+          return // Abort if upload fails
         }
         
         if (data) {
@@ -373,41 +369,20 @@ export default function DeskClient() {
           finalImageUrl = publicUrlData.publicUrl
         }
       } else if (finalImageUrl && finalImageUrl.startsWith('blob:')) {
-         // Prevent temporary browser blobs from saving to the DB
          finalImageUrl = null 
       }
 
-      newSetups.push({ 
-        user_id: user.id, 
-        symbol: draft.instrument, 
-        notes: draft.notes, 
-        image_url: finalImageUrl, 
-        is_today: false 
-      })
+      newSetups.push({ user_id: user.id, symbol: draft.instrument, notes: draft.notes, image_url: finalImageUrl, is_today: false })
     }
 
-    // 3. Attempt Database Insert
-    if (newSetups.length > 0) {
-      const { data: insertedData, error: dbError } = await supabase.from('user_desk_setups').insert(newSetups).select()
-      
-      // 🚨 LOUD ERROR: If Database fails, tell the user WHY
-      if (dbError) {
-        console.error("Database Error:", dbError)
-        alert(`Database Save Failed:\n\n${dbError.message}\n\nPlease check your user_desk_setups RLS policies.`)
-        return // Stop the process
-      }
-      
-      if (insertedData) {
-        const formatted = insertedData.map(d => ({ 
-          id: d.id, 
-          symbol: d.symbol, 
-          notes: d.notes, 
-          imageUrl: d.image_url, 
-          isToday: false, 
-          addedToTodayAt: null 
-        }))
-        setSetups(prev => [...formatted, ...prev])
-      }
+    const { data: insertedData, error: dbError } = await supabase.from('user_desk_setups').insert(newSetups).select()
+    
+    if (dbError) {
+      console.error("Database Insert Error:", dbError)
+      alert(`Database Save Failed:\n${dbError.message}`)
+    } else if (insertedData) {
+      const formatted = insertedData.map(d => ({ id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url, isToday: false, addedToTodayAt: null }))
+      setSetups(prev => [...formatted, ...prev])
     }
   }
 
