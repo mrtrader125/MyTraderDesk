@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
-  CheckCircle2, Clock, Target, ArrowRight, ArrowLeft,
-  Globe2, BarChart2, Image as ImageIcon, Trash2, Menu
+  Clock, Target, ArrowRight, ArrowLeft,
+  BarChart2, Image as ImageIcon, Trash2, Menu
 } from 'lucide-react'
 
 // --- BULK UPLOAD MODAL COMPONENT ---
@@ -213,7 +213,6 @@ export default function DeskPage() {
   const [mounted, setMounted] = useState(false)
 
   const [time, setTime] = useState<Date | null>(null) 
-  const [sessionInfo, setSessionInfo] = useState({ name: 'Determining...', localTime: '--:--:--' })
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   
   const [setups, setSetups] = useState<any[]>([
@@ -235,40 +234,16 @@ export default function DeskPage() {
     }
   }, [todaySetups.length, activeTodayId])
 
-  const [routine, setRoutine] = useState([
-    { id: 1, label: 'Sunday Macro Prep', completed: true },
-    { id: 2, label: 'Daily Filtering', completed: false },
-    { id: 3, label: 'Weekly Wind-up', completed: false }
-  ])
-
+  // Real-time Clock (SSR Safe)
   useEffect(() => {
     setMounted(true);
     setTime(new Date());
 
     const timer = setInterval(() => {
-      const now = new Date();
-      setTime(now);
-      
-      const utcHour = now.getUTCHours();
-      let sName = 'Interbank';
-      let tz = 'UTC';
-
-      if (utcHour >= 13 && utcHour < 22) { sName = 'New York'; tz = 'America/New_York'; }
-      else if (utcHour >= 8 && utcHour < 17) { sName = 'London'; tz = 'Europe/London'; }
-      else if (utcHour >= 0 && utcHour < 9) { sName = 'Tokyo'; tz = 'Asia/Tokyo'; }
-      else { sName = 'Sydney'; tz = 'Australia/Sydney'; }
-
-      setSessionInfo({
-        name: sName,
-        localTime: now.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })
-      });
+      setTime(new Date());
     }, 1000)
     return () => clearInterval(timer)
   }, [])
-
-  const toggleRoutine = (id: number) => {
-    setRoutine(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item))
-  }
 
   const toggleTodayStatus = (id: string) => {
     setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday } : s))
@@ -313,7 +288,7 @@ export default function DeskPage() {
           </button>
         </div>
 
-        {/* 🟢 TODAY WORKSPACE */}
+        {/* 🟢 TODAY WORKSPACE (Fills 100% of remaining height) */}
         <div className="flex-1 flex flex-col bg-[#080808] min-h-0">
           
           <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
@@ -396,7 +371,7 @@ export default function DeskPage() {
 
       </div>
 
-      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT */}
+      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT (Takes 100% height) */}
       <div 
         className={`h-full bg-[#080808] border-l border-zinc-800/60 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${
           isVaultOpen ? 'w-[280px] lg:w-[300px] xl:w-[320px] opacity-100' : 'w-0 opacity-0 border-l-0'
