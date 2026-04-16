@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
-  Target, ArrowRight, ArrowLeft,
+  Target, ArrowRight, ArrowLeft, Eye, Bold, List,
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save
 } from 'lucide-react'
 
@@ -207,15 +207,82 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   )
 }
 
+// --- RICH TEXT EDITOR COMPONENT ---
+function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate: (id: string, notes: string) => void }) {
+  const editorRef = useRef<HTMLDivElement>(null);
+
+  // Sync content only when the active setup ID changes to prevent cursor jumping
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = activeSetup?.notes || '';
+    }
+  }, [activeSetup?.id]);
+
+  const handleInput = () => {
+    if (editorRef.current && activeSetup) {
+      onUpdate(activeSetup.id, editorRef.current.innerHTML);
+    }
+  };
+
+  const handleCommand = (cmd: string) => {
+    document.execCommand(cmd, false, undefined);
+    handleInput();
+    editorRef.current?.focus();
+  };
+
+  if (!activeSetup) {
+    return (
+      <div className="w-full h-full flex items-center justify-center text-center">
+        <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl shadow-sm flex flex-col min-h-0 overflow-hidden">
+      
+      {/* Editor Toolbar */}
+      <div className="flex items-center gap-1 p-2 border-b border-zinc-800/60 bg-[#050505] shrink-0">
+        <button onClick={() => handleCommand('bold')} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors" title="Bold">
+          <Bold size={14} />
+        </button>
+        <button onClick={() => handleCommand('insertUnorderedList')} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors" title="Bullet List">
+          <List size={14} />
+        </button>
+        <span className="ml-auto text-[9px] text-zinc-600 font-bold uppercase tracking-widest px-2">Editor</span>
+      </div>
+
+      {/* ContentEditable Area */}
+      <div 
+        ref={editorRef}
+        contentEditable
+        onInput={handleInput}
+        className="flex-1 w-full bg-transparent border-none focus:outline-none p-4 text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar overflow-y-auto"
+        style={{ outline: 'none' }}
+      />
+      
+      {/* Essential styles for the contentEditable lists to render properly */}
+      <style dangerouslySetInnerHTML={{__html: `
+        div[contenteditable] ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        div[contenteditable] li { margin-bottom: 0.25rem; }
+        div[contenteditable]:empty:before { content: "Type structural notes, levels, or invalidation here..."; color: #52525b; pointer-events: none; display: block; }
+      `}} />
+    </div>
+  )
+}
+
 // --- MAIN DESK COMPONENT ---
 export default function DeskClient() {
   const [isVaultOpen, setIsVaultOpen] = useState(true)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   
+  // Lightbox Preview State
+  const [previewSetup, setPreviewSetup] = useState<any | null>(null)
+  
   const [setups, setSetups] = useState<any[]>([
-    { id: '1', symbol: 'GBPJPY', notes: 'Macro structure shows clear sweep of weekly high.\nWaiting for 1H displacement and fair value gap tap to enter short.\n\nTarget is the 4H unmitigated demand zone below.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder1.png', isToday: true, addedToTodayAt: Date.now() },
-    { id: '2', symbol: 'XAUUSD', notes: 'Gold respecting daily trendline.\nCPI data coming up, playing it safe until NY session volume steps in.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder2.png', isToday: true, addedToTodayAt: Date.now() },
+    { id: '1', symbol: 'GBPJPY', notes: 'Macro structure shows clear sweep of weekly high.<br/><br/><ul><li>Waiting for 1H displacement and fair value gap tap to enter short.</li><li><b>Target:</b> 4H unmitigated demand zone below.</li></ul>', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder1.png', isToday: true, addedToTodayAt: Date.now() },
+    { id: '2', symbol: 'XAUUSD', notes: 'Gold respecting daily trendline.<br/>CPI data coming up, playing it safe until NY session volume steps in.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder2.png', isToday: true, addedToTodayAt: Date.now() },
     { id: '3', symbol: 'GBPCAD', notes: 'Consolidating in a tight 4H range. Needs to break structure before committing capital.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder3.png', isToday: false }
   ])
 
@@ -284,46 +351,50 @@ export default function DeskClient() {
   }
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
+  const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
   return (
     <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
       
       {/* 🔴 LEFT/MAIN WORKSPACE */}
-      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 transition-all duration-300 relative">
+
+        {/* 🟢 SLEEK TOP BAR */}
+        <div className="flex items-center justify-between p-3 border-b border-zinc-800/60 bg-[#0a0a0a] shrink-0 h-12">
+          <div className="flex items-center gap-3">
+             <span className="text-xs font-black text-zinc-400 uppercase tracking-widest ml-2">Operator's Desk</span>
+          </div>
+          <button 
+            onClick={() => setIsVaultOpen(!isVaultOpen)} 
+            className="text-zinc-400 hover:text-white transition-colors bg-zinc-950 border border-zinc-800/60 p-1.5 rounded-lg shadow-sm"
+            title="Toggle Weekly Vault"
+          >
+            <Menu size={16} />
+          </button>
+        </div>
 
         {/* 🟢 MAIN SPLIT CONTAINER - EXACT 50/50 LOCK */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           
           {/* =========================================
               TOP 50%: TODAY's FOCUS
           ========================================= */}
           <div className="h-1/2 shrink-0 flex flex-col min-h-0 border-b border-zinc-800/60 bg-[#080808]">
             
-            {/* NEW: Clean Header with Vault Toggle Built-In */}
-            <div className="h-12 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
-              <div className="flex items-center gap-4">
-                <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                  <Crosshair size={14} className="text-blue-500" /> Today's Focus
-                </h2>
-                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">
-                  {todaySetups.length} Pairs Locked
-                </span>
-              </div>
-              
-              <button 
-                onClick={() => setIsVaultOpen(!isVaultOpen)} 
-                className="text-zinc-400 hover:text-white transition-colors p-1"
-                title="Toggle Weekly Vault"
-              >
-                <Menu size={16} />
-              </button>
+            <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
+              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <Crosshair size={14} className="text-blue-500" /> Today's Focus
+              </h2>
+              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">
+                {todaySetups.length} Pairs Locked
+              </span>
             </div>
 
-            <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
+            <div className="flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden">
               {/* PANE 1: List */}
-              <div className="w-48 sm:w-56 shrink-0 border-r border-zinc-800/60 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5">
+              <div className="w-48 sm:w-56 shrink-0 border-r border-zinc-800/60 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5 min-h-0">
                 {todaySetups.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
+                  <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
                     <Target size={20} className="mb-2 opacity-50" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
                   </div>
@@ -335,7 +406,7 @@ export default function DeskClient() {
                       <div 
                         key={`today-${setup.id}`}
                         onClick={() => { setActiveTodayId(setup.id); }}
-                        className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
+                        className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group shrink-0 ${
                           activeTodayId === setup.id 
                             ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
                             : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
@@ -372,34 +443,24 @@ export default function DeskClient() {
               </div>
 
               {/* PANE 2: Chart */}
-              <div className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60">
+              <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-[#030303] relative border-r border-zinc-800/60">
                 {activeSetup ? (
                   <div className="absolute inset-0 p-3 flex items-center justify-center">
                      <img src={activeSetup.imageUrl} alt={`${activeSetup.symbol} Chart`} className="w-full h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl bg-[#0a0a0a]" />
                   </div>
                 ) : (
-                  <div className="flex-1 flex items-center justify-center text-zinc-700">
+                  <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0">
                     <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair to view</span>
                   </div>
                 )}
               </div>
 
-              {/* PANE 3: Editable Notes Box */}
-              <div className="w-64 sm:w-72 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
-                <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
-                  {activeSetup ? (
-                    <textarea 
-                      value={activeSetup.notes}
-                      onChange={(e) => handleUpdateNotes(activeSetup.id, e.target.value)}
-                      placeholder="Type notes, levels, or invalidation here..."
-                      className="w-full h-full bg-transparent border-none focus:outline-none resize-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-center">
-                      <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p>
-                    </div>
-                  )}
-                </div>
+              {/* PANE 3: Rich Editable Notes Box */}
+              <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 min-w-0 p-3 bg-[#030303]">
+                <RichNotesEditor 
+                  activeSetup={activeSetup} 
+                  onUpdate={handleUpdateNotes} 
+                />
               </div>
             </div>
           </div>
@@ -414,15 +475,12 @@ export default function DeskClient() {
               </h2>
             </div>
 
-            <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
+            <div className="flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden">
               
               {/* LEFT: QUICK CAPTURE */}
-              <div className="flex-1 border-r border-zinc-800/60 p-6 flex flex-col items-center justify-center relative bg-[#030303]">
-                <div className="absolute top-4 left-4">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Execution Capture</span>
-                </div>
-                
-                <div className="w-full max-w-sm flex flex-col gap-5">
+              <div className="flex-1 border-r border-zinc-800/60 p-4 sm:p-6 flex flex-col relative bg-[#030303] overflow-y-auto custom-scrollbar min-h-0 min-w-0">
+                <div className="w-full max-w-sm flex flex-col gap-4 m-auto shrink-0">
+                  
                   <div className="flex justify-between items-end">
                     <h3 className="text-sm font-bold text-zinc-200">Log Execution Reality</h3>
                     <span className={`text-xs font-bold tracking-widest px-2 py-1 rounded bg-zinc-900 border ${tradesTakenToday >= 2 ? 'border-red-500 text-red-400' : 'border-zinc-700 text-zinc-400'}`}>
@@ -444,26 +502,28 @@ export default function DeskClient() {
                     </div>
                   )}
 
+                  {/* BIG EXECUTION BUTTONS */}
                   <div className="flex gap-3">
                     <button 
-                      disabled={!logPair || tradesTakenToday >= 2}
+                      disabled={!logPair || tradesTakenToday >= 2 || isAlreadyLogged}
                       onClick={() => setLogExecution('Perfect')}
-                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair ? 'opacity-50 cursor-not-allowed' : ''} ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50 cursor-not-allowed' : ''} ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
                     >
                       <CheckCircle size={20} />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-center leading-tight">Perfect<br/>Execution</span>
                     </button>
                     <button 
-                      disabled={!logPair || tradesTakenToday >= 2}
+                      disabled={!logPair || tradesTakenToday >= 2 || isAlreadyLogged}
                       onClick={() => setLogExecution('Imperfect')}
-                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair ? 'opacity-50 cursor-not-allowed' : ''} ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50 cursor-not-allowed' : ''} ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
                     >
                       <AlertTriangle size={20} />
                       <span className="text-[10px] font-bold uppercase tracking-widest text-center leading-tight">Imperfect<br/>Execution</span>
                     </button>
                   </div>
 
-                  {logExecution === 'Imperfect' && (
+                  {/* CATALYST (Optional) */}
+                  {logExecution === 'Imperfect' && !isAlreadyLogged && (
                     <select 
                       value={logReason}
                       onChange={(e) => setLogReason(e.target.value)}
@@ -478,62 +538,66 @@ export default function DeskClient() {
                   )}
 
                   <button 
-                    disabled={!logPair || !logExecution || tradesTakenToday >= 2}
+                    disabled={!logPair || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged}
                     onClick={handleLockEntry}
-                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-colors"
+                    className={`w-full py-3 text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${
+                      isAlreadyLogged 
+                        ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
+                        : 'bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600'
+                    }`}
                   >
-                    Lock Entry Without Outcome
+                    {isAlreadyLogged ? 'Setup Already Logged' : 'Lock Entry Without Outcome'}
                   </button>
                 </div>
               </div>
 
               {/* RIGHT: END OF WEEK RECONCILER */}
-              <div className="flex-[1.2] p-6 overflow-y-auto custom-scrollbar relative bg-[#050505]">
-                <div className="absolute top-4 left-4">
+              <div className="flex-[1.2] p-4 sm:p-6 overflow-y-auto custom-scrollbar relative bg-[#050505] min-h-0 min-w-0">
+                <div className="mb-6 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
                 </div>
 
-                <div className="mt-8 flex flex-col gap-3">
+                <div className="flex flex-col gap-3">
                   {pendingReconciliation.length === 0 ? (
-                    <div className="text-center py-10 text-zinc-600 border border-dashed border-zinc-800/50 rounded-xl mx-4">
+                    <div className="text-center py-10 text-zinc-600 border border-dashed border-zinc-800/50 rounded-xl mx-4 shrink-0">
                       <span className="text-[10px] font-bold uppercase tracking-widest">No pending setups to reconcile</span>
                     </div>
                   ) : (
                     pendingReconciliation.map((trade) => (
-                      <div key={trade.id} className="bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 flex items-center justify-between shadow-sm">
+                      <div key={trade.id} className="bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 flex items-center justify-between shadow-sm shrink-0">
                         
-                        <div className="flex flex-col gap-1 w-1/3">
-                          <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-1 w-1/3 min-w-0 pr-2">
+                          <div className="flex items-center gap-2 truncate">
                             <span className="text-xs font-bold text-zinc-400">{trade.day}</span>
                             <span className="text-sm font-bold text-zinc-200">{trade.symbol}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                          <div className="flex items-center gap-2 truncate">
+                            <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded shrink-0 ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
                               {trade.execution}
                             </span>
-                            {trade.reason && <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest">• {trade.reason}</span>}
+                            {trade.reason && <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest truncate">• {trade.reason}</span>}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 w-2/3 justify-end">
-                          <select className="bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-xs font-bold text-zinc-300 outline-none uppercase w-28">
+                        <div className="flex items-center gap-3 shrink-0">
+                          <select className="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-[10px] sm:text-xs font-bold text-zinc-300 outline-none uppercase w-24 sm:w-28">
                             <option value="">Outcome</option>
                             <option value="TP">Hit TP</option>
                             <option value="SL">Hit SL</option>
                             <option value="BE">Break Even</option>
                           </select>
                           
-                          <div className="relative w-24">
+                          <div className="relative w-20 sm:w-24">
                             <input 
                               type="number" 
                               placeholder="0.0"
-                              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-8 pr-3 py-2 text-xs font-bold text-zinc-300 outline-none placeholder:text-zinc-600"
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-7 sm:pl-8 pr-2 py-2 text-[10px] sm:text-xs font-bold text-zinc-300 outline-none placeholder:text-zinc-600"
                             />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">RR</span>
+                            <span className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest">RR</span>
                           </div>
 
                           <button className="p-2 bg-zinc-800 hover:bg-emerald-600 text-zinc-400 hover:text-white rounded-lg transition-colors" title="Save Reconciled Data">
-                            <Save size={16} />
+                            <Save size={14} />
                           </button>
                         </div>
 
@@ -562,7 +626,7 @@ export default function DeskClient() {
         </div>
         
         {/* Instrument List */}
-        <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3">
+        <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3 min-h-0">
           {weeklySetups.length === 0 ? (
             <div className="text-center p-6 text-zinc-600">
               <span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span>
@@ -571,16 +635,24 @@ export default function DeskClient() {
             weeklySetups.map((setup) => (
               <div 
                 key={`weekly-${setup.id}`}
-                className="w-full py-2.5 px-3 border border-zinc-800/50 bg-[#0a0a0a] rounded-lg flex justify-between items-center group shadow-sm hover:border-zinc-600 transition-colors"
+                className="w-full py-2.5 px-3 border border-zinc-800/50 bg-[#0a0a0a] rounded-lg flex justify-between items-center group shadow-sm hover:border-zinc-600 transition-colors shrink-0"
               >
                 <div className="flex flex-col min-w-0 pr-2">
                   <span className="text-xs font-bold text-zinc-200 tracking-wide group-hover:text-white transition-colors truncate">{setup.symbol}</span>
                   <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
+                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  {/* 🚨 NEW: View Full Setup Button */}
+                  <button 
+                    onClick={() => setPreviewSetup(setup)}
+                    className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white transition-colors"
+                    title="View Setup Details"
+                  >
+                    <Eye size={12} />
+                  </button>
                   <button 
                     onClick={() => deleteSetup(setup.id)}
-                    className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors"
                   >
                     <Trash2 size={12} />
                   </button>
@@ -616,6 +688,42 @@ export default function DeskClient() {
             <div className="flex gap-3">
               <button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-zinc-900 text-zinc-300 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors">Cancel</button>
               <button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-blue-500 transition-colors">Push to Today</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🚨 NEW: WEEKLY VAULT PREVIEW MODAL */}
+      {previewSetup && (
+        <div 
+          onClick={() => setPreviewSetup(null)} 
+          className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-4 sm:p-8 cursor-zoom-out animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={e => e.stopPropagation()} 
+            className="max-w-5xl w-full max-h-full bg-[#050505] border border-zinc-800/60 rounded-xl shadow-2xl flex flex-col md:flex-row overflow-hidden cursor-default animate-in zoom-in-95 duration-200"
+          >
+            {/* Chart (Left) */}
+            <div className="flex-[2] bg-[#030303] border-b md:border-b-0 md:border-r border-zinc-800/60 relative p-2 md:p-4 min-h-[300px] flex items-center justify-center">
+               <img src={previewSetup.imageUrl} alt={previewSetup.symbol} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl bg-[#0a0a0a] border border-zinc-800/50" />
+            </div>
+            
+            {/* Notes & Details (Right) */}
+            <div className="flex-1 flex flex-col max-h-[300px] md:max-h-none overflow-hidden">
+               <div className="p-4 border-b border-zinc-800/60 flex items-center justify-between bg-[#0a0a0a] shrink-0">
+                  <span className="text-sm font-bold text-white tracking-widest">{previewSetup.symbol} Setup</span>
+                  <button onClick={() => setPreviewSetup(null)} className="text-zinc-500 hover:text-white transition-colors">
+                    <X size={16} />
+                  </button>
+               </div>
+               <div 
+                  className="p-5 overflow-y-auto custom-scrollbar flex-1 text-xs text-zinc-300 font-medium leading-relaxed" 
+                  dangerouslySetInnerHTML={{ __html: previewSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }}
+               />
+               <style dangerouslySetInnerHTML={{__html: `
+                  .custom-scrollbar ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+                  .custom-scrollbar li { margin-bottom: 0.25rem; }
+               `}} />
             </div>
           </div>
         </div>
