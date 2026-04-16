@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function DeskPage() {
   return (
-    <main className="w-full h-screen bg-[#030303] overflow-hidden">
+    <main className="w-full h-[calc(100vh-70px)] bg-[#030303] overflow-hidden">
       <DeskClient />
     </main>
   )
