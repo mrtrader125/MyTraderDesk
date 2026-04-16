@@ -343,41 +343,71 @@ export default function DeskClient() {
 
   // 🚨 FIX 2: Added strict error handling to ensure uploads don't fail silently
   const handleBulkUpload = async (draftsToSave: any[]) => {
-    if (!user) return
+    // 1. Check if user is actually logged in
+    if (!user) {
+      alert("Authentication Error: No active user session found. Please make sure you are logged in to Supabase.")
+      return
+    }
+    
     const newSetups = []
-
+    
     for (const draft of draftsToSave) {
-      let finalImageUrl = draft.imageSource // Starts as the URL input (or blob)
-
+      let finalImageUrl = draft.imageSource
+      
       if (draft.file) {
         const fileExt = draft.file.name.split('.').pop()
         const fileName = `${Math.random()}.${fileExt}`
         
+        // 2. Attempt Storage Upload
         const { data, error } = await supabase.storage.from('user-desk-images').upload(`${user.id}/${fileName}`, draft.file)
         
+        // 🚨 LOUD ERROR: If upload fails, tell the user WHY
         if (error) {
-          console.error("Supabase Storage Error:", error.message)
-          alert(`Failed to upload ${draft.symbol} image: ${error.message}\nMake sure your 'user-desk-images' bucket allows INSERT access for users.`)
-          finalImageUrl = '' // Fallback to empty if it fails so we don't save a broken blob URL
-        } else if (data) {
+          console.error("Storage Error:", error)
+          alert(`Image Upload Failed for ${draft.instrument}:\n\n${error.message}\n\nPlease check your Storage RLS policies.`)
+          return // Stop the process so the modal stays open
+        }
+        
+        if (data) {
           const { data: publicUrlData } = supabase.storage.from('user-desk-images').getPublicUrl(`${user.id}/${fileName}`)
           finalImageUrl = publicUrlData.publicUrl
         }
-      } else if (draft.imageSource && draft.imageSource.startsWith('blob:')) {
-         // Failsafe: Do not save temporary local blob URLs to the database
-         finalImageUrl = ''
+      } else if (finalImageUrl && finalImageUrl.startsWith('blob:')) {
+         // Prevent temporary browser blobs from saving to the DB
+         finalImageUrl = null 
       }
 
-      newSetups.push({ user_id: user.id, symbol: draft.instrument, notes: draft.notes, image_url: finalImageUrl, is_today: false })
+      newSetups.push({ 
+        user_id: user.id, 
+        symbol: draft.instrument, 
+        notes: draft.notes, 
+        image_url: finalImageUrl, 
+        is_today: false 
+      })
     }
 
-    const { data: insertedData, error: dbError } = await supabase.from('user_desk_setups').insert(newSetups).select()
-    if (dbError) {
-      console.error("Database Insert Error:", dbError)
-      alert(`Failed to save setups: ${dbError.message}`)
-    } else if (insertedData) {
-      const formatted = insertedData.map(d => ({ id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url, isToday: false, addedToTodayAt: null }))
-      setSetups(prev => [...formatted, ...prev])
+    // 3. Attempt Database Insert
+    if (newSetups.length > 0) {
+      const { data: insertedData, error: dbError } = await supabase.from('user_desk_setups').insert(newSetups).select()
+      
+      // 🚨 LOUD ERROR: If Database fails, tell the user WHY
+      if (dbError) {
+        console.error("Database Error:", dbError)
+        alert(`Database Save Failed:\n\n${dbError.message}\n\nPlease check your user_desk_setups RLS policies.`)
+        return // Stop the process
+      }
+      
+      if (insertedData) {
+        const formatted = insertedData.map(d => ({ 
+          id: d.id, 
+          symbol: d.symbol, 
+          notes: d.notes, 
+          imageUrl: d.image_url, 
+          isToday: false, 
+          addedToTodayAt: null 
+        }))
+        setSetups(prev => [...formatted, ...prev])
+      }
     }
   }
 
