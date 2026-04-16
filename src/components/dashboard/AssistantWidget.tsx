@@ -30,11 +30,21 @@ export default function AssistantWidget() {
     setInput('')
     setIsLoading(true)
 
+    // TODO: Replace this mock data with real user profile data from Supabase/Auth state
+    const userProfile = {
+      assetFocus: "Single-Asset (Gold)", // e.g., "Broad Market (15-20 pairs)", "Selective (2-4 pairs)"
+      executionStyle: "Intraday",        // e.g., "Scalper", "Swing"
+      loggingPreference: "Minimalist"    // e.g., "High-Data Logger"
+    };
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: currentMessages })
+        body: JSON.stringify({ 
+          messages: currentMessages,
+          userProfile: userProfile 
+        })
       })
 
       const data = await res.json()
@@ -50,7 +60,6 @@ export default function AssistantWidget() {
   }
 
   return (
-    // 🚨 UPDATED: Now fixed to the bottom-right
     <div className="fixed bottom-[85px] right-4 md:bottom-6 md:right-6 z-[9999] flex flex-col items-end">
       
       {/* THE CHAT WINDOW */}
@@ -66,8 +75,8 @@ export default function AssistantWidget() {
               <Bot size={16} className="text-blue-500" />
             </div>
             <div>
-              <h3 className="text-xs font-black text-white uppercase tracking-widest leading-none">Operator AI</h3>
-              <p className="text-[9px] text-emerald-500 font-bold mt-0.5 tracking-wider">ONLINE</p>
+              <h3 className="text-xs font-black text-white uppercase tracking-widest leading-none">Operations Partner</h3>
+              <p className="text-[9px] text-emerald-500 font-bold mt-0.5 tracking-wider">SYSTEM ACTIVE</p>
             </div>
           </div>
           <button 
@@ -84,7 +93,7 @@ export default function AssistantWidget() {
             <div className="h-full flex flex-col items-center justify-center text-center opacity-50 space-y-3">
               <Bot size={32} className="text-neutral-600" />
               <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 max-w-[200px]">
-                I am your dedicated trading assistant. How can I help optimize your session today?
+                Accountability engine online. Awaiting routine parameters.
               </p>
             </div>
           )}
@@ -120,7 +129,7 @@ export default function AssistantWidget() {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask the assistant..."
+              placeholder="Awaiting input..."
               className="w-full bg-[#111] border border-neutral-800 rounded-xl py-2.5 pl-4 pr-12 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/50 transition-all"
             />
             <button 
