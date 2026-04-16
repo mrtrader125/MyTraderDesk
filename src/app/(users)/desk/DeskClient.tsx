@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
-  Clock, Target, ArrowRight, ArrowLeft,
+  Target, ArrowRight, ArrowLeft,
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save
 } from 'lucide-react'
 
@@ -210,13 +210,12 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 // --- MAIN DESK COMPONENT ---
 export default function DeskClient() {
   const [isVaultOpen, setIsVaultOpen] = useState(true)
-  const [mounted, setMounted] = useState(false)
-  const [time, setTime] = useState<Date | null>(null) 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   
   const [setups, setSetups] = useState<any[]>([
-    { id: '1', symbol: 'GBPJPY', notes: 'Macro structure shows clear sweep of weekly high.\nWaiting for 1H displacement and fair value gap tap to enter short.\n\nTarget is the 4H unmitigated demand zone below.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder1.png', isToday: true },
-    { id: '2', symbol: 'XAUUSD', notes: 'Gold respecting daily trendline.\nCPI data coming up, playing it safe until NY session volume steps in.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder2.png', isToday: true },
+    { id: '1', symbol: 'GBPJPY', notes: 'Macro structure shows clear sweep of weekly high.\nWaiting for 1H displacement and fair value gap tap to enter short.\n\nTarget is the 4H unmitigated demand zone below.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder1.png', isToday: true, addedToTodayAt: Date.now() },
+    { id: '2', symbol: 'XAUUSD', notes: 'Gold respecting daily trendline.\nCPI data coming up, playing it safe until NY session volume steps in.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder2.png', isToday: true, addedToTodayAt: Date.now() },
     { id: '3', symbol: 'GBPCAD', notes: 'Consolidating in a tight 4H range. Needs to break structure before committing capital.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder3.png', isToday: false }
   ])
 
@@ -226,39 +225,31 @@ export default function DeskClient() {
 
   // --- JOURNAL STATE ---
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
-  const [logPair, setLogPair] = useState<string>('') // 🚨 Removed auto-selection. Forces intentional clicking.
+  const [logPair, setLogPair] = useState<string>('') 
   const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
   const [logReason, setLogReason] = useState('')
 
-  // Mock pending trades for Weekend Review
-  const [pendingReconciliation, setPendingReconciliation] = useState([
-    { id: 't1', day: 'Mon', symbol: 'EURUSD', execution: 'Perfect', reason: null },
-    { id: 't2', day: 'Wed', symbol: 'GBPJPY', execution: 'Imperfect', reason: 'Revenge Trading' },
-  ])
+  // Starts Empty
+  const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
 
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
       setActiveTodayId(todaySetups[0].id)
     } else if (todaySetups.length === 0) {
       setActiveTodayId(null)
-      // Clear logPair if all today setups are removed
       if(logPair) setLogPair('') 
     }
   }, [todaySetups.length, activeTodayId])
 
-  // SSR Safe Clock
-  useEffect(() => {
-    setMounted(true);
-    setTime(new Date());
-
-    const timer = setInterval(() => {
-      setTime(new Date());
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
+  const handleConfirmPush = () => {
+    if(confirmPushId) {
+      setSetups(prev => prev.map(s => s.id === confirmPushId ? { ...s, isToday: true, addedToTodayAt: Date.now() } : s))
+      setConfirmPushId(null)
+    }
+  }
 
   const toggleTodayStatus = (id: string) => {
-    setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday } : s))
+    setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday, addedToTodayAt: undefined } : s))
   }
 
   const deleteSetup = (id: string) => {
@@ -273,7 +264,6 @@ export default function DeskClient() {
     setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: newNotes } : s))
   }
 
-  // 🚨 NEW LOGIC: Lock the trade into the Reconciliation Queue
   const handleLockEntry = () => {
     if (tradesTakenToday < 2 && logPair && logExecution) {
       setTradesTakenToday(prev => prev + 1);
@@ -287,7 +277,6 @@ export default function DeskClient() {
         },
         ...prev
       ]);
-      // Reset form state
       setLogPair('');
       setLogExecution(null);
       setLogReason('');
@@ -305,14 +294,11 @@ export default function DeskClient() {
         {/* 🟢 SLEEK TOP BAR */}
         <div className="flex items-center justify-between p-3 border-b border-zinc-800/60 bg-[#0a0a0a] shrink-0">
           <div className="flex items-center gap-3">
-             <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest ml-2 flex items-center gap-2">
-               <Clock size={12} className="text-zinc-600" />
-               {mounted && time ? time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
-             </span>
+             <span className="text-xs font-black text-zinc-400 uppercase tracking-widest ml-2">Operator's Desk</span>
           </div>
           <button 
             onClick={() => setIsVaultOpen(!isVaultOpen)} 
-            className="text-zinc-400 hover:text-white transition-colors bg-zinc-950 border border-zinc-800/60 p-2 rounded-lg"
+            className="text-zinc-400 hover:text-white transition-colors bg-zinc-950 border border-zinc-800/60 p-2 rounded-lg shadow-sm"
             title="Toggle Weekly Vault"
           >
             <Menu size={16} />
@@ -344,39 +330,47 @@ export default function DeskClient() {
                     <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
                   </div>
                 ) : (
-                  todaySetups.map(setup => (
-                    <div 
-                      key={`today-${setup.id}`}
-                      onClick={() => setActiveTodayId(setup.id)}
-                      className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
-                        activeTodayId === setup.id 
-                          ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
-                          : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
-                      }`}
-                    >
-                      <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
-                        {setup.symbol}
-                      </span>
-                      
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        {/* 🚨 NEW: Execute/Log Button */}
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); }}
-                          className="p-1 rounded hover:bg-emerald-500/20 text-zinc-600 hover:text-emerald-400 transition-colors"
-                          title="Stage for Execution"
-                        >
-                          <Target size={12} />
-                        </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }}
-                          className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors"
-                          title="Push back to Vault"
-                        >
-                          <ArrowLeft size={12} />
-                        </button>
+                  todaySetups.map(setup => {
+                    // Check if 1 hour has passed
+                    const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
+                    
+                    return (
+                      <div 
+                        key={`today-${setup.id}`}
+                        onClick={() => { setActiveTodayId(setup.id); }}
+                        className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
+                          activeTodayId === setup.id 
+                            ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
+                            : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
+                        }`}
+                      >
+                        <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                          {setup.symbol}
+                        </span>
+                        
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          {/* STAGE EXECUTION BUTTON */}
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); }}
+                            className="p-1 rounded hover:bg-emerald-500/20 text-zinc-600 hover:text-emerald-400 transition-colors"
+                            title="Stage for Execution"
+                          >
+                            <Target size={12} />
+                          </button>
+                          {/* CONDITIONAL REMOVE BUTTON */}
+                          {canRemove && (
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }}
+                              className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors"
+                              title="Push back to Vault (Available for 1 Hour)"
+                            >
+                              <ArrowLeft size={12} />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    )
+                  })
                 )}
               </div>
 
@@ -425,13 +419,13 @@ export default function DeskClient() {
 
             <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
               
-              {/* LEFT: QUICK CAPTURE (ACTIVE SESSION) */}
+              {/* LEFT: QUICK CAPTURE */}
               <div className="flex-1 border-r border-zinc-800/60 p-6 flex flex-col items-center justify-center relative bg-[#030303]">
                 <div className="absolute top-4 left-4">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Execution Capture</span>
                 </div>
                 
-                <div className="w-full max-w-sm flex flex-col gap-6">
+                <div className="w-full max-w-sm flex flex-col gap-5">
                   <div className="flex justify-between items-end">
                     <h3 className="text-sm font-bold text-zinc-200">Log Execution Reality</h3>
                     <span className={`text-xs font-bold tracking-widest px-2 py-1 rounded bg-zinc-900 border ${tradesTakenToday >= 2 ? 'border-red-500 text-red-400' : 'border-zinc-700 text-zinc-400'}`}>
@@ -439,7 +433,6 @@ export default function DeskClient() {
                     </span>
                   </div>
 
-                  {/* 🚨 REPLACED DROPDOWN: Now requires explicit clicking from Today's Focus */}
                   {!logPair ? (
                     <div className="h-[46px] border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-zinc-950/50">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Stage a pair from Today's Focus</span>
@@ -454,26 +447,19 @@ export default function DeskClient() {
                     </div>
                   )}
 
-                  <div className="flex gap-3">
-                    <button 
-                      disabled={!logPair || tradesTakenToday >= 2}
-                      onClick={() => setLogExecution('Perfect')}
-                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair ? 'opacity-50 cursor-not-allowed' : ''} ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
-                    >
-                      <CheckCircle size={20} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Perfect Execution</span>
-                    </button>
-                    <button 
-                      disabled={!logPair || tradesTakenToday >= 2}
-                      onClick={() => setLogExecution('Imperfect')}
-                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair ? 'opacity-50 cursor-not-allowed' : ''} ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
-                    >
-                      <AlertTriangle size={20} />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Imperfect Execution</span>
-                    </button>
-                  </div>
+                  {/* EXECUTION TYPE DROPDOWN */}
+                  <select 
+                    disabled={!logPair || tradesTakenToday >= 2}
+                    value={logExecution || ''}
+                    onChange={(e) => setLogExecution(e.target.value as 'Perfect' | 'Imperfect')}
+                    className={`w-full bg-[#0a0a0a] rounded-lg px-3 py-3 text-xs font-bold outline-none uppercase transition-colors ${!logPair ? 'opacity-50 border-zinc-800 text-zinc-600' : logExecution === 'Perfect' ? 'border-emerald-500/50 text-emerald-400 border' : logExecution === 'Imperfect' ? 'border-red-500/50 text-red-400 border' : 'border-zinc-700 text-zinc-300 border'}`}
+                  >
+                    <option value="" disabled>Select Execution Type</option>
+                    <option value="Perfect">Perfect Execution</option>
+                    <option value="Imperfect">Imperfect Execution</option>
+                  </select>
 
-                  {/* 🚨 Catalyst logic: Visible if Imperfect, but entirely optional to submit */}
+                  {/* CATALYST DROPDOWN */}
                   {logExecution === 'Imperfect' && (
                     <select 
                       value={logReason}
@@ -488,7 +474,6 @@ export default function DeskClient() {
                     </select>
                   )}
 
-                  {/* 🚨 Disabled logic removes the requirement for logReason */}
                   <button 
                     disabled={!logPair || !logExecution || tradesTakenToday >= 2}
                     onClick={handleLockEntry}
@@ -499,7 +484,7 @@ export default function DeskClient() {
                 </div>
               </div>
 
-              {/* RIGHT: END OF WEEK RECONCILER (Passive Holding Queue) */}
+              {/* RIGHT: END OF WEEK RECONCILER */}
               <div className="flex-[1.2] p-6 overflow-y-auto custom-scrollbar relative bg-[#050505]">
                 <div className="absolute top-4 left-4">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
@@ -597,7 +582,7 @@ export default function DeskClient() {
                     <Trash2 size={12} />
                   </button>
                   <button 
-                    onClick={() => toggleTodayStatus(setup.id)}
+                    onClick={() => setConfirmPushId(setup.id)}
                     className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 hover:border-blue-500 px-2 py-1 rounded transition-all flex items-center gap-1"
                   >
                     Push <ArrowRight size={10} />
@@ -619,7 +604,21 @@ export default function DeskClient() {
         </div>
       </div>
 
-      {/* RENDER MODAL */}
+      {/* CONFIRM PUSH MODAL */}
+      {confirmPushId && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4 animate-in fade-in duration-200">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl animate-in zoom-in-95 duration-200">
+            <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-widest">Confirm Setup Push</h3>
+            <p className="text-xs text-zinc-400 mb-6 leading-relaxed font-medium">Are you sure you want to push this setup to Today's Focus? To enforce discipline, <strong className="text-zinc-200">it can only be removed within the first 60 minutes</strong> of adding it.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-zinc-900 text-zinc-300 text-[10px] font-bold uppercase tracking-widest hover:bg-zinc-800 transition-colors">Cancel</button>
+              <button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-blue-500 transition-colors">Push to Today</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RENDER UPLOAD MODAL */}
       <SetupUploadModal 
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
