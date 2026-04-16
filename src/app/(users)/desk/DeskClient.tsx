@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
   Clock, Target, ArrowRight, ArrowLeft,
-  BarChart2, Image as ImageIcon, Trash2, Menu
+  Image as ImageIcon, Trash2, Menu
 } from 'lucide-react'
 
 // --- BULK UPLOAD MODAL COMPONENT ---
@@ -208,10 +208,9 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 }
 
 // --- MAIN DESK COMPONENT ---
-export default function DeskPage() {
+export default function DeskClient() {
   const [isVaultOpen, setIsVaultOpen] = useState(true)
   const [mounted, setMounted] = useState(false)
-
   const [time, setTime] = useState<Date | null>(null) 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   
@@ -234,7 +233,7 @@ export default function DeskPage() {
     }
   }, [todaySetups.length, activeTodayId])
 
-  // Real-time Clock (SSR Safe)
+  // SSR Safe Clock
   useEffect(() => {
     setMounted(true);
     setTime(new Date());
