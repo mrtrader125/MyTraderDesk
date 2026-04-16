@@ -5,7 +5,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { 
   Plus, X, UploadCloud, Crosshair, 
   Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown
 } from 'lucide-react'
 
 // Initialize the Next.js SSR Browser Client
@@ -301,7 +301,11 @@ function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string
 // --- MAIN DESK COMPONENT ---
 export default function DeskClient() {
   const [user, setUser] = useState<any>(null)
+  
+  // 🚨 Layout States
   const [isVaultOpen, setIsVaultOpen] = useState(true)
+  const [isAuditOpen, setIsAuditOpen] = useState(false) 
+  
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   const [previewSetup, setPreviewSetup] = useState<any | null>(null)
@@ -452,6 +456,7 @@ export default function DeskClient() {
         setPendingReconciliation(prev => [{ id: data[0].id, day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }), symbol: data[0].symbol, execution: data[0].execution_type, reason: data[0].reason, rr: '', outcome: '' }, ...prev]);
       }
       setLogPair(''); setLogExecution(null); setLogReason('');
+      setIsAuditOpen(false); // 🚨 Auto-collapse audit after saving
     }
   }
 
@@ -464,17 +469,16 @@ export default function DeskClient() {
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
-  // 🚨 STRICT 50/50 LAYOUT 🚨
   return (
     <div className="flex h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-hidden">
       
-      {/* LEFT/MAIN WORKSPACE: Split exactly 50/50 */}
+      {/* 🔴 LEFT/MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2">
         
         {/* =========================================
-            TOP 50%: TODAY's FOCUS CARD
+            TOP SECTION: TODAY's FOCUS CARD
         ========================================= */}
-        <div className="flex-1 flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0">
+        <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 transition-all duration-300 flex-1`}>
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
           
           {/* Header */}
@@ -487,7 +491,6 @@ export default function DeskClient() {
                 {todaySetups.length} Pairs Locked
               </span>
             </div>
-            {/* Vault Toggle Button */}
             <button 
               onClick={() => setIsVaultOpen(!isVaultOpen)} 
               className="text-zinc-400 hover:text-white transition-colors p-1.5 bg-black border border-zinc-800 rounded-md shadow-sm" 
@@ -526,6 +529,7 @@ export default function DeskClient() {
                           onClick={(e) => { 
                             e.stopPropagation(); 
                             setLogPair(setup.symbol); 
+                            setIsAuditOpen(true); // 🚨 Opens Audit on click
                           }} 
                           className="p-1.5 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400 transition-colors" 
                           title="Stage Execution"
@@ -567,60 +571,74 @@ export default function DeskClient() {
         </div>
         
         {/* =========================================
-            BOTTOM 50%: OPERATOR'S AUDIT CARD
+            BOTTOM SECTION: OPERATOR'S AUDIT CARD (COLLAPSIBLE)
         ========================================= */}
-        <div className="flex-1 flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0">
+        <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 min-h-0 ${isAuditOpen ? 'flex-[0.7] lg:flex-1' : 'h-[48px] shrink-0'}`}>
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
           
-          {/* Header */}
-          <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
+          {/* Header (Clickable Toggle) */}
+          <div 
+            onClick={() => setIsAuditOpen(!isAuditOpen)}
+            className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40 transition-colors"
+          >
             <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
               <Activity size={14} className="text-emerald-500" /> Operator's Audit
             </h2>
+            <div className="flex items-center gap-3">
+              {pendingReconciliation.length > 0 && !isAuditOpen && (
+                <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-black border border-zinc-800 px-2 py-0.5 rounded">
+                  {pendingReconciliation.length} Pending
+                </span>
+              )}
+              <button className="text-zinc-500 hover:text-white transition-colors">
+                {isAuditOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+              </button>
+            </div>
           </div>
 
-          <div className="flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden">
+          {/* Collapsible Content */}
+          <div className={`flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden transition-opacity duration-300 ${isAuditOpen ? 'opacity-100' : 'opacity-0'}`}>
             
             {/* Capture Panel */}
-            <div className="flex-1 border-r border-zinc-800 p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
-              <div className="w-full max-w-sm flex flex-col gap-4 m-auto shrink-0 text-white">
-                <div className="flex justify-between items-end mb-2">
-                  <h3 className="text-sm font-bold text-zinc-200">Log Execution Reality</h3>
-                  <span className={`text-[10px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>
+            <div className="flex-1 border-r border-zinc-800 p-4 flex flex-col items-center justify-center relative bg-zinc-950/50">
+              <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
+                <div className="flex justify-between items-end">
+                  <h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3>
+                  <span className={`text-[9px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>
                     {tradesTakenToday}/2 TRADES
                   </span>
                 </div>
 
                 {!logPair ? (
-                  <div className="h-12 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black">
+                  <div className="py-2.5 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between bg-black border border-zinc-700 rounded-lg px-4 py-3 shadow-inner">
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Target Acquired</span>
-                    <span className="text-sm font-black text-white tracking-wider">{logPair}</span>
+                  <div className="flex items-center justify-between bg-black border border-zinc-700 rounded-lg px-4 py-2 shadow-inner">
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Target Acquired</span>
+                    <span className="text-[13px] font-black text-white tracking-wider">{logPair}</span>
                     <button onClick={() => { setLogPair(''); setLogExecution(null); setLogReason(''); }} className="text-zinc-500 hover:text-red-400 transition-colors">
                       <X size={14}/>
                     </button>
                   </div>
                 )}
 
-                <div className="flex gap-3 mt-1">
+                <div className="flex gap-2">
                   <button 
                     disabled={!logPair || tradesTakenToday >= 2 || isAlreadyLogged}
                     onClick={() => setLogExecution('Perfect')}
-                    className={`flex-1 py-5 border rounded-xl flex flex-col items-center gap-2.5 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50' : ''} ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-black border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                    className={`flex-1 py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50' : ''} ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-black border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
                   >
-                    <CheckCircle size={22} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-center leading-tight">Perfect<br/>Execution</span>
+                    <CheckCircle size={16} />
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-center leading-tight">Perfect<br/>Execution</span>
                   </button>
                   <button 
                     disabled={!logPair || tradesTakenToday >= 2 || isAlreadyLogged}
                     onClick={() => setLogExecution('Imperfect')}
-                    className={`flex-1 py-5 border rounded-xl flex flex-col items-center gap-2.5 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50' : ''} ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-black border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                    className={`flex-1 py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50' : ''} ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-black border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
                   >
-                    <AlertTriangle size={22} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-center leading-tight">Imperfect<br/>Execution</span>
+                    <AlertTriangle size={16} />
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-center leading-tight">Imperfect<br/>Execution</span>
                   </button>
                 </div>
 
@@ -628,7 +646,7 @@ export default function DeskClient() {
                   <select 
                     value={logReason}
                     onChange={(e) => setLogReason(e.target.value)}
-                    className="w-full bg-black border border-red-500/30 rounded-lg px-4 py-3 text-xs font-bold text-zinc-300 outline-none uppercase focus:border-red-500/80 transition-colors shadow-inner mt-1"
+                    className="w-full bg-black border border-red-500/30 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-red-500/80 transition-colors shadow-inner"
                   >
                     <option value="" disabled>Select Catalyst (Optional)</option>
                     <option value="FOMO">FOMO / Rushed Entry</option>
@@ -641,26 +659,26 @@ export default function DeskClient() {
                 <button 
                   disabled={!logPair || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged}
                   onClick={handleLockEntry}
-                  className={`w-full py-3.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-colors mt-2 ${
+                  className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${
                     isAlreadyLogged 
                       ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' 
                       : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'
                   }`}
                 >
-                  {isAlreadyLogged ? 'Already Logged Today' : 'Lock Entry Without Outcome'}
+                  {isAlreadyLogged ? 'Already Logged Today' : 'Lock Entry'}
                 </button>
               </div>
             </div>
 
             {/* Queue Panel */}
-            <div className="flex-[1.2] p-6 overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
-              <div className="mb-6 shrink-0 flex items-center justify-between">
+            <div className="flex-[1.2] p-4 overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
+              <div className="mb-3 shrink-0 flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
               </div>
 
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-2.5">
                 {pendingReconciliation.length === 0 ? (
-                  <div className="text-center py-12 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-4">
+                  <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2">
                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups</span>
                   </div>
                 ) : (
@@ -746,7 +764,6 @@ export default function DeskClient() {
       {previewSetup && (
         <div onClick={() => setPreviewSetup(null)} className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4 sm:p-8 cursor-zoom-out">
           <div onClick={e => e.stopPropagation()} className="max-w-6xl w-full h-full max-h-[800px] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden cursor-default">
-            
             <div className="flex-[2.5] bg-black border-r border-zinc-800 p-4 sm:p-6 flex items-center justify-center relative shadow-inner">
               {previewSetup.imageUrl ? (
                 <img src={previewSetup.imageUrl} alt={previewSetup.symbol} className="w-full h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl" />
@@ -754,7 +771,6 @@ export default function DeskClient() {
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No Image Data</span>
               )}
             </div>
-            
             <div className="flex-1 flex flex-col min-w-[300px] overflow-hidden bg-zinc-950">
               <div className="p-5 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between shrink-0">
                 <span className="text-base font-black text-white tracking-widest">{previewSetup.symbol} Setup</span>
