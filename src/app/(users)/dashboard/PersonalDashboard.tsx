@@ -4,41 +4,89 @@ import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
   CheckCircle2, Clock, Activity, Target, ArrowRight, 
-  FileText, Globe2, BarChart2, ChevronRight, Minimize2, ArrowLeft
+  FileText, Globe2, BarChart2, PanelRightClose, PanelRightOpen,
+  Image as ImageIcon, Trash2
 } from 'lucide-react'
 
-// --- UPLOAD MODAL COMPONENT (Kept Sleek & Functional) ---
-function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClose: () => void; onSave: (setup: any) => void }) {
-  const [instrument, setInstrument] = useState('')
-  const [notes, setNotes] = useState('')
-  const [imageSource, setImageSource] = useState<string | null>(null)
+// --- BULK UPLOAD MODAL COMPONENT ---
+type DraftSetup = {
+  id: string;
+  imageSource: string | null;
+  file: File | null;
+  instrument: string;
+  notes: string;
+}
+
+function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClose: () => void; onSave: (setups: any[]) => void }) {
+  const [drafts, setDrafts] = useState<DraftSetup[]>([])
+  const [activeIndex, setActiveIndex] = useState<number>(0)
+  const [linkInput, setLinkInput] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const extractInstrument = (text: string) => {
     const match = text.toUpperCase().match(/[A-Z]{6}/)
-    if (match) setInstrument(match[0])
+    return match ? match[0] : ''
   }
 
+  // Handle Multiple Files
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      extractInstrument(file.name)
-      setImageSource(URL.createObjectURL(file))
+    const files = e.target.files
+    if (files && files.length > 0) {
+      const newDrafts: DraftSetup[] = Array.from(files).map(file => ({
+        id: Math.random().toString(36).substr(2, 9),
+        imageSource: URL.createObjectURL(file),
+        file,
+        instrument: extractInstrument(file.name),
+        notes: ''
+      }))
+      setDrafts(prev => [...prev, ...newDrafts])
+      if (drafts.length === 0) setActiveIndex(0)
     }
   }
 
-  const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value
-    extractInstrument(url)
-    if (url) setImageSource(url)
+  // Handle Single Link
+  const handleAddLink = () => {
+    if (!linkInput) return
+    const newDraft: DraftSetup = {
+      id: Math.random().toString(36).substr(2, 9),
+      imageSource: linkInput,
+      file: null,
+      instrument: extractInstrument(linkInput),
+      notes: ''
+    }
+    setDrafts(prev => [...prev, newDraft])
+    setLinkInput('')
+    if (drafts.length === 0) setActiveIndex(0)
+  }
+
+  const updateActiveDraft = (field: keyof DraftSetup, value: string) => {
+    setDrafts(prev => prev.map((d, i) => i === activeIndex ? { ...d, [field]: value } : d))
+  }
+
+  const removeDraft = (index: number) => {
+    setDrafts(prev => prev.filter((_, i) => i !== index))
+    if (activeIndex >= index && activeIndex > 0) setActiveIndex(activeIndex - 1)
+  }
+
+  const handleSaveAll = () => {
+    const validDrafts = drafts.filter(d => d.instrument.trim() !== '')
+    const formattedSetups = validDrafts.map(d => ({
+      id: d.id,
+      symbol: d.instrument.toUpperCase(),
+      notes: d.notes,
+      imageUrl: d.imageSource,
+      isToday: false // Always goes to weekly vault first
+    }))
+    onSave(formattedSetups)
+    onClose()
   }
 
   useEffect(() => {
     if (!isOpen) {
       setTimeout(() => {
-        setInstrument('')
-        setNotes('')
-        setImageSource(null)
+        setDrafts([])
+        setActiveIndex(0)
+        setLinkInput('')
       }, 200)
     }
   }, [isOpen])
@@ -46,94 +94,119 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between p-5 border-b border-zinc-800/50 bg-zinc-900/50">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[80vh] min-h-[500px]">
+        
+        <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
           <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
-            <UploadCloud size={16} className="text-blue-500" /> Log Weekly Setup
+            <UploadCloud size={16} className="text-blue-500" /> Bulk Upload Weekly Setups
           </h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
-        <div className="p-6 flex flex-col gap-6 overflow-y-auto max-h-[70vh] custom-scrollbar">
-          <div className="flex flex-col gap-4">
-            <div 
-              onClick={() => !imageSource && fileInputRef.current?.click()}
-              className={`w-full h-48 border-2 rounded-xl flex flex-col items-center justify-center gap-2 transition-all relative overflow-hidden group ${
-                imageSource ? 'border-solid border-zinc-700 bg-black' : 'border-dashed border-zinc-800 cursor-pointer hover:border-zinc-600 hover:bg-zinc-900/50'
-              }`}
-            >
-              {imageSource ? (
-                <>
-                  <img src={imageSource} alt="Setup preview" className="object-contain w-full h-full p-2" />
-                  <button 
-                    onClick={(e) => { e.stopPropagation(); setImageSource(null); setInstrument(''); }}
-                    className="absolute top-2 right-2 p-1.5 bg-black/80 hover:bg-red-500/20 text-zinc-400 hover:text-red-400 rounded-lg backdrop-blur-sm transition-colors border border-zinc-800 hover:border-red-500/50"
-                  >
-                    <X size={16} />
-                  </button>
-                </>
-              ) : (
-                <div className="text-center flex flex-col items-center p-4">
-                  <div className="w-12 h-12 bg-zinc-900 rounded-full flex items-center justify-center mb-3 border border-zinc-800">
-                    <UploadCloud size={20} className="text-zinc-400" />
-                  </div>
-                  <span className="text-sm text-zinc-300 font-medium">Click to upload chart image</span>
-                  <span className="text-xs text-zinc-600 mt-1">We will auto-detect the ticker</span>
-                </div>
-              )}
-              <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-            </div>
-            {!imageSource && (
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <LinkIcon size={16} className="text-zinc-600" />
-                </div>
+
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          {/* LEFT: Drafts List */}
+          <div className="w-[200px] border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
+            <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
+              <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5">
+                <Plus size={14} /> Add Images
+              </button>
+              <div className="flex gap-1">
                 <input 
                   type="text" 
-                  onChange={handleLinkChange}
-                  placeholder="TradingView Image URL..."
-                  className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg pl-10 pr-3 py-3 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/50 transition-colors placeholder:text-zinc-600"
+                  value={linkInput} 
+                  onChange={(e) => setLinkInput(e.target.value)} 
+                  placeholder="Paste URL..." 
+                  className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-blue-500"
                 />
+                <button onClick={handleAddLink} className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors"><Plus size={12}/></button>
+              </div>
+              <input type="file" multiple ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+            </div>
+            
+            <div className="flex-1 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-2">
+              {drafts.map((draft, idx) => (
+                <div 
+                  key={draft.id} 
+                  onClick={() => setActiveIndex(idx)}
+                  className={`p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-zinc-800 border-zinc-600' : 'bg-zinc-950 border-zinc-800/50 hover:bg-zinc-900'}`}
+                >
+                  <div className="w-8 h-8 rounded bg-zinc-900 border border-zinc-700 overflow-hidden shrink-0">
+                    {draft.imageSource ? <img src={draft.imageSource} className="w-full h-full object-cover opacity-80" /> : <ImageIcon size={12} className="m-auto mt-2 text-zinc-600"/>}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold text-zinc-200 truncate">{draft.instrument || 'UNKNOWN'}</p>
+                    <p className="text-[9px] text-zinc-500 truncate">{draft.notes ? 'Notes added' : 'No notes'}</p>
+                  </div>
+                  <button onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} className="text-zinc-600 hover:text-red-400 p-1"><X size={12}/></button>
+                </div>
+              ))}
+              {drafts.length === 0 && (
+                <div className="text-center p-4 text-zinc-600 text-[10px] font-bold uppercase tracking-widest mt-4">
+                  No drafts added
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* RIGHT: Edit Active Draft */}
+          <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
+            {drafts.length > 0 && drafts[activeIndex] ? (
+              <div className="p-6 flex flex-col gap-6 max-w-2xl mx-auto w-full">
+                <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center">
+                  {drafts[activeIndex].imageSource ? (
+                    <img src={drafts[activeIndex].imageSource!} alt="Preview" className="w-full h-full object-contain p-2" />
+                  ) : <ImageIcon className="w-10 h-10 text-zinc-700" />}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label>
+                  <input 
+                    type="text" 
+                    value={drafts[activeIndex].instrument}
+                    onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())}
+                    placeholder="e.g. GBPUSD"
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2 flex-1">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label>
+                  <textarea 
+                    value={drafts[activeIndex].notes}
+                    onChange={(e) => updateActiveDraft('notes', e.target.value)}
+                    placeholder="Log structural bias, liquidity sweeps, or entry triggers..."
+                    className="w-full min-h-[120px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors resize-none custom-scrollbar"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center text-zinc-600">
+                <UploadCloud size={40} className="mb-4 opacity-50" />
+                <p className="text-sm font-medium">Add images or links to start bulk uploading.</p>
               </div>
             )}
           </div>
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument</label>
-              <input 
-                type="text" 
-                value={instrument}
-                onChange={(e) => setInstrument(e.target.value.toUpperCase())}
-                placeholder="e.g. GBPUSD"
-                className="w-full bg-zinc-900/50 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/50 transition-colors uppercase font-bold tracking-wide placeholder:normal-case placeholder:text-zinc-600 placeholder:font-medium"
-              />
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label>
-              <textarea 
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Log structural bias, liquidity sweeps, or entry triggers..."
-                className="w-full h-28 bg-zinc-900/50 border border-zinc-800 rounded-lg px-4 py-3 text-sm text-zinc-200 focus:outline-none focus:border-blue-500/50 transition-colors resize-none placeholder:text-zinc-600 custom-scrollbar"
-              />
-            </div>
+        </div>
+
+        <div className="p-4 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center shrink-0">
+          <span className="text-xs font-medium text-zinc-500">
+            {drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged
+          </span>
+          <div className="flex gap-3">
+            <button onClick={onClose} className="px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">Cancel</button>
+            <button 
+              onClick={handleSaveAll}
+              disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '')}
+              className="px-6 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500"
+            >
+              Save All to Vault
+            </button>
           </div>
         </div>
-        <div className="p-5 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-end gap-3">
-          <button onClick={onClose} className="px-5 py-2.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">Cancel</button>
-          <button 
-            onClick={() => { 
-              onSave({ id: Date.now().toString(), symbol: instrument, notes, imageUrl: imageSource || 'https://s3.tradingview.com/snapshots/a/aK3bXyvO.png', isToday: false });
-              onClose();
-            }}
-            disabled={!instrument}
-            className="px-6 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-bold tracking-wide hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500"
-          >
-            Save to Weekly Vault
-          </button>
-        </div>
+        
       </div>
     </div>
   )
@@ -141,7 +214,10 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 
 // --- MAIN DASHBOARD COMPONENT ---
 export default function PersonalDashboard() {
-  // 1. STATE & DATA
+  // Layout State
+  const [isVaultOpen, setIsVaultOpen] = useState(true)
+
+  // Data State
   const [time, setTime] = useState(new Date())
   const [sessionInfo, setSessionInfo] = useState({ name: 'Determining...', localTime: '--:--:--', tz: 'UTC' })
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
@@ -157,10 +233,8 @@ export default function PersonalDashboard() {
   const todaySetups = setups.filter(s => s.isToday)
   const weeklySetups = setups.filter(s => !s.isToday)
   
-  // Track the actively viewed instrument in the "Today" 3-pane layout
   const [activeTodayId, setActiveTodayId] = useState<string | null>(todaySetups.length > 0 ? todaySetups[0].id : null)
 
-  // Ensure an active setup is always selected if available
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
       setActiveTodayId(todaySetups[0].id)
@@ -175,7 +249,7 @@ export default function PersonalDashboard() {
     { id: 3, label: 'Weekly Wind-up (PnL & RR Review)', completed: false }
   ])
 
-  // 2. REAL-TIME CLOCK & SESSION ENGINE
+  // Real-time Clock & Session
   useEffect(() => {
     const timer = setInterval(() => {
       const now = new Date();
@@ -185,7 +259,6 @@ export default function PersonalDashboard() {
       let sName = 'Interbank';
       let tz = 'UTC';
 
-      // Logic based on standard UTC market hours
       if (utcHour >= 13 && utcHour < 22) { sName = 'New York'; tz = 'America/New_York'; }
       else if (utcHour >= 8 && utcHour < 17) { sName = 'London'; tz = 'Europe/London'; }
       else if (utcHour >= 0 && utcHour < 9) { sName = 'Tokyo'; tz = 'Asia/Tokyo'; }
@@ -201,7 +274,7 @@ export default function PersonalDashboard() {
     return () => clearInterval(timer)
   }, [])
 
-  // 3. ACTIONS
+  // Actions
   const toggleRoutine = (id: number) => {
     setRoutine(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item))
   }
@@ -210,159 +283,160 @@ export default function PersonalDashboard() {
     setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday } : s))
   }
 
-  const handleAddNewSetup = (newSetup: any) => {
-    setSetups([newSetup, ...setups])
+  const deleteSetup = (id: string) => {
+    setSetups(prev => prev.filter(s => s.id !== id))
+  }
+
+  const handleBulkUpload = (newSetups: any[]) => {
+    setSetups(prev => [...newSetups, ...prev])
   }
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
 
   // ==========================================
-  // RENDER LAYOUT
+  // HIGH DENSITY RENDER LAYOUT
   // ==========================================
   return (
-    <div className="flex flex-col h-screen max-w-[1800px] mx-auto bg-zinc-950 animate-in fade-in duration-500 overflow-hidden">
+    <div className="flex h-[calc(100vh-64px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
       
-      {/* 🟢 TOP ROW: METRICS & ROUTINE (Fixed Height) */}
-      <div className="shrink-0 p-4 md:p-6 border-b border-zinc-800/50 grid grid-cols-1 md:grid-cols-4 gap-4 lg:gap-6 bg-zinc-900/10">
+      {/* 🔴 LEFT/MAIN WORKSPACE */}
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
         
-        {/* Metric 1: Operator Local Time */}
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl flex flex-col items-center justify-center p-4 shadow-sm h-[110px]">
-          <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-            <Clock size={14}/> Operator Local Time
-          </span>
-          <span className="text-2xl font-mono text-zinc-100 tracking-wide">
-            {time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </span>
-        </div>
-        
-        {/* Metric 2: Active Global Session */}
-        <div className="bg-zinc-900/40 border border-zinc-800/50 rounded-xl flex flex-col items-center justify-center p-4 shadow-sm h-[110px] relative overflow-hidden group">
-          <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <span className="text-[10px] font-bold text-blue-400/80 uppercase tracking-widest mb-2 flex items-center gap-1.5 relative z-10">
-            <Globe2 size={14}/> Active Session: {sessionInfo.name}
-          </span>
-          <span className="text-xl font-mono text-white tracking-tight leading-tight relative z-10">
-            {sessionInfo.localTime}
-          </span>
-          <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mt-1 relative z-10">
-            {sessionInfo.tz}
-          </span>
+        {/* Header Bar */}
+        <div className="h-12 border-b border-zinc-800/60 bg-[#080808] flex items-center justify-between px-4 shrink-0">
+          <div className="flex items-center gap-3">
+            <h1 className="text-sm font-bold text-zinc-100 tracking-wide uppercase">Operator Terminal</h1>
+            <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest">Live Desk</span>
+          </div>
+          
+          <button 
+            onClick={() => setIsVaultOpen(!isVaultOpen)}
+            className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-3 py-1.5 rounded transition-all"
+          >
+            {isVaultOpen ? <><PanelRightClose size={14}/> Close Vault</> : <><PanelRightOpen size={14}/> Open Vault</>}
+          </button>
         </div>
 
-        {/* Metric 3: Routine Checklist */}
-        <div className="md:col-span-2 bg-zinc-900/40 border border-zinc-800/50 rounded-xl p-4 flex flex-col shadow-sm h-[110px]">
-          <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-1.5 shrink-0">
-            <CheckCircle2 size={14} className="text-emerald-500/70" /> Execution Routine
-          </h3>
-          <div className="flex flex-col gap-2.5 overflow-y-auto custom-scrollbar pr-2 flex-1">
-            {routine.map(item => (
-              <div key={item.id} onClick={() => toggleRoutine(item.id)} className="flex items-center gap-3 cursor-pointer group">
-                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors shrink-0 ${item.completed ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700 text-transparent group-hover:border-zinc-500'}`}>
-                  <CheckCircle2 size={12} />
+        {/* TOP ROW: METRICS & ROUTINE (Flexible, takes remaining top space) */}
+        <div className="flex-1 p-3 sm:p-4 flex flex-col md:flex-row gap-4 min-h-0 overflow-y-auto custom-scrollbar">
+          
+          <div className="flex flex-col gap-4 w-full md:w-64 shrink-0">
+            {/* Metric: Local Time */}
+            <div className="bg-[#0a0a0a] border border-zinc-800/60 rounded-lg flex flex-col items-center justify-center p-3 shadow-sm h-24 shrink-0">
+              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 flex items-center gap-1">
+                <Clock size={12}/> Local Time
+              </span>
+              <span className="text-lg font-mono text-zinc-100 tracking-wide">
+                {time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+            </div>
+            
+            {/* Metric: Active Session */}
+            <div className="bg-[#0a0a0a] border border-zinc-800/60 rounded-lg flex flex-col items-center justify-center p-3 shadow-sm h-24 shrink-0 relative overflow-hidden group">
+              <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <span className="text-[9px] font-bold text-blue-400/80 uppercase tracking-widest mb-1 flex items-center gap-1 relative z-10">
+                <Globe2 size={12}/> {sessionInfo.name} Session
+              </span>
+              <span className="text-lg font-mono text-white tracking-tight leading-tight relative z-10">
+                {sessionInfo.localTime}
+              </span>
+            </div>
+          </div>
+
+          {/* Metric: Routine Checklist */}
+          <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-4 flex flex-col shadow-sm min-h-0">
+            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3 flex items-center gap-1.5 shrink-0 border-b border-zinc-800/50 pb-2">
+              <CheckCircle2 size={14} className="text-emerald-500/70" /> Execution Routine
+            </h3>
+            <div className="flex flex-col gap-2 overflow-y-auto custom-scrollbar flex-1 pr-2">
+              {routine.map(item => (
+                <div key={item.id} onClick={() => toggleRoutine(item.id)} className="flex items-center gap-3 cursor-pointer group py-1">
+                  <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors shrink-0 ${item.completed ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700 text-transparent group-hover:border-zinc-500'}`}>
+                    <CheckCircle2 size={10} />
+                  </div>
+                  <span className={`text-xs font-medium transition-all ${item.completed ? 'text-zinc-600 line-through' : 'text-zinc-300 group-hover:text-white'}`}>
+                    {item.label}
+                  </span>
                 </div>
-                <span className={`text-xs font-semibold tracking-wide transition-all ${item.completed ? 'text-zinc-600 line-through' : 'text-zinc-300 group-hover:text-white'}`}>
-                  {item.label}
-                </span>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* 🟢 BOTTOM ROW: MAIN WORKSPACE (Takes remaining height) */}
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
-        
-        {/* --- LEFT AREA: TODAY'S FOCUS (3-PANE LAYOUT) --- */}
-        <div className="flex-1 flex flex-col min-w-0 p-4 md:p-6 bg-zinc-950 overflow-hidden">
+        {/* BOTTOM ROW: 50% HEIGHT TODAY WORKSPACE */}
+        <div className="h-1/2 min-h-0 flex flex-col border-t border-zinc-800/60 bg-[#080808]">
           
-          <div className="flex items-center justify-between mb-4 shrink-0">
-            <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
-              <Crosshair size={16} className="text-blue-500" /> Today's Focus
+          <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
+            <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+              <Crosshair size={14} className="text-blue-500" /> Today's Focus (Level 2)
             </h2>
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-900 px-2 py-1 rounded border border-zinc-800">
-              {todaySetups.length} Locked
+            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
+              {todaySetups.length} Pairs Locked
             </span>
           </div>
 
-          <div className="flex-1 flex flex-col xl:flex-row gap-4 min-h-0 overflow-hidden">
+          <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
             
-            {/* PANE 1: Today's Instrument List */}
-            <div className="w-full xl:w-[220px] shrink-0 flex flex-col gap-2 overflow-y-auto custom-scrollbar">
+            {/* PANE 1: List */}
+            <div className="w-48 sm:w-56 shrink-0 border-r border-zinc-800/60 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5">
               {todaySetups.length === 0 ? (
-                <div className="h-full border border-dashed border-zinc-800 rounded-xl flex flex-col items-center justify-center text-zinc-600 p-6 text-center">
-                  <Target size={24} className="mb-2 opacity-50" />
-                  <span className="text-xs font-bold uppercase tracking-widest">No Pairs Selected</span>
-                  <span className="text-[10px] mt-2">Filter from Weekly Prep →</span>
+                <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
+                  <Target size={20} className="mb-2 opacity-50" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
                 </div>
               ) : (
                 todaySetups.map(setup => (
                   <div 
                     key={`today-${setup.id}`}
                     onClick={() => setActiveTodayId(setup.id)}
-                    className={`p-3 rounded-xl border flex items-center justify-between transition-all cursor-pointer group ${
+                    className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
                       activeTodayId === setup.id 
-                        ? 'bg-zinc-800 border-zinc-700 shadow-md' 
-                        : 'bg-zinc-900/30 border-zinc-800/50 hover:bg-zinc-900'
+                        ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
+                        : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
                     }`}
                   >
-                    <div className="flex flex-col">
-                      <span className={`font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white text-base' : 'text-zinc-300 text-sm group-hover:text-white'}`}>
-                        {setup.symbol}
-                      </span>
-                      <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest">Active</span>
-                    </div>
-                    {/* Remove from Today button */}
+                    <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                      {setup.symbol}
+                    </span>
                     <button 
                       onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }}
-                      className="p-1.5 rounded-lg text-zinc-500 hover:bg-red-500/10 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                      title="Remove from Today"
+                      className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                      title="Push back to Vault"
                     >
-                      <ArrowLeft size={14} />
+                      <ArrowLeft size={12} />
                     </button>
                   </div>
                 ))
               )}
             </div>
 
-            {/* PANE 2: Visual Chart Viewer */}
-            <div className="flex-1 bg-zinc-900/30 border border-zinc-800/50 rounded-xl overflow-hidden flex flex-col min-h-[300px]">
+            {/* PANE 2: Chart */}
+            <div className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60">
               {activeSetup ? (
-                <>
-                  <div className="p-3 border-b border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center shrink-0">
-                    <span className="text-xs font-semibold text-zinc-300 flex items-center gap-2">
-                      <BarChart2 size={14} className="text-blue-400"/> Technical Analysis
-                    </span>
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">{activeSetup.symbol}</span>
-                  </div>
-                  <div className="flex-1 relative bg-[#0a0a0a] flex items-center justify-center p-2">
-                    <img 
-                      src={activeSetup.imageUrl} 
-                      alt={`${activeSetup.symbol} Chart`} 
-                      className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                    />
-                  </div>
-                </>
+                <div className="absolute inset-0 p-2 flex items-center justify-center">
+                   <img src={activeSetup.imageUrl} alt={`${activeSetup.symbol} Chart`} className="w-full h-full object-contain rounded-lg border border-zinc-800/50 shadow-2xl" />
+                </div>
               ) : (
-                <div className="flex-1 flex items-center justify-center text-zinc-600">
-                  <span className="text-xs font-bold uppercase tracking-widest">Select an instrument to view chart</span>
+                <div className="flex-1 flex items-center justify-center text-zinc-700">
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair to view</span>
                 </div>
               )}
             </div>
 
-            {/* PANE 3: Structural Notes Column */}
-            <div className="w-full xl:w-[280px] shrink-0 bg-zinc-900/30 border border-zinc-800/50 rounded-xl flex flex-col overflow-hidden">
-              <div className="p-3 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
-                <span className="text-xs font-semibold text-zinc-300 flex items-center gap-2">
-                  <FileText size={14} className="text-emerald-400"/> Structural Notes
+            {/* PANE 3: Notes */}
+            <div className="w-64 sm:w-72 shrink-0 bg-[#080808] flex flex-col min-h-0">
+              <div className="p-3 border-b border-zinc-800/60 bg-[#0a0a0a] shrink-0">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5">
+                  <FileText size={12} className="text-emerald-500"/> Structural Notes
                 </span>
               </div>
-              <div className="p-5 overflow-y-auto custom-scrollbar flex-1">
+              <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
                 {activeSetup ? (
-                  <p className="text-sm text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                    {activeSetup.notes}
+                  <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap font-medium">
+                    {activeSetup.notes || <span className="italic text-zinc-600">No notes provided...</span>}
                   </p>
                 ) : (
-                  <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest text-center mt-10">
+                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest text-center mt-10">
                     No active notes
                   </p>
                 )}
@@ -371,59 +445,66 @@ export default function PersonalDashboard() {
 
           </div>
         </div>
+      </div>
 
-        {/* --- RIGHT AREA: WEEKLY PREP VAULT --- */}
-        <div className="w-full lg:w-[280px] xl:w-[320px] shrink-0 border-t lg:border-t-0 lg:border-l border-zinc-800/50 bg-zinc-900/20 flex flex-col min-h-0">
-          
-          <div className="p-4 md:p-6 flex flex-col h-full">
-            <div className="flex items-center justify-between border-b border-zinc-800/60 pb-4 mb-4 shrink-0">
-              <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                <UploadCloud size={16} className="text-zinc-400" /> Weekly Vault
-              </h2>
-              <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest bg-zinc-900 px-2 py-1 rounded">
-                Level 1
-              </span>
+      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT */}
+      <div 
+        className={`h-full bg-[#080808] border-l border-zinc-800/60 flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${
+          isVaultOpen ? 'w-[280px] lg:w-[300px] xl:w-[320px] opacity-100' : 'w-0 opacity-0 border-l-0'
+        }`}
+      >
+        <div className="h-12 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
+          <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+            <UploadCloud size={14} className="text-zinc-400" /> Weekly Vault
+          </h2>
+          <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">
+            Level 1
+          </span>
+        </div>
+        
+        {/* Instrument List */}
+        <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3">
+          {weeklySetups.length === 0 ? (
+            <div className="text-center p-6 text-zinc-600">
+              <span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span>
             </div>
-            
-            {/* Instrument List */}
-            <div className="flex flex-col gap-2.5 flex-1 overflow-y-auto custom-scrollbar pr-1 pb-4">
-              {weeklySetups.length === 0 ? (
-                <div className="text-center p-6 text-zinc-600">
-                  <span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span>
-                </div>
-              ) : (
-                weeklySetups.map((setup) => (
-                  <div 
-                    key={`weekly-${setup.id}`}
-                    className="w-full py-3.5 px-4 border border-zinc-800/60 bg-zinc-950 rounded-xl flex justify-between items-center group shadow-sm hover:border-zinc-600 transition-colors"
-                  >
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-zinc-300 tracking-wide group-hover:text-white transition-colors">{setup.symbol}</span>
-                      <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Saved</span>
-                    </div>
-                    {/* Push to Today Button */}
-                    <button 
-                      onClick={() => toggleTodayStatus(setup.id)}
-                      className="text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-widest bg-zinc-900 hover:bg-blue-600 px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5"
-                    >
-                      Push <ArrowRight size={10} />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Action Button at the bottom */}
-            <div className="mt-auto pt-4 shrink-0 border-t border-zinc-800/50">
-              <button 
-                onClick={() => setIsUploadModalOpen(true)}
-                className="w-full py-3.5 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-zinc-950 rounded-xl text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 hover:bg-blue-500/5 transition-all shadow-sm"
+          ) : (
+            weeklySetups.map((setup) => (
+              <div 
+                key={`weekly-${setup.id}`}
+                className="w-full py-2.5 px-3 border border-zinc-800/50 bg-[#0a0a0a] rounded-lg flex justify-between items-center group shadow-sm hover:border-zinc-600 transition-colors"
               >
-                <Plus size={16} /> Add Weekly Setup
-              </button>
-            </div>
-          </div>
+                <div className="flex flex-col min-w-0 pr-2">
+                  <span className="text-xs font-bold text-zinc-200 tracking-wide group-hover:text-white transition-colors truncate">{setup.symbol}</span>
+                  <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button 
+                    onClick={() => deleteSetup(setup.id)}
+                    className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                  <button 
+                    onClick={() => toggleTodayStatus(setup.id)}
+                    className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 hover:border-blue-500 px-2 py-1 rounded transition-all flex items-center gap-1"
+                  >
+                    Push <ArrowRight size={10} />
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
 
+        {/* Action Button at the bottom */}
+        <div className="p-3 border-t border-zinc-800/60 bg-[#0a0a0a] shrink-0">
+          <button 
+            onClick={() => setIsUploadModalOpen(true)}
+            className="w-full py-2.5 px-4 flex items-center justify-center gap-1.5 border border-dashed border-zinc-700 bg-[#050505] rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 hover:bg-blue-500/10 transition-all shadow-sm"
+          >
+            <Plus size={14} /> Add Weekly Setups
+          </button>
         </div>
       </div>
 
@@ -431,7 +512,7 @@ export default function PersonalDashboard() {
       <SetupUploadModal 
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
-        onSave={handleAddNewSetup}
+        onSave={handleBulkUpload}
       />
       
     </div>
