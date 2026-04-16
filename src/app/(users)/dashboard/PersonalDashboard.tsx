@@ -209,21 +209,17 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 
 // --- MAIN DASHBOARD COMPONENT ---
 export default function PersonalDashboard() {
-  // Layout State
   const [isVaultOpen, setIsVaultOpen] = useState(true)
   const [mounted, setMounted] = useState(false)
 
-  // Data State
   const [time, setTime] = useState<Date | null>(null) 
-  const [sessionInfo, setSessionInfo] = useState({ name: 'Determining...', localTime: '--:--:--', tz: 'UTC' })
+  const [sessionInfo, setSessionInfo] = useState({ name: 'Determining...', localTime: '--:--:--' })
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   
-  // Workspace State
   const [setups, setSetups] = useState<any[]>([
-    { id: '1', symbol: 'GBPJPY', notes: 'Macro structure shows clear sweep of weekly high. Waiting for 1H displacement and fair value gap tap to enter short.\n\n• Target is the 4H unmitigated demand zone below.\n• Invalidation is a candle close above 192.500.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder1.png', isToday: true },
-    { id: '2', symbol: 'XAUUSD', notes: 'Gold respecting daily trendline. CPI data coming up, playing it safe until NY session volume steps in. Look for sweep of Asian session lows.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder2.png', isToday: true },
-    { id: '3', symbol: 'GBPCAD', notes: 'Consolidating in a tight 4H range. Needs to break structure before committing capital.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder3.png', isToday: false },
-    { id: '4', symbol: 'EURUSD', notes: 'Bullish order flow intact. Limit order set at the 1.08500 discount zone.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder4.png', isToday: false }
+    { id: '1', symbol: 'GBPJPY', notes: 'Macro structure shows clear sweep of weekly high.\nWaiting for 1H displacement and fair value gap tap to enter short.\n\nTarget is the 4H unmitigated demand zone below.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder1.png', isToday: true },
+    { id: '2', symbol: 'XAUUSD', notes: 'Gold respecting daily trendline.\nCPI data coming up, playing it safe until NY session volume steps in.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder2.png', isToday: true },
+    { id: '3', symbol: 'GBPCAD', notes: 'Consolidating in a tight 4H range. Needs to break structure before committing capital.', imageUrl: 'https://s3.tradingview.com/snapshots/placeholder3.png', isToday: false }
   ])
 
   const todaySetups = setups.filter(s => s.isToday)
@@ -245,7 +241,6 @@ export default function PersonalDashboard() {
     { id: 3, label: 'Weekly Wind-up', completed: false }
   ])
 
-  // Real-time Clock & Session
   useEffect(() => {
     setMounted(true);
     setTime(new Date());
@@ -265,15 +260,12 @@ export default function PersonalDashboard() {
 
       setSessionInfo({
         name: sName,
-        localTime: now.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        tz: tz
+        localTime: now.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })
       });
-
     }, 1000)
     return () => clearInterval(timer)
   }, [])
 
-  // Actions
   const toggleRoutine = (id: number) => {
     setRoutine(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item))
   }
@@ -290,62 +282,63 @@ export default function PersonalDashboard() {
     setSetups(prev => [...newSetups, ...prev])
   }
 
+  const handleUpdateNotes = (id: string, newNotes: string) => {
+    setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: newNotes } : s))
+  }
+
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
 
   return (
-    <div className="flex h-screen w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
+    <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
       
       {/* 🔴 LEFT/MAIN WORKSPACE */}
-      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative pt-2">
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300">
         
-        {/* TOP ROW: METRICS & ROUTINE */}
-        <div className="flex-1 p-3 sm:p-4 flex flex-col md:flex-row gap-4 min-h-0 overflow-y-auto custom-scrollbar">
+        {/* TOP ROW: COMPACT METRICS & ROUTINE (Strictly 100px tall to prevent overflow) */}
+        <div className="h-[100px] shrink-0 p-3 flex gap-3 min-w-0 overflow-x-auto custom-scrollbar">
           
-          <div className="flex flex-col gap-4 w-full md:w-64 shrink-0">
-            {/* Metric: Local Time */}
-            <div className="bg-[#0a0a0a] border border-zinc-800/60 rounded-lg flex flex-col items-center justify-center p-3 shadow-sm h-24 shrink-0">
-              <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-                <Clock size={12}/> Local Time
-              </span>
-              <span className="text-lg font-mono text-zinc-100 tracking-wide">
-                {mounted && time ? time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
-              </span>
-            </div>
-            
-            {/* Metric: Active Session */}
-            <div className="bg-[#0a0a0a] border border-zinc-800/60 rounded-lg flex flex-col items-center justify-center p-3 shadow-sm h-24 shrink-0 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <span className="text-[9px] font-bold text-blue-400/80 uppercase tracking-widest mb-1 flex items-center gap-1 relative z-10">
-                <Globe2 size={12}/> {sessionInfo.name} Session
-              </span>
-              <span className="text-lg font-mono text-white tracking-tight leading-tight relative z-10">
-                {sessionInfo.localTime}
-              </span>
-            </div>
+          {/* Metric 1: Local Time */}
+          <div className="w-48 shrink-0 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg flex flex-col items-center justify-center shadow-sm">
+            <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-1">
+              <Clock size={12}/> Local Time
+            </span>
+            <span className="text-lg font-mono text-zinc-100 tracking-wide">
+              {mounted && time ? time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
+            </span>
+          </div>
+          
+          {/* Metric 2: Active Session */}
+          <div className="w-56 shrink-0 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg flex flex-col items-center justify-center shadow-sm relative overflow-hidden group">
+            <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <span className="text-[9px] font-bold text-blue-400/80 uppercase tracking-widest mb-1 flex items-center gap-1 relative z-10">
+              <Globe2 size={12}/> Active Session: {sessionInfo.name}
+            </span>
+            <span className="text-lg font-mono text-white tracking-tight leading-tight relative z-10">
+              {sessionInfo.localTime}
+            </span>
           </div>
 
-          {/* Metric: Routine Checklist & Vault Toggle */}
-          <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-4 flex flex-col shadow-sm min-h-0">
-            <div className="flex justify-between items-center mb-3 border-b border-zinc-800/50 pb-2 shrink-0">
-              <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                <CheckCircle2 size={14} className="text-emerald-500/70" /> Execution Routine
+          {/* Metric 3: Routine Checklist & Hamburger Toggle */}
+          <div className="flex-1 min-w-[250px] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-2.5 flex flex-col shadow-sm">
+            <div className="flex justify-between items-center mb-1.5 border-b border-zinc-800/50 pb-1.5 shrink-0">
+              <h3 className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                <CheckCircle2 size={12} className="text-emerald-500/70" /> Execution Routine
               </h3>
               <button 
                 onClick={() => setIsVaultOpen(!isVaultOpen)} 
                 className="text-zinc-500 hover:text-white transition-colors"
                 title="Toggle Weekly Vault"
               >
-                <Menu size={16} />
+                <Menu size={14} />
               </button>
             </div>
-            
-            <div className="flex flex-col gap-2.5 overflow-y-auto custom-scrollbar flex-1 pr-2">
+            <div className="flex flex-col gap-1.5 overflow-y-auto custom-scrollbar flex-1 pr-2">
               {routine.map(item => (
-                <div key={item.id} onClick={() => toggleRoutine(item.id)} className="flex items-center gap-3 cursor-pointer group py-1">
-                  <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-colors shrink-0 ${item.completed ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700 text-transparent group-hover:border-zinc-500'}`}>
+                <div key={item.id} onClick={() => toggleRoutine(item.id)} className="flex items-center gap-2 cursor-pointer group">
+                  <div className={`w-3 h-3 rounded border flex items-center justify-center transition-colors shrink-0 ${item.completed ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700 text-transparent group-hover:border-zinc-500'}`}>
                     <CheckCircle2 size={10} />
                   </div>
-                  <span className={`text-xs font-semibold tracking-wide transition-all ${item.completed ? 'text-zinc-600 line-through' : 'text-zinc-300 group-hover:text-white'}`}>
+                  <span className={`text-[11px] font-medium transition-all truncate ${item.completed ? 'text-zinc-600 line-through' : 'text-zinc-300 group-hover:text-white'}`}>
                     {item.label}
                   </span>
                 </div>
@@ -354,19 +347,9 @@ export default function PersonalDashboard() {
           </div>
         </div>
 
-        {/* BOTTOM ROW: 50% HEIGHT TODAY WORKSPACE */}
-        <div className="h-1/2 min-h-0 flex flex-col border-t border-zinc-800/60 bg-[#080808]">
-          
-          <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
-            <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-              <Crosshair size={14} className="text-blue-500" /> Today's Focus
-            </h2>
-            <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-              {todaySetups.length} Pairs Locked
-            </span>
-          </div>
-
-          <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
+        {/* BOTTOM ROW: TODAY WORKSPACE (Fills exact remaining space) */}
+        <div className="flex-1 min-h-0 flex flex-col border-t border-zinc-800/60 bg-[#080808]">
+          <div className="flex-1 flex flex-row min-h-0">
             
             {/* PANE 1: List */}
             <div className="w-48 sm:w-56 shrink-0 border-r border-zinc-800/60 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5">
@@ -414,17 +397,20 @@ export default function PersonalDashboard() {
               )}
             </div>
 
-            {/* PANE 3: Notes Simple Box */}
-            <div className="w-64 sm:w-72 shrink-0 flex flex-col min-h-0 p-3 pl-0 bg-[#030303]">
-              <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg overflow-y-auto custom-scrollbar p-4 shadow-sm">
+            {/* PANE 3: Editable Notes Box */}
+            <div className="w-64 sm:w-72 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
+              <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-3 shadow-sm flex flex-col min-h-0">
                 {activeSetup ? (
-                  <p className="text-xs text-zinc-300 leading-relaxed whitespace-pre-wrap font-medium">
-                    {activeSetup.notes || <span className="italic text-zinc-600">No notes provided...</span>}
-                  </p>
+                  <textarea 
+                    value={activeSetup.notes}
+                    onChange={(e) => handleUpdateNotes(activeSetup.id, e.target.value)}
+                    placeholder="Type structural notes, levels, or invalidation here..."
+                    className="w-full h-full bg-transparent border-none focus:outline-none resize-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar"
+                  />
                 ) : (
-                  <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest text-center mt-10">
-                    No active notes
-                  </p>
+                  <div className="w-full h-full flex items-center justify-center text-center">
+                    <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p>
+                  </div>
                 )}
               </div>
             </div>
@@ -433,9 +419,9 @@ export default function PersonalDashboard() {
         </div>
       </div>
 
-      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT */}
+      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT (Takes 100% height) */}
       <div 
-        className={`h-full bg-[#080808] border-l border-zinc-800/60 flex flex-col transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`h-full bg-[#080808] border-l border-zinc-800/60 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${
           isVaultOpen ? 'w-[280px] lg:w-[300px] xl:w-[320px] opacity-100' : 'w-0 opacity-0 border-l-0'
         }`}
       >
