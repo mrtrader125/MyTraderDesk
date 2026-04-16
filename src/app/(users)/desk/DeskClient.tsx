@@ -291,34 +291,31 @@ export default function DeskClient() {
       {/* 🔴 LEFT/MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
 
-        {/* 🟢 SLEEK TOP BAR */}
-        <div className="flex items-center justify-between p-3 border-b border-zinc-800/60 bg-[#0a0a0a] shrink-0">
-          <div className="flex items-center gap-3">
-             <span className="text-xs font-black text-zinc-400 uppercase tracking-widest ml-2">Operator's Desk</span>
-          </div>
-          <button 
-            onClick={() => setIsVaultOpen(!isVaultOpen)} 
-            className="text-zinc-400 hover:text-white transition-colors bg-zinc-950 border border-zinc-800/60 p-2 rounded-lg shadow-sm"
-            title="Toggle Weekly Vault"
-          >
-            <Menu size={16} />
-          </button>
-        </div>
-
         {/* 🟢 MAIN SPLIT CONTAINER */}
         <div className="flex-1 flex flex-col overflow-hidden">
           
           {/* =========================================
               TOP 50%: TODAY's FOCUS
           ========================================= */}
-          <div className="flex-1 flex flex-col min-h-0 border-b border-zinc-800/60 bg-[#080808]">
-            <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
-              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                <Crosshair size={14} className="text-blue-500" /> Today's Focus
-              </h2>
-              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">
-                {todaySetups.length} Pairs Locked
-              </span>
+          <div className="h-1/2 shrink-0 flex flex-col min-h-0 border-b border-zinc-800/60 bg-[#080808]">
+            <div className="h-12 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
+              <div className="flex items-center gap-4">
+                <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                  <Crosshair size={14} className="text-blue-500" /> Today's Focus
+                </h2>
+                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">
+                  {todaySetups.length} Pairs Locked
+                </span>
+              </div>
+              
+              {/* VAULT TOGGLE MOVED HERE */}
+              <button 
+                onClick={() => setIsVaultOpen(!isVaultOpen)} 
+                className="text-zinc-400 hover:text-white transition-colors p-1"
+                title="Toggle Weekly Vault"
+              >
+                <Menu size={16} />
+              </button>
             </div>
 
             <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
@@ -410,7 +407,7 @@ export default function DeskClient() {
           {/* =========================================
               BOTTOM 50%: OPERATOR'S AUDIT / JOURNAL
           ========================================= */}
-          <div className="flex-1 flex flex-col min-h-0 bg-[#050505]">
+          <div className="h-1/2 shrink-0 flex flex-col min-h-0 bg-[#050505]">
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
               <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
                 <Activity size={14} className="text-emerald-500" /> Operator's Audit
@@ -447,19 +444,27 @@ export default function DeskClient() {
                     </div>
                   )}
 
-                  {/* EXECUTION TYPE DROPDOWN */}
-                  <select 
-                    disabled={!logPair || tradesTakenToday >= 2}
-                    value={logExecution || ''}
-                    onChange={(e) => setLogExecution(e.target.value as 'Perfect' | 'Imperfect')}
-                    className={`w-full bg-[#0a0a0a] rounded-lg px-3 py-3 text-xs font-bold outline-none uppercase transition-colors ${!logPair ? 'opacity-50 border-zinc-800 text-zinc-600' : logExecution === 'Perfect' ? 'border-emerald-500/50 text-emerald-400 border' : logExecution === 'Imperfect' ? 'border-red-500/50 text-red-400 border' : 'border-zinc-700 text-zinc-300 border'}`}
-                  >
-                    <option value="" disabled>Select Execution Type</option>
-                    <option value="Perfect">Perfect Execution</option>
-                    <option value="Imperfect">Imperfect Execution</option>
-                  </select>
+                  {/* 🚨 REVERTED: THE TWO EXECUTION BUTTONS */}
+                  <div className="flex gap-3">
+                    <button 
+                      disabled={!logPair || tradesTakenToday >= 2}
+                      onClick={() => setLogExecution('Perfect')}
+                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair ? 'opacity-50 cursor-not-allowed' : ''} ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                    >
+                      <CheckCircle size={20} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Perfect Execution</span>
+                    </button>
+                    <button 
+                      disabled={!logPair || tradesTakenToday >= 2}
+                      onClick={() => setLogExecution('Imperfect')}
+                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair ? 'opacity-50 cursor-not-allowed' : ''} ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                    >
+                      <AlertTriangle size={20} />
+                      <span className="text-[10px] font-bold uppercase tracking-widest">Imperfect Execution</span>
+                    </button>
+                  </div>
 
-                  {/* CATALYST DROPDOWN */}
+                  {/* 🚨 Catalyst logic: Visible if Imperfect, but entirely optional to submit */}
                   {logExecution === 'Imperfect' && (
                     <select 
                       value={logReason}
