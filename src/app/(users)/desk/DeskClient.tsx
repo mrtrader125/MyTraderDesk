@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
-  Target, ArrowRight, ArrowLeft,
+  Clock, Target, ArrowRight, ArrowLeft,
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save
 } from 'lucide-react'
 
@@ -210,6 +210,8 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 // --- MAIN DESK COMPONENT ---
 export default function DeskClient() {
   const [isVaultOpen, setIsVaultOpen] = useState(true)
+  const [mounted, setMounted] = useState(false)
+  const [time, setTime] = useState<Date | null>(null) 
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   
   const [setups, setSetups] = useState<any[]>([
@@ -224,7 +226,7 @@ export default function DeskClient() {
 
   // --- JOURNAL STATE ---
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
-  const [logPair, setLogPair] = useState(todaySetups.length > 0 ? todaySetups[0].symbol : '')
+  const [logPair, setLogPair] = useState<string>('') // 🚨 Removed auto-selection. Forces intentional clicking.
   const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
   const [logReason, setLogReason] = useState('')
 
@@ -237,12 +239,23 @@ export default function DeskClient() {
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
       setActiveTodayId(todaySetups[0].id)
-      setLogPair(todaySetups[0].symbol)
     } else if (todaySetups.length === 0) {
       setActiveTodayId(null)
-      setLogPair('')
+      // Clear logPair if all today setups are removed
+      if(logPair) setLogPair('') 
     }
   }, [todaySetups.length, activeTodayId])
+
+  // SSR Safe Clock
+  useEffect(() => {
+    setMounted(true);
+    setTime(new Date());
+
+    const timer = setInterval(() => {
+      setTime(new Date());
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
 
   const toggleTodayStatus = (id: string) => {
     setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday } : s))
@@ -260,6 +273,27 @@ export default function DeskClient() {
     setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: newNotes } : s))
   }
 
+  // 🚨 NEW LOGIC: Lock the trade into the Reconciliation Queue
+  const handleLockEntry = () => {
+    if (tradesTakenToday < 2 && logPair && logExecution) {
+      setTradesTakenToday(prev => prev + 1);
+      setPendingReconciliation(prev => [
+        {
+          id: Math.random().toString(36).substr(2, 9),
+          day: new Date().toLocaleDateString('en-US', { weekday: 'short' }),
+          symbol: logPair,
+          execution: logExecution,
+          reason: logReason || null
+        },
+        ...prev
+      ]);
+      // Reset form state
+      setLogPair('');
+      setLogExecution(null);
+      setLogReason('');
+    }
+  }
+
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
 
   return (
@@ -271,7 +305,10 @@ export default function DeskClient() {
         {/* 🟢 SLEEK TOP BAR */}
         <div className="flex items-center justify-between p-3 border-b border-zinc-800/60 bg-[#0a0a0a] shrink-0">
           <div className="flex items-center gap-3">
-             <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest ml-2">Operator's Desk</span>
+             <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest ml-2 flex items-center gap-2">
+               <Clock size={12} className="text-zinc-600" />
+               {mounted && time ? time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
+             </span>
           </div>
           <button 
             onClick={() => setIsVaultOpen(!isVaultOpen)} 
@@ -310,7 +347,7 @@ export default function DeskClient() {
                   todaySetups.map(setup => (
                     <div 
                       key={`today-${setup.id}`}
-                      onClick={() => { setActiveTodayId(setup.id); setLogPair(setup.symbol); }}
+                      onClick={() => setActiveTodayId(setup.id)}
                       className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
                         activeTodayId === setup.id 
                           ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
@@ -320,13 +357,24 @@ export default function DeskClient() {
                       <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                         {setup.symbol}
                       </span>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }}
-                        className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100"
-                        title="Push back to Vault"
-                      >
-                        <ArrowLeft size={12} />
-                      </button>
+                      
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {/* 🚨 NEW: Execute/Log Button */}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); }}
+                          className="p-1 rounded hover:bg-emerald-500/20 text-zinc-600 hover:text-emerald-400 transition-colors"
+                          title="Stage for Execution"
+                        >
+                          <Target size={12} />
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }}
+                          className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors"
+                          title="Push back to Vault"
+                        >
+                          <ArrowLeft size={12} />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -380,7 +428,7 @@ export default function DeskClient() {
               {/* LEFT: QUICK CAPTURE (ACTIVE SESSION) */}
               <div className="flex-1 border-r border-zinc-800/60 p-6 flex flex-col items-center justify-center relative bg-[#030303]">
                 <div className="absolute top-4 left-4">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Session Capture</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Active Execution Capture</span>
                 </div>
                 
                 <div className="w-full max-w-sm flex flex-col gap-6">
@@ -391,39 +439,48 @@ export default function DeskClient() {
                     </span>
                   </div>
 
-                  <select 
-                    value={logPair}
-                    onChange={(e) => setLogPair(e.target.value)}
-                    className="w-full bg-[#0a0a0a] border border-zinc-800/60 rounded-lg px-3 py-3 text-sm font-bold text-zinc-200 outline-none uppercase"
-                  >
-                    <option value="" disabled>Select Instrument</option>
-                    {todaySetups.map(s => <option key={s.id} value={s.symbol}>{s.symbol}</option>)}
-                  </select>
+                  {/* 🚨 REPLACED DROPDOWN: Now requires explicit clicking from Today's Focus */}
+                  {!logPair ? (
+                    <div className="h-[46px] border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-zinc-950/50">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Stage a pair from Today's Focus</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 shadow-inner">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Target Acquired</span>
+                      <span className="text-sm font-black text-white tracking-wider">{logPair}</span>
+                      <button onClick={() => { setLogPair(''); setLogExecution(null); setLogReason(''); }} className="text-zinc-500 hover:text-red-400 transition-colors">
+                        <X size={14}/>
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex gap-3">
                     <button 
+                      disabled={!logPair || tradesTakenToday >= 2}
                       onClick={() => setLogExecution('Perfect')}
-                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair ? 'opacity-50 cursor-not-allowed' : ''} ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
                     >
                       <CheckCircle size={20} />
                       <span className="text-[10px] font-bold uppercase tracking-widest">Perfect Execution</span>
                     </button>
                     <button 
+                      disabled={!logPair || tradesTakenToday >= 2}
                       onClick={() => setLogExecution('Imperfect')}
-                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                      className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair ? 'opacity-50 cursor-not-allowed' : ''} ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
                     >
                       <AlertTriangle size={20} />
                       <span className="text-[10px] font-bold uppercase tracking-widest">Imperfect Execution</span>
                     </button>
                   </div>
 
+                  {/* 🚨 Catalyst logic: Visible if Imperfect, but entirely optional to submit */}
                   {logExecution === 'Imperfect' && (
                     <select 
                       value={logReason}
                       onChange={(e) => setLogReason(e.target.value)}
                       className="w-full bg-[#0a0a0a] border border-red-500/30 rounded-lg px-3 py-2 text-xs font-bold text-zinc-300 outline-none uppercase"
                     >
-                      <option value="" disabled>Select Catalyst</option>
+                      <option value="" disabled>Select Catalyst (Optional)</option>
                       <option value="FOMO">FOMO / Rushed Entry</option>
                       <option value="Revenge">Revenge Trading</option>
                       <option value="Boredom">Boredom / Forced Setup</option>
@@ -431,12 +488,10 @@ export default function DeskClient() {
                     </select>
                   )}
 
+                  {/* 🚨 Disabled logic removes the requirement for logReason */}
                   <button 
-                    disabled={!logPair || !logExecution || (logExecution === 'Imperfect' && !logReason) || tradesTakenToday >= 2}
-                    onClick={() => {
-                      if (tradesTakenToday < 2) setTradesTakenToday(prev => prev + 1);
-                      setLogExecution(null); setLogReason('');
-                    }}
+                    disabled={!logPair || !logExecution || tradesTakenToday >= 2}
+                    onClick={handleLockEntry}
                     className="w-full py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white rounded-lg text-xs font-bold uppercase tracking-widest transition-colors"
                   >
                     Lock Entry Without Outcome
@@ -444,7 +499,7 @@ export default function DeskClient() {
                 </div>
               </div>
 
-              {/* RIGHT: END OF WEEK RECONCILER */}
+              {/* RIGHT: END OF WEEK RECONCILER (Passive Holding Queue) */}
               <div className="flex-[1.2] p-6 overflow-y-auto custom-scrollbar relative bg-[#050505]">
                 <div className="absolute top-4 left-4">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
@@ -452,7 +507,7 @@ export default function DeskClient() {
 
                 <div className="mt-8 flex flex-col gap-3">
                   {pendingReconciliation.length === 0 ? (
-                    <div className="text-center py-10 text-zinc-600">
+                    <div className="text-center py-10 text-zinc-600 border border-dashed border-zinc-800/50 rounded-xl mx-4">
                       <span className="text-[10px] font-bold uppercase tracking-widest">No pending setups to reconcile</span>
                     </div>
                   ) : (
