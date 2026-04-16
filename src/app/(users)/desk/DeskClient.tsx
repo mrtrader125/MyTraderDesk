@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { 
   Plus, X, UploadCloud, Link as LinkIcon, Crosshair, 
-  Clock, Target, ArrowRight, ArrowLeft,
-  BarChart2, Image as ImageIcon, Trash2, Menu
+  CheckCircle2, Clock, Target, ArrowRight, ArrowLeft,
+  Globe2, BarChart2, Image as ImageIcon, Trash2, Menu
 } from 'lucide-react'
 
 // --- BULK UPLOAD MODAL COMPONENT ---
@@ -207,12 +207,13 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   )
 }
 
-// --- MAIN DASHBOARD COMPONENT ---
-export default function PersonalDashboard() {
+// --- MAIN DESK COMPONENT ---
+export default function DeskPage() {
   const [isVaultOpen, setIsVaultOpen] = useState(true)
   const [mounted, setMounted] = useState(false)
 
   const [time, setTime] = useState<Date | null>(null) 
+  const [sessionInfo, setSessionInfo] = useState({ name: 'Determining...', localTime: '--:--:--' })
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   
   const [setups, setSetups] = useState<any[]>([
@@ -234,16 +235,40 @@ export default function PersonalDashboard() {
     }
   }, [todaySetups.length, activeTodayId])
 
-  // Real-time Clock (SSR Safe)
+  const [routine, setRoutine] = useState([
+    { id: 1, label: 'Sunday Macro Prep', completed: true },
+    { id: 2, label: 'Daily Filtering', completed: false },
+    { id: 3, label: 'Weekly Wind-up', completed: false }
+  ])
+
   useEffect(() => {
     setMounted(true);
     setTime(new Date());
 
     const timer = setInterval(() => {
-      setTime(new Date());
+      const now = new Date();
+      setTime(now);
+      
+      const utcHour = now.getUTCHours();
+      let sName = 'Interbank';
+      let tz = 'UTC';
+
+      if (utcHour >= 13 && utcHour < 22) { sName = 'New York'; tz = 'America/New_York'; }
+      else if (utcHour >= 8 && utcHour < 17) { sName = 'London'; tz = 'Europe/London'; }
+      else if (utcHour >= 0 && utcHour < 9) { sName = 'Tokyo'; tz = 'Asia/Tokyo'; }
+      else { sName = 'Sydney'; tz = 'Australia/Sydney'; }
+
+      setSessionInfo({
+        name: sName,
+        localTime: now.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      });
     }, 1000)
     return () => clearInterval(timer)
   }, [])
+
+  const toggleRoutine = (id: number) => {
+    setRoutine(prev => prev.map(item => item.id === id ? { ...item, completed: !item.completed } : item))
+  }
 
   const toggleTodayStatus = (id: string) => {
     setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday } : s))
@@ -269,7 +294,7 @@ export default function PersonalDashboard() {
       {/* 🔴 LEFT/MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
 
-        {/* 🟢 SLEEK TOP BAR (Replaces the massive 50% split and Routine cards) */}
+        {/* 🟢 SLEEK TOP BAR */}
         <div className="flex items-center justify-between p-3 border-b border-zinc-800/60 bg-[#0a0a0a] shrink-0">
           <div className="flex items-center gap-3">
              <div className="flex items-center gap-2 bg-zinc-950 border border-zinc-800/60 px-3 py-1.5 rounded-lg shadow-sm">
@@ -288,7 +313,7 @@ export default function PersonalDashboard() {
           </button>
         </div>
 
-        {/* 🟢 TODAY WORKSPACE (Fills 100% of remaining height) */}
+        {/* 🟢 TODAY WORKSPACE */}
         <div className="flex-1 flex flex-col bg-[#080808] min-h-0">
           
           <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
@@ -335,7 +360,7 @@ export default function PersonalDashboard() {
               )}
             </div>
 
-            {/* PANE 2: Chart (Now massive and distraction-free) */}
+            {/* PANE 2: Chart */}
             <div className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60">
               {activeSetup ? (
                 <div className="absolute inset-0 p-3 flex items-center justify-center">
@@ -371,7 +396,7 @@ export default function PersonalDashboard() {
 
       </div>
 
-      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT (Takes 100% height) */}
+      {/* 🔴 RIGHT WORKSPACE: COLLAPSIBLE VAULT */}
       <div 
         className={`h-full bg-[#080808] border-l border-zinc-800/60 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${
           isVaultOpen ? 'w-[280px] lg:w-[300px] xl:w-[320px] opacity-100' : 'w-0 opacity-0 border-l-0'
