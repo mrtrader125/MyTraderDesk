@@ -246,7 +246,6 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   )
 }
 
-// 🚨 RECONCILIATION ITEM 
 function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string, outcome: string, rr: string) => void }) {
   const [outcome, setOutcome] = useState(''); 
   const [rr, setRr] = useState('');
@@ -302,9 +301,8 @@ function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string
 export default function DeskClient() {
   const [user, setUser] = useState<any>(null)
   
-  // 🚨 Layout States
   const [isVaultOpen, setIsVaultOpen] = useState(true)
-  const [isAuditOpen, setIsAuditOpen] = useState(false) 
+  const [isAuditOpen, setIsAuditOpen] = useState(false) // Audit starts closed
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
@@ -456,7 +454,7 @@ export default function DeskClient() {
         setPendingReconciliation(prev => [{ id: data[0].id, day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }), symbol: data[0].symbol, execution: data[0].execution_type, reason: data[0].reason, rr: '', outcome: '' }, ...prev]);
       }
       setLogPair(''); setLogExecution(null); setLogReason('');
-      setIsAuditOpen(false); // 🚨 Auto-collapse audit after saving
+      setIsAuditOpen(false); // Auto-close audit after saving
     }
   }
 
@@ -469,16 +467,17 @@ export default function DeskClient() {
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
+  // 🚨 STRICT LAYOUT ENGINE 🚨
   return (
     <div className="flex h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-hidden">
       
-      {/* 🔴 LEFT/MAIN WORKSPACE */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2">
+      {/* LEFT/MAIN WORKSPACE */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
         
         {/* =========================================
-            TOP SECTION: TODAY's FOCUS CARD
+            TOP SECTION: TODAY's FOCUS (STRICT 50%)
         ========================================= */}
-        <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 transition-all duration-300 flex-1`}>
+        <div className="h-[calc(50%-4px)] shrink-0 flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
           
           {/* Header */}
@@ -529,7 +528,7 @@ export default function DeskClient() {
                           onClick={(e) => { 
                             e.stopPropagation(); 
                             setLogPair(setup.symbol); 
-                            setIsAuditOpen(true); // 🚨 Opens Audit on click
+                            setIsAuditOpen(true); 
                           }} 
                           className="p-1.5 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400 transition-colors" 
                           title="Stage Execution"
@@ -571,9 +570,9 @@ export default function DeskClient() {
         </div>
         
         {/* =========================================
-            BOTTOM SECTION: OPERATOR'S AUDIT CARD (COLLAPSIBLE)
+            BOTTOM SECTION: OPERATOR'S AUDIT (COLLAPSIBLE)
         ========================================= */}
-        <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 min-h-0 ${isAuditOpen ? 'flex-[0.7] lg:flex-1' : 'h-[48px] shrink-0'}`}>
+        <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-[calc(50%-4px)]' : 'h-12'}`}>
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
           
           {/* Header (Clickable Toggle) */}
@@ -584,20 +583,18 @@ export default function DeskClient() {
             <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
               <Activity size={14} className="text-emerald-500" /> Operator's Audit
             </h2>
-            <div className="flex items-center gap-3">
+            <button className="text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
               {pendingReconciliation.length > 0 && !isAuditOpen && (
                 <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-black border border-zinc-800 px-2 py-0.5 rounded">
                   {pendingReconciliation.length} Pending
                 </span>
               )}
-              <button className="text-zinc-500 hover:text-white transition-colors">
-                {isAuditOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
-              </button>
-            </div>
+              {isAuditOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+            </button>
           </div>
 
-          {/* Collapsible Content */}
-          <div className={`flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden transition-opacity duration-300 ${isAuditOpen ? 'opacity-100' : 'opacity-0'}`}>
+          {/* Collapsible Inner Content - Fades out to prevent squishing */}
+          <div className={`flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0'}`}>
             
             {/* Capture Panel */}
             <div className="flex-1 border-r border-zinc-800 p-4 flex flex-col items-center justify-center relative bg-zinc-950/50">
@@ -764,6 +761,7 @@ export default function DeskClient() {
       {previewSetup && (
         <div onClick={() => setPreviewSetup(null)} className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4 sm:p-8 cursor-zoom-out">
           <div onClick={e => e.stopPropagation()} className="max-w-6xl w-full h-full max-h-[800px] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden cursor-default">
+            
             <div className="flex-[2.5] bg-black border-r border-zinc-800 p-4 sm:p-6 flex items-center justify-center relative shadow-inner">
               {previewSetup.imageUrl ? (
                 <img src={previewSetup.imageUrl} alt={previewSetup.symbol} className="w-full h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl" />
@@ -771,6 +769,7 @@ export default function DeskClient() {
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No Image Data</span>
               )}
             </div>
+            
             <div className="flex-1 flex flex-col min-w-[300px] overflow-hidden bg-zinc-950">
               <div className="p-5 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between shrink-0">
                 <span className="text-base font-black text-white tracking-widest">{previewSetup.symbol} Setup</span>
