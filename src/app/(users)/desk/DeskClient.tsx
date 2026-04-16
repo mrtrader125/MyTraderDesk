@@ -8,7 +8,7 @@ import {
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save
 } from 'lucide-react'
 
-// 🚨 Initialize the Next.js SSR Browser Client so it can read your Auth Cookies
+// Initialize the Next.js SSR Browser Client
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -243,6 +243,58 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   )
 }
 
+// 🚨 FIX: Extracted the individual Reconciliation item so `useState` obeys the Rules of Hooks
+function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string, outcome: string, rr: string) => void }) {
+  const [outcome, setOutcome] = useState(''); 
+  const [rr, setRr] = useState('');
+
+  return (
+    <div className="bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 flex items-center justify-between shadow-sm shrink-0">
+      <div className="flex flex-col gap-1 w-1/3 min-w-0 pr-2">
+        <div className="flex items-center gap-2 truncate">
+          <span className="text-xs font-bold text-zinc-400">{trade.day}</span>
+          <span className="text-sm font-bold text-zinc-200">{trade.symbol}</span>
+        </div>
+        <div className="flex items-center gap-2 truncate">
+          <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded shrink-0 ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+            {trade.execution}
+          </span>
+          {trade.reason && <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest truncate">• {trade.reason}</span>}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 shrink-0">
+        <select value={outcome} onChange={e => setOutcome(e.target.value)} className="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-[10px] sm:text-xs font-bold text-zinc-300 outline-none uppercase w-24 sm:w-28">
+          <option value="">Outcome</option>
+          <option value="TP">Hit TP</option>
+          <option value="SL">Hit SL</option>
+          <option value="BE">Break Even</option>
+        </select>
+        
+        <div className="relative w-20 sm:w-24">
+          <input 
+            type="number" 
+            value={rr} 
+            onChange={e => setRr(e.target.value)} 
+            placeholder="0.0" 
+            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-7 sm:pl-8 pr-2 py-2 text-[10px] sm:text-xs font-bold text-zinc-300 outline-none placeholder:text-zinc-600"
+          />
+          <span className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest">RR</span>
+        </div>
+
+        <button 
+          disabled={!outcome || !rr} 
+          onClick={() => onSave(trade.id, outcome, rr)} 
+          className="p-2 bg-zinc-800 hover:bg-emerald-600 text-zinc-400 hover:text-white disabled:opacity-50 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-400 rounded-lg transition-colors"
+          title="Save Reconciled Data"
+        >
+          <Save size={14} />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // --- MAIN DESK COMPONENT ---
 export default function DeskClient() {
   const [user, setUser] = useState<any>(null)
@@ -276,7 +328,7 @@ export default function DeskClient() {
             id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null
           })))
         }
-        // Fetch Logs
+        // Fetch Logs (Reconciliation Queue)
         const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).eq('is_reconciled', false).order('created_at', { ascending: false })
         if (logsData) {
           setPendingReconciliation(logsData.map(d => ({
@@ -350,6 +402,7 @@ export default function DeskClient() {
       return
     }
     const newSetups = []
+    
     for (const draft of draftsToSave) {
       let finalImageUrl = draft.imageSource
       
@@ -361,7 +414,7 @@ export default function DeskClient() {
         if (error) {
           console.error("Supabase Storage Error:", error)
           alert(`Failed to upload ${draft.instrument} image:\n${error.message}`)
-          return // Abort if upload fails
+          return 
         }
         
         if (data) {
@@ -415,6 +468,7 @@ export default function DeskClient() {
     <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 min-h-0 transition-all duration-300 relative">
         <div className="flex-1 flex flex-col overflow-hidden">
+          
           {/* TOP 50%: TODAY's FOCUS */}
           <div className="h-1/2 shrink-0 flex flex-col min-h-0 border-b border-zinc-800/60 bg-[#080808]">
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
@@ -449,6 +503,7 @@ export default function DeskClient() {
               <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 min-w-0 p-3 bg-[#030303]"><div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-3 shadow-sm flex flex-col min-h-0"><RichNotesEditor activeSetup={activeSetup} onUpdate={handleUpdateNotes} /></div></div>
             </div>
           </div>
+          
           {/* BOTTOM 50%: OPERATOR'S AUDIT */}
           <div className="h-1/2 shrink-0 flex flex-col min-h-0 bg-[#050505]">
             <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]"><h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Activity size={14} className="text-emerald-500" /> Operator's Audit</h2></div>
@@ -468,27 +523,22 @@ export default function DeskClient() {
               <div className="flex-[1.2] p-6 overflow-y-auto custom-scrollbar bg-[#050505] min-h-0 min-w-0 text-white">
                 <div className="mb-6 shrink-0"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span></div>
                 <div className="flex flex-col gap-3">
-                  {pendingReconciliation.length === 0 ? <div className="text-center py-10 text-zinc-600 border border-dashed border-zinc-800/50 rounded-xl mx-4"><span className="text-[10px] font-bold uppercase tracking-widest">No pending setups</span></div> : pendingReconciliation.map((trade) => {
-                      const [outcome, setOutcome] = useState(''); const [rr, setRr] = useState('');
-                      return (
-                      <div key={trade.id} className="bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 flex items-center justify-between shadow-sm shrink-0">
-                        <div className="flex flex-col gap-1 w-1/3 min-w-0 pr-2">
-                          <div className="flex items-center gap-2 truncate"><span className="text-xs font-bold text-zinc-400">{trade.day}</span><span className="text-sm font-bold text-zinc-200">{trade.symbol}</span></div>
-                          <div className="flex items-center gap-2 truncate"><span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded shrink-0 ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{trade.execution}</span></div>
-                        </div>
-                        <div className="flex items-center gap-3 shrink-0">
-                          <select value={outcome} onChange={e => setOutcome(e.target.value)} className="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-[10px] sm:text-xs font-bold text-zinc-300 outline-none uppercase w-24 sm:w-28"><option value="">Outcome</option><option value="TP">Hit TP</option><option value="SL">Hit SL</option><option value="BE">Break Even</option></select>
-                          <div className="relative w-20 sm:w-24"><input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-7 pr-2 py-2 text-[10px] font-bold text-zinc-300 outline-none"/><span className="absolute left-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">RR</span></div>
-                          <button disabled={!outcome || !rr} onClick={() => handleSaveReconciliation(trade.id, outcome, rr)} className="p-2 bg-zinc-800 hover:bg-emerald-600 text-zinc-400 hover:text-white disabled:opacity-50 rounded-lg transition-colors"><Save size={14} /></button>
-                        </div>
-                      </div>
-                    )})}
+                  {pendingReconciliation.length === 0 ? (
+                    <div className="text-center py-10 text-zinc-600 border border-dashed border-zinc-800/50 rounded-xl mx-4">
+                      <span className="text-[10px] font-bold uppercase tracking-widest">No pending setups</span>
+                    </div>
+                  ) : (
+                    pendingReconciliation.map((trade) => (
+                      <ReconciliationItem key={trade.id} trade={trade} onSave={handleSaveReconciliation} />
+                    ))
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      
       {/* RIGHT WORKSPACE: COLLAPSIBLE VAULT */}
       <div className={`h-full bg-[#080808] border-l border-zinc-800/60 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${isVaultOpen ? 'w-[280px] lg:w-[320px] opacity-100' : 'w-0 opacity-0 border-l-0'}`}>
         <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a] text-white"><h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-zinc-400" /> Weekly Vault</h2></div>
@@ -509,9 +559,12 @@ export default function DeskClient() {
         </div>
         <div className="p-3 border-t border-zinc-800/60 bg-[#0a0a0a] shrink-0"><button onClick={() => setIsUploadModalOpen(true)} className="w-full py-2.5 px-4 flex items-center justify-center gap-1.5 border border-dashed border-zinc-700 bg-[#050505] rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all"><Plus size={14} /> Add Weekly Setups</button></div>
       </div>
+      
       {/* MODALS */}
       {confirmPushId && <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"><div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl"><h3 className="text-sm font-bold text-white mb-2 uppercase tracking-widest">Confirm Push</h3><p className="text-xs text-zinc-400 mb-6 leading-relaxed">Lock this setup into Today's Focus? Removal is only allowed for the first 60 minutes.</p><div className="flex gap-3"><button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-zinc-900 text-zinc-300 text-[10px] font-bold uppercase hover:bg-zinc-800">Cancel</button><button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-[10px] font-bold uppercase hover:bg-blue-500">Push to Today</button></div></div></div>}
+      
       {previewSetup && <div onClick={() => setPreviewSetup(null)} className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-8 cursor-zoom-out"><div onClick={e => e.stopPropagation()} className="max-w-5xl w-full max-h-full bg-[#050505] border border-zinc-800/60 rounded-xl shadow-2xl flex flex-col md:flex-row overflow-hidden cursor-default"><div className="flex-[2] bg-[#030303] border-r border-zinc-800/60 p-4 flex items-center justify-center text-white">{previewSetup.imageUrl ? <img src={previewSetup.imageUrl} alt={previewSetup.symbol} className="max-w-full max-h-full object-contain" /> : <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No Image</span>}</div><div className="flex-1 flex flex-col overflow-hidden"><div className="p-4 border-b border-zinc-800/60 flex items-center justify-between bg-[#0a0a0a] shrink-0"><span className="text-sm font-bold text-white tracking-widest">{previewSetup.symbol} Setup</span><button onClick={() => setPreviewSetup(null)} className="text-zinc-500 hover:text-white"><X size={16} /></button></div><div className="p-5 overflow-y-auto custom-scrollbar flex-1 text-xs text-zinc-300 font-medium leading-relaxed text-white" dangerouslySetInnerHTML={{ __html: previewSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} /></div></div></div>}
+      
       <SetupUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} onSave={handleBulkUpload} />
     </div>
   )
