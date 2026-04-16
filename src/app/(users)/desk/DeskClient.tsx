@@ -120,6 +120,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
               </div>
               <input type="file" multiple ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
             </div>
+            
             <div className="flex-1 overflow-y-auto custom-scrollbar p-2 flex flex-col gap-2 text-white">
               {drafts.map((draft, idx) => (
                 <div 
@@ -138,6 +139,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
               ))}
             </div>
           </div>
+
           <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
             {drafts.length > 0 && drafts[activeIndex] ? (
               <div className="p-6 flex flex-col gap-6 max-w-2xl mx-auto w-full text-white">
@@ -243,13 +245,13 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   )
 }
 
-// 🚨 FIX: Extracted the individual Reconciliation item so `useState` obeys the Rules of Hooks
+// 🚨 EXTRACTED ITEM: Ensures `useState` runs perfectly.
 function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string, outcome: string, rr: string) => void }) {
   const [outcome, setOutcome] = useState(''); 
   const [rr, setRr] = useState('');
 
   return (
-    <div className="bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 flex items-center justify-between shadow-sm shrink-0">
+    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex items-center justify-between shadow-sm shrink-0 hover:border-zinc-700 transition-colors">
       <div className="flex flex-col gap-1 w-1/3 min-w-0 pr-2">
         <div className="flex items-center gap-2 truncate">
           <span className="text-xs font-bold text-zinc-400">{trade.day}</span>
@@ -264,7 +266,7 @@ function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string
       </div>
 
       <div className="flex items-center gap-3 shrink-0">
-        <select value={outcome} onChange={e => setOutcome(e.target.value)} className="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-2 text-[10px] sm:text-xs font-bold text-zinc-300 outline-none uppercase w-24 sm:w-28">
+        <select value={outcome} onChange={e => setOutcome(e.target.value)} className="bg-black border border-zinc-800 rounded-lg px-2 py-2 text-[10px] sm:text-xs font-bold text-zinc-300 outline-none uppercase w-24 sm:w-28 focus:border-blue-500 transition-colors">
           <option value="">Outcome</option>
           <option value="TP">Hit TP</option>
           <option value="SL">Hit SL</option>
@@ -277,7 +279,7 @@ function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string
             value={rr} 
             onChange={e => setRr(e.target.value)} 
             placeholder="0.0" 
-            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-7 sm:pl-8 pr-2 py-2 text-[10px] sm:text-xs font-bold text-zinc-300 outline-none placeholder:text-zinc-600"
+            className="w-full bg-black border border-zinc-800 rounded-lg pl-7 sm:pl-8 pr-2 py-2 text-[10px] sm:text-xs font-bold text-zinc-300 outline-none placeholder:text-zinc-600 focus:border-blue-500 transition-colors"
           />
           <span className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-[9px] sm:text-[10px] font-bold text-zinc-500 uppercase tracking-widest">RR</span>
         </div>
@@ -285,7 +287,7 @@ function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string
         <button 
           disabled={!outcome || !rr} 
           onClick={() => onSave(trade.id, outcome, rr)} 
-          className="p-2 bg-zinc-800 hover:bg-emerald-600 text-zinc-400 hover:text-white disabled:opacity-50 disabled:hover:bg-zinc-800 disabled:hover:text-zinc-400 rounded-lg transition-colors"
+          className="p-2 bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 rounded-lg transition-colors shadow-sm"
           title="Save Reconciled Data"
         >
           <Save size={14} />
@@ -303,17 +305,14 @@ export default function DeskClient() {
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   const [previewSetup, setPreviewSetup] = useState<any | null>(null)
   
-  // Supabase State - Completely empty
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
 
-  // Journal State
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
   const [logPair, setLogPair] = useState<string>('') 
   const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
   const [logReason, setLogReason] = useState('')
 
-  // Init Data from Supabase
   useEffect(() => {
     const initData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -321,14 +320,12 @@ export default function DeskClient() {
       
       if (user) {
         setUser(user)
-        // Fetch Setups
         const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         if (setupsData) {
           setSetups(setupsData.map(d => ({
             id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null
           })))
         }
-        // Fetch Logs (Reconciliation Queue)
         const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).eq('is_reconciled', false).order('created_at', { ascending: false })
         if (logsData) {
           setPendingReconciliation(logsData.map(d => ({
@@ -356,7 +353,6 @@ export default function DeskClient() {
     }
   }, [todaySetups.length, activeTodayId])
 
-  // Auto-Save Notes Debounce
   useEffect(() => {
     const activeSetup = setups.find(s => s.id === activeTodayId)
     if (activeSetup && user) {
@@ -464,107 +460,306 @@ export default function DeskClient() {
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
+  // 🚨 NEW STRUCTURAL LAYOUT 🚨
   return (
-    <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 transition-all duration-300 relative">
-        <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-hidden">
+      
+      {/* LEFT/MAIN WORKSPACE: Split into Top & Bottom Cards */}
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2">
+        
+        {/* =========================================
+            TOP 50%: TODAY's FOCUS CARD
+        ========================================= */}
+        <div className="flex-[1.2] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
           
-          {/* TOP 50%: TODAY's FOCUS */}
-          <div className="h-1/2 shrink-0 flex flex-col min-h-0 border-b border-zinc-800/60 bg-[#080808]">
-            <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#050505]">
-              <div className="flex items-center gap-4">
-                <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Crosshair size={14} className="text-blue-500" /> Today's Focus</h2>
-                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">{todaySetups.length} Pairs Locked</span>
-              </div>
-              <button onClick={() => setIsVaultOpen(!isVaultOpen)} className="text-zinc-400 hover:text-white transition-colors p-1" title="Toggle Weekly Vault"><Menu size={16} /></button>
+          {/* Header */}
+          <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
+            <div className="flex items-center gap-4">
+              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <Crosshair size={14} className="text-blue-500" /> Today's Focus
+              </h2>
+              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-black border border-zinc-800 px-2 py-0.5 rounded shadow-inner">
+                {todaySetups.length} Pairs Locked
+              </span>
             </div>
-            <div className="flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden">
-              <div className="w-48 sm:w-56 shrink-0 border-r border-zinc-800/60 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5 text-white">
-                {todaySetups.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4"><Target size={20} className="mb-2 opacity-50" /><span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span></div>
-                ) : (
-                  todaySetups.map(setup => {
-                    const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
-                    return (
-                      <div key={`today-${setup.id}`} onClick={() => setActiveTodayId(setup.id)} className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-sm' : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'}`}>
-                        <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>{setup.symbol}</span>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); }} className="p-1 rounded hover:bg-emerald-500/20 text-zinc-600 hover:text-emerald-400 transition-colors" title="Stage Execution"><Target size={12} /></button>
-                          {canRemove && <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-600 hover:text-red-400 transition-colors" title="Remove (1hr limit)"><ArrowLeft size={12} /></button>}
-                        </div>
+            {/* Vault Toggle Button */}
+            <button 
+              onClick={() => setIsVaultOpen(!isVaultOpen)} 
+              className="text-zinc-400 hover:text-white transition-colors p-1.5 bg-black border border-zinc-800 rounded-md shadow-sm" 
+              title="Toggle Weekly Vault"
+            >
+              <Menu size={14} />
+            </button>
+          </div>
+
+          <div className="flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden">
+            {/* Pane 1: List Container */}
+            <div className="w-56 shrink-0 border-r border-zinc-800 flex flex-col bg-zinc-950/50 overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
+              {todaySetups.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
+                  <Target size={20} className="mb-2 opacity-50" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
+                </div>
+              ) : (
+                todaySetups.map(setup => {
+                  const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
+                  return (
+                    <div 
+                      key={`today-${setup.id}`} 
+                      onClick={() => setActiveTodayId(setup.id)} 
+                      className={`p-3 rounded-lg border flex items-center justify-between transition-all cursor-pointer group shrink-0 ${
+                        activeTodayId === setup.id 
+                          ? 'bg-zinc-800 border-zinc-600 shadow-md' 
+                          : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'
+                      }`}
+                    >
+                      <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                        {setup.symbol}
+                      </span>
+                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); }} className="p-1.5 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400 transition-colors" title="Stage Execution">
+                          <Target size={14} />
+                        </button>
+                        {canRemove && (
+                          <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1.5 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors" title="Remove (1hr limit)">
+                            <ArrowLeft size={14} />
+                          </button>
+                        )}
                       </div>
-                    )
-                  })
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            {/* Pane 2: Chart Container */}
+            <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner">
+              {activeSetup?.imageUrl ? (
+                <div className="absolute inset-0 p-4 flex items-center justify-center">
+                  <img src={activeSetup.imageUrl} alt={activeSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950" />
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0">
+                  <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span>
+                </div>
+              )}
+            </div>
+
+            {/* Pane 3: Notes Container */}
+            <div className="w-80 shrink-0 flex flex-col min-h-0 min-w-0 p-4 border-l border-zinc-800 bg-zinc-950/50">
+              <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0">
+                <RichNotesEditor activeSetup={activeSetup} onUpdate={handleUpdateNotes} />
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* =========================================
+            BOTTOM 50%: OPERATOR'S AUDIT CARD
+        ========================================= */}
+        <div className="flex-1 flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0">
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
+          
+          {/* Header */}
+          <div className="h-10 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
+            <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+              <Activity size={14} className="text-emerald-500" /> Operator's Audit
+            </h2>
+          </div>
+
+          <div className="flex-1 flex flex-row min-h-0 min-w-0 overflow-hidden">
+            
+            {/* Capture Panel */}
+            <div className="flex-1 border-r border-zinc-800 p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
+              <div className="w-full max-w-sm flex flex-col gap-4 m-auto shrink-0 text-white">
+                <div className="flex justify-between items-end mb-2">
+                  <h3 className="text-sm font-bold text-zinc-200">Log Execution Reality</h3>
+                  <span className={`text-[10px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>
+                    {tradesTakenToday}/2 TRADES
+                  </span>
+                </div>
+
+                {!logPair ? (
+                  <div className="h-12 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between bg-black border border-zinc-700 rounded-lg px-4 py-3 shadow-inner">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Target Acquired</span>
+                    <span className="text-sm font-black text-white tracking-wider">{logPair}</span>
+                    <button onClick={() => { setLogPair(''); setLogExecution(null); setLogReason(''); }} className="text-zinc-500 hover:text-red-400 transition-colors">
+                      <X size={14}/>
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex gap-3 mt-1">
+                  <button 
+                    disabled={!logPair || tradesTakenToday >= 2 || isAlreadyLogged}
+                    onClick={() => setLogExecution('Perfect')}
+                    className={`flex-1 py-5 border rounded-xl flex flex-col items-center gap-2.5 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50' : ''} ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-black border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                  >
+                    <CheckCircle size={22} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-center leading-tight">Perfect<br/>Execution</span>
+                  </button>
+                  <button 
+                    disabled={!logPair || tradesTakenToday >= 2 || isAlreadyLogged}
+                    onClick={() => setLogExecution('Imperfect')}
+                    className={`flex-1 py-5 border rounded-xl flex flex-col items-center gap-2.5 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50' : ''} ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-black border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+                  >
+                    <AlertTriangle size={22} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-center leading-tight">Imperfect<br/>Execution</span>
+                  </button>
+                </div>
+
+                {logExecution === 'Imperfect' && !isAlreadyLogged && (
+                  <select 
+                    value={logReason}
+                    onChange={(e) => setLogReason(e.target.value)}
+                    className="w-full bg-black border border-red-500/30 rounded-lg px-4 py-3 text-xs font-bold text-zinc-300 outline-none uppercase focus:border-red-500/80 transition-colors shadow-inner mt-1"
+                  >
+                    <option value="" disabled>Select Catalyst (Optional)</option>
+                    <option value="FOMO">FOMO / Rushed Entry</option>
+                    <option value="Revenge">Revenge Trading</option>
+                    <option value="Boredom">Boredom / Forced Setup</option>
+                    <option value="Ignored Plan">Ignored Trading Plan</option>
+                  </select>
+                )}
+
+                <button 
+                  disabled={!logPair || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged}
+                  onClick={handleLockEntry}
+                  className={`w-full py-3.5 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-colors mt-2 ${
+                    isAlreadyLogged 
+                      ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' 
+                      : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'
+                  }`}
+                >
+                  {isAlreadyLogged ? 'Already Logged Today' : 'Lock Entry Without Outcome'}
+                </button>
+              </div>
+            </div>
+
+            {/* Queue Panel */}
+            <div className="flex-[1.2] p-6 overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
+              <div className="mb-6 shrink-0 flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                {pendingReconciliation.length === 0 ? (
+                  <div className="text-center py-12 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-4">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups</span>
+                  </div>
+                ) : (
+                  pendingReconciliation.map((trade) => (
+                    <ReconciliationItem key={trade.id} trade={trade} onSave={handleSaveReconciliation} />
+                  ))
                 )}
               </div>
-              <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-[#030303] relative border-r border-zinc-800/60">
-                {activeSetup?.imageUrl ? <div className="absolute inset-0 p-3 flex items-center justify-center"><img src={activeSetup.imageUrl} alt={activeSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl bg-[#0a0a0a]" /></div> : <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0"><span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span></div>}
-              </div>
-              <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 min-w-0 p-3 bg-[#030303]"><div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-3 shadow-sm flex flex-col min-h-0"><RichNotesEditor activeSetup={activeSetup} onUpdate={handleUpdateNotes} /></div></div>
-            </div>
-          </div>
-          
-          {/* BOTTOM 50%: OPERATOR'S AUDIT */}
-          <div className="h-1/2 shrink-0 flex flex-col min-h-0 bg-[#050505]">
-            <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]"><h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Activity size={14} className="text-emerald-500" /> Operator's Audit</h2></div>
-            <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
-              <div className="flex-1 border-r border-zinc-800/60 p-6 flex flex-col items-center justify-center relative bg-[#030303]">
-                <div className="w-full max-w-sm flex flex-col gap-4 m-auto shrink-0 text-white">
-                  <div className="flex justify-between items-end mb-2"><h3 className="text-sm font-bold">Log Execution Reality</h3><span className={`text-xs font-bold tracking-widest px-2 py-1 rounded bg-zinc-900 border ${tradesTakenToday >= 2 ? 'border-red-500 text-red-400' : 'border-zinc-700 text-zinc-400'}`}>{tradesTakenToday}/2 TRADES</span></div>
-                  {!logPair ? <div className="h-[46px] border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-zinc-950/50"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Stage a pair</span></div> : <div className="flex items-center justify-between bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-3 shadow-inner"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Target Acquired</span><span className="text-sm font-black text-white tracking-wider">{logPair}</span><button onClick={() => { setLogPair(''); setLogExecution(null); setLogReason(''); }} className="text-zinc-500 hover:text-red-400 transition-colors"><X size={14}/></button></div>}
-                  <div className="flex gap-3">
-                    <button disabled={!logPair || tradesTakenToday >= 2 || isAlreadyLogged} onClick={() => setLogExecution('Perfect')} className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50' : ''} ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 text-zinc-400'}`}><CheckCircle size={20} /><span className="text-[10px] font-bold uppercase tracking-widest text-center leading-tight">Perfect<br/>Execution</span></button>
-                    <button disabled={!logPair || tradesTakenToday >= 2 || isAlreadyLogged} onClick={() => setLogExecution('Imperfect')} className={`flex-1 py-4 border rounded-lg flex flex-col items-center gap-2 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50' : ''} ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.1)]' : 'bg-[#0a0a0a] border-zinc-800 text-zinc-400'}`}><AlertTriangle size={20} /><span className="text-[10px] font-bold uppercase tracking-widest text-center leading-tight">Imperfect<br/>Execution</span></button>
-                  </div>
-                  {logExecution === 'Imperfect' && !isAlreadyLogged && <select value={logReason} onChange={(e) => setLogReason(e.target.value)} className="w-full bg-[#0a0a0a] border border-red-500/30 rounded-lg px-3 py-2.5 text-xs font-bold text-zinc-300 outline-none uppercase"><option value="" disabled>Select Catalyst (Optional)</option><option value="FOMO">FOMO</option><option value="Revenge">Revenge</option><option value="Boredom">Boredom</option><option value="Ignored Plan">Ignored Plan</option></select>}
-                  <button disabled={!logPair || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} onClick={handleLockEntry} className={`w-full py-3 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors ${isAlreadyLogged ? 'bg-zinc-800 text-zinc-500 border border-zinc-700' : 'bg-blue-600 text-white hover:bg-blue-500 disabled:bg-zinc-800'}`}>{isAlreadyLogged ? 'Already Logged Today' : 'Lock Entry'}</button>
-                </div>
-              </div>
-              <div className="flex-[1.2] p-6 overflow-y-auto custom-scrollbar bg-[#050505] min-h-0 min-w-0 text-white">
-                <div className="mb-6 shrink-0"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span></div>
-                <div className="flex flex-col gap-3">
-                  {pendingReconciliation.length === 0 ? (
-                    <div className="text-center py-10 text-zinc-600 border border-dashed border-zinc-800/50 rounded-xl mx-4">
-                      <span className="text-[10px] font-bold uppercase tracking-widest">No pending setups</span>
-                    </div>
-                  ) : (
-                    pendingReconciliation.map((trade) => (
-                      <ReconciliationItem key={trade.id} trade={trade} onSave={handleSaveReconciliation} />
-                    ))
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </div>
       </div>
       
-      {/* RIGHT WORKSPACE: COLLAPSIBLE VAULT */}
-      <div className={`h-full bg-[#080808] border-l border-zinc-800/60 flex flex-col transition-all duration-300 ease-in-out overflow-hidden shrink-0 ${isVaultOpen ? 'w-[280px] lg:w-[320px] opacity-100' : 'w-0 opacity-0 border-l-0'}`}>
-        <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a] text-white"><h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-zinc-400" /> Weekly Vault</h2></div>
+      {/* =========================================
+          RIGHT WORKSPACE: WEEKLY VAULT CARD
+      ========================================= */}
+      <div className={`h-full bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl relative transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'w-[280px] lg:w-[340px] opacity-100' : 'w-0 opacity-0 border-none'}`}>
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-600/50 to-transparent"></div>
+        
+        <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 text-white">
+          <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+            <UploadCloud size={14} className="text-purple-400" /> Weekly Vault
+          </h2>
+        </div>
+        
         <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3 text-white">
-          {weeklySetups.length === 0 ? <div className="text-center p-6 text-zinc-600"><span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span></div> : weeklySetups.map((setup) => (
-              <div key={`weekly-${setup.id}`} className="w-full py-2.5 px-3 border border-zinc-800/50 bg-[#0a0a0a] rounded-lg flex justify-between items-center group shadow-sm hover:border-zinc-600 transition-colors shrink-0">
+          {weeklySetups.length === 0 ? (
+            <div className="text-center p-6 text-zinc-600">
+              <span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span>
+            </div>
+          ) : (
+            weeklySetups.map((setup) => (
+              <div 
+                key={`weekly-${setup.id}`} 
+                className="w-full p-3 border border-zinc-800/80 bg-black rounded-lg flex justify-between items-center group hover:border-zinc-600 transition-colors shrink-0 shadow-sm"
+              >
                 <div className="flex flex-col min-w-0 pr-2">
-                  <span className="text-xs font-bold tracking-wide group-hover:text-white transition-colors truncate">{setup.symbol}</span>
+                  <span className="text-[13px] font-bold tracking-wide text-zinc-300 group-hover:text-white transition-colors truncate">{setup.symbol}</span>
                   <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span>
                 </div>
-                <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={12} /></button>
-                  <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={12} /></button>
-                  <button onClick={() => setConfirmPushId(setup.id)} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2 py-1 rounded flex items-center gap-1">Push <ArrowRight size={10} /></button>
+                <div className="flex items-center gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details">
+                    <Eye size={14} />
+                  </button>
+                  <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400">
+                    <Trash2 size={14} />
+                  </button>
+                  <button onClick={() => setConfirmPushId(setup.id)} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm">
+                    Push <ArrowRight size={12} />
+                  </button>
                 </div>
               </div>
-            ))}
+            ))
+          )}
         </div>
-        <div className="p-3 border-t border-zinc-800/60 bg-[#0a0a0a] shrink-0"><button onClick={() => setIsUploadModalOpen(true)} className="w-full py-2.5 px-4 flex items-center justify-center gap-1.5 border border-dashed border-zinc-700 bg-[#050505] rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all"><Plus size={14} /> Add Weekly Setups</button></div>
+        
+        <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0">
+          <button 
+            onClick={() => setIsUploadModalOpen(true)} 
+            className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none"
+          >
+            <Plus size={14} /> Add Weekly Setups
+          </button>
+        </div>
       </div>
-      
-      {/* MODALS */}
-      {confirmPushId && <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4"><div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl"><h3 className="text-sm font-bold text-white mb-2 uppercase tracking-widest">Confirm Push</h3><p className="text-xs text-zinc-400 mb-6 leading-relaxed">Lock this setup into Today's Focus? Removal is only allowed for the first 60 minutes.</p><div className="flex gap-3"><button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-zinc-900 text-zinc-300 text-[10px] font-bold uppercase hover:bg-zinc-800">Cancel</button><button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-[10px] font-bold uppercase hover:bg-blue-500">Push to Today</button></div></div></div>}
-      
-      {previewSetup && <div onClick={() => setPreviewSetup(null)} className="fixed inset-0 z-[300] bg-black/90 flex items-center justify-center p-8 cursor-zoom-out"><div onClick={e => e.stopPropagation()} className="max-w-5xl w-full max-h-full bg-[#050505] border border-zinc-800/60 rounded-xl shadow-2xl flex flex-col md:flex-row overflow-hidden cursor-default"><div className="flex-[2] bg-[#030303] border-r border-zinc-800/60 p-4 flex items-center justify-center text-white">{previewSetup.imageUrl ? <img src={previewSetup.imageUrl} alt={previewSetup.symbol} className="max-w-full max-h-full object-contain" /> : <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No Image</span>}</div><div className="flex-1 flex flex-col overflow-hidden"><div className="p-4 border-b border-zinc-800/60 flex items-center justify-between bg-[#0a0a0a] shrink-0"><span className="text-sm font-bold text-white tracking-widest">{previewSetup.symbol} Setup</span><button onClick={() => setPreviewSetup(null)} className="text-zinc-500 hover:text-white"><X size={16} /></button></div><div className="p-5 overflow-y-auto custom-scrollbar flex-1 text-xs text-zinc-300 font-medium leading-relaxed text-white" dangerouslySetInnerHTML={{ __html: previewSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} /></div></div></div>}
-      
+
+      {/* =========================================
+          MODALS
+      ========================================= */}
+      {confirmPushId && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+          <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-widest">Confirm Push</h3>
+            <p className="text-xs text-zinc-400 mb-6 leading-relaxed">Lock this setup into Today's Focus? Removal is only allowed for the first 60 minutes.</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 text-[10px] font-bold uppercase hover:bg-zinc-800">Cancel</button>
+              <button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-[10px] font-bold uppercase shadow-md hover:bg-blue-500">Push to Today</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewSetup && (
+        <div onClick={() => setPreviewSetup(null)} className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4 sm:p-8 cursor-zoom-out">
+          <div onClick={e => e.stopPropagation()} className="max-w-6xl w-full h-full max-h-[800px] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden cursor-default">
+            
+            <div className="flex-[2.5] bg-black border-r border-zinc-800 p-4 sm:p-6 flex items-center justify-center relative shadow-inner">
+              {previewSetup.imageUrl ? (
+                <img src={previewSetup.imageUrl} alt={previewSetup.symbol} className="w-full h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl" />
+              ) : (
+                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No Image Data</span>
+              )}
+            </div>
+            
+            <div className="flex-1 flex flex-col min-w-[300px] overflow-hidden bg-zinc-950">
+              <div className="p-5 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between shrink-0">
+                <span className="text-base font-black text-white tracking-widest">{previewSetup.symbol} Setup</span>
+                <button onClick={() => setPreviewSetup(null)} className="text-zinc-500 hover:text-white p-1 bg-black border border-zinc-800 rounded shadow-sm">
+                  <X size={16} />
+                </button>
+              </div>
+              <div 
+                className="p-6 overflow-y-auto custom-scrollbar flex-1 text-[13px] text-zinc-300 font-medium leading-relaxed" 
+                dangerouslySetInnerHTML={{ __html: previewSetup.notes || '<p class="text-zinc-600 italic">No notes logged for this setup.</p>' }} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       <SetupUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} onSave={handleBulkUpload} />
     </div>
   )
