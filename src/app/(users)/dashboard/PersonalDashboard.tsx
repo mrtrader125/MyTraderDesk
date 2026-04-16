@@ -24,13 +24,7 @@ export default function PersonalDashboard() {
   const [todaySetups, setTodaySetups] = useState<any[]>([])
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
 
-  const [weekProgress, setWeekProgress] = useState([
-    { day: 'M', status: 'pending' },
-    { day: 'T', status: 'pending' },
-    { day: 'W', status: 'pending' },
-    { day: 'T', status: 'pending' },
-    { day: 'F', status: 'pending' },
-  ])
+  const [weekProgress, setWeekProgress] = useState<any[]>([])
 
   const [routineStatus, setRoutineStatus] = useState({
     sundayPrep: false,
@@ -90,7 +84,7 @@ export default function PersonalDashboard() {
 
       // 2. Determine Week Boundaries
       const now = new Date()
-      const dayOfWeek = now.getDay() // 0 = Sun, 1 = Mon, ..., 6 = Sat
+      const dayOfWeek = now.getDay() 
       const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
       const startOfWeek = new Date(now.setDate(diffToMonday))
       startOfWeek.setHours(0, 0, 0, 0)
@@ -102,9 +96,9 @@ export default function PersonalDashboard() {
         .eq('user_id', user.id)
         .gte('created_at', startOfWeek.toISOString())
 
-      // 4. Calculate M-F Tracker Status
+      // 4. Calculate Chronological Tracker Status
       const progress = []
-      const days = ['M', 'T', 'W', 'T', 'F']
+      const daysFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
       let currentExecutionStatus: 'perfect' | 'imperfect' | 'pending' = 'pending'
 
       for (let i = 0; i < 5; i++) {
@@ -116,9 +110,11 @@ export default function PersonalDashboard() {
         const dayLogs = logsData?.filter(l => new Date(l.created_at).toDateString() === dateString) || []
 
         let status = 'pending'
+        let isPast = false
+        let isToday = false
         
         if (dateString === todayString) {
-          // It's today
+          isToday = true
           if (dayLogs.length > 0) {
             const hasImperfect = dayLogs.some(l => l.execution_type === 'Imperfect')
             status = hasImperfect ? 'imperfect' : 'perfect'
@@ -127,25 +123,25 @@ export default function PersonalDashboard() {
             status = 'current'
           }
         } else if (targetDate < new Date()) {
-          // It's in the past
+          isPast = true
           if (dayLogs.length === 0) {
-            status = 'missed' // Failed to log execution
+            status = 'missed'
           } else {
             status = dayLogs.some(l => l.execution_type === 'Imperfect') ? 'imperfect' : 'perfect'
           }
         }
 
-        progress.push({ day: days[i], status })
+        progress.push({ day: daysFull[i], status, isPast, isToday })
       }
       setWeekProgress(progress)
 
       // 5. Compute Overall Routine Status
-      const isWeekendNow = new Date().getDay() === 5 || new Date().getDay() === 6 // Friday or Saturday
+      const isWeekendNow = new Date().getDay() === 5 || new Date().getDay() === 6 
       const pendingReconciliations = logsData?.filter(l => !l.is_reconciled) || []
 
       setRoutineStatus({
-        sundayPrep: vaultSetups.length > 0, // Has staged pairs in the vault
-        dailyFiltered: activeSetups.length >= 2, // At least 2 pairs locked for today
+        sundayPrep: vaultSetups.length > 0, 
+        dailyFiltered: activeSetups.length >= 2, 
         execution: currentExecutionStatus,
         weekendWindup: logsData && logsData.length > 0 && pendingReconciliations.length === 0, 
         isWeekend: isWeekendNow
@@ -167,16 +163,8 @@ export default function PersonalDashboard() {
   }, [todaySetups, activeTodayId])
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
-
-  const renderDayStatus = (status: string) => {
-    switch (status) {
-      case 'perfect': return <CheckCircle2 size={12} className="text-emerald-500" />;
-      case 'missed': return <X size={12} className="text-red-500" />;
-      case 'imperfect': return <AlertTriangle size={10} className="text-amber-500" />;
-      case 'current': return <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />;
-      default: return null;
-    }
-  }
+  const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
+  const pastDays = weekProgress.filter(d => d.isPast)
 
   return (
     <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
@@ -216,30 +204,15 @@ export default function PersonalDashboard() {
               </div>
 
               {/* Operating Rhythm (STRICTLY READ-ONLY) */}
-              <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-4 flex flex-col shadow-sm min-h-0">
+              <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0">
                 
                 <div className="flex justify-between items-center mb-4 border-b border-zinc-800/50 pb-3 shrink-0">
                   <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                     <Activity size={14} className="text-blue-500" /> Automated Rhythm Tracker
                   </h3>
-                  
-                  {/* M-F Tracker */}
-                  <div className="flex gap-1.5">
-                    {weekProgress.map((day, idx) => (
-                      <div key={idx} className="flex flex-col items-center gap-1" title={`Status: ${day.status}`}>
-                        <div className={`w-6 h-6 rounded-md flex items-center justify-center border transition-colors ${
-                          day.status === 'current' ? 'border-blue-500/50 bg-blue-500/10' : 
-                          day.status !== 'pending' ? 'border-zinc-800 bg-zinc-900/50' : 
-                          'border-zinc-800/30 bg-transparent text-zinc-700'
-                        }`}>
-                          {day.status === 'pending' ? <span className="text-[9px] font-bold">{day.day}</span> : renderDayStatus(day.status)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
 
-                {/* Automated Checklist */}
+                {/* Chronological Checklist */}
                 <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-2">
                   
                   {/* 1. Sunday Prep */}
@@ -250,55 +223,64 @@ export default function PersonalDashboard() {
                       </div>
                       <div className="flex flex-col">
                         <span className={`text-xs font-bold tracking-wide ${routineStatus.sundayPrep ? 'text-zinc-400 line-through' : 'text-zinc-200'}`}>Weekly Macro Prep</span>
-                        <span className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">Vault Has Active Setups</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* 2. Daily Filter */}
-                  <div className="flex items-center justify-between">
+                  {/* 2. Past Days Log (Inline Boxes) */}
+                  {pastDays.length > 0 && (
+                    <div className="flex flex-wrap gap-2 ml-7">
+                      {pastDays.map(day => (
+                        <div key={day.day} className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-800/20 border border-zinc-700/30 rounded backdrop-blur-sm">
+                          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{day.day}</span>
+                          {day.status === 'perfect' && <CheckCircle2 size={10} className="text-emerald-500" />}
+                          {day.status === 'imperfect' && <AlertTriangle size={10} className="text-amber-500" />}
+                          {day.status === 'missed' && <X size={10} className="text-red-500" />}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 3. Today Filter & Execution */}
+                  <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${routineStatus.dailyFiltered ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700 text-transparent'}`}>
-                        <CheckCircle2 size={12} />
+                      <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${routineStatus.dailyFiltered ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-blue-500/10 border-blue-500/50 text-transparent'}`}>
+                        {routineStatus.dailyFiltered ? <CheckCircle2 size={12} /> : <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
                       </div>
                       <div className="flex flex-col">
-                        <span className={`text-xs font-bold tracking-wide ${routineStatus.dailyFiltered ? 'text-zinc-400 line-through' : 'text-zinc-200'}`}>Daily Filtering</span>
-                        <span className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">2-4 Pairs Locked Today</span>
+                        <span className={`text-xs font-bold tracking-wide text-zinc-200`}>
+                          Today Filtering <span className="text-blue-400/80 ml-1">[{todayName}]</span>
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* 3. Execution Status */}
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between ml-7 border-l-2 border-zinc-800/50 pl-3">
                     <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${
+                      <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center ${
                         routineStatus.execution === 'perfect' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 
                         routineStatus.execution === 'imperfect' ? 'bg-red-500/20 border-red-500 text-red-400' : 
                         'bg-zinc-950 border-zinc-700 text-transparent'
                       }`}>
-                        {routineStatus.execution === 'perfect' ? <CheckCircle2 size={12} /> : routineStatus.execution === 'imperfect' ? <AlertTriangle size={10} /> : null}
+                        {routineStatus.execution === 'perfect' ? <CheckCircle2 size={10} /> : routineStatus.execution === 'imperfect' ? <AlertTriangle size={8} /> : null}
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold tracking-wide text-zinc-200">Execution Grading</span>
-                        <span className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">Trades Logged Today</span>
-                      </div>
+                      <span className="text-xs font-bold tracking-wide text-zinc-400">Execution Grading</span>
                     </div>
                     {routineStatus.execution !== 'pending' && (
-                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-1 rounded ${routineStatus.execution === 'perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${routineStatus.execution === 'perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
                         {routineStatus.execution}
                       </span>
                     )}
                   </div>
 
                   {/* 4. Weekend Journaling */}
-                  <div className={`flex items-center justify-between mt-2 pt-3 border-t border-zinc-800/50 ${!routineStatus.isWeekend ? 'opacity-40 grayscale' : ''}`}>
+                  <div className={`flex items-center justify-between mt-auto pt-3 border-t border-zinc-800/50 ${!routineStatus.isWeekend ? 'opacity-40 grayscale' : ''}`}>
                     <div className="flex items-center gap-3">
                       <div className="w-4 h-4 rounded-sm border bg-zinc-950 border-zinc-700 flex items-center justify-center">
                         {!routineStatus.isWeekend ? <Lock size={10} className="text-zinc-500" /> : routineStatus.weekendWindup && <CheckCircle2 size={12} className="text-emerald-500" />}
                       </div>
                       <div className="flex flex-col">
                         <span className="text-xs font-bold tracking-wide text-zinc-400">Weekend Wind-up</span>
-                        <span className="text-[9px] text-zinc-600 uppercase font-bold tracking-widest">All trades reconciled</span>
                       </div>
                     </div>
                   </div>
@@ -360,13 +342,12 @@ export default function PersonalDashboard() {
                   )}
                 </div>
 
-                {/* PANE 3: Notes Box (HTML Renderer) */}
+                {/* PANE 3: Notes Box */}
                 <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
                   <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
                     {activeSetup ? (
                       <div 
                         className="w-full h-full overflow-y-auto custom-scrollbar text-xs text-zinc-300 leading-relaxed font-medium"
-                        // Renders the rich HTML output saved by the Desk page editor
                         dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} 
                       />
                     ) : (
