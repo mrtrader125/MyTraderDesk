@@ -293,13 +293,6 @@ export default function PersonalDashboard() {
       
       {/* 🔴 LEFT/MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
-        
-        {/* Workspace Header */}
-        <div className="h-10 border-b border-zinc-800/60 bg-[#080808] flex items-center justify-between px-4 shrink-0">
-          <div className="flex items-center gap-3">
-             <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded font-bold uppercase tracking-widest">Live Desk</span>
-          </div>
-        </div>
 
         {/* Inner Content Wrapper: Strictly split 50% Top, 50% Bottom */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
