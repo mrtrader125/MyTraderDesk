@@ -29,7 +29,7 @@ type DraftSetup = {
   notes: string;
 }
 
-// --- MT5 SYNC MODAL ---
+// --- MT5 SYNC MODAL (Now supports CSV & HTML) ---
 function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpen: boolean, onClose: () => void, file: File | null, pendingLogs: any[], onConfirm: (matches: any[]) => void }) {
   const [offsetHours, setOffsetHours] = useState(0)
   const [parsedData, setParsedData] = useState<any[]>([])
@@ -38,49 +38,79 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpe
   useEffect(() => {
     if (file && isOpen) {
       setIsParsing(true)
-      Papa.parse(file, {
-        header: false,
-        skipEmptyLines: true,
-        complete: (results) => {
-          const rows = results.data as string[][]
-          if (rows.length < 2) return setIsParsing(false)
-          
-          // Heuristic indexing since MT5 columns vary by broker
-          const headers = rows[0].map(h => h?.toLowerCase() || '')
-          const idx = {
-            symbol: headers.findIndex(h => h.includes('symbol') || h.includes('item')),
-            profit: headers.findIndex(h => h === 'profit'),
-            time: headers.findIndex(h => h.includes('time')),
-            ticket: headers.findIndex(h => h.includes('position') || h.includes('ticket')),
-            type: headers.findIndex(h => h.includes('type')),
-            sl: headers.findIndex(h => h.includes('s / l') || h.includes('sl')),
-            price: headers.findIndex(h => h === 'price')
-          }
-
-          const validRows = rows.slice(1).filter(r => r[idx.symbol] && r[idx.profit])
-          
-          // Group by Position/Ticket to handle partial closes
-          const positions: Record<string, any> = {}
-          validRows.forEach(row => {
-            const ticket = row[idx.ticket] || Math.random().toString()
-            if (!positions[ticket]) {
-              positions[ticket] = {
-                ticket,
-                symbol: row[idx.symbol].replace(/[^a-zA-Z0-9]/g, '').toUpperCase(), // Clean suffix like GBPUSD.ecn
-                time: row[idx.time],
-                type: row[idx.type]?.toLowerCase(),
-                profit: 0,
-                sl: parseFloat(row[idx.sl]) || 0,
-                entryPrice: parseFloat(row[idx.price]) || 0
-              }
+      
+      // Universal Matrix Processor (Handles both CSV arrays and HTML table arrays)
+      const processMatrix = (rows: string[][]) => {
+        if (rows.length < 2) return setIsParsing(false)
+        
+        // Find the actual header row (MT5 HTML reports often have title rows before the data)
+        let headerIdx = -1;
+        for (let i = 0; i < rows.length; i++) {
+            const str = rows[i].join(' ').toLowerCase();
+            if ((str.includes('symbol') || str.includes('item')) && str.includes('profit') && str.includes('time')) {
+                headerIdx = i;
+                break;
             }
-            positions[ticket].profit += parseFloat(row[idx.profit]) || 0
-          })
-
-          setParsedData(Object.values(positions))
-          setIsParsing(false)
         }
-      })
+        
+        if (headerIdx === -1) return setIsParsing(false);
+
+        const headers = rows[headerIdx].map(h => h?.toLowerCase() || '')
+        const idx = {
+          symbol: headers.findIndex(h => h.includes('symbol') || h.includes('item')),
+          profit: headers.findIndex(h => h === 'profit'),
+          time: headers.findIndex(h => h.includes('time')),
+          ticket: headers.findIndex(h => h.includes('position') || h.includes('ticket') || h.includes('order')),
+          type: headers.findIndex(h => h.includes('type')),
+          sl: headers.findIndex(h => h.includes('s / l') || h.includes('sl')),
+          price: headers.findIndex(h => h === 'price')
+        }
+
+        const dataRows = rows.slice(headerIdx + 1)
+        const validRows = dataRows.filter(r => r[idx.symbol] && r[idx.profit])
+        
+        // Group by Position/Ticket to seamlessly handle partial closes/scaling
+        const positions: Record<string, any> = {}
+        validRows.forEach(row => {
+          const ticket = row[idx.ticket] || Math.random().toString()
+          if (!positions[ticket]) {
+            positions[ticket] = {
+              ticket,
+              symbol: String(row[idx.symbol]).replace(/[^a-zA-Z0-9]/g, '').toUpperCase(),
+              time: row[idx.time],
+              type: String(row[idx.type] || '').toLowerCase(),
+              profit: 0,
+              sl: parseFloat(row[idx.sl]) || 0,
+              entryPrice: parseFloat(row[idx.price]) || 0
+            }
+          }
+          // Clean currency symbols from profit string before parsing
+          const cleanProfit = String(row[idx.profit]).replace(/[^0-9.-]/g, '')
+          positions[ticket].profit += parseFloat(cleanProfit) || 0
+        })
+
+        setParsedData(Object.values(positions))
+        setIsParsing(false)
+      }
+
+      if (file.name.endsWith('.csv')) {
+        Papa.parse(file, {
+          header: false,
+          skipEmptyLines: true,
+          complete: (results) => processMatrix(results.data as string[][])
+        })
+      } else if (file.name.endsWith('.htm') || file.name.endsWith('.html')) {
+        file.text().then(text => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(text, 'text/html');
+            const rows = Array.from(doc.querySelectorAll('tr')).map(tr => 
+                Array.from(tr.querySelectorAll('td, th')).map(td => (td as HTMLElement).innerText.trim())
+            );
+            processMatrix(rows);
+        }).catch(() => setIsParsing(false))
+      } else {
+        setIsParsing(false)
+      }
     }
   }, [file, isOpen])
 
@@ -88,7 +118,6 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpe
     return pendingLogs.map(log => {
       const logTime = new Date(log.created_at).getTime()
       
-      // Find best MT5 match based on Symbol and Adjusted Time
       let bestMatch = null
       let smallestDiff = Infinity
 
@@ -98,19 +127,14 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpe
           const mt5Time = new Date(pos.time.replace(/\./g, '/')).getTime() - (offsetHours * 3600000)
           const diff = Math.abs(logTime - mt5Time)
           
-          // If within 4 hours (14400000 ms), consider it a match
+          // Match if within a 4-hour window
           if (diff < 14400000 && diff < smallestDiff) {
             smallestDiff = diff
-            
-            // Rough RR & Outcome math based on profit
             let outcome = pos.profit > 0 ? 'TP' : (pos.profit < 0 ? 'SL' : 'BE')
             let rr = 0
             if (pos.sl > 0 && pos.entryPrice > 0) {
-              const riskPoints = Math.abs(pos.entryPrice - pos.sl)
-              // If we knew volume/lot size we could do exact RR, but we estimate based on Win/Loss
-              rr = outcome === 'TP' ? 2.0 : (outcome === 'SL' ? -1.0 : 0) // Placeholder logic, requires manual tweak or EA data
+              rr = outcome === 'TP' ? 2.0 : (outcome === 'SL' ? -1.0 : 0) // Automated estimate
             }
-
             bestMatch = { ...pos, outcome, rr, adjustedTime: mt5Time }
           }
         }
@@ -151,7 +175,6 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpe
             <div className="flex flex-col gap-3">
               {matches.map((m, i) => (
                 <div key={i} className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-center bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                  {/* Manual Log */}
                   <div className="flex-1 w-full flex flex-col p-3 bg-zinc-900/30 rounded-lg border border-zinc-800/50">
                     <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">Logged Reality</span>
                     <div className="flex items-center gap-2">
@@ -160,10 +183,7 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpe
                     </div>
                     <span className="text-[10px] text-zinc-400 mt-1">{new Date(m.log.created_at).toLocaleTimeString()}</span>
                   </div>
-
                   <ArrowRight size={16} className="text-zinc-600 hidden sm:block rotate-90 sm:rotate-0" />
-
-                  {/* MT5 Match */}
                   <div className={`flex-1 w-full flex flex-col p-3 rounded-lg border ${m.match ? 'bg-blue-500/5 border-blue-500/30' : 'bg-zinc-900/30 border-dashed border-zinc-800'}`}>
                     <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">MT5 Broker Data</span>
                     {m.match ? (
@@ -249,7 +269,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
       <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px]">
-        {/* Unchanged Vault Upload UI structure */}
         <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
           <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2"><UploadCloud size={16} className="text-purple-500" /> Vault Upload</h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}><X size={18} /></button>
@@ -377,15 +396,8 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase">RR</span>
         </div>
 
-        {/* TRADINGVIEW URL PASTE (Frictionless) */}
         <div className="relative flex-1">
-          <input 
-            type="text" 
-            value={tvUrl} 
-            onChange={e => setTvUrl(e.target.value)} 
-            placeholder="Paste TradingView URL (Alt+S)..." 
-            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-2 text-[10px] font-bold text-zinc-300 outline-none focus:border-blue-500 transition-all placeholder:text-zinc-600"
-          />
+          <input type="text" value={tvUrl} onChange={e => setTvUrl(e.target.value)} placeholder="Paste TradingView URL (Alt+S)..." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-2 text-[10px] font-bold text-zinc-300 outline-none focus:border-blue-500 transition-all placeholder:text-zinc-600" />
           <LinkIcon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
         </div>
 
@@ -409,7 +421,6 @@ export default function DeskClient() {
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
 
-  // Execution State
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
   const [logPair, setLogPair] = useState<string>('') 
   const [logDirection, setLogDirection] = useState<'LONG' | 'SHORT' | null>(null)
@@ -417,7 +428,6 @@ export default function DeskClient() {
   const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
   const [logReason, setLogReason] = useState('')
 
-  // MT5 Sync State
   const [isMT5ModalOpen, setIsMT5ModalOpen] = useState(false)
   const [mt5File, setMt5File] = useState<File | null>(null)
   const mt5InputRef = useRef<HTMLInputElement>(null)
@@ -556,7 +566,6 @@ export default function DeskClient() {
       return log
     }))
     
-    // Background DB Sync for matched data
     matches.forEach(async m => {
       if (m.match) {
         await supabase.from('user_desk_logs').update({ 
@@ -622,7 +631,6 @@ export default function DeskClient() {
           </div>
         </div>
         
-        {/* OPERATOR AUDIT */}
         <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
           <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
@@ -632,7 +640,6 @@ export default function DeskClient() {
 
           <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
             
-            {/* PHASE 1 CAPTURE */}
             <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
               <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
                 <div className="flex justify-between items-end"><h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3><span className={`text-[9px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>{tradesTakenToday}/2 TRADES</span></div>
@@ -652,12 +659,11 @@ export default function DeskClient() {
               </div>
             </div>
 
-            {/* PHASE 2 QUEUE WITH MT5 DRAG AND DROP */}
             <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
                 
-                {/* MT5 DROPZONE */}
+                {/* MT5 DROPZONE ACCEPTS BOTH CSV AND HTM */}
                 {pendingReconciliation.length > 0 && (
                   <div 
                     onDragOver={e => e.preventDefault()} 
@@ -666,8 +672,8 @@ export default function DeskClient() {
                     onClick={() => mt5InputRef.current?.click()}
                   >
                     <DownloadCloud size={14} className="text-blue-500" />
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Sync MT5 CSV</span>
-                    <input type="file" ref={mt5InputRef} accept=".csv" className="hidden" onChange={handleMT5Select} />
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Sync MT5 Report</span>
+                    <input type="file" ref={mt5InputRef} accept=".csv, .htm, .html" className="hidden" onChange={handleMT5Select} />
                   </div>
                 )}
               </div>
@@ -684,7 +690,6 @@ export default function DeskClient() {
         </div>
       </div>
       
-      {/* VAULT DRAWER */}
       <div className={`fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-zinc-950 border-l border-zinc-800 lg:rounded-xl shadow-2xl transition-transform lg:transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-600/50 to-transparent"></div>
         <div className="h-14 lg:h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 text-white"><h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-purple-400" /> Weekly Vault</h2><button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-zinc-500 hover:text-white p-1"><X size={18} /></button></div>
@@ -703,11 +708,9 @@ export default function DeskClient() {
         <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4"><button onClick={() => setIsUploadModalOpen(true)} className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none"><Plus size={14} /> Add Weekly Setups</button></div>
       </div>
 
-      {/* MODALS */}
       <MT5SyncModal isOpen={isMT5ModalOpen} onClose={() => { setIsMT5ModalOpen(false); setMt5File(null); }} file={mt5File} pendingLogs={pendingReconciliation} onConfirm={handleMT5Confirm} />
       <SetupUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} onSave={handleBulkUpload} />
       
-      {/* UI Fallbacks (Confirm Push & Preview) omitted for brevity but remain structurally identical */}
       {confirmPushId && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl">
