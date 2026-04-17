@@ -49,6 +49,9 @@ export default function PersonalDashboard() {
     session: { id: 'session', x: 0, y: 3, w: 3, h: 3, fontIdx: 0 }
   })
   const [draggingId, setDraggingId] = useState<string | null>(null)
+  
+  // THE MISSING LINE:
+  const gridRef = useRef<HTMLDivElement>(null)
 
   const fontStyles = [
     "font-mono font-black tracking-tighter text-zinc-100",   // Strong 1: Terminal
@@ -209,6 +212,7 @@ export default function PersonalDashboard() {
   const handleDragStart = (e: React.DragEvent, id: 'local' | 'session') => {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('widgetId', id)
+    setDraggingId(id)
     
     const target = e.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
@@ -225,6 +229,7 @@ export default function PersonalDashboard() {
   }
 
   const handleDragEnd = (e: React.DragEvent) => {
+    setDraggingId(null)
     const target = e.currentTarget as HTMLElement
     target.style.opacity = '1'
   }
@@ -261,7 +266,7 @@ export default function PersonalDashboard() {
 
       // COLLISION CHECK
       if (checkOverlap(proposedWidget, prev[otherId])) {
-        return prev; // Reject drop, snap back to original position
+        return prev; 
       }
 
       return { ...prev, [id]: proposedWidget }
@@ -300,7 +305,7 @@ export default function PersonalDashboard() {
 
         // COLLISION CHECK
         if (checkOverlap(proposedWidget, prev[otherId])) {
-          return prev; // Act as a solid wall, prevent resizing further in that direction
+          return prev; 
         }
 
         return { ...prev, [id]: proposedWidget }
@@ -371,7 +376,7 @@ export default function PersonalDashboard() {
                 onDrop={handleDropOnGrid}
                 className="w-[60%] shrink-0 min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
               >
-                {/* Background Grid Lines (Static & Pointer Safe) */}
+                {/* Background Grid Lines */}
                 {Array.from({ length: 49 }).map((_, i) => (
                   <div key={`slot-${i}`} className="w-full h-full rounded border border-dashed border-zinc-800/10 pointer-events-none" />
                 ))}
@@ -381,7 +386,7 @@ export default function PersonalDashboard() {
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'local')}
                   onDragEnd={handleDragEnd}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10 ${draggingId === 'local' ? 'pointer-events-none' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${draggingId === 'local' ? 'pointer-events-none' : ''}`}
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
@@ -425,7 +430,7 @@ export default function PersonalDashboard() {
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'session')}
                   onDragEnd={handleDragEnd}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'pointer-events-none' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'pointer-events-none' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
@@ -572,62 +577,4 @@ export default function PersonalDashboard() {
                 <div className="w-48 sm:w-56 shrink-0 border-r border-zinc-800/60 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5">
                   {todaySetups.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
-                      <Target size={20} className="mb-2 opacity-50" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Active</span>
-                    </div>
-                  ) : (
-                    todaySetups.map(setup => (
-                      <div 
-                        key={`today-${setup.id}`}
-                        onClick={() => setActiveTodayId(setup.id)}
-                        className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
-                          activeTodayId === setup.id 
-                            ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
-                            : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
-                        }`}
-                      >
-                        <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
-                          {setup.symbol}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* PANE 2: Chart */}
-                <div className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60">
-                  {activeSetup ? (
-                    <div className="absolute inset-0 p-3 flex items-center justify-center">
-                      <img src={activeSetup.imageUrl} alt={`${activeSetup.symbol} Chart`} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl" />
-                    </div>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center text-zinc-700">
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair to view</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* PANE 3: Notes Box */}
-                <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
-                  <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
-                    {activeSetup ? (
-                      <div 
-                        className="w-full h-full overflow-y-auto custom-scrollbar text-xs text-zinc-300 leading-relaxed font-medium"
-                        dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} 
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-center">
-                        <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
+                      <Target size={20
