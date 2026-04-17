@@ -48,7 +48,6 @@ export default function PersonalDashboard() {
     local: { id: 'local', x: 0, y: 0, w: 3, h: 3, fontIdx: 0 },
     session: { id: 'session', x: 0, y: 3, w: 3, h: 3, fontIdx: 0 }
   })
-  const [draggingId, setDraggingId] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
   const fontStyles = [
@@ -210,7 +209,6 @@ export default function PersonalDashboard() {
   const handleDragStart = (e: React.DragEvent, id: 'local' | 'session') => {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('widgetId', id)
-    setDraggingId(id)
     
     const target = e.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
@@ -223,18 +221,17 @@ export default function PersonalDashboard() {
     e.dataTransfer.setData('offsetX', offsetX.toString())
     e.dataTransfer.setData('offsetY', offsetY.toString())
 
-    setTimeout(() => { target.style.opacity = '0.4' }, 0)
+    // Bypass React state entirely for drag visuals to prevent aborts
+    setTimeout(() => { target.classList.add('opacity-30') }, 0)
   }
 
   const handleDragEnd = (e: React.DragEvent) => {
-    setDraggingId(null)
     const target = e.currentTarget as HTMLElement
-    target.style.opacity = '1'
+    target.classList.remove('opacity-30')
   }
 
   const handleDropOnGrid = (e: React.DragEvent) => {
     e.preventDefault()
-    setDraggingId(null)
     
     const id = e.dataTransfer.getData('widgetId') as 'local' | 'session'
     if (!id || !widgets[id] || !gridRef.current) return
@@ -384,7 +381,7 @@ export default function PersonalDashboard() {
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'local')}
                   onDragEnd={handleDragEnd}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${draggingId === 'local' ? 'pointer-events-none' : ''}`}
+                  className="absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10"
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
@@ -428,7 +425,7 @@ export default function PersonalDashboard() {
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'session')}
                   onDragEnd={handleDragEnd}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'pointer-events-none' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
