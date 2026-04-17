@@ -11,13 +11,11 @@ import {
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown
 } from 'lucide-react'
 
-// Initialize the Next.js SSR Browser Client
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// --- BULK UPLOAD MODAL COMPONENT ---
 type DraftSetup = {
   id: string;
   imageSource: string | null;
@@ -33,7 +31,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
 
-  // FIX: Broadened regex to capture crypto, commodities, and indices (4 to 8 alphanumeric chars)
   const extractInstrument = (text: string) => {
     const match = text.toUpperCase().match(/[A-Z0-9]{4,8}/)
     return match ? match[0] : ''
@@ -196,7 +193,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   )
 }
 
-// FIX: Modernized Rich Text Editor using TipTap to replace deprecated document.execCommand
 function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate: (id: string, notes: string) => void }) {
   const editor = useEditor({
     extensions: [StarterKit],
@@ -308,7 +304,6 @@ function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string
   )
 }
 
-// --- MAIN DESK COMPONENT ---
 export default function DeskClient() {
   const [user, setUser] = useState<any>(null)
   
@@ -319,7 +314,6 @@ export default function DeskClient() {
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   const [previewSetup, setPreviewSetup] = useState<any | null>(null)
   
-  // Supabase State
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
 
@@ -402,12 +396,10 @@ export default function DeskClient() {
     await supabase.from('user_desk_setups').update({ is_today: !setup.isToday, added_to_today_at: null }).eq('id', id)
   }
 
-  // FIX: Robust Supabase Image Deletion Logic using URL extraction
   const deleteSetup = async (id: string) => {
     if (!user) return
     const setupToDelete = setups.find(s => s.id === id);
     if (setupToDelete && setupToDelete.imageUrl && setupToDelete.imageUrl.includes('supabase')) {
-        // Extract exact path from Supabase storage URL regardless of nested folder structure
         const match = setupToDelete.imageUrl.match(/user-desk-images\/(.+)$/);
         if (match && match[1]) {
             await supabase.storage.from('user-desk-images').remove([match[1]]);
