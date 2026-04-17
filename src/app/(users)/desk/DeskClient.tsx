@@ -8,7 +8,7 @@ import StarterKit from '@tiptap/starter-kit'
 import { 
   Plus, X, UploadCloud, Crosshair, 
   Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Camera
 } from 'lucide-react'
 
 const supabase = createBrowserClient(
@@ -16,11 +16,15 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
+
 type DraftSetup = {
   id: string;
   imageSource: string | null;
   file: File | null;
   instrument: string;
+  direction: 'LONG' | 'SHORT' | '';
+  playbook: string;
   notes: string;
 }
 
@@ -44,6 +48,8 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
         imageSource: URL.createObjectURL(file),
         file,
         instrument: extractInstrument(file.name),
+        direction: '',
+        playbook: '',
         notes: ''
       }))
       setDrafts(prev => [...prev, ...newDrafts])
@@ -58,6 +64,8 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
       imageSource: linkInput,
       file: null,
       instrument: extractInstrument(linkInput),
+      direction: '',
+      playbook: '',
       notes: ''
     }
     setDrafts(prev => [...prev, newDraft])
@@ -76,7 +84,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 
   const handleSaveAll = async () => {
     setIsUploading(true)
-    const validDrafts = drafts.filter(d => d.instrument.trim() !== '')
+    const validDrafts = drafts.filter(d => d.instrument.trim() !== '' && d.direction !== '' && d.playbook !== '')
     await onSave(validDrafts)
     setIsUploading(false)
     onClose()
@@ -99,7 +107,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
       <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px]">
         <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
           <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
-            <UploadCloud size={16} className="text-blue-500" /> Bulk Upload Weekly Setups
+            <UploadCloud size={16} className="text-purple-500" /> Vault Upload
           </h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}>
             <X size={18} />
@@ -133,7 +141,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold truncate">{draft.instrument || 'UNKNOWN'}</p>
-                    <p className="text-[9px] text-zinc-500 truncate">{draft.notes ? 'Notes added' : 'No notes'}</p>
+                    <p className="text-[9px] text-zinc-500 truncate">{draft.direction ? `${draft.direction} • ${draft.playbook}` : 'Incomplete'}</p>
                   </div>
                   <button onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} className="text-zinc-600 hover:text-red-400 p-1" disabled={isUploading}><X size={12}/></button>
                 </div>
@@ -143,26 +151,45 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 
           <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
             {drafts.length > 0 && drafts[activeIndex] ? (
-              <div className="p-4 lg:p-6 flex flex-col gap-4 lg:gap-6 max-w-2xl mx-auto w-full text-white">
-                <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center">
+              <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full text-white">
+                <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center mb-2">
                   {drafts[activeIndex].imageSource ? <img src={drafts[activeIndex].imageSource!} alt="Preview" className="w-full h-full object-contain p-2" /> : <ImageIcon className="w-10 h-10 text-zinc-700" />}
                 </div>
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label>
-                  <input 
-                    type="text" value={drafts[activeIndex].instrument}
-                    onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())}
-                    placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold"
-                    disabled={isUploading}
-                  />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label>
+                    <input 
+                      type="text" value={drafts[activeIndex].instrument}
+                      onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())}
+                      placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold"
+                      disabled={isUploading}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Macro Bias</label>
+                    <div className="flex gap-2">
+                      <button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>LONG</button>
+                      <button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>SHORT</button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-2 flex-1">
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Playbook Strategy</label>
+                  <select value={drafts[activeIndex].playbook} onChange={(e) => updateActiveDraft('playbook', e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500" disabled={isUploading}>
+                    <option value="" disabled>Select Core Setup...</option>
+                    {PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-2 flex-1 mt-2">
                   <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label>
                   <textarea 
                     value={drafts[activeIndex].notes}
                     onChange={(e) => updateActiveDraft('notes', e.target.value)}
                     placeholder="Log structural bias, liquidity sweeps, or entry triggers..."
-                    className="w-full min-h-[120px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors resize-none custom-scrollbar"
+                    className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors resize-none custom-scrollbar"
                     disabled={isUploading}
                   />
                 </div>
@@ -181,10 +208,10 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
             <button onClick={onClose} className="px-5 py-2 rounded-lg text-xs font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors" disabled={isUploading}>Cancel</button>
             <button 
               onClick={handleSaveAll}
-              disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '') || isUploading}
-              className="px-6 py-2 rounded-lg bg-blue-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-blue-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500"
+              disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction || !d.playbook) || isUploading}
+              className="px-6 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500"
             >
-              {isUploading ? 'Saving...' : 'Save All to Vault'}
+              {isUploading ? 'Saving...' : 'Save to Vault'}
             </button>
           </div>
         </div>
@@ -253,51 +280,75 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   )
 }
 
-function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string, outcome: string, rr: string) => void }) {
+function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: string, outcome: string, rr: string, afterImageUrl: string, missingReason?: string) => void, user: any }) {
   const [outcome, setOutcome] = useState(''); 
   const [rr, setRr] = useState('');
+  const [missingReason, setMissingReason] = useState('')
+  const [afterImageFile, setAfterImageFile] = useState<File | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const handleSave = async () => {
+    setIsUploading(true)
+    let finalUrl = ''
+    if (afterImageFile && user) {
+      const fileExt = afterImageFile.name.split('.').pop()
+      const fileName = `${trade.id}_after.${fileExt}`
+      const { data, error } = await supabase.storage.from('user-desk-images').upload(`${user.id}/reconciliations/${fileName}`, afterImageFile)
+      if (data) {
+        const { data: publicUrlData } = supabase.storage.from('user-desk-images').getPublicUrl(`${user.id}/reconciliations/${fileName}`)
+        finalUrl = publicUrlData.publicUrl
+      }
+    }
+    await onSave(trade.id, outcome, rr, finalUrl, missingReason)
+    setIsUploading(false)
+  }
+
+  const needsReason = trade.execution === 'Imperfect' && !trade.reason
 
   return (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between shadow-sm shrink-0 hover:border-zinc-700 transition-colors gap-3 sm:gap-2">
-      <div className="flex flex-row sm:flex-col gap-1 w-full sm:w-1/3 min-w-0 pr-2 justify-between sm:justify-start items-center sm:items-start">
-        <div className="flex items-center gap-2 truncate">
-          <span className="text-[11px] font-bold text-zinc-400">{trade.day}</span>
-          <span className="text-xs font-bold text-zinc-200">{trade.symbol}</span>
+    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col gap-4 shadow-sm shrink-0">
+      <div className="flex justify-between items-center border-b border-zinc-800/50 pb-3">
+        <div className="flex items-center gap-3">
+          <span className="text-[13px] font-black text-white">{trade.symbol}</span>
+          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>{trade.direction}</span>
+          <span className="text-[10px] text-zinc-400 font-medium">• {trade.playbook}</span>
         </div>
-        <div className="flex items-center gap-2 truncate">
-          <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded shrink-0 ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-            {trade.execution}
-          </span>
-          {trade.reason && <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest truncate hidden sm:block">• {trade.reason}</span>}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-bold text-zinc-500 hidden sm:block">{trade.day}</span>
+          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{trade.execution}</span>
         </div>
       </div>
 
-      <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 w-full sm:w-auto">
-        <select value={outcome} onChange={e => setOutcome(e.target.value)} className="flex-1 sm:flex-none bg-black border border-zinc-800 rounded-lg px-2 py-1.5 text-[10px] font-bold text-zinc-300 outline-none uppercase w-full sm:w-24 focus:border-blue-500 transition-colors">
+      <div className="flex flex-col sm:flex-row gap-3">
+        {needsReason && (
+          <select value={missingReason} onChange={e => setMissingReason(e.target.value)} className="flex-1 sm:flex-none sm:w-32 bg-black border border-red-500/50 rounded-lg px-2 py-1.5 text-[10px] font-bold text-zinc-300 outline-none uppercase">
+            <option value="">Log Catalyst...</option>
+            <option value="FOMO">FOMO</option>
+            <option value="Revenge">Revenge</option>
+            <option value="Boredom">Boredom</option>
+          </select>
+        )}
+        
+        <select value={outcome} onChange={e => setOutcome(e.target.value)} className="w-full sm:w-28 bg-black border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500">
           <option value="">Outcome</option>
           <option value="TP">Hit TP</option>
           <option value="SL">Hit SL</option>
           <option value="BE">Break Even</option>
         </select>
         
-        <div className="relative flex-1 sm:flex-none w-full sm:w-20">
-          <input 
-            type="number" 
-            value={rr} 
-            onChange={e => setRr(e.target.value)} 
-            placeholder="0.0" 
-            className="w-full bg-black border border-zinc-800 rounded-lg pl-6 pr-2 py-1.5 text-[10px] font-bold text-zinc-300 outline-none placeholder:text-zinc-600 focus:border-blue-500 transition-colors"
-          />
-          <span className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase tracking-widest">RR</span>
+        <div className="relative w-full sm:w-24">
+          <input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className="w-full bg-black border border-zinc-800 rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold text-zinc-300 outline-none focus:border-blue-500" />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase">RR</span>
         </div>
 
-        <button 
-          disabled={!outcome || !rr} 
-          onClick={() => onSave(trade.id, outcome, rr)} 
-          className="p-1.5 px-3 sm:px-1.5 bg-blue-600 hover:bg-blue-500 text-white disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500 rounded-lg transition-colors shadow-sm"
-          title="Save Reconciled Data"
-        >
-          <Save size={12} />
+        <button onClick={() => fileRef.current?.click()} className={`flex flex-1 sm:flex-none items-center justify-center px-4 py-2 border border-dashed rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${afterImageFile ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-white hover:border-blue-500'}`}>
+          <Camera size={14} className="mr-2"/> {afterImageFile ? 'Chart Attached' : 'After Chart'}
+        </button>
+        <input type="file" ref={fileRef} className="hidden" accept="image/*" onChange={e => setAfterImageFile(e.target.files?.[0] || null)} />
+
+        <button disabled={!outcome || !rr || !afterImageFile || (needsReason && !missingReason) || isUploading} onClick={handleSave} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors ml-auto">
+          {isUploading ? 'Saving...' : 'Reconcile'}
         </button>
       </div>
     </div>
@@ -319,6 +370,8 @@ export default function DeskClient() {
 
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
   const [logPair, setLogPair] = useState<string>('') 
+  const [logDirection, setLogDirection] = useState<'LONG' | 'SHORT' | null>(null)
+  const [logPlaybook, setLogPlaybook] = useState('')
   const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
   const [logReason, setLogReason] = useState('')
 
@@ -339,13 +392,13 @@ export default function DeskClient() {
         const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         if (setupsData) {
           setSetups(setupsData.map(d => ({
-            id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null
+            id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null
           })))
         }
         const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).eq('is_reconciled', false).order('created_at', { ascending: false })
         if (logsData) {
           setPendingReconciliation(logsData.map(d => ({
-            id: d.id, day: new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), symbol: d.symbol, execution: d.execution_type, reason: d.reason, rr: d.rr, outcome: d.outcome
+            id: d.id, day: new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), symbol: d.symbol, direction: d.direction, playbook: d.playbook, execution: d.execution_type, reason: d.reason, rr: d.rr, outcome: d.outcome
           })))
           const today = new Date().toDateString()
           const todaysLogs = logsData.filter(d => new Date(d.created_at).toDateString() === today)
@@ -438,7 +491,7 @@ export default function DeskClient() {
          finalImageUrl = null 
       }
 
-      newSetups.push({ user_id: user.id, symbol: draft.instrument, notes: draft.notes, image_url: finalImageUrl, is_today: false })
+      newSetups.push({ user_id: user.id, symbol: draft.instrument, direction: draft.direction, playbook: draft.playbook, notes: draft.notes, image_url: finalImageUrl, is_today: false })
     }
 
     const { data: insertedData, error: dbError } = await supabase.from('user_desk_setups').insert(newSetups).select()
@@ -447,7 +500,7 @@ export default function DeskClient() {
       console.error("Database Insert Error:", dbError)
       alert(`Database Save Failed:\n${dbError.message}`)
     } else if (insertedData) {
-      const formatted = insertedData.map(d => ({ id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url, isToday: false, addedToTodayAt: null }))
+      const formatted = insertedData.map(d => ({ id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url, isToday: false, addedToTodayAt: null }))
       setSetups(prev => [...formatted, ...prev])
     }
   }
@@ -457,22 +510,24 @@ export default function DeskClient() {
   }
 
   const handleLockEntry = async () => {
-    if (tradesTakenToday < 2 && logPair && logExecution && user) {
-      const newLog = { user_id: user.id, symbol: logPair, execution_type: logExecution, reason: logReason || null }
+    if (tradesTakenToday < 2 && logPair && logDirection && logPlaybook && logExecution && user) {
+      const newLog = { user_id: user.id, symbol: logPair, direction: logDirection, playbook: logPlaybook, execution_type: logExecution, reason: logReason || null }
       const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
       if (data && data[0]) {
         setTradesTakenToday(prev => prev + 1);
-        setPendingReconciliation(prev => [{ id: data[0].id, day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }), symbol: data[0].symbol, execution: data[0].execution_type, reason: data[0].reason, rr: '', outcome: '' }, ...prev]);
+        setPendingReconciliation(prev => [{ id: data[0].id, day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }), symbol: data[0].symbol, direction: data[0].direction, playbook: data[0].playbook, execution: data[0].execution_type, reason: data[0].reason, rr: '', outcome: '' }, ...prev]);
       }
-      setLogPair(''); setLogExecution(null); setLogReason('');
+      setLogPair(''); setLogDirection(null); setLogPlaybook(''); setLogExecution(null); setLogReason('');
       setIsAuditOpen(false); 
     }
   }
 
-  const handleSaveReconciliation = async (id: string, outcome: string, rr: string) => {
+  const handleSaveReconciliation = async (id: string, outcome: string, rr: string, afterUrl: string, missingReason?: string) => {
     if (!user) return
+    const updateData: any = { is_reconciled: true, outcome, rr: parseFloat(rr), after_image_url: afterUrl }
+    if (missingReason) updateData.reason = missingReason
     setPendingReconciliation(prev => prev.filter(p => p.id !== id))
-    await supabase.from('user_desk_logs').update({ is_reconciled: true, outcome: outcome || null, rr: rr ? parseFloat(rr) : null }).eq('id', id)
+    await supabase.from('user_desk_logs').update(updateData).eq('id', id)
   }
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
@@ -524,32 +579,40 @@ export default function DeskClient() {
                     <div 
                       key={`today-${setup.id}`} 
                       onClick={() => setActiveTodayId(setup.id)} 
-                      className={`min-w-[140px] lg:min-w-0 p-3 rounded-lg border flex items-center justify-between transition-all cursor-pointer group shrink-0 ${
+                      className={`min-w-[140px] lg:min-w-0 p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${
                         activeTodayId === setup.id 
                           ? 'bg-zinc-800 border-zinc-600 shadow-md' 
                           : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'
                       }`}
                     >
-                      <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
-                        {setup.symbol}
-                      </span>
-                      <div className="flex items-center gap-1.5 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            setLogPair(setup.symbol); 
-                            setIsAuditOpen(true); 
-                          }} 
-                          className="p-1.5 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400 transition-colors" 
-                          title="Stage Execution"
-                        >
-                          <Target size={14} />
-                        </button>
-                        {canRemove && (
-                          <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1.5 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors" title="Remove (1hr limit)">
-                            <ArrowLeft size={14} />
+                      <div className="flex justify-between items-center mb-1">
+                        <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                          {setup.symbol}
+                        </span>
+                        <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => { 
+                              e.stopPropagation(); 
+                              setLogPair(setup.symbol);
+                              setLogDirection(setup.direction);
+                              setLogPlaybook(setup.playbook); 
+                              setIsAuditOpen(true); 
+                            }} 
+                            className="p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400 transition-colors" 
+                            title="Stage Execution"
+                          >
+                            <Target size={12} />
                           </button>
-                        )}
+                          {canRemove && (
+                            <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400 transition-colors" title="Remove (1hr limit)">
+                              <ArrowLeft size={12} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
+                        <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook || 'No Playbook'}</span>
                       </div>
                     </div>
                   )
@@ -599,7 +662,7 @@ export default function DeskClient() {
 
           <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
             
-            <div className="w-full lg:flex-1 border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
+            <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
               <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
                 <div className="flex justify-between items-end">
                   <h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3>
@@ -613,63 +676,66 @@ export default function DeskClient() {
                     <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between bg-black border border-zinc-700 rounded-lg px-4 py-2 shadow-inner">
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400">Target Acquired</span>
-                    <span className="text-[13px] font-black text-white tracking-wider">{logPair}</span>
-                    <button onClick={() => { setLogPair(''); setLogExecution(null); setLogReason(''); }} className="text-zinc-500 hover:text-red-400 transition-colors">
-                      <X size={14}/>
+                  <div className="bg-black border border-zinc-700 rounded-xl p-4 shadow-inner flex flex-col gap-3">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-[16px] font-black text-white tracking-wider">{logPair}</span>
+                      <button onClick={() => { setLogPair(''); setLogDirection(null); setLogPlaybook(''); setLogExecution(null); setLogReason(''); }} className="text-zinc-500 hover:text-red-400 transition-colors">
+                        <X size={14}/>
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Long</button>
+                      <button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Short</button>
+                    </div>
+
+                    <select value={logPlaybook} onChange={(e) => setLogPlaybook(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500">
+                      <option value="" disabled>Select Playbook...</option>
+                      {PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+
+                    <div className="grid grid-cols-2 gap-2 mt-1">
+                      <button onClick={() => setLogExecution('Perfect')} className={`py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}>
+                        <CheckCircle size={16} />
+                        <span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span>
+                      </button>
+                      <button onClick={() => setLogExecution('Imperfect')} className={`py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}>
+                        <AlertTriangle size={16} />
+                        <span className="text-[9px] font-bold uppercase tracking-widest">Imperfect</span>
+                      </button>
+                    </div>
+
+                    {logExecution === 'Imperfect' && !isAlreadyLogged && (
+                      <select 
+                        value={logReason}
+                        onChange={(e) => setLogReason(e.target.value)}
+                        className="w-full bg-zinc-900 border border-red-500/30 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-red-500/80 transition-colors mt-1"
+                      >
+                        <option value="" disabled>Catalyst (Can skip to Weekend)</option>
+                        <option value="FOMO">FOMO / Rushed Entry</option>
+                        <option value="Revenge">Revenge Trading</option>
+                        <option value="Boredom">Boredom / Forced Setup</option>
+                        <option value="Ignored Plan">Ignored Trading Plan</option>
+                      </select>
+                    )}
+
+                    <button 
+                      disabled={!logDirection || !logPlaybook || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged}
+                      onClick={handleLockEntry}
+                      className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 ${
+                        isAlreadyLogged 
+                          ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' 
+                          : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'
+                      }`}
+                    >
+                      {isAlreadyLogged ? 'Already Logged Today' : 'Lock Entry'}
                     </button>
                   </div>
                 )}
-
-                <div className="flex gap-2">
-                  <button 
-                    disabled={!logPair || tradesTakenToday >= 2 || isAlreadyLogged}
-                    onClick={() => setLogExecution('Perfect')}
-                    className={`flex-1 py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50' : ''} ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-black border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
-                  >
-                    <CheckCircle size={16} />
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-center leading-tight">Perfect<br/>Execution</span>
-                  </button>
-                  <button 
-                    disabled={!logPair || tradesTakenToday >= 2 || isAlreadyLogged}
-                    onClick={() => setLogExecution('Imperfect')}
-                    className={`flex-1 py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${!logPair || isAlreadyLogged ? 'opacity-50' : ''} ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-black border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
-                  >
-                    <AlertTriangle size={16} />
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-center leading-tight">Imperfect<br/>Execution</span>
-                  </button>
-                </div>
-
-                {logExecution === 'Imperfect' && !isAlreadyLogged && (
-                  <select 
-                    value={logReason}
-                    onChange={(e) => setLogReason(e.target.value)}
-                    className="w-full bg-black border border-red-500/30 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-red-500/80 transition-colors shadow-inner"
-                  >
-                    <option value="" disabled>Select Catalyst (Optional)</option>
-                    <option value="FOMO">FOMO / Rushed Entry</option>
-                    <option value="Revenge">Revenge Trading</option>
-                    <option value="Boredom">Boredom / Forced Setup</option>
-                    <option value="Ignored Plan">Ignored Trading Plan</option>
-                  </select>
-                )}
-
-                <button 
-                  disabled={!logPair || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged}
-                  onClick={handleLockEntry}
-                  className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors ${
-                    isAlreadyLogged 
-                      ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' 
-                      : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'
-                  }`}
-                >
-                  {isAlreadyLogged ? 'Already Logged Today' : 'Lock Entry'}
-                </button>
               </div>
             </div>
 
-            <div className="w-full lg:flex-[1.2] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
+            <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
               <div className="mb-3 shrink-0 flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
               </div>
@@ -681,7 +747,7 @@ export default function DeskClient() {
                   </div>
                 ) : (
                   pendingReconciliation.map((trade) => (
-                    <ReconciliationItem key={trade.id} trade={trade} onSave={handleSaveReconciliation} />
+                    <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />
                   ))
                 )}
               </div>
