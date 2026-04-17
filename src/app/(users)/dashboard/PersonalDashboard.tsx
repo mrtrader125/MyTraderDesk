@@ -3,10 +3,11 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import Link from 'next/link'
 import { 
   Crosshair, CheckCircle2, Clock, 
   Target, Globe2, Activity, Lock, X, AlertTriangle, Type,
-  ChevronLeft, ChevronRight
+  ChevronLeft, ChevronRight, BookOpen
 } from 'lucide-react'
 
 const supabase = createBrowserClient(
@@ -513,10 +514,17 @@ export default function PersonalDashboard() {
               </div>
 
               <div className="w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0">
+                {/* --- ADDED JOURNAL LINK HERE --- */}
                 <div className="flex justify-between items-center mb-4 border-b border-zinc-800/50 pb-3 shrink-0">
                   <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                     <Activity size={14} className="text-blue-500" /> Routine Tracker
                   </h3>
+                  <Link 
+                    href="/journal" 
+                    className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded transition-colors border border-purple-500/20 shadow-sm"
+                  >
+                    <BookOpen size={10} /> Journal
+                  </Link>
                 </div>
 
                 <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-2">
