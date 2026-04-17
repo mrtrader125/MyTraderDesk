@@ -18,6 +18,25 @@ type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx:
 
 const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v4'
 
+// Hard sanitize loaded layouts to prevent JS string concatenation bugs in collision math
+const sanitizeLayout = (data: any) => {
+  if (!data || !data.local || !data.session) return null;
+  return {
+    local: { 
+      id: 'local', 
+      x: Number(data.local.x) || 0, y: Number(data.local.y) || 0, 
+      w: Number(data.local.w) || 3, h: Number(data.local.h) || 3, 
+      fontIdx: Number(data.local.fontIdx) || 0 
+    },
+    session: { 
+      id: 'session', 
+      x: Number(data.session.x) || 0, y: Number(data.session.y) || 3, 
+      w: Number(data.session.w) || 3, h: Number(data.session.h) || 3, 
+      fontIdx: Number(data.session.fontIdx) || 0 
+    }
+  }
+}
+
 export default function PersonalDashboard() {
   const [mounted, setMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -57,26 +76,28 @@ export default function PersonalDashboard() {
     "font-sans font-thin tracking-widest text-zinc-400"      
   ]
 
-  // FIX: Cloud-Synced Layout Engine (Loads from user_metadata, falls back to localStorage)
   useEffect(() => {
     const loadLayout = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user?.user_metadata?.desk_layout) {
-          setWidgets(user.user_metadata.desk_layout)
-          setLayoutLoaded(true)
-          return
+          const sanitized = sanitizeLayout(user.user_metadata.desk_layout)
+          if (sanitized) {
+            setWidgets(sanitized)
+            setLayoutLoaded(true)
+            return 
+          }
         }
       } catch (e) {
         console.error("Failed to load layout from cloud", e)
       }
 
-      // Local fallback
       const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY)
       if (savedLayout) {
         try {
           const parsed = JSON.parse(savedLayout)
-          if (parsed.local && parsed.session) setWidgets(parsed)
+          const sanitized = sanitizeLayout(parsed)
+          if (sanitized) setWidgets(sanitized)
         } catch (e) {
           console.error("Failed to load playground layout from local", e)
         }
@@ -86,14 +107,11 @@ export default function PersonalDashboard() {
     loadLayout()
   }, [])
 
-  // FIX: Debounced Cloud Save + Local Save
   useEffect(() => {
     if (!layoutLoaded) return;
     
-    // Always save local instantly for perceived performance
     localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(widgets))
 
-    // Debounce cloud save to prevent rate-limiting Supabase Auth APIs
     const timeoutId = setTimeout(async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -236,7 +254,6 @@ export default function PersonalDashboard() {
   const handleDragStart = (e: React.DragEvent, id: 'local' | 'session') => {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('widgetId', id)
-    setDraggingId(id)
     
     const target = e.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
@@ -249,17 +266,19 @@ export default function PersonalDashboard() {
     e.dataTransfer.setData('offsetX', offsetX.toString())
     e.dataTransfer.setData('offsetY', offsetY.toString())
 
-    setTimeout(() => { target.style.opacity = '0.4' }, 0)
+    // Defer state update so HTML5 drag API can capture the clean visual state first
+    requestAnimationFrame(() => {
+      setDraggingId(id)
+    })
   }
 
   const handleDragEnd = (e: React.DragEvent) => {
     setDraggingId(null)
-    const target = e.currentTarget as HTMLElement
-    target.style.opacity = '1'
   }
 
   const handleDropOnGrid = (e: React.DragEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     setDraggingId(null)
     
     const id = e.dataTransfer.getData('widgetId') as 'local' | 'session'
@@ -402,7 +421,9 @@ export default function PersonalDashboard() {
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'local')}
                   onDragEnd={handleDragEnd}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10 ${draggingId === 'local' ? 'pointer-events-none' : ''}`}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDropOnGrid}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${draggingId === 'local' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''}`}
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
@@ -411,7 +432,7 @@ export default function PersonalDashboard() {
                   }}
                 >
                   <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10">
-                    <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none">
+                    <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none pointer-events-none">
                       <Clock size={10} className="opacity-50"/> Local Time
                     </div>
                     <button 
@@ -445,7 +466,9 @@ export default function PersonalDashboard() {
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'session')}
                   onDragEnd={handleDragEnd}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'pointer-events-none' : ''}`}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={handleDropOnGrid}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
@@ -456,7 +479,7 @@ export default function PersonalDashboard() {
                   <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-0"></div>
                   
                   <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10 relative">
-                    <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none">
+                    <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none pointer-events-none">
                       <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
                     </div>
                     <button 
