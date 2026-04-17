@@ -16,7 +16,7 @@ const supabase = createBrowserClient(
 
 type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx: number }
 
-const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v3'
+const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v4'
 
 export default function PersonalDashboard() {
   const [mounted, setMounted] = useState(false)
@@ -48,7 +48,7 @@ export default function PersonalDashboard() {
     local: { id: 'local', x: 0, y: 0, w: 3, h: 3, fontIdx: 0 },
     session: { id: 'session', x: 0, y: 3, w: 3, h: 3, fontIdx: 0 }
   })
-  const gridRef = useRef<HTMLDivElement>(null)
+  const [draggingId, setDraggingId] = useState<string | null>(null)
 
   const fontStyles = [
     "font-mono font-black tracking-tighter text-zinc-100",   // Strong 1: Terminal
@@ -194,13 +194,22 @@ export default function PersonalDashboard() {
     else if (todaySetups.length === 0) setActiveTodayId(null)
   }, [todaySetups, activeTodayId])
 
-  // --- FLAWLESS PLAYGROUND DRAG & RESIZE LOGIC ---
+  // --- COLLISION ENGINE ---
+  const checkOverlap = (rect1: Omit<Widget, 'id' | 'fontIdx'>, rect2: Omit<Widget, 'id' | 'fontIdx'>) => {
+    return (
+      rect1.x < rect2.x + rect2.w &&
+      rect1.x + rect1.w > rect2.x &&
+      rect1.y < rect2.y + rect2.h &&
+      rect1.y + rect1.h > rect2.y
+    )
+  }
+
+  // --- FLAWLESS PLAYGROUND DRAG & RESIZE LOGIC (7x7 GRID) ---
 
   const handleDragStart = (e: React.DragEvent, id: 'local' | 'session') => {
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('widgetId', id)
     
-    // Calculate precise internal offset so it doesn't jump
     const target = e.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
     const cellW = rect.width / widgets[id].w
@@ -212,10 +221,7 @@ export default function PersonalDashboard() {
     e.dataTransfer.setData('offsetX', offsetX.toString())
     e.dataTransfer.setData('offsetY', offsetY.toString())
 
-    // Ghosting effect applied AFTER native drag initializes
-    setTimeout(() => {
-      target.style.opacity = '0.4'
-    }, 0)
+    setTimeout(() => { target.style.opacity = '0.4' }, 0)
   }
 
   const handleDragEnd = (e: React.DragEvent) => {
@@ -225,6 +231,7 @@ export default function PersonalDashboard() {
 
   const handleDropOnGrid = (e: React.DragEvent) => {
     e.preventDefault()
+    setDraggingId(null)
     
     const id = e.dataTransfer.getData('widgetId') as 'local' | 'session'
     if (!id || !widgets[id] || !gridRef.current) return
@@ -233,8 +240,6 @@ export default function PersonalDashboard() {
     const offsetY = parseInt(e.dataTransfer.getData('offsetY') || '0')
 
     const gridRect = gridRef.current.getBoundingClientRect()
-    
-    // Calculate global cell coordinates
     const cellW = gridRect.width / 7
     const cellH = gridRect.height / 7
     const dropCellX = Math.floor((e.clientX - gridRect.left) / cellW)
@@ -244,18 +249,22 @@ export default function PersonalDashboard() {
       const w = prev[id].w
       const h = prev[id].h
       
-      // Subtract internal offset to find the new origin
       const finalX = dropCellX - offsetX
       const finalY = dropCellY - offsetY
 
-      // Strictly enforce boundaries
+      // Boundaries
       const safeX = Math.max(0, Math.min(finalX, 7 - w))
       const safeY = Math.max(0, Math.min(finalY, 7 - h))
 
-      return {
-        ...prev,
-        [id]: { ...prev[id], x: safeX, y: safeY }
+      const proposedWidget = { ...prev[id], x: safeX, y: safeY }
+      const otherId = id === 'local' ? 'session' : 'local'
+
+      // COLLISION CHECK
+      if (checkOverlap(proposedWidget, prev[otherId])) {
+        return prev; // Reject drop, snap back to original position
       }
+
+      return { ...prev, [id]: proposedWidget }
     })
   }
 
@@ -285,10 +294,17 @@ export default function PersonalDashboard() {
       const newW = Math.max(1, Math.min(7 - startWidget.x, startWidget.w + deltaW))
       const newH = Math.max(1, Math.min(7 - startWidget.y, startWidget.h + deltaH))
 
-      setWidgets(prev => ({
-        ...prev,
-        [id]: { ...prev[id], w: newW, h: newH }
-      }))
+      setWidgets(prev => {
+        const proposedWidget = { ...prev[id], w: newW, h: newH }
+        const otherId = id === 'local' ? 'session' : 'local'
+
+        // COLLISION CHECK
+        if (checkOverlap(proposedWidget, prev[otherId])) {
+          return prev; // Act as a solid wall, prevent resizing further in that direction
+        }
+
+        return { ...prev, [id]: proposedWidget }
+      })
     }
 
     const onPointerUp = (upEvent: PointerEvent) => {
@@ -365,7 +381,7 @@ export default function PersonalDashboard() {
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'local')}
                   onDragEnd={handleDragEnd}
-                  className="absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10"
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10 ${draggingId === 'local' ? 'pointer-events-none' : ''}`}
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
@@ -409,7 +425,7 @@ export default function PersonalDashboard() {
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'session')}
                   onDragEnd={handleDragEnd}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'pointer-events-none' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
