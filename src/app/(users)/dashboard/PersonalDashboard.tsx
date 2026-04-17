@@ -174,7 +174,7 @@ export default function PersonalDashboard() {
       const activeSetups = setupsData?.filter(s => s.is_today) || []
       const vaultSetups = setupsData?.filter(s => !s.is_today) || []
 
-      setTodaySetups(activeSetups.map(d => ({ id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url })))
+      setTodaySetups(activeSetups.map(d => ({ id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url })))
 
       const now = new Date()
       const dayOfWeek = now.getDay() 
@@ -266,7 +266,6 @@ export default function PersonalDashboard() {
     e.dataTransfer.setData('offsetX', offsetX.toString())
     e.dataTransfer.setData('offsetY', offsetY.toString())
 
-    // Defer state update so HTML5 drag API can capture the clean visual state first
     requestAnimationFrame(() => {
       setDraggingId(id)
     })
@@ -630,15 +629,19 @@ export default function PersonalDashboard() {
                       <div 
                         key={`today-${setup.id}`}
                         onClick={() => setActiveTodayId(setup.id)}
-                        className={`p-2.5 rounded-lg border flex items-center justify-between transition-all cursor-pointer group ${
+                        className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group ${
                           activeTodayId === setup.id 
                             ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
                             : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
                         }`}
                       >
-                        <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                        <span className={`text-sm font-bold tracking-wider mb-1 ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                           {setup.symbol}
                         </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
+                          <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook || 'No Playbook'}</span>
+                        </div>
                       </div>
                     ))
                   )}
