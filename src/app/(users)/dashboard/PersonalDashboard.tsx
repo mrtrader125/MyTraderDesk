@@ -48,6 +48,7 @@ export default function PersonalDashboard() {
     local: { id: 'local', x: 0, y: 0, w: 3, h: 3, fontIdx: 0 },
     session: { id: 'session', x: 0, y: 3, w: 3, h: 3, fontIdx: 0 }
   })
+  const [draggingId, setDraggingId] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
   const fontStyles = [
@@ -196,16 +197,52 @@ export default function PersonalDashboard() {
 
   // --- PLAYGROUND DRAG & RESIZE LOGIC (7x7 GRID) ---
 
-  const handleDrop = (e: React.DragEvent, targetX: number, targetY: number) => {
+  const handleDragStart = (e: React.DragEvent, id: 'local' | 'session') => {
+    setDraggingId(id)
+    e.dataTransfer.setData('widgetId', id)
+    
+    // Calculate the precise cell offset of where the user clicked inside the card
+    const target = e.currentTarget as HTMLElement
+    const rect = target.getBoundingClientRect()
+    const cellW = rect.width / widgets[id].w
+    const cellH = rect.height / widgets[id].h
+    
+    const offsetX = Math.floor((e.clientX - rect.left) / cellW)
+    const offsetY = Math.floor((e.clientY - rect.top) / cellH)
+    
+    e.dataTransfer.setData('offsetX', offsetX.toString())
+    e.dataTransfer.setData('offsetY', offsetY.toString())
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDraggingId(null)
+    
     const id = e.dataTransfer.getData('widgetId') as 'local' | 'session'
-    if (!id || !widgets[id]) return
+    if (!id || !widgets[id] || !gridRef.current) return
+
+    const offsetX = parseInt(e.dataTransfer.getData('offsetX') || '0')
+    const offsetY = parseInt(e.dataTransfer.getData('offsetY') || '0')
+
+    const gridRect = gridRef.current.getBoundingClientRect()
+    const cellW = gridRect.width / 7
+    const cellH = gridRect.height / 7
+
+    // Calculate grid cell based on absolute mouse drop coordinate relative to grid
+    const dropCellX = Math.floor((e.clientX - gridRect.left) / cellW)
+    const dropCellY = Math.floor((e.clientY - gridRect.top) / cellH)
 
     setWidgets(prev => {
       const w = prev[id].w
       const h = prev[id].h
-      // Enforce strictly within 7x7 bounds
-      const safeX = Math.max(0, Math.min(targetX, 7 - w))
-      const safeY = Math.max(0, Math.min(targetY, 7 - h))
+      
+      // Subtract the offset to find the top-left origin cell
+      const finalX = dropCellX - offsetX
+      const finalY = dropCellY - offsetY
+
+      // Enforce boundaries strictly
+      const safeX = Math.max(0, Math.min(finalX, 7 - w))
+      const safeY = Math.max(0, Math.min(finalY, 7 - h))
 
       return {
         ...prev,
@@ -227,7 +264,6 @@ export default function PersonalDashboard() {
     const startWidget = { ...widgets[id] }
     
     const { width, height } = gridRef.current.getBoundingClientRect()
-    // 7x7 Grid metrics
     const cellW = width / 7
     const cellH = height / 7
 
@@ -238,7 +274,6 @@ export default function PersonalDashboard() {
       const deltaW = Math.round(dx / cellW)
       const deltaH = Math.round(dy / cellH)
 
-      // Respect strict 7x7 grid boundaries
       const newW = Math.max(1, Math.min(7 - startWidget.x, startWidget.w + deltaW))
       const newH = Math.max(1, Math.min(7 - startWidget.y, startWidget.h + deltaH))
 
@@ -271,8 +306,6 @@ export default function PersonalDashboard() {
   const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
   const pastDays = weekProgress.filter(d => d.isPast)
 
-  // Fluid typography using completely native CSS Container Queries
-  // This guarantees the text scales to the card size without ever pushing the card boundaries
   const formatTime = (timeStr: string, fontIdx: number) => {
     if (!timeStr) return '--:--:--'
     const [timeStrOnly, period] = timeStr.split(' ')
@@ -281,7 +314,6 @@ export default function PersonalDashboard() {
     return (
       <div 
         className={`flex items-baseline justify-center ${fontStyles[fontIdx]} select-none whitespace-nowrap tabular-nums leading-none`}
-        // Font size perfectly bounds to 13% of width or 40% of height, whichever safely fits.
         style={{ fontSize: 'min(13cqi, 40cqb)' }}
       >
         {parts.map((p, i) => (
@@ -311,39 +343,21 @@ export default function PersonalDashboard() {
               {/* 60% Workspace Playground (7x7 Grid) */}
               <div 
                 ref={gridRef}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={handleDrop}
                 className="w-[60%] shrink-0 min-h-0 grid grid-cols-7 grid-rows-7 gap-2 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
               >
-                {/* Background Drop Slots */}
-                {Array.from({ length: 49 }).map((_, i) => {
-                  const x = i % 7
-                  const y = Math.floor(i / 7)
-                  return (
-                    <div 
-                      key={`slot-${i}`}
-                      className="w-full h-full rounded border border-dashed border-zinc-800/10"
-                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-zinc-800/20') }}
-                      onDragLeave={(e) => { e.currentTarget.classList.remove('bg-zinc-800/20') }}
-                      onDrop={(e) => {
-                        e.preventDefault()
-                        e.currentTarget.classList.remove('bg-zinc-800/20')
-                        handleDrop(e, x, y)
-                      }}
-                    />
-                  )
-                })}
+                {/* Background Grid Lines (Static) */}
+                {Array.from({ length: 49 }).map((_, i) => (
+                  <div key={`slot-${i}`} className="w-full h-full rounded border border-dashed border-zinc-800/10 pointer-events-none" />
+                ))}
 
                 {/* Local Time Widget */}
-                {/* Removed absolute width bloating by setting width/height to 100% of the spanned grid cells */}
                 <div 
                   draggable 
-                  onDragStart={(e) => {
-                     e.dataTransfer.setData('widgetId', 'local')
-                     const target = e.target as HTMLElement;
-                     target.style.opacity = '0.4';
-                     setTimeout(() => target.style.opacity = '1', 0);
-                  }}
-                  onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; }}
-                  className="absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color] z-10"
+                  onDragStart={(e) => handleDragStart(e, 'local')}
+                  onDragEnd={() => setDraggingId(null)}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${draggingId === 'local' ? 'opacity-30 scale-[0.98] pointer-events-none' : ''}`}
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
@@ -368,7 +382,7 @@ export default function PersonalDashboard() {
                   </div>
                   
                   {/* Dynamic Body Row using Native Container Queries */}
-                  <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-0" style={{ containerType: 'size' }}>
+                  <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-0 pointer-events-none" style={{ containerType: 'size' }}>
                     {mounted && time 
                       ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), widgets.local.fontIdx) 
                       : formatTime('--:--:--', widgets.local.fontIdx)}
@@ -388,14 +402,9 @@ export default function PersonalDashboard() {
                 {/* Active Session Widget */}
                 <div 
                   draggable 
-                  onDragStart={(e) => {
-                     e.dataTransfer.setData('widgetId', 'session')
-                     const target = e.target as HTMLElement;
-                     target.style.opacity = '0.4';
-                     setTimeout(() => target.style.opacity = '1', 0);
-                  }}
-                  onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; }}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color] z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''}`}
+                  onDragStart={(e) => handleDragStart(e, 'session')}
+                  onDragEnd={() => setDraggingId(null)}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'opacity-30 scale-[0.98] pointer-events-none' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
@@ -422,7 +431,7 @@ export default function PersonalDashboard() {
                   </div>
 
                   {/* Dynamic Body Row using Native Container Queries */}
-                  <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-10" style={{ containerType: 'size' }}>
+                  <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-10 pointer-events-none" style={{ containerType: 'size' }}>
                     {formatTime(sessionInfo.localTime, widgets.session.fontIdx)}
                   </div>
                   
