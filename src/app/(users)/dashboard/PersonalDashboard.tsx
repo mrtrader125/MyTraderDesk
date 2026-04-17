@@ -9,7 +9,6 @@ import {
   ChevronLeft, ChevronRight
 } from 'lucide-react'
 
-// Initialize the Next.js SSR Browser Client
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -24,7 +23,6 @@ export default function PersonalDashboard() {
   const [isLoading, setIsLoading] = useState(true)
   const [layoutLoaded, setLayoutLoaded] = useState(false)
   
-  // --- REAL SUPABASE DATABASE STATE ---
   const [todaySetups, setTodaySetups] = useState<any[]>([])
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
   const [weekProgress, setWeekProgress] = useState<any[]>([])
@@ -36,10 +34,8 @@ export default function PersonalDashboard() {
     isWeekend: false
   })
 
-  // --- COLLAPSIBLE WORKSPACE STATE ---
   const [isTodayFocusExpanded, setIsTodayFocusExpanded] = useState(true)
 
-  // --- TIME & SESSION STATE ---
   const [time, setTime] = useState<Date | null>(null) 
   const [sessionInfo, setSessionInfo] = useState({ 
     name: 'Determining...', 
@@ -47,7 +43,6 @@ export default function PersonalDashboard() {
     isOverlap: false 
   })
 
-  // --- PLAYGROUND STATE (7x7 Grid) ---
   const [widgets, setWidgets] = useState<{local: Widget, session: Widget}>({
     local: { id: 'local', x: 0, y: 0, w: 3, h: 3, fontIdx: 0 },
     session: { id: 'session', x: 0, y: 3, w: 3, h: 3, fontIdx: 0 }
@@ -56,34 +51,65 @@ export default function PersonalDashboard() {
   const gridRef = useRef<HTMLDivElement>(null)
 
   const fontStyles = [
-    "font-mono font-black tracking-tighter text-zinc-100",   // Strong 1: Terminal
-    "font-sans font-extrabold tracking-tight text-white",    // Strong 2: Modern Heavy
-    "font-serif font-light tracking-wide text-zinc-300",     // Minimal 1: Editorial
-    "font-sans font-thin tracking-widest text-zinc-400"      // Minimal 2: Ultra Clean
+    "font-mono font-black tracking-tighter text-zinc-100",   
+    "font-sans font-extrabold tracking-tight text-white",    
+    "font-serif font-light tracking-wide text-zinc-300",     
+    "font-sans font-thin tracking-widest text-zinc-400"      
   ]
 
-  // Load Saved Layout
+  // FIX: Cloud-Synced Layout Engine (Loads from user_metadata, falls back to localStorage)
   useEffect(() => {
-    const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY)
-    if (savedLayout) {
+    const loadLayout = async () => {
       try {
-        const parsed = JSON.parse(savedLayout)
-        if (parsed.local && parsed.session) setWidgets(parsed)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user?.user_metadata?.desk_layout) {
+          setWidgets(user.user_metadata.desk_layout)
+          setLayoutLoaded(true)
+          return
+        }
       } catch (e) {
-        console.error("Failed to load playground layout", e)
+        console.error("Failed to load layout from cloud", e)
       }
+
+      // Local fallback
+      const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY)
+      if (savedLayout) {
+        try {
+          const parsed = JSON.parse(savedLayout)
+          if (parsed.local && parsed.session) setWidgets(parsed)
+        } catch (e) {
+          console.error("Failed to load playground layout from local", e)
+        }
+      }
+      setLayoutLoaded(true)
     }
-    setLayoutLoaded(true)
+    loadLayout()
   }, [])
 
-  // Save Layout Changes
+  // FIX: Debounced Cloud Save + Local Save
   useEffect(() => {
-    if (layoutLoaded) {
-      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(widgets))
-    }
+    if (!layoutLoaded) return;
+    
+    // Always save local instantly for perceived performance
+    localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(widgets))
+
+    // Debounce cloud save to prevent rate-limiting Supabase Auth APIs
+    const timeoutId = setTimeout(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase.auth.updateUser({
+            data: { desk_layout: widgets }
+          })
+        }
+      } catch (e) {
+        console.error("Failed to sync layout to cloud", e)
+      }
+    }, 2000)
+
+    return () => clearTimeout(timeoutId)
   }, [widgets, layoutLoaded])
 
-  // Set Local Time and Overlap Session Logic
   useEffect(() => {
     setMounted(true)
     const timer = setInterval(() => {
@@ -117,7 +143,6 @@ export default function PersonalDashboard() {
     return () => clearInterval(timer)
   }, [])
 
-  // Fetch Supabase Data & Calculate Rhythm
   useEffect(() => {
     const fetchDashboardData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -199,7 +224,6 @@ export default function PersonalDashboard() {
     else if (todaySetups.length === 0) setActiveTodayId(null)
   }, [todaySetups, activeTodayId])
 
-  // --- COLLISION ENGINE ---
   const checkOverlap = (rect1: Omit<Widget, 'id' | 'fontIdx'>, rect2: Omit<Widget, 'id' | 'fontIdx'>) => {
     return (
       rect1.x < rect2.x + rect2.w &&
@@ -208,8 +232,6 @@ export default function PersonalDashboard() {
       rect1.y + rect1.h > rect2.y
     )
   }
-
-  // --- FLAWLESS PLAYGROUND DRAG & RESIZE LOGIC (7x7 GRID) ---
 
   const handleDragStart = (e: React.DragEvent, id: 'local' | 'session') => {
     e.dataTransfer.effectAllowed = 'move'
@@ -259,14 +281,12 @@ export default function PersonalDashboard() {
       const finalX = dropCellX - offsetX
       const finalY = dropCellY - offsetY
 
-      // Boundaries
       const safeX = Math.max(0, Math.min(finalX, 7 - w))
       const safeY = Math.max(0, Math.min(finalY, 7 - h))
 
       const proposedWidget = { ...prev[id], x: safeX, y: safeY }
       const otherId = id === 'local' ? 'session' : 'local'
 
-      // COLLISION CHECK
       if (checkOverlap(proposedWidget, prev[otherId])) {
         return prev; 
       }
@@ -305,7 +325,6 @@ export default function PersonalDashboard() {
         const proposedWidget = { ...prev[id], w: newW, h: newH }
         const otherId = id === 'local' ? 'session' : 'local'
 
-        // COLLISION CHECK
         if (checkOverlap(proposedWidget, prev[otherId])) {
           return prev; 
         }
@@ -332,7 +351,6 @@ export default function PersonalDashboard() {
     }))
   }
 
-  // --- RENDER HELPERS ---
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
   const pastDays = weekProgress.filter(d => d.isPast)
@@ -368,22 +386,18 @@ export default function PersonalDashboard() {
         ) : (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
-            {/* 🟢 TOP ROW: 60% PLAYGROUND | 40% ROUTINE */}
             <div className="h-1/2 shrink-0 p-3 sm:p-4 flex gap-4 min-h-0 overflow-hidden">
               
-              {/* 60% Workspace Playground (7x7 Grid) */}
               <div 
                 ref={gridRef}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDropOnGrid}
                 className="w-[60%] shrink-0 min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
               >
-                {/* Background Grid Lines */}
                 {Array.from({ length: 49 }).map((_, i) => (
                   <div key={`slot-${i}`} className="w-full h-full rounded border border-dashed border-zinc-800/10 pointer-events-none" />
                 ))}
 
-                {/* Local Time Widget */}
                 <div 
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'local')}
@@ -427,7 +441,6 @@ export default function PersonalDashboard() {
                   </div>
                 </div>
 
-                {/* Active Session Widget */}
                 <div 
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'session')}
@@ -477,7 +490,6 @@ export default function PersonalDashboard() {
 
               </div>
 
-              {/* 40% Routine Tracker */}
               <div className="w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0">
                 <div className="flex justify-between items-center mb-4 border-b border-zinc-800/50 pb-3 shrink-0">
                   <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
@@ -487,7 +499,6 @@ export default function PersonalDashboard() {
 
                 <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-2">
                   
-                  {/* 1. Sunday Prep */}
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${routineStatus.sundayPrep ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700 text-transparent'}`}>
@@ -499,7 +510,6 @@ export default function PersonalDashboard() {
                     </div>
                   </div>
 
-                  {/* 2. Past Days Log */}
                   {pastDays.length > 0 && (
                     <div className="flex flex-wrap gap-2 ml-7">
                       {pastDays.map(day => (
@@ -513,7 +523,6 @@ export default function PersonalDashboard() {
                     </div>
                   )}
 
-                  {/* 3. Today Filter & Execution */}
                   <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center gap-3">
                       <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${routineStatus.dailyFiltered ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-blue-500/10 border-blue-500/50 text-transparent'}`}>
@@ -545,7 +554,6 @@ export default function PersonalDashboard() {
                     )}
                   </div>
 
-                  {/* 4. Weekend Journaling */}
                   <div className={`flex items-center justify-between mt-auto pt-3 border-t border-zinc-800/50 ${!routineStatus.isWeekend ? 'opacity-40 grayscale' : ''}`}>
                     <div className="flex items-center gap-3">
                       <div className="w-4 h-4 rounded-sm border bg-zinc-950 border-zinc-700 flex items-center justify-center">
@@ -561,7 +569,6 @@ export default function PersonalDashboard() {
               </div>
             </div>
 
-            {/* 🟢 BOTTOM ROW: COLLAPSIBLE WORKSPACE */}
             <div className={`h-1/2 shrink-0 flex flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0 transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'w-full' : 'w-48 sm:w-56 border-r border-zinc-800/60'}`}>
               
               <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#050505]">
@@ -589,7 +596,6 @@ export default function PersonalDashboard() {
 
               <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
                 
-                {/* PANE 1: List (Always Visible) */}
                 <div className={`shrink-0 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5 ${isTodayFocusExpanded ? 'w-48 sm:w-56 border-r border-zinc-800/60' : 'w-full'}`}>
                   {todaySetups.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
@@ -615,9 +621,7 @@ export default function PersonalDashboard() {
                   )}
                 </div>
 
-                {/* RIGHT PANES WRAPPER (Collapses to width 0) */}
                 <div className={`flex flex-row min-w-0 overflow-hidden transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'flex-1 opacity-100' : 'w-0 opacity-0'}`}>
-                  {/* PANE 2: Chart */}
                   <div className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60">
                     {activeSetup ? (
                       <div className="absolute inset-0 p-3 flex items-center justify-center">
@@ -630,7 +634,6 @@ export default function PersonalDashboard() {
                     )}
                   </div>
 
-                  {/* PANE 3: Notes */}
                   <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
                     <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
                       {activeSetup ? (
