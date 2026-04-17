@@ -1,11 +1,11 @@
 // src/app/(users)/dashboard/PersonalDashboard.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { 
-  Crosshair, CheckCircle2, Target, Globe2, 
-  Activity, Lock, X, AlertTriangle, Type
+  Crosshair, CheckCircle2, Clock, 
+  Target, Globe2, Activity, Lock, X, AlertTriangle, Type
 } from 'lucide-react'
 
 // Initialize the Next.js SSR Browser Client
@@ -14,17 +14,16 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx: number }
+
 export default function PersonalDashboard() {
   const [mounted, setMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [time, setTime] = useState<Date | null>(null) 
-  const [sessionInfo, setSessionInfo] = useState({ name: 'Determining...', localTime: '--:--:--' })
   
   // --- REAL SUPABASE DATABASE STATE ---
   const [todaySetups, setTodaySetups] = useState<any[]>([])
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
   const [weekProgress, setWeekProgress] = useState<any[]>([])
-
   const [routineStatus, setRoutineStatus] = useState({
     sundayPrep: false,
     dailyFiltered: false,
@@ -33,19 +32,29 @@ export default function PersonalDashboard() {
     isWeekend: false
   })
 
-  // --- WORKSPACE PLAYGROUND STATE ---
-  // 0: Top-Left, 1: Top-Right, 2: Bottom-Left, 3: Bottom-Right
-  const [cardPositions, setCardPositions] = useState({ local: 0, session: 2 })
-  const [timeFontIdx, setTimeFontIdx] = useState(0)
+  // --- TIME & SESSION STATE ---
+  const [time, setTime] = useState<Date | null>(null) 
+  const [sessionInfo, setSessionInfo] = useState({ 
+    name: 'Determining...', 
+    localTime: '--:--:--',
+    isOverlap: false 
+  })
+
+  // --- PLAYGROUND STATE (5x4 Grid) ---
+  const [widgets, setWidgets] = useState<{local: Widget, session: Widget}>({
+    local: { id: 'local', x: 0, y: 0, w: 2, h: 2, fontIdx: 0 },
+    session: { id: 'session', x: 0, y: 2, w: 2, h: 2, fontIdx: 0 }
+  })
+  const gridRef = useRef<HTMLDivElement>(null)
 
   const fontStyles = [
     "font-mono font-black tracking-tighter text-zinc-100",   // Strong 1: Terminal
-    "font-sans font-extrabold tracking-tight text-white",     // Strong 2: Modern
-    "font-serif font-light tracking-wide text-zinc-300",      // Minimal 1: Editorial
-    "font-sans font-thin tracking-widest text-zinc-400"       // Minimal 2: Ultra Clean
+    "font-sans font-extrabold tracking-tight text-white",    // Strong 2: Modern Heavy
+    "font-serif font-light tracking-wide text-zinc-300",     // Minimal 1: Editorial
+    "font-sans font-thin tracking-widest text-zinc-400"      // Minimal 2: Ultra Clean
   ]
 
-  // Set Local Time and Session
+  // Set Local Time and Overlap Session Logic
   useEffect(() => {
     setMounted(true)
     const timer = setInterval(() => {
@@ -53,17 +62,29 @@ export default function PersonalDashboard() {
       setTime(now)
       
       const utcHour = now.getUTCHours()
+      
+      // Market Open Checks
+      const isSydney = utcHour >= 22 || utcHour < 7
+      const isTokyo = utcHour >= 0 && utcHour < 9
+      const isLondon = utcHour >= 8 && utcHour < 17
+      const isNY = utcHour >= 13 && utcHour < 22
+
+      const activeCount = [isSydney, isTokyo, isLondon, isNY].filter(Boolean).length
+      const isOverlap = activeCount > 1
+
       let sName = 'Interbank'
       let tz = 'UTC'
 
-      if (utcHour >= 13 && utcHour < 22) { sName = 'New York'; tz = 'America/New_York' }
-      else if (utcHour >= 8 && utcHour < 17) { sName = 'London'; tz = 'Europe/London' }
-      else if (utcHour >= 0 && utcHour < 9) { sName = 'Tokyo'; tz = 'Asia/Tokyo' }
-      else { sName = 'Sydney'; tz = 'Australia/Sydney' }
+      // Newest session takes priority during overlap
+      if (isNY) { sName = 'New York'; tz = 'America/New_York' }
+      else if (isLondon) { sName = 'London'; tz = 'Europe/London' }
+      else if (isTokyo) { sName = 'Tokyo'; tz = 'Asia/Tokyo' }
+      else if (isSydney) { sName = 'Sydney'; tz = 'Australia/Sydney' }
 
       setSessionInfo({
         name: sName,
-        localTime: now.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        localTime: now.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        isOverlap
       })
     }, 1000)
     return () => clearInterval(timer)
@@ -151,17 +172,81 @@ export default function PersonalDashboard() {
     else if (todaySetups.length === 0) setActiveTodayId(null)
   }, [todaySetups, activeTodayId])
 
-  // --- PLAYGROUND DRAG & DROP LOGIC ---
-  const handleDrop = (cardId: string, targetSlot: number) => {
-    setCardPositions(prev => {
-      const newPos = { ...prev }
-      const existingCardKey = Object.keys(newPos).find(k => newPos[k as keyof typeof newPos] === targetSlot)
-      if (existingCardKey && existingCardKey !== cardId) {
-        newPos[existingCardKey as keyof typeof newPos] = prev[cardId as keyof typeof prev]
+  // --- PLAYGROUND LOGIC ---
+  const getTextSizeClass = (w: number, h: number) => {
+    const area = w * h
+    if (area <= 1) return 'text-xl sm:text-2xl'
+    if (area === 2) return 'text-3xl sm:text-4xl'
+    if (area <= 4) return 'text-5xl sm:text-6xl'
+    if (area <= 6) return 'text-6xl sm:text-7xl lg:text-8xl'
+    return 'text-7xl sm:text-8xl lg:text-9xl'
+  }
+
+  // Handle Drag Move (Cell Snapping)
+  const handleDrop = (e: React.DragEvent, targetX: number, targetY: number) => {
+    const id = e.dataTransfer.getData('widgetId') as 'local' | 'session'
+    if (!id || !widgets[id]) return
+
+    setWidgets(prev => {
+      const w = prev[id].w
+      const h = prev[id].h
+      // Constrain bounds
+      const safeX = Math.min(targetX, 5 - w)
+      const safeY = Math.min(targetY, 4 - h)
+
+      return {
+        ...prev,
+        [id]: { ...prev[id], x: safeX, y: safeY }
       }
-      newPos[cardId as keyof typeof newPos] = targetSlot
-      return newPos
     })
+  }
+
+  // Handle Resize via Pointer Events
+  const handleResizePointerDown = (e: React.PointerEvent, id: 'local' | 'session') => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!gridRef.current) return
+
+    const startX = e.clientX
+    const startY = e.clientY
+    const startWidget = widgets[id]
+    
+    const { width, height } = gridRef.current.getBoundingClientRect()
+    // 5 cols, 4 rows + gaps
+    const cellW = width / 5
+    const cellH = height / 4
+
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - startX
+      const dy = moveEvent.clientY - startY
+
+      const deltaW = Math.round(dx / cellW)
+      const deltaH = Math.round(dy / cellH)
+
+      const newW = Math.max(1, Math.min(5 - startWidget.x, startWidget.w + deltaW))
+      const newH = Math.max(1, Math.min(4 - startWidget.y, startWidget.h + deltaH))
+
+      setWidgets(prev => ({
+        ...prev,
+        [id]: { ...prev[id], w: newW, h: newH }
+      }))
+    }
+
+    const onPointerUp = () => {
+      window.removeEventListener('pointermove', onPointerMove)
+      window.removeEventListener('pointerup', onPointerUp)
+    }
+
+    window.addEventListener('pointermove', onPointerMove)
+    window.addEventListener('pointerup', onPointerUp)
+  }
+
+  const toggleFont = (e: React.MouseEvent, id: 'local' | 'session') => {
+    e.stopPropagation()
+    setWidgets(prev => ({
+      ...prev,
+      [id]: { ...prev[id], fontIdx: (prev[id].fontIdx + 1) % fontStyles.length }
+    }))
   }
 
   // --- RENDER HELPERS ---
@@ -169,69 +254,23 @@ export default function PersonalDashboard() {
   const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
   const pastDays = weekProgress.filter(d => d.isPast)
 
-  // Subtly separates colons so they don't draw the eye
-  const formatTime = (timeStr: string) => {
+  // Separates colons so they don't draw the eye and align cleanly
+  const formatTime = (timeStr: string, sizeClass: string, fontIdx: number) => {
     if (!timeStr) return '--:--:--'
-    const [time, period] = timeStr.split(' ')
-    const parts = time?.split(':') || []
+    const [timeStrOnly, period] = timeStr.split(' ')
+    const parts = timeStrOnly?.split(':') || []
+    
     return (
-      <div className={`flex items-baseline justify-center ${fontStyles[timeFontIdx]}`}>
+      <div className={`flex items-baseline justify-center gap-0.5 ${fontStyles[fontIdx]} ${sizeClass} select-none`}>
         {parts.map((p, i) => (
           <span key={i} className="flex items-center">
-            <span className="text-3xl lg:text-4xl">{p}</span>
-            {i < 2 && <span className="opacity-10 text-xl mx-0.5 relative -top-0.5 font-sans font-light">:</span>}
+            <span>{p}</span>
+            {i < 2 && <span className="opacity-15 font-sans font-light mx-0.5 sm:mx-1">:</span>}
           </span>
         ))}
-        {period && <span className="text-[10px] ml-1.5 opacity-40 font-sans tracking-widest font-bold">{period}</span>}
+        {period && <span className="ml-1 sm:ml-2 opacity-50 font-sans tracking-widest font-bold text-[0.3em] uppercase">{period}</span>}
       </div>
     )
-  }
-
-  const renderCard = (cardId: 'local' | 'session') => {
-    if (cardId === 'local') {
-      return (
-        <div 
-          draggable 
-          onDragStart={(e) => e.dataTransfer.setData('cardId', 'local')}
-          className="absolute inset-0 bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col items-center justify-center shadow-sm cursor-grab active:cursor-grabbing group overflow-hidden"
-        >
-          {/* Subtle Top-Left Header */}
-          <div className="absolute top-3 left-3 text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
-            Local Time
-          </div>
-          {/* Subtle Top-Right Font Toggle */}
-          <button 
-            onClick={() => setTimeFontIdx((prev) => (prev + 1) % fontStyles.length)}
-            className="absolute top-3 right-3 text-zinc-700 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1"
-            title="Cycle Typography"
-          >
-            <Type size={12} />
-          </button>
-          <div className="mt-2">
-            {mounted && time ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })) : formatTime('--:--:--')}
-          </div>
-        </div>
-      )
-    }
-
-    if (cardId === 'session') {
-      return (
-        <div 
-          draggable 
-          onDragStart={(e) => e.dataTransfer.setData('cardId', 'session')}
-          className="absolute inset-0 bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col items-center justify-center shadow-sm cursor-grab active:cursor-grabbing group overflow-hidden relative"
-        >
-          <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-          {/* Subtle Top-Left Header */}
-          <div className="absolute top-3 left-3 text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5">
-            <Globe2 size={10}/> {sessionInfo.name} Session
-          </div>
-          <div className="mt-2 relative z-10">
-            {formatTime(sessionInfo.localTime)}
-          </div>
-        </div>
-      )
-    }
   }
 
   return (
@@ -247,25 +286,106 @@ export default function PersonalDashboard() {
             {/* 🟢 TOP ROW: 60% PLAYGROUND | 40% ROUTINE */}
             <div className="h-1/2 shrink-0 p-3 sm:p-4 flex gap-4 min-h-0 overflow-hidden">
               
-              {/* 60% Workspace Playground (4-Slot Grid) */}
-              <div className="w-[60%] shrink-0 min-h-0 grid grid-cols-2 grid-rows-2 gap-3 relative">
-                {[0, 1, 2, 3].map(slot => (
-                  <div 
-                    key={`slot-${slot}`}
-                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-zinc-800/20') }}
-                    onDragLeave={(e) => { e.currentTarget.classList.remove('bg-zinc-800/20') }}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      e.currentTarget.classList.remove('bg-zinc-800/20')
-                      const cardId = e.dataTransfer.getData('cardId')
-                      if (cardId === 'local' || cardId === 'session') handleDrop(cardId, slot)
-                    }}
-                    className="relative w-full h-full rounded-lg border border-dashed border-zinc-800/20 flex items-center justify-center transition-colors"
-                  >
-                    {cardPositions.local === slot && renderCard('local')}
-                    {cardPositions.session === slot && renderCard('session')}
+              {/* 60% Workspace Playground (5x4 Grid) */}
+              <div 
+                ref={gridRef}
+                className="w-[60%] shrink-0 min-h-0 grid grid-cols-5 grid-rows-4 gap-2 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
+              >
+                {/* Background Drop Slots */}
+                {Array.from({ length: 20 }).map((_, i) => {
+                  const x = i % 5
+                  const y = Math.floor(i / 5)
+                  return (
+                    <div 
+                      key={`slot-${i}`}
+                      className="w-full h-full rounded border border-dashed border-zinc-800/10"
+                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-zinc-800/20') }}
+                      onDragLeave={(e) => { e.currentTarget.classList.remove('bg-zinc-800/20') }}
+                      onDrop={(e) => {
+                        e.preventDefault()
+                        e.currentTarget.classList.remove('bg-zinc-800/20')
+                        handleDrop(e, x, y)
+                      }}
+                    />
+                  )
+                })}
+
+                {/* Local Time Widget */}
+                <div 
+                  draggable 
+                  onDragStart={(e) => {
+                     e.dataTransfer.setData('widgetId', 'local')
+                     // Small hack to make drag preview look cleaner
+                     const target = e.target as HTMLElement;
+                     target.style.opacity = '0.4';
+                     setTimeout(() => target.style.opacity = '1', 0);
+                  }}
+                  className="absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col items-center justify-center shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color]"
+                  style={{
+                    gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
+                    gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
+                  }}
+                >
+                  <div className="absolute top-3 left-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 select-none">
+                    <Clock size={10} className="opacity-50"/> Local Time
                   </div>
-                ))}
+                  <button 
+                    onClick={(e) => toggleFont(e, 'local')}
+                    className="absolute top-3 right-3 text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1.5 z-10"
+                    title="Cycle Typography"
+                  >
+                    <Type size={12} />
+                  </button>
+                  <div className="mt-4 px-4 w-full flex justify-center items-center h-full">
+                    {mounted && time ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), getTextSizeClass(widgets.local.w, widgets.local.h), widgets.local.fontIdx) : formatTime('--:--:--', getTextSizeClass(widgets.local.w, widgets.local.h), widgets.local.fontIdx)}
+                  </div>
+                  {/* Resize Handle */}
+                  <div 
+                    onPointerDown={(e) => handleResizePointerDown(e, 'local')}
+                    className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-1.5"
+                  >
+                    <div className="w-2 h-2 border-r-2 border-b-2 border-zinc-600 rounded-sm" />
+                  </div>
+                </div>
+
+                {/* Active Session Widget */}
+                <div 
+                  draggable 
+                  onDragStart={(e) => {
+                     e.dataTransfer.setData('widgetId', 'session')
+                     const target = e.target as HTMLElement;
+                     target.style.opacity = '0.4';
+                     setTimeout(() => target.style.opacity = '1', 0);
+                  }}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col items-center justify-center shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color] ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/40 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.2)]' : ''}`}
+                  style={{
+                    gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
+                    gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
+                  }}
+                >
+                  <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+                  <div className="absolute top-3 left-4 text-[10px] font-bold text-zinc-300 uppercase tracking-widest flex items-center gap-1.5 select-none">
+                    <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
+                  </div>
+                  <button 
+                    onClick={(e) => toggleFont(e, 'session')}
+                    className="absolute top-3 right-3 text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1.5 z-10"
+                    title="Cycle Typography"
+                  >
+                    <Type size={12} />
+                  </button>
+                  <div className="mt-4 px-4 w-full flex justify-center items-center h-full relative z-10">
+                    {formatTime(sessionInfo.localTime, getTextSizeClass(widgets.session.w, widgets.session.h), widgets.session.fontIdx)}
+                  </div>
+                  {/* Resize Handle */}
+                  <div 
+                    onPointerDown={(e) => handleResizePointerDown(e, 'session')}
+                    className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-1.5"
+                  >
+                    <div className="w-2 h-2 border-r-2 border-b-2 border-zinc-600 rounded-sm" />
+                  </div>
+                </div>
+
               </div>
 
               {/* 40% Routine Tracker (STRICTLY READ-ONLY) */}
@@ -276,7 +396,6 @@ export default function PersonalDashboard() {
                   </h3>
                 </div>
 
-                {/* Chronological Checklist */}
                 <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-2">
                   
                   {/* 1. Sunday Prep */}
