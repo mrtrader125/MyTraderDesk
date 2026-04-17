@@ -173,13 +173,14 @@ export default function PersonalDashboard() {
   }, [todaySetups, activeTodayId])
 
   // --- PLAYGROUND LOGIC ---
-  const getTextSizeClass = (w: number, h: number) => {
-    const area = w * h
-    if (area <= 1) return 'text-xl sm:text-2xl'
-    if (area === 2) return 'text-3xl sm:text-4xl'
-    if (area <= 4) return 'text-5xl sm:text-6xl'
-    if (area <= 6) return 'text-6xl sm:text-7xl lg:text-8xl'
-    return 'text-7xl sm:text-8xl lg:text-9xl'
+  
+  // Calculate text size securely based *only* on width to prevent horizontal bloating
+  const getTextSizeClass = (w: number) => {
+    if (w === 1) return 'text-lg sm:text-xl'
+    if (w === 2) return 'text-3xl sm:text-4xl lg:text-5xl'
+    if (w === 3) return 'text-5xl sm:text-6xl lg:text-7xl'
+    if (w >= 4) return 'text-6xl sm:text-7xl lg:text-[5.5rem]'
+    return 'text-2xl'
   }
 
   // Handle Drag Move (Cell Snapping)
@@ -190,7 +191,6 @@ export default function PersonalDashboard() {
     setWidgets(prev => {
       const w = prev[id].w
       const h = prev[id].h
-      // Constrain bounds
       const safeX = Math.min(targetX, 5 - w)
       const safeY = Math.min(targetY, 4 - h)
 
@@ -212,7 +212,6 @@ export default function PersonalDashboard() {
     const startWidget = widgets[id]
     
     const { width, height } = gridRef.current.getBoundingClientRect()
-    // 5 cols, 4 rows + gaps
     const cellW = width / 5
     const cellH = height / 4
 
@@ -254,21 +253,21 @@ export default function PersonalDashboard() {
   const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
   const pastDays = weekProgress.filter(d => d.isPast)
 
-  // Separates colons so they don't draw the eye and align cleanly
+  // Advanced formatting: tabular-nums prevents jitter, leading-none prevents vertical bloat
   const formatTime = (timeStr: string, sizeClass: string, fontIdx: number) => {
     if (!timeStr) return '--:--:--'
     const [timeStrOnly, period] = timeStr.split(' ')
     const parts = timeStrOnly?.split(':') || []
     
     return (
-      <div className={`flex items-baseline justify-center gap-0.5 ${fontStyles[fontIdx]} ${sizeClass} select-none`}>
+      <div className={`flex items-baseline justify-center ${fontStyles[fontIdx]} ${sizeClass} select-none tabular-nums leading-none`}>
         {parts.map((p, i) => (
-          <span key={i} className="flex items-center">
+          <span key={i} className="flex items-baseline">
             <span>{p}</span>
-            {i < 2 && <span className="opacity-15 font-sans font-light mx-0.5 sm:mx-1">:</span>}
+            {i < 2 && <span className="opacity-25 font-sans font-light mx-[2px] sm:mx-1 text-[0.7em] relative -top-[0.05em]">:</span>}
           </span>
         ))}
-        {period && <span className="ml-1 sm:ml-2 opacity-50 font-sans tracking-widest font-bold text-[0.3em] uppercase">{period}</span>}
+        {period && <span className="ml-1.5 sm:ml-2 opacity-40 font-sans tracking-widest font-bold text-[0.25em] uppercase">{period}</span>}
       </div>
     )
   }
@@ -315,7 +314,6 @@ export default function PersonalDashboard() {
                   draggable 
                   onDragStart={(e) => {
                      e.dataTransfer.setData('widgetId', 'local')
-                     // Small hack to make drag preview look cleaner
                      const target = e.target as HTMLElement;
                      target.style.opacity = '0.4';
                      setTimeout(() => target.style.opacity = '1', 0);
@@ -326,18 +324,18 @@ export default function PersonalDashboard() {
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
                   }}
                 >
-                  <div className="absolute top-3 left-4 text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-1.5 select-none">
+                  <div className="absolute top-3 left-4 text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none z-10">
                     <Clock size={10} className="opacity-50"/> Local Time
                   </div>
                   <button 
                     onClick={(e) => toggleFont(e, 'local')}
-                    className="absolute top-3 right-3 text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1.5 z-10"
+                    className="absolute top-3 right-3 text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1.5 z-20"
                     title="Cycle Typography"
                   >
                     <Type size={12} />
                   </button>
-                  <div className="mt-4 px-4 w-full flex justify-center items-center h-full">
-                    {mounted && time ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), getTextSizeClass(widgets.local.w, widgets.local.h), widgets.local.fontIdx) : formatTime('--:--:--', getTextSizeClass(widgets.local.w, widgets.local.h), widgets.local.fontIdx)}
+                  <div className="w-full flex-1 flex justify-center items-center px-4 relative z-0">
+                    {mounted && time ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), getTextSizeClass(widgets.local.w), widgets.local.fontIdx) : formatTime('--:--:--', getTextSizeClass(widgets.local.w), widgets.local.fontIdx)}
                   </div>
                   {/* Resize Handle */}
                   <div 
@@ -357,26 +355,32 @@ export default function PersonalDashboard() {
                      target.style.opacity = '0.4';
                      setTimeout(() => target.style.opacity = '1', 0);
                   }}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col items-center justify-center shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color] ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/40 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.2)]' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col items-center justify-center shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color] ${sessionInfo.isOverlap ? 'border-b-2 border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
                   }}
                 >
-                  <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-                  <div className="absolute top-3 left-4 text-[10px] font-bold text-zinc-300 uppercase tracking-widest flex items-center gap-1.5 select-none">
+                  <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-0"></div>
+                  <div className="absolute top-3 left-4 text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none z-10">
                     <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
                   </div>
                   <button 
                     onClick={(e) => toggleFont(e, 'session')}
-                    className="absolute top-3 right-3 text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1.5 z-10"
+                    className="absolute top-3 right-3 text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1.5 z-20"
                     title="Cycle Typography"
                   >
                     <Type size={12} />
                   </button>
-                  <div className="mt-4 px-4 w-full flex justify-center items-center h-full relative z-10">
-                    {formatTime(sessionInfo.localTime, getTextSizeClass(widgets.session.w, widgets.session.h), widgets.session.fontIdx)}
+                  <div className="w-full flex-1 flex justify-center items-center px-4 relative z-10">
+                    {formatTime(sessionInfo.localTime, getTextSizeClass(widgets.session.w), widgets.session.fontIdx)}
                   </div>
+                  
+                  {/* Subtle overlap indicator pulse */}
+                  {sessionInfo.isOverlap && (
+                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent animate-pulse" />
+                  )}
+
                   {/* Resize Handle */}
                   <div 
                     onPointerDown={(e) => handleResizePointerDown(e, 'session')}
