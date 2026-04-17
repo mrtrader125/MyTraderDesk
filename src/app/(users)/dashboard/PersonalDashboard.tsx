@@ -16,9 +16,12 @@ const supabase = createBrowserClient(
 
 type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx: number }
 
+const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout'
+
 export default function PersonalDashboard() {
   const [mounted, setMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [layoutLoaded, setLayoutLoaded] = useState(false)
   
   // --- REAL SUPABASE DATABASE STATE ---
   const [todaySetups, setTodaySetups] = useState<any[]>([])
@@ -40,10 +43,10 @@ export default function PersonalDashboard() {
     isOverlap: false 
   })
 
-  // --- PLAYGROUND STATE (5x4 Grid) ---
+  // --- PLAYGROUND STATE (7x7 Grid) ---
   const [widgets, setWidgets] = useState<{local: Widget, session: Widget}>({
-    local: { id: 'local', x: 0, y: 0, w: 2, h: 2, fontIdx: 0 },
-    session: { id: 'session', x: 0, y: 2, w: 2, h: 2, fontIdx: 0 }
+    local: { id: 'local', x: 0, y: 0, w: 3, h: 3, fontIdx: 0 },
+    session: { id: 'session', x: 0, y: 3, w: 3, h: 3, fontIdx: 0 }
   })
   const gridRef = useRef<HTMLDivElement>(null)
 
@@ -54,6 +57,28 @@ export default function PersonalDashboard() {
     "font-sans font-thin tracking-widest text-zinc-400"      // Minimal 2: Ultra Clean
   ]
 
+  // Load Saved Layout
+  useEffect(() => {
+    const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY)
+    if (savedLayout) {
+      try {
+        const parsed = JSON.parse(savedLayout)
+        // Basic validation to ensure boundaries are respected if old data existed
+        if (parsed.local && parsed.session) setWidgets(parsed)
+      } catch (e) {
+        console.error("Failed to load playground layout", e)
+      }
+    }
+    setLayoutLoaded(true)
+  }, [])
+
+  // Save Layout Changes
+  useEffect(() => {
+    if (layoutLoaded) {
+      localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(widgets))
+    }
+  }, [widgets, layoutLoaded])
+
   // Set Local Time and Overlap Session Logic
   useEffect(() => {
     setMounted(true)
@@ -63,7 +88,6 @@ export default function PersonalDashboard() {
       
       const utcHour = now.getUTCHours()
       
-      // Market Open Checks
       const isSydney = utcHour >= 22 || utcHour < 7
       const isTokyo = utcHour >= 0 && utcHour < 9
       const isLondon = utcHour >= 8 && utcHour < 17
@@ -75,7 +99,6 @@ export default function PersonalDashboard() {
       let sName = 'Interbank'
       let tz = 'UTC'
 
-      // Newest session takes priority during overlap
       if (isNY) { sName = 'New York'; tz = 'America/New_York' }
       else if (isLondon) { sName = 'London'; tz = 'Europe/London' }
       else if (isTokyo) { sName = 'Tokyo'; tz = 'Asia/Tokyo' }
@@ -172,26 +195,8 @@ export default function PersonalDashboard() {
     else if (todaySetups.length === 0) setActiveTodayId(null)
   }, [todaySetups, activeTodayId])
 
-  // --- PLAYGROUND LOGIC ---
-  
-  // Safely map (Width, Height) combinations to specific non-bloated text sizes
-  const getTextSizeClass = (w: number, h: number) => {
-    // Highly constrained if the card is only 1 row tall
-    if (h === 1) {
-      if (w === 1) return 'text-sm'
-      if (w <= 2) return 'text-xl sm:text-2xl'
-      return 'text-2xl sm:text-3xl'
-    }
-    // Highly constrained if the card is only 1 column wide
-    if (w === 1) return 'text-base sm:text-lg'
-    
-    // Normal 2+ row scaling
-    if (w === 2) return h >= 3 ? 'text-4xl lg:text-5xl' : 'text-3xl lg:text-4xl'
-    if (w === 3) return h >= 3 ? 'text-6xl lg:text-7xl' : 'text-5xl lg:text-6xl'
-    return h >= 3 ? 'text-7xl lg:text-[5.5rem]' : 'text-6xl lg:text-7xl'
-  }
+  // --- PLAYGROUND DRAG & RESIZE LOGIC (7x7 GRID) ---
 
-  // Handle Drag Move (Cell Snapping)
   const handleDrop = (e: React.DragEvent, targetX: number, targetY: number) => {
     const id = e.dataTransfer.getData('widgetId') as 'local' | 'session'
     if (!id || !widgets[id]) return
@@ -199,8 +204,9 @@ export default function PersonalDashboard() {
     setWidgets(prev => {
       const w = prev[id].w
       const h = prev[id].h
-      const safeX = Math.min(targetX, 5 - w)
-      const safeY = Math.min(targetY, 4 - h)
+      // Enforce 7x7 boundaries strictly
+      const safeX = Math.max(0, Math.min(targetX, 7 - w))
+      const safeY = Math.max(0, Math.min(targetY, 7 - h))
 
       return {
         ...prev,
@@ -209,7 +215,6 @@ export default function PersonalDashboard() {
     })
   }
 
-  // Uses pointer capture for flawless, slip-free resizing
   const handleResizePointerDown = (e: React.PointerEvent, id: 'local' | 'session') => {
     e.preventDefault()
     e.stopPropagation()
@@ -223,8 +228,9 @@ export default function PersonalDashboard() {
     const startWidget = { ...widgets[id] }
     
     const { width, height } = gridRef.current.getBoundingClientRect()
-    const cellW = width / 5
-    const cellH = height / 4
+    // Adjusted for 7x7 grid cells
+    const cellW = width / 7
+    const cellH = height / 7
 
     const onPointerMove = (moveEvent: PointerEvent) => {
       const dx = moveEvent.clientX - startX
@@ -233,8 +239,9 @@ export default function PersonalDashboard() {
       const deltaW = Math.round(dx / cellW)
       const deltaH = Math.round(dy / cellH)
 
-      const newW = Math.max(1, Math.min(5 - startWidget.x, startWidget.w + deltaW))
-      const newH = Math.max(1, Math.min(4 - startWidget.y, startWidget.h + deltaH))
+      // Ensure min size is 1x1, max size strictly respects the 7x7 boundary
+      const newW = Math.max(1, Math.min(7 - startWidget.x, startWidget.w + deltaW))
+      const newH = Math.max(1, Math.min(7 - startWidget.y, startWidget.h + deltaH))
 
       setWidgets(prev => ({
         ...prev,
@@ -265,13 +272,20 @@ export default function PersonalDashboard() {
   const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
   const pastDays = weekProgress.filter(d => d.isPast)
 
-  const formatTime = (timeStr: string, sizeClass: string, fontIdx: number) => {
+  // Fluid typography fine-tuned for the smaller 7x7 grid cells
+  const formatTime = (timeStr: string, w: number, h: number, fontIdx: number) => {
     if (!timeStr) return '--:--:--'
     const [timeStrOnly, period] = timeStr.split(' ')
     const parts = timeStrOnly?.split(':') || []
     
+    // Scale slightly differently since 1 unit of W/H is smaller on a 7x7 grid
+    const dynamicFontSize = `min(${w * 1.5}rem, ${h * 2}rem, 15vw)`
+    
     return (
-      <div className={`flex items-baseline justify-center ${fontStyles[fontIdx]} ${sizeClass} select-none whitespace-nowrap tabular-nums leading-none`}>
+      <div 
+        className={`flex items-baseline justify-center ${fontStyles[fontIdx]} select-none whitespace-nowrap tabular-nums leading-none`}
+        style={{ fontSize: dynamicFontSize }}
+      >
         {parts.map((p, i) => (
           <span key={i} className="flex items-baseline">
             <span>{p}</span>
@@ -286,7 +300,7 @@ export default function PersonalDashboard() {
   return (
     <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
-        {isLoading ? (
+        {isLoading || !layoutLoaded ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
@@ -296,15 +310,15 @@ export default function PersonalDashboard() {
             {/* 🟢 TOP ROW: 60% PLAYGROUND | 40% ROUTINE */}
             <div className="h-1/2 shrink-0 p-3 sm:p-4 flex gap-4 min-h-0 overflow-hidden">
               
-              {/* 60% Workspace Playground (5x4 Grid) */}
+              {/* 60% Workspace Playground (7x7 Grid) */}
               <div 
                 ref={gridRef}
-                className="w-[60%] shrink-0 min-h-0 grid grid-cols-5 grid-rows-4 gap-2 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
+                className="w-[60%] shrink-0 min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
               >
                 {/* Background Drop Slots */}
-                {Array.from({ length: 20 }).map((_, i) => {
-                  const x = i % 5
-                  const y = Math.floor(i / 5)
+                {Array.from({ length: 49 }).map((_, i) => {
+                  const x = i % 7
+                  const y = Math.floor(i / 7)
                   return (
                     <div 
                       key={`slot-${i}`}
@@ -330,14 +344,13 @@ export default function PersonalDashboard() {
                      setTimeout(() => target.style.opacity = '1', 0);
                   }}
                   onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; }}
-                  className="absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden p-3 transition-[box-shadow,border-color]"
+                  className="absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden p-2.5 transition-[box-shadow,border-color]"
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
                   }}
                 >
-                  {/* Top Bar Header (Protected Space) */}
-                  <div className="flex items-center justify-between w-full shrink-0 h-6 z-10">
+                  <div className="flex items-center justify-between w-full shrink-0 h-5 z-10">
                     <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none">
                       <Clock size={10} className="opacity-50"/> Local Time
                     </div>
@@ -352,11 +365,10 @@ export default function PersonalDashboard() {
                     </button>
                   </div>
                   
-                  {/* Centered Time Body */}
-                  <div className="flex-1 w-full flex justify-center items-center px-2 pb-2 min-h-0 overflow-hidden relative z-0">
+                  <div className="flex-1 w-full flex justify-center items-center px-1 pb-1 min-h-0 overflow-hidden relative z-0">
                     {mounted && time 
-                      ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), getTextSizeClass(widgets.local.w, widgets.local.h), widgets.local.fontIdx) 
-                      : formatTime('--:--:--', getTextSizeClass(widgets.local.w, widgets.local.h), widgets.local.fontIdx)}
+                      ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), widgets.local.w, widgets.local.h, widgets.local.fontIdx) 
+                      : formatTime('--:--:--', widgets.local.w, widgets.local.h, widgets.local.fontIdx)}
                   </div>
 
                   {/* Resize Handle */}
@@ -364,7 +376,7 @@ export default function PersonalDashboard() {
                     draggable={false}
                     onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     onPointerDown={(e) => handleResizePointerDown(e, 'local')}
-                    className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2"
+                    className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-1.5"
                   >
                     <div className="w-2 h-2 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
                   </div>
@@ -380,7 +392,7 @@ export default function PersonalDashboard() {
                      setTimeout(() => target.style.opacity = '1', 0);
                   }}
                   onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; }}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden p-3 transition-[box-shadow,border-color] ${sessionInfo.isOverlap ? 'border-b-2 border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden p-2.5 transition-[box-shadow,border-color] ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
@@ -388,8 +400,7 @@ export default function PersonalDashboard() {
                 >
                   <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-0"></div>
                   
-                  {/* Top Bar Header (Protected Space) */}
-                  <div className="flex items-center justify-between w-full shrink-0 h-6 z-10 relative">
+                  <div className="flex items-center justify-between w-full shrink-0 h-5 z-10 relative">
                     <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none">
                       <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
                     </div>
@@ -404,12 +415,10 @@ export default function PersonalDashboard() {
                     </button>
                   </div>
 
-                  {/* Centered Time Body */}
-                  <div className="flex-1 w-full flex justify-center items-center px-2 pb-2 min-h-0 overflow-hidden relative z-10">
-                    {formatTime(sessionInfo.localTime, getTextSizeClass(widgets.session.w, widgets.session.h), widgets.session.fontIdx)}
+                  <div className="flex-1 w-full flex justify-center items-center px-1 pb-1 min-h-0 overflow-hidden relative z-10">
+                    {formatTime(sessionInfo.localTime, widgets.session.w, widgets.session.h, widgets.session.fontIdx)}
                   </div>
                   
-                  {/* Subtle overlap indicator pulse */}
                   {sessionInfo.isOverlap && (
                     <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent animate-pulse" />
                   )}
@@ -419,7 +428,7 @@ export default function PersonalDashboard() {
                     draggable={false}
                     onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     onPointerDown={(e) => handleResizePointerDown(e, 'session')}
-                    className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2"
+                    className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-1.5"
                   >
                     <div className="w-2 h-2 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
                   </div>
