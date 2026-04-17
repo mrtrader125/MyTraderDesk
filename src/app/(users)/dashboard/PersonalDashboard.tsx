@@ -172,8 +172,26 @@ export default function PersonalDashboard() {
     else if (todaySetups.length === 0) setActiveTodayId(null)
   }, [todaySetups, activeTodayId])
 
-  // --- PLAYGROUND DRAG & RESIZE LOGIC ---
+  // --- PLAYGROUND LOGIC ---
+  
+  // Safely map (Width, Height) combinations to specific non-bloated text sizes
+  const getTextSizeClass = (w: number, h: number) => {
+    // Highly constrained if the card is only 1 row tall
+    if (h === 1) {
+      if (w === 1) return 'text-sm'
+      if (w <= 2) return 'text-xl sm:text-2xl'
+      return 'text-2xl sm:text-3xl'
+    }
+    // Highly constrained if the card is only 1 column wide
+    if (w === 1) return 'text-base sm:text-lg'
+    
+    // Normal 2+ row scaling
+    if (w === 2) return h >= 3 ? 'text-4xl lg:text-5xl' : 'text-3xl lg:text-4xl'
+    if (w === 3) return h >= 3 ? 'text-6xl lg:text-7xl' : 'text-5xl lg:text-6xl'
+    return h >= 3 ? 'text-7xl lg:text-[5.5rem]' : 'text-6xl lg:text-7xl'
+  }
 
+  // Handle Drag Move (Cell Snapping)
   const handleDrop = (e: React.DragEvent, targetX: number, targetY: number) => {
     const id = e.dataTransfer.getData('widgetId') as 'local' | 'session'
     if (!id || !widgets[id]) return
@@ -198,7 +216,7 @@ export default function PersonalDashboard() {
     if (!gridRef.current) return
 
     const target = e.currentTarget as HTMLElement
-    target.setPointerCapture(e.pointerId) // Locks mouse events to this element
+    target.setPointerCapture(e.pointerId) 
 
     const startX = e.clientX
     const startY = e.clientY
@@ -247,26 +265,20 @@ export default function PersonalDashboard() {
   const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
   const pastDays = weekProgress.filter(d => d.isPast)
 
-  // Fluid typography based strictly on container width and height constraints
-  const formatTime = (timeStr: string, w: number, h: number, fontIdx: number) => {
+  const formatTime = (timeStr: string, sizeClass: string, fontIdx: number) => {
     if (!timeStr) return '--:--:--'
     const [timeStrOnly, period] = timeStr.split(' ')
     const parts = timeStrOnly?.split(':') || []
     
-    const dynamicFontSize = `min(${w * 2.5}rem, ${h * 3.5}rem, 15vw)`
-    
     return (
-      <div 
-        className={`flex items-baseline justify-center ${fontStyles[fontIdx]} select-none tabular-nums leading-none`}
-        style={{ fontSize: dynamicFontSize }}
-      >
+      <div className={`flex items-baseline justify-center ${fontStyles[fontIdx]} ${sizeClass} select-none whitespace-nowrap tabular-nums leading-none`}>
         {parts.map((p, i) => (
           <span key={i} className="flex items-baseline">
             <span>{p}</span>
-            {i < 2 && <span className="opacity-25 font-sans font-light mx-[2px] sm:mx-1 text-[0.7em] relative -top-[0.05em]">:</span>}
+            {i < 2 && <span className="opacity-20 font-sans font-light mx-0.5 sm:mx-1 text-[0.8em] relative -top-[0.05em]">:</span>}
           </span>
         ))}
-        {period && <span className="ml-1.5 sm:ml-2 opacity-40 font-sans tracking-widest font-bold text-[0.25em] uppercase">{period}</span>}
+        {period && <span className="ml-1 sm:ml-2 opacity-40 font-sans tracking-widest font-bold text-[0.3em] uppercase">{period}</span>}
       </div>
     )
   }
@@ -318,27 +330,35 @@ export default function PersonalDashboard() {
                      setTimeout(() => target.style.opacity = '1', 0);
                   }}
                   onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; }}
-                  className="absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col items-center justify-center shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color]"
+                  className="absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden p-3 transition-[box-shadow,border-color]"
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
                   }}
                 >
-                  <div className="absolute top-3 left-4 text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none z-10">
-                    <Clock size={10} className="opacity-50"/> Local Time
+                  {/* Top Bar Header (Protected Space) */}
+                  <div className="flex items-center justify-between w-full shrink-0 h-6 z-10">
+                    <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none">
+                      <Clock size={10} className="opacity-50"/> Local Time
+                    </div>
+                    <button 
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onClick={(e) => toggleFont(e, 'local')}
+                      className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer"
+                      title="Cycle Typography"
+                    >
+                      <Type size={12} />
+                    </button>
                   </div>
-                  <button 
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    onClick={(e) => toggleFont(e, 'local')}
-                    className="absolute top-3 right-3 text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1.5 z-20 cursor-pointer"
-                    title="Cycle Typography"
-                  >
-                    <Type size={12} />
-                  </button>
-                  <div className="w-full flex-1 flex justify-center items-center px-4 relative z-0">
-                    {mounted && time ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), widgets.local.w, widgets.local.h, widgets.local.fontIdx) : formatTime('--:--:--', widgets.local.w, widgets.local.h, widgets.local.fontIdx)}
+                  
+                  {/* Centered Time Body */}
+                  <div className="flex-1 w-full flex justify-center items-center px-2 pb-2 min-h-0 overflow-hidden relative z-0">
+                    {mounted && time 
+                      ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), getTextSizeClass(widgets.local.w, widgets.local.h), widgets.local.fontIdx) 
+                      : formatTime('--:--:--', getTextSizeClass(widgets.local.w, widgets.local.h), widgets.local.fontIdx)}
                   </div>
+
                   {/* Resize Handle */}
                   <div 
                     draggable={false}
@@ -346,7 +366,7 @@ export default function PersonalDashboard() {
                     onPointerDown={(e) => handleResizePointerDown(e, 'local')}
                     className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2"
                   >
-                    <div className="w-2.5 h-2.5 border-r-2 border-b-2 border-zinc-600 rounded-sm pointer-events-none" />
+                    <div className="w-2 h-2 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
                   </div>
                 </div>
 
@@ -360,27 +380,33 @@ export default function PersonalDashboard() {
                      setTimeout(() => target.style.opacity = '1', 0);
                   }}
                   onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; }}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col items-center justify-center shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color] ${sessionInfo.isOverlap ? 'border-b-2 border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden p-3 transition-[box-shadow,border-color] ${sessionInfo.isOverlap ? 'border-b-2 border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
                   }}
                 >
                   <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-0"></div>
-                  <div className="absolute top-3 left-4 text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none z-10">
-                    <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
+                  
+                  {/* Top Bar Header (Protected Space) */}
+                  <div className="flex items-center justify-between w-full shrink-0 h-6 z-10 relative">
+                    <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none">
+                      <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
+                    </div>
+                    <button 
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onClick={(e) => toggleFont(e, 'session')}
+                      className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer"
+                      title="Cycle Typography"
+                    >
+                      <Type size={12} />
+                    </button>
                   </div>
-                  <button 
-                    onPointerDown={(e) => e.stopPropagation()}
-                    onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    onClick={(e) => toggleFont(e, 'session')}
-                    className="absolute top-3 right-3 text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1.5 z-20 cursor-pointer"
-                    title="Cycle Typography"
-                  >
-                    <Type size={12} />
-                  </button>
-                  <div className="w-full flex-1 flex justify-center items-center px-4 relative z-10">
-                    {formatTime(sessionInfo.localTime, widgets.session.w, widgets.session.h, widgets.session.fontIdx)}
+
+                  {/* Centered Time Body */}
+                  <div className="flex-1 w-full flex justify-center items-center px-2 pb-2 min-h-0 overflow-hidden relative z-10">
+                    {formatTime(sessionInfo.localTime, getTextSizeClass(widgets.session.w, widgets.session.h), widgets.session.fontIdx)}
                   </div>
                   
                   {/* Subtle overlap indicator pulse */}
@@ -395,7 +421,7 @@ export default function PersonalDashboard() {
                     onPointerDown={(e) => handleResizePointerDown(e, 'session')}
                     className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2"
                   >
-                    <div className="w-2.5 h-2.5 border-r-2 border-b-2 border-zinc-600 rounded-sm pointer-events-none" />
+                    <div className="w-2 h-2 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
                   </div>
                 </div>
 
