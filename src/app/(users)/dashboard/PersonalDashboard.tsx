@@ -16,7 +16,7 @@ const supabase = createBrowserClient(
 
 type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx: number }
 
-const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v2'
+const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v3'
 
 export default function PersonalDashboard() {
   const [mounted, setMounted] = useState(false)
@@ -49,7 +49,6 @@ export default function PersonalDashboard() {
     session: { id: 'session', x: 0, y: 3, w: 3, h: 3, fontIdx: 0 }
   })
   const [draggingId, setDraggingId] = useState<string | null>(null)
-  const gridRef = useRef<HTMLDivElement>(null)
 
   const fontStyles = [
     "font-mono font-black tracking-tighter text-zinc-100",   // Strong 1: Terminal
@@ -195,13 +194,13 @@ export default function PersonalDashboard() {
     else if (todaySetups.length === 0) setActiveTodayId(null)
   }, [todaySetups, activeTodayId])
 
-  // --- PLAYGROUND DRAG & RESIZE LOGIC (7x7 GRID) ---
+  // --- FLAWLESS PLAYGROUND DRAG & RESIZE LOGIC (7x7 GRID) ---
 
   const handleDragStart = (e: React.DragEvent, id: 'local' | 'session') => {
     setDraggingId(id)
     e.dataTransfer.setData('widgetId', id)
     
-    // Calculate the precise cell offset of where the user clicked inside the card
+    // Calculate EXACTLY which cell block inside the widget the user grabbed
     const target = e.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
     const cellW = rect.width / widgets[id].w
@@ -212,35 +211,30 @@ export default function PersonalDashboard() {
     
     e.dataTransfer.setData('offsetX', offsetX.toString())
     e.dataTransfer.setData('offsetY', offsetY.toString())
+
+    // Ghosting effect
+    setTimeout(() => { target.style.opacity = '0.3' }, 0)
   }
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent, targetCellX: number, targetCellY: number) => {
     e.preventDefault()
     setDraggingId(null)
     
     const id = e.dataTransfer.getData('widgetId') as 'local' | 'session'
-    if (!id || !widgets[id] || !gridRef.current) return
+    if (!id || !widgets[id]) return
 
     const offsetX = parseInt(e.dataTransfer.getData('offsetX') || '0')
     const offsetY = parseInt(e.dataTransfer.getData('offsetY') || '0')
-
-    const gridRect = gridRef.current.getBoundingClientRect()
-    const cellW = gridRect.width / 7
-    const cellH = gridRect.height / 7
-
-    // Calculate grid cell based on absolute mouse drop coordinate relative to grid
-    const dropCellX = Math.floor((e.clientX - gridRect.left) / cellW)
-    const dropCellY = Math.floor((e.clientY - gridRect.top) / cellH)
 
     setWidgets(prev => {
       const w = prev[id].w
       const h = prev[id].h
       
-      // Subtract the offset to find the top-left origin cell
-      const finalX = dropCellX - offsetX
-      const finalY = dropCellY - offsetY
+      // Target Cell minus the drag offset equals the new Top-Left Origin
+      const finalX = targetCellX - offsetX
+      const finalY = targetCellY - offsetY
 
-      // Enforce boundaries strictly
+      // Strictly enforce 7x7 boundaries
       const safeX = Math.max(0, Math.min(finalX, 7 - w))
       const safeY = Math.max(0, Math.min(finalY, 7 - h))
 
@@ -254,7 +248,6 @@ export default function PersonalDashboard() {
   const handleResizePointerDown = (e: React.PointerEvent, id: 'local' | 'session') => {
     e.preventDefault()
     e.stopPropagation()
-    if (!gridRef.current) return
 
     const target = e.currentTarget as HTMLElement
     target.setPointerCapture(e.pointerId) 
@@ -263,9 +256,11 @@ export default function PersonalDashboard() {
     const startY = e.clientY
     const startWidget = { ...widgets[id] }
     
-    const { width, height } = gridRef.current.getBoundingClientRect()
-    const cellW = width / 7
-    const cellH = height / 7
+    // Calculate cell size dynamically from the widget's own current rendering
+    const parentWidget = target.parentElement!
+    const rect = parentWidget.getBoundingClientRect()
+    const cellW = rect.width / startWidget.w
+    const cellH = rect.height / startWidget.h
 
     const onPointerMove = (moveEvent: PointerEvent) => {
       const dx = moveEvent.clientX - startX
@@ -306,6 +301,7 @@ export default function PersonalDashboard() {
   const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
   const pastDays = weekProgress.filter(d => d.isPast)
 
+  // Pure container query typography, zero container bloat
   const formatTime = (timeStr: string, fontIdx: number) => {
     if (!timeStr) return '--:--:--'
     const [timeStrOnly, period] = timeStr.split(' ')
@@ -342,22 +338,35 @@ export default function PersonalDashboard() {
               
               {/* 60% Workspace Playground (7x7 Grid) */}
               <div 
-                ref={gridRef}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={handleDrop}
-                className="w-[60%] shrink-0 min-h-0 grid grid-cols-7 grid-rows-7 gap-2 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
+                className="w-[60%] shrink-0 min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
               >
-                {/* Background Grid Lines (Static) */}
-                {Array.from({ length: 49 }).map((_, i) => (
-                  <div key={`slot-${i}`} className="w-full h-full rounded border border-dashed border-zinc-800/10 pointer-events-none" />
-                ))}
+                {/* Background Drop Slots (Now Handling Drops) */}
+                {Array.from({ length: 49 }).map((_, i) => {
+                  const x = i % 7
+                  const y = Math.floor(i / 7)
+                  return (
+                    <div 
+                      key={`slot-${i}`}
+                      className="w-full h-full rounded border border-dashed border-zinc-800/10 transition-colors"
+                      onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-zinc-800/30') }}
+                      onDragLeave={(e) => { e.currentTarget.classList.remove('bg-zinc-800/30') }}
+                      onDrop={(e) => {
+                        e.currentTarget.classList.remove('bg-zinc-800/30')
+                        handleDrop(e, x, y)
+                      }}
+                    />
+                  )
+                })}
 
                 {/* Local Time Widget */}
                 <div 
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'local')}
-                  onDragEnd={() => setDraggingId(null)}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${draggingId === 'local' ? 'opacity-30 scale-[0.98] pointer-events-none' : ''}`}
+                  onDragEnd={(e) => { 
+                    setDraggingId(null); 
+                    (e.currentTarget as HTMLElement).style.opacity = '1'; 
+                  }}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10 ${draggingId === 'local' ? 'pointer-events-none' : ''}`}
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
@@ -365,7 +374,6 @@ export default function PersonalDashboard() {
                     height: '100%'
                   }}
                 >
-                  {/* Protected Header Row */}
                   <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10">
                     <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none">
                       <Clock size={10} className="opacity-50"/> Local Time
@@ -381,21 +389,19 @@ export default function PersonalDashboard() {
                     </button>
                   </div>
                   
-                  {/* Dynamic Body Row using Native Container Queries */}
                   <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-0 pointer-events-none" style={{ containerType: 'size' }}>
                     {mounted && time 
                       ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), widgets.local.fontIdx) 
                       : formatTime('--:--:--', widgets.local.fontIdx)}
                   </div>
 
-                  {/* Strictly isolated Resize Handle */}
                   <div 
                     draggable={false}
                     onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     onPointerDown={(e) => handleResizePointerDown(e, 'local')}
                     className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2.5 touch-none"
                   >
-                    <div className="w-2.5 h-2.5 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
+                    <div className="w-2 h-2 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
                   </div>
                 </div>
 
@@ -403,8 +409,11 @@ export default function PersonalDashboard() {
                 <div 
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'session')}
-                  onDragEnd={() => setDraggingId(null)}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'opacity-30 scale-[0.98] pointer-events-none' : ''}`}
+                  onDragEnd={(e) => { 
+                    setDraggingId(null); 
+                    (e.currentTarget as HTMLElement).style.opacity = '1'; 
+                  }}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color,transform] z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'pointer-events-none' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
@@ -414,7 +423,6 @@ export default function PersonalDashboard() {
                 >
                   <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-0"></div>
                   
-                  {/* Protected Header Row */}
                   <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10 relative">
                     <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none">
                       <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
@@ -430,7 +438,6 @@ export default function PersonalDashboard() {
                     </button>
                   </div>
 
-                  {/* Dynamic Body Row using Native Container Queries */}
                   <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-10 pointer-events-none" style={{ containerType: 'size' }}>
                     {formatTime(sessionInfo.localTime, widgets.session.fontIdx)}
                   </div>
@@ -439,14 +446,13 @@ export default function PersonalDashboard() {
                     <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent animate-pulse" />
                   )}
 
-                  {/* Strictly isolated Resize Handle */}
                   <div 
                     draggable={false}
                     onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     onPointerDown={(e) => handleResizePointerDown(e, 'session')}
                     className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2.5 touch-none"
                   >
-                    <div className="w-2.5 h-2.5 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
+                    <div className="w-2 h-2 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
                   </div>
                 </div>
 
