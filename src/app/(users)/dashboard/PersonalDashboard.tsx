@@ -4,8 +4,8 @@
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { 
-  Crosshair, CheckCircle2, Clock, 
-  Target, Globe2, Activity, Lock, X, AlertTriangle
+  Crosshair, CheckCircle2, Target, Globe2, 
+  Activity, Lock, X, AlertTriangle, Type
 } from 'lucide-react'
 
 // Initialize the Next.js SSR Browser Client
@@ -23,7 +23,6 @@ export default function PersonalDashboard() {
   // --- REAL SUPABASE DATABASE STATE ---
   const [todaySetups, setTodaySetups] = useState<any[]>([])
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
-
   const [weekProgress, setWeekProgress] = useState<any[]>([])
 
   const [routineStatus, setRoutineStatus] = useState({
@@ -33,6 +32,18 @@ export default function PersonalDashboard() {
     weekendWindup: false,
     isWeekend: false
   })
+
+  // --- WORKSPACE PLAYGROUND STATE ---
+  // 0: Top-Left, 1: Top-Right, 2: Bottom-Left, 3: Bottom-Right
+  const [cardPositions, setCardPositions] = useState({ local: 0, session: 2 })
+  const [timeFontIdx, setTimeFontIdx] = useState(0)
+
+  const fontStyles = [
+    "font-mono font-black tracking-tighter text-zinc-100",   // Strong 1: Terminal
+    "font-sans font-extrabold tracking-tight text-white",     // Strong 2: Modern
+    "font-serif font-light tracking-wide text-zinc-300",      // Minimal 1: Editorial
+    "font-sans font-thin tracking-widest text-zinc-400"       // Minimal 2: Ultra Clean
+  ]
 
   // Set Local Time and Session
   useEffect(() => {
@@ -68,35 +79,20 @@ export default function PersonalDashboard() {
       }
       const user = session.user
 
-      // 1. Fetch All Setups
-      const { data: setupsData } = await supabase
-        .from('user_desk_setups')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('added_to_today_at', { ascending: false })
-
+      const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('added_to_today_at', { ascending: false })
       const activeSetups = setupsData?.filter(s => s.is_today) || []
       const vaultSetups = setupsData?.filter(s => !s.is_today) || []
 
-      setTodaySetups(activeSetups.map(d => ({
-        id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url
-      })))
+      setTodaySetups(activeSetups.map(d => ({ id: d.id, symbol: d.symbol, notes: d.notes, imageUrl: d.image_url })))
 
-      // 2. Determine Week Boundaries
       const now = new Date()
       const dayOfWeek = now.getDay() 
       const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
       const startOfWeek = new Date(now.setDate(diffToMonday))
       startOfWeek.setHours(0, 0, 0, 0)
 
-      // 3. Fetch Logs (Executions) for the current week
-      const { data: logsData } = await supabase
-        .from('user_desk_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('created_at', startOfWeek.toISOString())
+      const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).gte('created_at', startOfWeek.toISOString())
 
-      // 4. Calculate Chronological Tracker Status
       const progress = []
       const daysFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
       let currentExecutionStatus: 'perfect' | 'imperfect' | 'pending' = 'pending'
@@ -106,7 +102,6 @@ export default function PersonalDashboard() {
         targetDate.setDate(startOfWeek.getDate() + i)
         const dateString = targetDate.toDateString()
         const todayString = new Date().toDateString()
-
         const dayLogs = logsData?.filter(l => new Date(l.created_at).toDateString() === dateString) || []
 
         let status = 'pending'
@@ -130,12 +125,10 @@ export default function PersonalDashboard() {
             status = dayLogs.some(l => l.execution_type === 'Imperfect') ? 'imperfect' : 'perfect'
           }
         }
-
         progress.push({ day: daysFull[i], status, isPast, isToday })
       }
       setWeekProgress(progress)
 
-      // 5. Compute Overall Routine Status
       const isWeekendNow = new Date().getDay() === 5 || new Date().getDay() === 6 
       const pendingReconciliations = logsData?.filter(l => !l.is_reconciled) || []
 
@@ -153,22 +146,96 @@ export default function PersonalDashboard() {
     fetchDashboardData()
   }, [])
 
-  // Auto-select first active setup
   useEffect(() => {
-    if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
-      setActiveTodayId(todaySetups[0].id)
-    } else if (todaySetups.length === 0) {
-      setActiveTodayId(null)
-    }
+    if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) setActiveTodayId(todaySetups[0].id)
+    else if (todaySetups.length === 0) setActiveTodayId(null)
   }, [todaySetups, activeTodayId])
 
+  // --- PLAYGROUND DRAG & DROP LOGIC ---
+  const handleDrop = (cardId: string, targetSlot: number) => {
+    setCardPositions(prev => {
+      const newPos = { ...prev }
+      const existingCardKey = Object.keys(newPos).find(k => newPos[k as keyof typeof newPos] === targetSlot)
+      if (existingCardKey && existingCardKey !== cardId) {
+        newPos[existingCardKey as keyof typeof newPos] = prev[cardId as keyof typeof prev]
+      }
+      newPos[cardId as keyof typeof newPos] = targetSlot
+      return newPos
+    })
+  }
+
+  // --- RENDER HELPERS ---
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
   const pastDays = weekProgress.filter(d => d.isPast)
 
+  // Subtly separates colons so they don't draw the eye
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return '--:--:--'
+    const [time, period] = timeStr.split(' ')
+    const parts = time?.split(':') || []
+    return (
+      <div className={`flex items-baseline justify-center ${fontStyles[timeFontIdx]}`}>
+        {parts.map((p, i) => (
+          <span key={i} className="flex items-center">
+            <span className="text-3xl lg:text-4xl">{p}</span>
+            {i < 2 && <span className="opacity-10 text-xl mx-0.5 relative -top-0.5 font-sans font-light">:</span>}
+          </span>
+        ))}
+        {period && <span className="text-[10px] ml-1.5 opacity-40 font-sans tracking-widest font-bold">{period}</span>}
+      </div>
+    )
+  }
+
+  const renderCard = (cardId: 'local' | 'session') => {
+    if (cardId === 'local') {
+      return (
+        <div 
+          draggable 
+          onDragStart={(e) => e.dataTransfer.setData('cardId', 'local')}
+          className="absolute inset-0 bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col items-center justify-center shadow-sm cursor-grab active:cursor-grabbing group overflow-hidden"
+        >
+          {/* Subtle Top-Left Header */}
+          <div className="absolute top-3 left-3 text-[9px] font-bold text-zinc-600 uppercase tracking-widest">
+            Local Time
+          </div>
+          {/* Subtle Top-Right Font Toggle */}
+          <button 
+            onClick={() => setTimeFontIdx((prev) => (prev + 1) % fontStyles.length)}
+            className="absolute top-3 right-3 text-zinc-700 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1"
+            title="Cycle Typography"
+          >
+            <Type size={12} />
+          </button>
+          <div className="mt-2">
+            {mounted && time ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' })) : formatTime('--:--:--')}
+          </div>
+        </div>
+      )
+    }
+
+    if (cardId === 'session') {
+      return (
+        <div 
+          draggable 
+          onDragStart={(e) => e.dataTransfer.setData('cardId', 'session')}
+          className="absolute inset-0 bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col items-center justify-center shadow-sm cursor-grab active:cursor-grabbing group overflow-hidden relative"
+        >
+          <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+          {/* Subtle Top-Left Header */}
+          <div className="absolute top-3 left-3 text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5">
+            <Globe2 size={10}/> {sessionInfo.name} Session
+          </div>
+          <div className="mt-2 relative z-10">
+            {formatTime(sessionInfo.localTime)}
+          </div>
+        </div>
+      )
+    }
+  }
+
   return (
     <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
-      
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
@@ -177,38 +244,35 @@ export default function PersonalDashboard() {
         ) : (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
-            {/* 🟢 TOP ROW: METRICS & OPERATING RHYTHM */}
-            <div className="h-1/2 shrink-0 p-3 sm:p-4 flex flex-col md:flex-row gap-4 min-h-0 overflow-hidden">
+            {/* 🟢 TOP ROW: 60% PLAYGROUND | 40% ROUTINE */}
+            <div className="h-1/2 shrink-0 p-3 sm:p-4 flex gap-4 min-h-0 overflow-hidden">
               
-              <div className="flex flex-col gap-4 w-full md:w-64 shrink-0 min-h-0 overflow-y-auto custom-scrollbar">
-                {/* Local Time */}
-                <div className="bg-[#0a0a0a] border border-zinc-800/60 rounded-lg flex flex-col items-center justify-center p-3 shadow-sm h-24 shrink-0">
-                  <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1 flex items-center gap-1">
-                    <Clock size={12}/> Local Time
-                  </span>
-                  <span className="text-lg font-mono text-zinc-100 tracking-wide">
-                    {mounted && time ? time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '--:--:--'}
-                  </span>
-                </div>
-                
-                {/* Active Session */}
-                <div className="bg-[#0a0a0a] border border-zinc-800/60 rounded-lg flex flex-col items-center justify-center p-3 shadow-sm h-24 shrink-0 relative overflow-hidden group">
-                  <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <span className="text-[9px] font-bold text-blue-400/80 uppercase tracking-widest mb-1 flex items-center gap-1 relative z-10">
-                    <Globe2 size={12}/> Active Session: {sessionInfo.name}
-                  </span>
-                  <span className="text-lg font-mono text-white tracking-tight leading-tight relative z-10">
-                    {sessionInfo.localTime}
-                  </span>
-                </div>
+              {/* 60% Workspace Playground (4-Slot Grid) */}
+              <div className="w-[60%] shrink-0 min-h-0 grid grid-cols-2 grid-rows-2 gap-3 relative">
+                {[0, 1, 2, 3].map(slot => (
+                  <div 
+                    key={`slot-${slot}`}
+                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('bg-zinc-800/20') }}
+                    onDragLeave={(e) => { e.currentTarget.classList.remove('bg-zinc-800/20') }}
+                    onDrop={(e) => {
+                      e.preventDefault()
+                      e.currentTarget.classList.remove('bg-zinc-800/20')
+                      const cardId = e.dataTransfer.getData('cardId')
+                      if (cardId === 'local' || cardId === 'session') handleDrop(cardId, slot)
+                    }}
+                    className="relative w-full h-full rounded-lg border border-dashed border-zinc-800/20 flex items-center justify-center transition-colors"
+                  >
+                    {cardPositions.local === slot && renderCard('local')}
+                    {cardPositions.session === slot && renderCard('session')}
+                  </div>
+                ))}
               </div>
 
-              {/* Operating Rhythm (STRICTLY READ-ONLY) */}
-              <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0">
-                
+              {/* 40% Routine Tracker (STRICTLY READ-ONLY) */}
+              <div className="w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0">
                 <div className="flex justify-between items-center mb-4 border-b border-zinc-800/50 pb-3 shrink-0">
                   <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <Activity size={14} className="text-blue-500" /> Automated Rhythm Tracker
+                    <Activity size={14} className="text-blue-500" /> Routine Tracker
                   </h3>
                 </div>
 
@@ -232,7 +296,7 @@ export default function PersonalDashboard() {
                     <div className="flex flex-wrap gap-2 ml-7">
                       {pastDays.map(day => (
                         <div key={day.day} className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-800/20 border border-zinc-700/30 rounded backdrop-blur-sm">
-                          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{day.day}</span>
+                          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{day.day.substring(0,3)}</span>
                           {day.status === 'perfect' && <CheckCircle2 size={10} className="text-emerald-500" />}
                           {day.status === 'imperfect' && <AlertTriangle size={10} className="text-amber-500" />}
                           {day.status === 'missed' && <X size={10} className="text-red-500" />}
