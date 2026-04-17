@@ -1,7 +1,10 @@
+// src/app/(users)/desk/DeskClient.tsx
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
+import { useEditor, EditorContent } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
 import { 
   Plus, X, UploadCloud, Crosshair, 
   Target, ArrowRight, ArrowLeft, Eye, Bold, List,
@@ -30,8 +33,9 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
 
+  // FIX: Broadened regex to capture crypto, commodities, and indices (4 to 8 alphanumeric chars)
   const extractInstrument = (text: string) => {
-    const match = text.toUpperCase().match(/[A-Z]{6}/)
+    const match = text.toUpperCase().match(/[A-Z0-9]{4,8}/)
     return match ? match[0] : ''
   }
 
@@ -192,29 +196,28 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   )
 }
 
-// --- PROFESSIONAL RICH TEXT EDITOR ---
+// FIX: Modernized Rich Text Editor using TipTap to replace deprecated document.execCommand
 function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate: (id: string, notes: string) => void }) {
-  const editorRef = useRef<HTMLDivElement>(null);
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: activeSetup?.notes || '',
+    editorProps: {
+      attributes: {
+        class: 'flex-1 w-full bg-transparent border-none focus:outline-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar overflow-y-auto min-h-0',
+      },
+    },
+    onUpdate: ({ editor }) => {
+      if (activeSetup) {
+        onUpdate(activeSetup.id, editor.getHTML())
+      }
+    },
+  })
 
   useEffect(() => {
-    if (editorRef.current && activeSetup) {
-      if (editorRef.current.innerHTML !== activeSetup.notes) {
-        editorRef.current.innerHTML = activeSetup.notes || '';
-      }
+    if (editor && activeSetup && editor.getHTML() !== activeSetup.notes) {
+      editor.commands.setContent(activeSetup.notes || '')
     }
-  }, [activeSetup?.id]);
-
-  const handleInput = () => {
-    if (editorRef.current && activeSetup) {
-      onUpdate(activeSetup.id, editorRef.current.innerHTML);
-    }
-  };
-
-  const handleCommand = (cmd: string) => {
-    document.execCommand(cmd, false, undefined);
-    handleInput();
-    editorRef.current?.focus();
-  };
+  }, [activeSetup?.id, editor])
 
   if (!activeSetup) {
     return (
@@ -225,28 +228,35 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden tiptap-wrapper">
       <div className="flex items-center gap-1 pb-2 mb-2 border-b border-zinc-800/60 shrink-0">
-        <button onClick={() => handleCommand('bold')} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors" title="Bold Text"><Bold size={14} /></button>
-        <button onClick={() => handleCommand('insertUnorderedList')} className="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded transition-colors" title="Bullet Points"><List size={14} /></button>
+        <button 
+          onClick={() => editor?.chain().focus().toggleBold().run()} 
+          className={`p-1.5 rounded transition-colors ${editor?.isActive('bold') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`} 
+          title="Bold Text"
+        >
+          <Bold size={14} />
+        </button>
+        <button 
+          onClick={() => editor?.chain().focus().toggleBulletList().run()} 
+          className={`p-1.5 rounded transition-colors ${editor?.isActive('bulletList') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`} 
+          title="Bullet Points"
+        >
+          <List size={14} />
+        </button>
         <span className="ml-auto text-[9px] text-zinc-600 font-bold uppercase tracking-widest px-1">Notes Editor</span>
       </div>
-      <div 
-        ref={editorRef} contentEditable onBlur={handleInput}
-        className="flex-1 w-full bg-transparent border-none focus:outline-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar overflow-y-auto"
-        style={{ outline: 'none' }}
-      />
+      <EditorContent editor={editor} className="flex-1 flex flex-col min-h-0 overflow-hidden" />
       <style dangerouslySetInnerHTML={{__html: `
-        div[contenteditable] ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
-        div[contenteditable] li { margin-bottom: 0.25rem; }
-        div[contenteditable] b { color: #f4f4f5; font-weight: 800; }
-        div[contenteditable]:empty:before { content: "Type notes here..."; color: #52525b; pointer-events: none; display: block; }
+        .tiptap-wrapper .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; }
+        .tiptap-wrapper .ProseMirror li { margin-bottom: 0.25rem; }
+        .tiptap-wrapper .ProseMirror b, .tiptap-wrapper .ProseMirror strong { color: #f4f4f5; font-weight: 800; }
+        .tiptap-wrapper .ProseMirror p.is-editor-empty:first-child::before { content: "Type structural notes here..."; color: #52525b; float: left; height: 0; pointer-events: none; }
       `}} />
     </div>
   )
 }
 
-// 🚨 RECONCILIATION ITEM: Mobile Responsive Grid
 function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string, outcome: string, rr: string) => void }) {
   const [outcome, setOutcome] = useState(''); 
   const [rr, setRr] = useState('');
@@ -302,7 +312,7 @@ function ReconciliationItem({ trade, onSave }: { trade: any, onSave: (id: string
 export default function DeskClient() {
   const [user, setUser] = useState<any>(null)
   
-  const [isVaultOpen, setIsVaultOpen] = useState(false) // Start closed on mobile for clean entry
+  const [isVaultOpen, setIsVaultOpen] = useState(false)
   const [isAuditOpen, setIsAuditOpen] = useState(false)
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
@@ -318,15 +328,13 @@ export default function DeskClient() {
   const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
   const [logReason, setLogReason] = useState('')
 
-  // Handle Default Vault State (Open on desktop, closed on mobile)
   useEffect(() => {
     const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
-    handleResize(); // Set initially
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Init Data from Supabase
   useEffect(() => {
     const initData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -394,13 +402,16 @@ export default function DeskClient() {
     await supabase.from('user_desk_setups').update({ is_today: !setup.isToday, added_to_today_at: null }).eq('id', id)
   }
 
+  // FIX: Robust Supabase Image Deletion Logic using URL extraction
   const deleteSetup = async (id: string) => {
     if (!user) return
     const setupToDelete = setups.find(s => s.id === id);
     if (setupToDelete && setupToDelete.imageUrl && setupToDelete.imageUrl.includes('supabase')) {
-        const urlParts = setupToDelete.imageUrl.split('/');
-        const fileName = urlParts[urlParts.length - 1];
-        if (fileName) await supabase.storage.from('user-desk-images').remove([`${user.id}/${fileName}`])
+        // Extract exact path from Supabase storage URL regardless of nested folder structure
+        const match = setupToDelete.imageUrl.match(/user-desk-images\/(.+)$/);
+        if (match && match[1]) {
+            await supabase.storage.from('user-desk-images').remove([match[1]]);
+        }
     }
     setSetups(prev => prev.filter(s => s.id !== id))
     await supabase.from('user_desk_setups').delete().eq('id', id)
@@ -475,11 +486,9 @@ export default function DeskClient() {
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
-  // 🚨 STRICT MOBILE-FIRST + DESKTOP LOCK LAYOUT 🚨
   return (
     <div className="relative flex flex-col lg:flex-row h-auto min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
       
-      {/* MOBILE VAULT BACKDROP */}
       {isVaultOpen && (
         <div 
           className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[40]" 
@@ -487,16 +496,10 @@ export default function DeskClient() {
         />
       )}
 
-      {/* LEFT/MAIN WORKSPACE */}
       <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
-        
-        {/* =========================================
-            TOP SECTION: TODAY's FOCUS
-        ========================================= */}
         <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 lg:h-[calc(50%-4px)]">
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
           
-          {/* Header */}
           <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
             <div className="flex items-center gap-4">
               <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
@@ -516,7 +519,6 @@ export default function DeskClient() {
           </div>
 
           <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
-            {/* Pane 1: List (Horizontal scroll on mobile, Vertical on Desktop) */}
             <div className="w-full lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-800 flex flex-row lg:flex-col bg-zinc-950/50 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
               {todaySetups.length === 0 ? (
                 <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
@@ -563,7 +565,6 @@ export default function DeskClient() {
               )}
             </div>
 
-            {/* Pane 2: Chart Container */}
             <div className="w-full h-[250px] sm:h-[300px] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner">
               {activeSetup?.imageUrl ? (
                 <div className="absolute inset-0 p-4 flex items-center justify-center">
@@ -576,7 +577,6 @@ export default function DeskClient() {
               )}
             </div>
 
-            {/* Pane 3: Notes Container */}
             <div className="w-full lg:w-80 shrink-0 flex flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
               <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0">
                 <RichNotesEditor activeSetup={activeSetup} onUpdate={handleUpdateNotes} />
@@ -585,13 +585,9 @@ export default function DeskClient() {
           </div>
         </div>
         
-        {/* =========================================
-            BOTTOM SECTION: OPERATOR'S AUDIT (COLLAPSIBLE)
-        ========================================= */}
         <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
           
-          {/* Header (Clickable Toggle) */}
           <div 
             onClick={() => setIsAuditOpen(!isAuditOpen)}
             className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40 transition-colors"
@@ -609,10 +605,8 @@ export default function DeskClient() {
             </button>
           </div>
 
-          {/* Collapsible Inner Content */}
           <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
             
-            {/* Capture Panel */}
             <div className="w-full lg:flex-1 border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
               <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
                 <div className="flex justify-between items-end">
@@ -683,7 +677,6 @@ export default function DeskClient() {
               </div>
             </div>
 
-            {/* Queue Panel */}
             <div className="w-full lg:flex-[1.2] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
               <div className="mb-3 shrink-0 flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
@@ -705,9 +698,6 @@ export default function DeskClient() {
         </div>
       </div>
       
-      {/* =========================================
-          RIGHT WORKSPACE: WEEKLY VAULT (OVERLAY ON MOBILE)
-      ========================================= */}
       <div className={`fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-zinc-950 border-l border-zinc-800 lg:rounded-xl shadow-2xl transition-transform lg:transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-600/50 to-transparent"></div>
         
@@ -715,7 +705,6 @@ export default function DeskClient() {
           <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
             <UploadCloud size={14} className="text-purple-400" /> Weekly Vault
           </h2>
-          {/* Close button for mobile inside Vault */}
           <button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-zinc-500 hover:text-white p-1">
             <X size={18} />
           </button>
@@ -762,9 +751,6 @@ export default function DeskClient() {
         </div>
       </div>
 
-      {/* =========================================
-          MODALS
-      ========================================= */}
       {confirmPushId && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
           <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl">
