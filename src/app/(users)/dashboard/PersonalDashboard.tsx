@@ -16,7 +16,7 @@ const supabase = createBrowserClient(
 
 type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx: number }
 
-const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout'
+const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v2'
 
 export default function PersonalDashboard() {
   const [mounted, setMounted] = useState(false)
@@ -63,7 +63,6 @@ export default function PersonalDashboard() {
     if (savedLayout) {
       try {
         const parsed = JSON.parse(savedLayout)
-        // Basic validation to ensure boundaries are respected if old data existed
         if (parsed.local && parsed.session) setWidgets(parsed)
       } catch (e) {
         console.error("Failed to load playground layout", e)
@@ -204,7 +203,7 @@ export default function PersonalDashboard() {
     setWidgets(prev => {
       const w = prev[id].w
       const h = prev[id].h
-      // Enforce 7x7 boundaries strictly
+      // Enforce strictly within 7x7 bounds
       const safeX = Math.max(0, Math.min(targetX, 7 - w))
       const safeY = Math.max(0, Math.min(targetY, 7 - h))
 
@@ -228,7 +227,7 @@ export default function PersonalDashboard() {
     const startWidget = { ...widgets[id] }
     
     const { width, height } = gridRef.current.getBoundingClientRect()
-    // Adjusted for 7x7 grid cells
+    // 7x7 Grid metrics
     const cellW = width / 7
     const cellH = height / 7
 
@@ -239,7 +238,7 @@ export default function PersonalDashboard() {
       const deltaW = Math.round(dx / cellW)
       const deltaH = Math.round(dy / cellH)
 
-      // Ensure min size is 1x1, max size strictly respects the 7x7 boundary
+      // Respect strict 7x7 grid boundaries
       const newW = Math.max(1, Math.min(7 - startWidget.x, startWidget.w + deltaW))
       const newH = Math.max(1, Math.min(7 - startWidget.y, startWidget.h + deltaH))
 
@@ -272,27 +271,26 @@ export default function PersonalDashboard() {
   const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
   const pastDays = weekProgress.filter(d => d.isPast)
 
-  // Fluid typography fine-tuned for the smaller 7x7 grid cells
-  const formatTime = (timeStr: string, w: number, h: number, fontIdx: number) => {
+  // Fluid typography using completely native CSS Container Queries
+  // This guarantees the text scales to the card size without ever pushing the card boundaries
+  const formatTime = (timeStr: string, fontIdx: number) => {
     if (!timeStr) return '--:--:--'
     const [timeStrOnly, period] = timeStr.split(' ')
     const parts = timeStrOnly?.split(':') || []
     
-    // Scale slightly differently since 1 unit of W/H is smaller on a 7x7 grid
-    const dynamicFontSize = `min(${w * 1.5}rem, ${h * 2}rem, 15vw)`
-    
     return (
       <div 
         className={`flex items-baseline justify-center ${fontStyles[fontIdx]} select-none whitespace-nowrap tabular-nums leading-none`}
-        style={{ fontSize: dynamicFontSize }}
+        // Font size perfectly bounds to 13% of width or 40% of height, whichever safely fits.
+        style={{ fontSize: 'min(13cqi, 40cqb)' }}
       >
         {parts.map((p, i) => (
           <span key={i} className="flex items-baseline">
             <span>{p}</span>
-            {i < 2 && <span className="opacity-20 font-sans font-light mx-0.5 sm:mx-1 text-[0.8em] relative -top-[0.05em]">:</span>}
+            {i < 2 && <span className="opacity-20 font-sans font-light mx-[0.1em] text-[0.8em] relative -top-[0.05em]">:</span>}
           </span>
         ))}
-        {period && <span className="ml-1 sm:ml-2 opacity-40 font-sans tracking-widest font-bold text-[0.3em] uppercase">{period}</span>}
+        {period && <span className="ml-[0.2em] opacity-40 font-sans tracking-widest font-bold text-[0.3em] uppercase">{period}</span>}
       </div>
     )
   }
@@ -313,7 +311,7 @@ export default function PersonalDashboard() {
               {/* 60% Workspace Playground (7x7 Grid) */}
               <div 
                 ref={gridRef}
-                className="w-[60%] shrink-0 min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
+                className="w-[60%] shrink-0 min-h-0 grid grid-cols-7 grid-rows-7 gap-2 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
               >
                 {/* Background Drop Slots */}
                 {Array.from({ length: 49 }).map((_, i) => {
@@ -335,6 +333,7 @@ export default function PersonalDashboard() {
                 })}
 
                 {/* Local Time Widget */}
+                {/* Removed absolute width bloating by setting width/height to 100% of the spanned grid cells */}
                 <div 
                   draggable 
                   onDragStart={(e) => {
@@ -344,13 +343,16 @@ export default function PersonalDashboard() {
                      setTimeout(() => target.style.opacity = '1', 0);
                   }}
                   onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; }}
-                  className="absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden p-2.5 transition-[box-shadow,border-color]"
+                  className="absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color] z-10"
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
+                    width: '100%', 
+                    height: '100%'
                   }}
                 >
-                  <div className="flex items-center justify-between w-full shrink-0 h-5 z-10">
+                  {/* Protected Header Row */}
+                  <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10">
                     <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none">
                       <Clock size={10} className="opacity-50"/> Local Time
                     </div>
@@ -358,27 +360,28 @@ export default function PersonalDashboard() {
                       onPointerDown={(e) => e.stopPropagation()}
                       onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
                       onClick={(e) => toggleFont(e, 'local')}
-                      className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer"
+                      className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
                       title="Cycle Typography"
                     >
                       <Type size={12} />
                     </button>
                   </div>
                   
-                  <div className="flex-1 w-full flex justify-center items-center px-1 pb-1 min-h-0 overflow-hidden relative z-0">
+                  {/* Dynamic Body Row using Native Container Queries */}
+                  <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-0" style={{ containerType: 'size' }}>
                     {mounted && time 
-                      ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), widgets.local.w, widgets.local.h, widgets.local.fontIdx) 
-                      : formatTime('--:--:--', widgets.local.w, widgets.local.h, widgets.local.fontIdx)}
+                      ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), widgets.local.fontIdx) 
+                      : formatTime('--:--:--', widgets.local.fontIdx)}
                   </div>
 
-                  {/* Resize Handle */}
+                  {/* Strictly isolated Resize Handle */}
                   <div 
                     draggable={false}
                     onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     onPointerDown={(e) => handleResizePointerDown(e, 'local')}
-                    className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-1.5"
+                    className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2.5 touch-none"
                   >
-                    <div className="w-2 h-2 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
+                    <div className="w-2.5 h-2.5 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
                   </div>
                 </div>
 
@@ -392,15 +395,18 @@ export default function PersonalDashboard() {
                      setTimeout(() => target.style.opacity = '1', 0);
                   }}
                   onDragEnd={(e) => { (e.target as HTMLElement).style.opacity = '1'; }}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden p-2.5 transition-[box-shadow,border-color] ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-[box-shadow,border-color] z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
+                    width: '100%', 
+                    height: '100%'
                   }}
                 >
                   <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-0"></div>
                   
-                  <div className="flex items-center justify-between w-full shrink-0 h-5 z-10 relative">
+                  {/* Protected Header Row */}
+                  <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10 relative">
                     <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none">
                       <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
                     </div>
@@ -408,29 +414,30 @@ export default function PersonalDashboard() {
                       onPointerDown={(e) => e.stopPropagation()}
                       onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
                       onClick={(e) => toggleFont(e, 'session')}
-                      className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer"
+                      className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
                       title="Cycle Typography"
                     >
                       <Type size={12} />
                     </button>
                   </div>
 
-                  <div className="flex-1 w-full flex justify-center items-center px-1 pb-1 min-h-0 overflow-hidden relative z-10">
-                    {formatTime(sessionInfo.localTime, widgets.session.w, widgets.session.h, widgets.session.fontIdx)}
+                  {/* Dynamic Body Row using Native Container Queries */}
+                  <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-10" style={{ containerType: 'size' }}>
+                    {formatTime(sessionInfo.localTime, widgets.session.fontIdx)}
                   </div>
                   
                   {sessionInfo.isOverlap && (
                     <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent animate-pulse" />
                   )}
 
-                  {/* Resize Handle */}
+                  {/* Strictly isolated Resize Handle */}
                   <div 
                     draggable={false}
                     onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     onPointerDown={(e) => handleResizePointerDown(e, 'session')}
-                    className="absolute bottom-0 right-0 w-6 h-6 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-1.5"
+                    className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2.5 touch-none"
                   >
-                    <div className="w-2 h-2 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
+                    <div className="w-2.5 h-2.5 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
                   </div>
                 </div>
 
