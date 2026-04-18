@@ -164,11 +164,14 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   const [linkInput, setLinkInput] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
-  const [isDragging, setIsDragging] = useState(false) // 🚨 Drag state
+  const [isDragging, setIsDragging] = useState(false)
+
+  // 🚨 Peek states for Upload Modal
+  const [isPeeking, setIsPeeking] = useState(false)
+  const peekTimer = useRef<NodeJS.Timeout | null>(null)
 
   const extractInstrument = (text: string) => { const match = text.toUpperCase().match(/[A-Z0-9]{4,8}/); return match ? match[0] : '' }
 
-  // 🚨 Handle Image Paster (Ctrl+V Screenshots)
   useEffect(() => {
     if (!isOpen) return;
     const handleGlobalPaste = (e: ClipboardEvent) => {
@@ -201,7 +204,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
     }
   }
 
-  // 🚨 Drag & Drop Handlers
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
   const handleDrop = (e: React.DragEvent) => {
@@ -217,8 +219,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
       const text = await navigator.clipboard.readText();
       if (text) setLinkInput(text);
     } catch (err) {
-      console.error('Failed to read clipboard', err);
-      alert('Clipboard text access blocked by browser. Please use Ctrl+V to paste.');
+      alert('Clipboard access blocked. Please use Ctrl+V to paste.');
     }
   };
 
@@ -235,88 +236,115 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 
   const handleSaveAll = async () => {
     setIsUploading(true)
-    const validDrafts = drafts.filter(d => d.instrument.trim() !== '' && d.direction !== '' && d.playbook !== '')
+    // 🚨 Playbook and Notes are now completely optional. Only instrument and direction are required.
+    const validDrafts = drafts.filter(d => d.instrument.trim() !== '' && d.direction !== '')
     await onSave(validDrafts)
     setIsUploading(false)
     onClose()
   }
 
+  // 🚨 Peek handlers for Upload Modal
+  const handlePeekStart = () => { peekTimer.current = setTimeout(() => setIsPeeking(true), 400); };
+  const handlePeekEnd = () => { if (peekTimer.current) clearTimeout(peekTimer.current); setIsPeeking(false); };
+
+  // 🚨 Smart Backdrop Close Logic
+  const handleBackdropClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && drafts.length === 0 && !linkInput) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null
 
   return (
-    <div 
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-    >
-      <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px] relative">
-        
-        {/* 🚨 Drag Overlay */}
-        {isDragging && (
-          <div className="absolute inset-0 z-50 bg-purple-500/10 border-4 border-purple-500/50 border-dashed rounded-xl flex items-center justify-center pointer-events-none backdrop-blur-sm m-2">
-            <div className="bg-black/90 px-8 py-6 rounded-2xl flex flex-col items-center shadow-2xl">
-              <UploadCloud size={48} className="text-purple-500 mb-3 animate-bounce" />
-              <p className="text-white font-black text-xl tracking-widest uppercase">Drop Images to Stage</p>
+    <>
+      <div 
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200"
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={handleBackdropClick} // Smart Close
+      >
+        <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px] relative" onClick={e => e.stopPropagation()}>
+          
+          {isDragging && (
+            <div className="absolute inset-0 z-50 bg-purple-500/10 border-4 border-purple-500/50 border-dashed rounded-xl flex items-center justify-center pointer-events-none backdrop-blur-sm m-2">
+              <div className="bg-black/90 px-8 py-6 rounded-2xl flex flex-col items-center shadow-2xl">
+                <UploadCloud size={48} className="text-purple-500 mb-3 animate-bounce" />
+                <p className="text-white font-black text-xl tracking-widest uppercase">Drop Images to Stage</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
-          <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2"><UploadCloud size={16} className="text-purple-500" /> Vault Upload</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}><X size={18} /></button>
-        </div>
-        
-        <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
-          <div className="w-full lg:w-[200px] border-b lg:border-b-0 lg:border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
-            <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
-              <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5" disabled={isUploading}><Plus size={14} /> Add Images</button>
-              
-              {/* 🚨 One-Click Paste & Enter Handler */}
-              <div className="flex gap-1">
-                <input 
-                  type="text" 
-                  value={linkInput} 
-                  onChange={(e) => setLinkInput(e.target.value)} 
-                  onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
-                  placeholder="Paste URL..." 
-                  className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-purple-500 transition-colors" 
-                  disabled={isUploading} 
-                />
-                <button onClick={handlePasteClick} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded transition-colors" disabled={isUploading} title="Paste Text"><Clipboard size={12}/></button>
-                <button onClick={handleAddLink} className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors" disabled={isUploading} title="Add"><Plus size={12}/></button>
-              </div>
-              <input type="file" multiple ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-            </div>
-            <div className="flex-1 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-2 flex flex-row lg:flex-col gap-2 text-white">
-              {drafts.map((draft, idx) => (
-                <div key={draft.id} onClick={() => setActiveIndex(idx)} className={`min-w-[150px] lg:min-w-0 p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-zinc-800 border-zinc-600' : 'bg-zinc-950 border-zinc-800/50 hover:bg-zinc-900'}`}>
-                  <div className="flex-1 min-w-0"><p className="text-xs font-bold truncate">{draft.instrument || 'UNKNOWN'}</p><p className="text-[9px] text-zinc-500 truncate">{draft.direction ? `${draft.direction} • ${draft.playbook}` : 'Incomplete'}</p></div>
-                  <button onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} className="text-zinc-600 hover:text-red-400 p-1" disabled={isUploading}><X size={12}/></button>
+          <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
+            <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2"><UploadCloud size={16} className="text-purple-500" /> Vault Upload</h2>
+            <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}><X size={18} /></button>
+          </div>
+          
+          <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
+            <div className="w-full lg:w-[200px] border-b lg:border-b-0 lg:border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
+              <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
+                <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5" disabled={isUploading}><Plus size={14} /> Add Images</button>
+                
+                <div className="flex gap-1">
+                  <input 
+                    type="text" 
+                    value={linkInput} 
+                    onChange={(e) => setLinkInput(e.target.value)} 
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
+                    placeholder="Paste URL..." 
+                    className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-purple-500 transition-colors" 
+                    disabled={isUploading} 
+                  />
+                  <button onClick={handlePasteClick} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded transition-colors" disabled={isUploading} title="Paste Text"><Clipboard size={12}/></button>
+                  <button onClick={handleAddLink} className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors" disabled={isUploading} title="Add"><Plus size={12}/></button>
                 </div>
-              ))}
+                <input type="file" multiple ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+              </div>
+              <div className="flex-1 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-2 flex flex-row lg:flex-col gap-2 text-white">
+                {drafts.map((draft, idx) => (
+                  <div key={draft.id} onClick={() => setActiveIndex(idx)} className={`min-w-[150px] lg:min-w-0 p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-zinc-800 border-zinc-600' : 'bg-zinc-950 border-zinc-800/50 hover:bg-zinc-900'}`}>
+                    <div className="flex-1 min-w-0"><p className="text-xs font-bold truncate">{draft.instrument || 'UNKNOWN'}</p><p className="text-[9px] text-zinc-500 truncate">{draft.direction ? `${draft.direction} ${draft.playbook ? '• ' + draft.playbook : ''}` : 'Incomplete'}</p></div>
+                    <button onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} className="text-zinc-600 hover:text-red-400 p-1" disabled={isUploading}><X size={12}/></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
+              {drafts.length > 0 && drafts[activeIndex] ? (
+                <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full text-white">
+                  {/* 🚨 Added Peek functionality to Upload preview */}
+                  <div 
+                    className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center mb-2 relative"
+                    onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}
+                  >
+                    {drafts[activeIndex].imageSource ? <img src={drafts[activeIndex].imageSource!} alt="Preview" className="w-full h-full object-contain p-2 cursor-pointer" draggable={false} /> : <ImageIcon className="w-10 h-10 text-zinc-700" />}
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label><input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" disabled={isUploading}/></div>
+                    <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Macro Bias</label><div className="flex gap-2"><button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>LONG</button><button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>SHORT</button></div></div>
+                  </div>
+                  <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Playbook Strategy</label><select value={drafts[activeIndex].playbook} onChange={(e) => updateActiveDraft('playbook', e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" disabled={isUploading}><option value="">Select Playbook...</option>{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
+                  <div className="flex flex-col gap-2 flex-1 mt-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label><textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500 transition-colors resize-none custom-scrollbar" disabled={isUploading}/></div>
+                </div>
+              ) : <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 p-6"><UploadCloud size={40} className="mb-4 opacity-50" /><p className="text-sm font-medium text-center">Drag & Drop images anywhere<br/><span className="text-[10px] opacity-70">or use Ctrl+V to paste a screenshot</span></p></div>}
             </div>
           </div>
-          <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
-            {drafts.length > 0 && drafts[activeIndex] ? (
-              <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full text-white">
-                <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center mb-2">{drafts[activeIndex].imageSource ? <img src={drafts[activeIndex].imageSource!} alt="Preview" className="w-full h-full object-contain p-2" /> : <ImageIcon className="w-10 h-10 text-zinc-700" />}</div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label><input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" disabled={isUploading}/></div>
-                  <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Macro Bias</label><div className="flex gap-2"><button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>LONG</button><button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>SHORT</button></div></div>
-                </div>
-                <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Playbook Strategy</label><select value={drafts[activeIndex].playbook} onChange={(e) => updateActiveDraft('playbook', e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" disabled={isUploading}><option value="" disabled>Select Core Setup...</option>{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
-                <div className="flex flex-col gap-2 flex-1 mt-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label><textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500 transition-colors resize-none custom-scrollbar" disabled={isUploading}/></div>
-              </div>
-            ) : <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 p-6"><UploadCloud size={40} className="mb-4 opacity-50" /><p className="text-sm font-medium text-center">Drag & Drop images anywhere<br/><span className="text-[10px] opacity-70">or use Ctrl+V to paste a screenshot</span></p></div>}
+          <div className="p-4 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center shrink-0">
+            <span className="text-xs font-medium text-zinc-500">{drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged</span>
+            {/* 🚨 Playbook and Notes are NOT required to save */}
+            <button onClick={handleSaveAll} disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction) || isUploading} className="px-6 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500">{isUploading ? 'Saving...' : 'Save to Vault'}</button>
           </div>
-        </div>
-        <div className="p-4 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center shrink-0">
-          <span className="text-xs font-medium text-zinc-500">{drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged</span>
-          <button onClick={handleSaveAll} disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction || !d.playbook) || isUploading} className="px-6 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500">{isUploading ? 'Saving...' : 'Save to Vault'}</button>
         </div>
       </div>
-    </div>
+      
+      {/* 🚨 Peek Overlay for Upload Modal */}
+      {isPeeking && drafts.length > 0 && drafts[activeIndex]?.imageSource && (
+        <div className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 pointer-events-none animate-in fade-in duration-150">
+          <img src={drafts[activeIndex].imageSource!} alt="Peek" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+        </div>
+      )}
+    </>
   )
 }
 
@@ -361,7 +389,7 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
         <div className="flex items-center gap-3">
           <span className="text-[13px] font-black text-white">{trade.symbol}</span>
           <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>{trade.direction}</span>
-          <span className="text-[10px] text-zinc-400 font-medium">• {trade.playbook}</span>
+          {trade.playbook && <span className="text-[10px] text-zinc-400 font-medium">• {trade.playbook}</span>}
           {isMt5Synced && <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded ml-2 flex items-center gap-1"><DownloadCloud size={10}/> MT5 Synced</span>}
         </div>
         <div className="flex items-center gap-2">
@@ -371,11 +399,35 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        {needsReason && <select value={missingReason} onChange={e => setMissingReason(e.target.value)} className="flex-1 sm:flex-none sm:w-32 bg-black border border-red-500/50 rounded-lg px-2 py-1.5 text-[10px] font-bold text-zinc-300 outline-none uppercase"><option value="">Log Catalyst...</option><option value="FOMO">FOMO</option><option value="Revenge">Revenge</option><option value="Boredom">Boredom</option></select>}
-        <select value={outcome} onChange={e => setOutcome(e.target.value)} className={`w-full sm:w-28 bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-blue-500`}><option value="">Outcome</option><option value="TP">Hit TP</option><option value="SL">Hit SL</option><option value="BE">Break Even</option></select>
-        <div className="relative w-full sm:w-24"><input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className={`w-full bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-blue-500`} /><span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase">RR</span></div>
-        <div className="relative flex-1"><input type="text" value={tvUrl} onChange={e => setTvUrl(e.target.value)} placeholder="Paste TradingView URL (Alt+S)..." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-2 text-[10px] font-bold text-zinc-300 outline-none focus:border-blue-500 transition-all placeholder:text-zinc-600" /><LinkIcon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" /></div>
-        <button disabled={!outcome || !rr || !tvUrl || (needsReason && !missingReason) || isSaving} onClick={handleSave} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors sm:ml-auto shrink-0">{isSaving ? 'Saving...' : 'Reconcile'}</button>
+        {needsReason && (
+          <select value={missingReason} onChange={e => setMissingReason(e.target.value)} className="flex-1 sm:flex-none sm:w-32 bg-black border border-red-500/50 rounded-lg px-2 py-1.5 text-[10px] font-bold text-zinc-300 outline-none uppercase">
+            <option value="">Log Catalyst...</option>
+            <option value="FOMO">FOMO</option>
+            <option value="Revenge">Revenge</option>
+            <option value="Boredom">Boredom</option>
+          </select>
+        )}
+        
+        <select value={outcome} onChange={e => setOutcome(e.target.value)} className={`w-full sm:w-28 bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-blue-500`}>
+          <option value="">Outcome</option>
+          <option value="TP">Hit TP</option>
+          <option value="SL">Hit SL</option>
+          <option value="BE">Break Even</option>
+        </select>
+        
+        <div className="relative w-full sm:w-24">
+          <input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className={`w-full bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-blue-500`} />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase">RR</span>
+        </div>
+
+        <div className="relative flex-1">
+          <input type="text" value={tvUrl} onChange={e => setTvUrl(e.target.value)} placeholder="Paste TradingView URL (Alt+S)..." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-2 text-[10px] font-bold text-zinc-300 outline-none focus:border-blue-500 transition-all placeholder:text-zinc-600" />
+          <LinkIcon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
+        </div>
+
+        <button disabled={!outcome || !rr || !tvUrl || (needsReason && !missingReason) || isSaving} onClick={handleSave} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors sm:ml-auto shrink-0">
+          {isSaving ? 'Saving...' : 'Reconcile'}
+        </button>
       </div>
     </div>
   )
@@ -388,8 +440,11 @@ export default function DeskClient() {
   )
 
   const [user, setUser] = useState<any>(null)
+  
+  // 🚨 UI States - Start closed, but we check localStorage after mount
   const [isVaultOpen, setIsVaultOpen] = useState(false)
   const [isAuditOpen, setIsAuditOpen] = useState(false)
+  
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   const [previewSetup, setPreviewSetup] = useState<any | null>(null)
@@ -413,11 +468,17 @@ export default function DeskClient() {
   const [chartScale, setChartScale] = useState(1)
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
 
+  // 🚨 Load states from LocalStorage on mount
   useEffect(() => {
-    const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
-    handleResize(); window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    const vault = localStorage.getItem('desk_vault_open')
+    const audit = localStorage.getItem('desk_audit_open')
+    if (vault) setIsVaultOpen(vault === 'true')
+    if (audit) setIsAuditOpen(audit === 'true')
+  }, [])
+
+  // 🚨 Save states to LocalStorage on change
+  useEffect(() => { localStorage.setItem('desk_vault_open', String(isVaultOpen)) }, [isVaultOpen])
+  useEffect(() => { localStorage.setItem('desk_audit_open', String(isAuditOpen)) }, [isAuditOpen])
 
   useEffect(() => {
     const initData = async () => {
@@ -448,8 +509,8 @@ export default function DeskClient() {
   }, [todaySetups.length, activeTodayId])
 
   const handleLockEntry = useCallback(async () => {
-    if (tradesTakenToday < 2 && logPair && logDirection && logPlaybook && logExecution && user) {
-      const newLog = { user_id: user.id, symbol: logPair, direction: logDirection, playbook: logPlaybook, execution_type: logExecution, reason: logReason || null }
+    if (tradesTakenToday < 2 && logPair && logDirection && logExecution && user) {
+      const newLog = { user_id: user.id, symbol: logPair, direction: logDirection, playbook: logPlaybook || null, execution_type: logExecution, reason: logReason || null }
       const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
       if (data && data[0]) {
         setTradesTakenToday(prev => prev + 1);
@@ -478,14 +539,12 @@ export default function DeskClient() {
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
 
-      // 🚨 Vault Modal [Alt + V]
       if (e.code === 'KeyV' && e.altKey) {
         e.preventDefault(); 
         setIsUploadModalOpen(true); 
         return;
       }
 
-      // Vault & Audit Toggles
       if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setIsVaultOpen(prev => !prev); }
       if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setIsAuditOpen(prev => !prev); }
 
@@ -493,7 +552,7 @@ export default function DeskClient() {
         if (e.code === 'Digit1' || e.code === 'Numpad1') { e.preventDefault(); setLogExecution('Perfect'); }
         if (e.code === 'Digit2' || e.code === 'Numpad2') { e.preventDefault(); setLogExecution('Imperfect'); }
         if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-          if (logDirection && logPlaybook && logExecution) {
+          if (logDirection && logExecution) { // Playbook is optional, so we don't check for it here
             e.preventDefault();
             handleLockEntry();
           }
@@ -593,8 +652,15 @@ export default function DeskClient() {
     })
   }
 
-  const handlePeekStart = () => { if (chartScale === 1) peekTimer.current = setTimeout(() => setIsPeeking(true), 400); };
-  const handlePeekEnd = () => { if (peekTimer.current) clearTimeout(peekTimer.current); setIsPeeking(false); };
+  const handlePeekStart = () => {
+    if (chartScale !== 1) return; 
+    peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
+  };
+
+  const handlePeekEnd = () => {
+    if (peekTimer.current) clearTimeout(peekTimer.current);
+    setIsPeeking(false);
+  };
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
 
@@ -635,7 +701,7 @@ export default function DeskClient() {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
-                          <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook || 'No Playbook'}</span>
+                          {setup.playbook && <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook}</span>}
                         </div>
                       </div>
                     )
@@ -665,17 +731,30 @@ export default function DeskClient() {
                       onTransformed={(ref) => setChartScale(ref.state.scale)}
                     >
                       <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img src={activeSetup.imageUrl} alt={activeSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950 cursor-grab active:cursor-grabbing pointer-events-auto" draggable={false} />
+                        <img 
+                          src={activeSetup.imageUrl} 
+                          alt={activeSetup.symbol} 
+                          className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950 cursor-grab active:cursor-grabbing pointer-events-auto" 
+                          draggable={false} 
+                        />
                       </TransformComponent>
                     </TransformWrapper>
 
                     {chartScale !== 1 && (
-                      <button onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }} className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100" title="View Full Screen">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }}
+                        className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100"
+                        title="View Full Screen"
+                      >
                         <Maximize size={16} />
                       </button>
                     )}
                   </>
-                ) : <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0"><span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span></div>}
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0">
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span>
+                  </div>
+                )}
               </div>
 
               <div className="w-full lg:w-80 shrink-0 flex flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
@@ -701,7 +780,7 @@ export default function DeskClient() {
                     <div className="bg-black border border-zinc-700 rounded-xl p-4 shadow-inner flex flex-col gap-3">
                       <div className="flex justify-between items-center mb-1"><span className="text-[16px] font-black text-white tracking-wider">{logPair}</span><button onClick={() => { setLogPair(''); setLogDirection(null); setLogPlaybook(''); setLogExecution(null); setLogReason(''); }} className="text-zinc-500 hover:text-red-400 transition-colors"><X size={14}/></button></div>
                       <div className="flex gap-2"><button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Long</button><button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Short</button></div>
-                      <select value={logPlaybook} onChange={(e) => setLogPlaybook(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500"><option value="" disabled>Select Playbook...</option>{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</select>
+                      <select value={logPlaybook} onChange={(e) => setLogPlaybook(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500"><option value="">Select Playbook...</option>{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</select>
                       <div className="grid grid-cols-2 gap-2 mt-1">
                         <button onClick={() => setLogExecution('Perfect')} className={`py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}>
                           <CheckCircle size={16} />
@@ -713,7 +792,7 @@ export default function DeskClient() {
                         </button>
                       </div>
                       {logExecution === 'Imperfect' && !isAlreadyLogged && <select value={logReason} onChange={(e) => setLogReason(e.target.value)} className="w-full bg-zinc-900 border border-red-500/30 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-red-500/80 transition-colors mt-1"><option value="" disabled>Catalyst (Can skip to Weekend)</option><option value="FOMO">FOMO / Rushed Entry</option><option value="Revenge">Revenge Trading</option><option value="Boredom">Boredom / Forced Setup</option><option value="Ignored Plan">Ignored Trading Plan</option></select>}
-                      <button disabled={!logDirection || !logPlaybook || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} onClick={handleLockEntry} className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 flex items-center justify-center gap-2 ${isAlreadyLogged ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'}`}>
+                      <button disabled={!logDirection || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} onClick={handleLockEntry} className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 flex items-center justify-center gap-2 ${isAlreadyLogged ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'}`}>
                         {isAlreadyLogged ? 'Already Logged Today' : <>Lock Entry <span className="font-mono text-[9px] opacity-70">[ENTER]</span></>}
                       </button>
                     </div>
@@ -769,11 +848,7 @@ export default function DeskClient() {
               </div>
             ))}
           </div>
-          <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4">
-            <button onClick={() => setIsUploadModalOpen(true)} className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none">
-              <Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span>
-            </button>
-          </div>
+          <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4"><button onClick={() => setIsUploadModalOpen(true)} className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none"><Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></button></div>
         </div>
 
         <MT5SyncModal isOpen={isMT5ModalOpen} onClose={() => { setIsMT5ModalOpen(false); setMt5File(null); }} file={mt5File} pendingLogs={pendingReconciliation} onConfirm={handleMT5Confirm} />
