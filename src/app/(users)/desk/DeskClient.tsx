@@ -9,7 +9,7 @@ import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, 
   Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize
 } from 'lucide-react'
 
 // Initialize the Next.js SSR Browser Client
@@ -421,6 +421,7 @@ export default function DeskClient() {
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
+  const [previewSetup, setPreviewSetup] = useState<any | null>(null)
   
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
@@ -436,9 +437,10 @@ export default function DeskClient() {
   const [mt5File, setMt5File] = useState<File | null>(null)
   const mt5InputRef = useRef<HTMLInputElement>(null)
 
-  // 🚨 NEW: Interaction & Peeking States
+  // 🚨 UI States
   const [isPeeking, setIsPeeking] = useState(false)
-  const [isHoveringFocus, setIsHoveringFocus] = useState(false)
+  const [isFullScreen, setIsFullScreen] = useState(false)
+  const [chartScale, setChartScale] = useState(1) // Tracks real-time zoom
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
@@ -478,18 +480,10 @@ export default function DeskClient() {
     else if (todaySetups.length === 0) { setActiveTodayId(null); if(logPair) setLogPair(''); }
   }, [todaySetups.length, activeTodayId])
 
-  useEffect(() => {
-    const activeSetup = setups.find(s => s.id === activeTodayId)
-    if (activeSetup && user) {
-      const timeoutId = setTimeout(() => supabase.from('user_desk_setups').update({ notes: activeSetup.notes }).eq('id', activeSetup.id).then(), 1500)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [setups, activeTodayId, user, supabase])
-
-  // 🚨 NEW: Keyboard Traversal Logic (Space & Shift+Space)
+  // 🚨 GLOBAL KEYBOARD SHORTCUTS
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isHoveringFocus || todaySetups.length === 0) return;
+      if (todaySetups.length === 0) return;
       
       const target = e.target as HTMLElement;
       // Do not trigger traversal if user is typing in notes/inputs
@@ -503,16 +497,16 @@ export default function DeskClient() {
       }
 
       if (e.code === 'Space') {
-        e.preventDefault(); // Stop page from scrolling
+        e.preventDefault(); 
         const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
         if (currentIndex === -1) return;
 
         if (e.shiftKey) {
-          // Go Up (Previous)
+          // Go Up
           const prevIndex = (currentIndex - 1 + todaySetups.length) % todaySetups.length;
           setActiveTodayId(todaySetups[prevIndex].id);
         } else {
-          // Go Down (Next)
+          // Go Down
           const nextIndex = (currentIndex + 1) % todaySetups.length;
           setActiveTodayId(todaySetups[nextIndex].id);
         }
@@ -521,7 +515,15 @@ export default function DeskClient() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isHoveringFocus, todaySetups, activeTodayId]);
+  }, [todaySetups, activeTodayId]);
+
+  useEffect(() => {
+    const activeSetup = setups.find(s => s.id === activeTodayId)
+    if (activeSetup && user) {
+      const timeoutId = setTimeout(() => supabase.from('user_desk_setups').update({ notes: activeSetup.notes }).eq('id', activeSetup.id).then(), 1500)
+      return () => clearTimeout(timeoutId)
+    }
+  }, [setups, activeTodayId, user, supabase])
 
   const handleConfirmPush = async () => {
     if(confirmPushId && user) {
@@ -606,26 +608,21 @@ export default function DeskClient() {
   const handleMT5Confirm = (matches: any[]) => {
     setPendingReconciliation(prev => prev.map(log => {
       const matchObj = matches.find(m => m.log.id === log.id)?.match
-      if (matchObj) {
-        return { ...log, outcome: matchObj.outcome, rr: matchObj.rr }
-      }
+      if (matchObj) return { ...log, outcome: matchObj.outcome, rr: matchObj.rr }
       return log
     }))
     
     matches.forEach(async m => {
       if (m.match) {
-        await supabase.from('user_desk_logs').update({ 
-          mt5_position_id: m.match.ticket,
-          outcome: m.match.outcome,
-          rr: m.match.rr
-        }).eq('id', m.log.id)
+        await supabase.from('user_desk_logs').update({ mt5_position_id: m.match.ticket, outcome: m.match.outcome, rr: m.match.rr }).eq('id', m.log.id)
       }
     })
   }
 
-  // 🚨 NEW: Peek Logic Handlers
+  // 🚨 SMART PEEK LOGIC: Only triggers if not zoomed in.
   const handlePeekStart = () => {
-    peekTimer.current = setTimeout(() => setIsPeeking(true), 400); // 400ms hold triggers peek
+    if (chartScale !== 1) return; // Prevent peek when user is dragging to pan
+    peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
   };
 
   const handlePeekEnd = () => {
@@ -643,14 +640,7 @@ export default function DeskClient() {
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
           
-          {/* =========================================
-              TOP SECTION: TODAY'S FOCUS
-          ========================================= */}
-          <div 
-            className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 lg:h-[calc(50%-4px)]"
-            onMouseEnter={() => setIsHoveringFocus(true)}
-            onMouseLeave={() => setIsHoveringFocus(false)}
-          >
+          <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 lg:h-[calc(50%-4px)]">
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
             <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
               <div className="flex items-center gap-4">
@@ -686,9 +676,9 @@ export default function DeskClient() {
                 )}
               </div>
 
-              {/* 🚨 UPGRADED: Interactive Canvas Wrapper */}
+              {/* 🚨 INTERACTIVE CANVAS AREA */}
               <div 
-                className="w-full h-[250px] sm:h-[300px] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden"
+                className="w-full h-[250px] sm:h-[300px] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group"
                 onMouseDown={handlePeekStart}
                 onMouseUp={handlePeekEnd}
                 onMouseLeave={handlePeekEnd}
@@ -696,24 +686,38 @@ export default function DeskClient() {
                 onTouchEnd={handlePeekEnd}
               >
                 {activeSetup?.imageUrl ? (
-                  <TransformWrapper
-                    initialScale={1}
-                    minScale={0.5}
-                    maxScale={10}
-                    centerOnInit={true}
-                    wheel={{ step: 0.1 }}
-                    doubleClick={{ mode: 'reset' }}
-                    panning={{ disabled: false }}
-                  >
-                    <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <img 
-                        src={activeSetup.imageUrl} 
-                        alt={activeSetup.symbol} 
-                        className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950 cursor-grab active:cursor-grabbing pointer-events-auto" 
-                        draggable={false} 
-                      />
-                    </TransformComponent>
-                  </TransformWrapper>
+                  <>
+                    <TransformWrapper
+                      initialScale={1}
+                      minScale={0.5}
+                      maxScale={10}
+                      centerOnInit={true}
+                      wheel={{ step: 0.1 }}
+                      doubleClick={{ mode: 'reset' }}
+                      panning={{ disabled: false }}
+                      onTransformed={(ref) => setChartScale(ref.state.scale)}
+                    >
+                      <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <img 
+                          src={activeSetup.imageUrl} 
+                          alt={activeSetup.symbol} 
+                          className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950 cursor-grab active:cursor-grabbing pointer-events-auto" 
+                          draggable={false} 
+                        />
+                      </TransformComponent>
+                    </TransformWrapper>
+
+                    {/* Full Screen Popout Button (Appears when zoomed) */}
+                    {chartScale !== 1 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }}
+                        className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100"
+                        title="View Full Screen"
+                      >
+                        <Maximize size={16} />
+                      </button>
+                    )}
+                  </>
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0">
                     <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span>
@@ -759,7 +763,6 @@ export default function DeskClient() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
                   <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
                   
-                  {/* MT5 DROPZONE */}
                   {pendingReconciliation.length > 0 && (
                     <div 
                       onDragOver={e => e.preventDefault()} 
@@ -794,6 +797,7 @@ export default function DeskClient() {
               <div key={`weekly-${setup.id}`} className="w-full p-3 border border-zinc-800/80 bg-black rounded-lg flex justify-between items-center group hover:border-zinc-600 transition-colors shrink-0 shadow-sm">
                 <div className="flex flex-col min-w-0 pr-2"><span className="text-[13px] font-bold tracking-wide text-zinc-300 group-hover:text-white transition-colors truncate">{setup.symbol}</span><span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span></div>
                 <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={14} /></button>
                   <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
                   <button onClick={() => setConfirmPushId(setup.id)} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm">Push <ArrowRight size={12} /></button>
                 </div>
@@ -816,10 +820,17 @@ export default function DeskClient() {
           </div>
         )}
 
-        {/* 🚨 THE IMMERSIVE PEEK OVERLAY 🚨 */}
-        {isPeeking && activeSetup?.imageUrl && (
-          <div className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 pointer-events-none">
-            <img src={activeSetup.imageUrl} alt="Peeking" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+        {/* 🚨 COMBINED FULL-SCREEN / PEEK OVERLAY */}
+        {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
+          <div 
+            className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`}
+            onClick={() => { if (isFullScreen) setIsFullScreen(false); }}
+          >
+            <img 
+              src={activeSetup.imageUrl} 
+              alt="Peeking" 
+              className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" 
+            />
           </div>
         )}
       </div>
