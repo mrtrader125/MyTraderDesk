@@ -1395,7 +1395,7 @@ export default function DeskClient() {
             <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
               <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
                 <Activity size={14} className="text-emerald-500" /> 
-                Operator's Audit <span className="text-[10px] text-zinc-600 font-mono ml-1 opacity-70">[A]</span>
+                Action Logs <span className="text-[10px] text-zinc-600 font-mono ml-1 opacity-70">[A]</span>
               </h2>
               <button className="text-zinc-500 hover:text-white flex items-center gap-2">
                 {pendingReconciliation.length > 0 && !isAuditOpen && (
