@@ -444,7 +444,8 @@ export default function PersonalDashboard() {
   }
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
-  const isWeekendNow = new Date().getDay() === 5 || new Date().getDay() === 6 
+  // 6 is Saturday, 0 is Sunday
+const isWeekendNow = new Date().getDay() === 6 || new Date().getDay() === 0 
   const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
 
   const formatTime = (timeStr: string, fontIdx: number) => {
