@@ -8,11 +8,12 @@ import Papa from 'papaparse'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings
 } from 'lucide-react'
 
-const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
-const CATALYSTS = ["FOMO / Rushed", "Revenge Trading", "Boredom / Forced", "Ignored Plan"]
+// Default Catalyst Lists
+const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
+const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
 
 type DraftSetup = {
   id: string;
@@ -81,21 +82,17 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpe
       }
 
       if (file.name.endsWith('.csv')) {
-        Papa.parse(file, { 
-          header: false, 
-          skipEmptyLines: true, 
-          complete: (results) => processMatrix(results.data as string[][]) 
-        })
+        Papa.parse(file, { header: false, skipEmptyLines: true, complete: (results) => processMatrix(results.data as string[][]) })
       } else if (file.name.endsWith('.htm') || file.name.endsWith('.html')) {
         file.text().then(text => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(text, 'text/html');
-            const rows = Array.from(doc.querySelectorAll('tr')).map(tr => 
-              Array.from(tr.querySelectorAll('td, th')).map(td => (td as HTMLElement).innerText.trim())
-            );
+            const rows = Array.from(doc.querySelectorAll('tr')).map(tr => Array.from(tr.querySelectorAll('td, th')).map(td => (td as HTMLElement).innerText.trim()));
             processMatrix(rows);
         }).catch(() => setIsParsing(false))
-      } else setIsParsing(false)
+      } else {
+        setIsParsing(false)
+      }
     }
   }, [file, isOpen])
 
@@ -330,7 +327,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   const updateActiveDraft = (field: keyof DraftSetup, value: string) => {
     setDrafts(prev => prev.map((d, i) => i === activeIndex ? { ...d, [field]: value } : d))
   }
-
+  
   const removeDraft = (index: number) => { 
     setDrafts(prev => prev.filter((_, i) => i !== index)); 
     if (activeIndex >= index && activeIndex > 0) {
@@ -346,14 +343,8 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
     onClose()
   }
 
-  const handlePeekStart = () => { 
-    peekTimer.current = setTimeout(() => setIsPeeking(true), 400); 
-  };
-  
-  const handlePeekEnd = () => { 
-    if (peekTimer.current) clearTimeout(peekTimer.current); 
-    setIsPeeking(false); 
-  };
+  const handlePeekStart = () => { peekTimer.current = setTimeout(() => setIsPeeking(true), 400); };
+  const handlePeekEnd = () => { if (peekTimer.current) clearTimeout(peekTimer.current); setIsPeeking(false); };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget && drafts.length === 0 && !linkInput) {
@@ -385,8 +376,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 
           <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
             <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
-              <UploadCloud size={16} className="text-purple-500" /> 
-              Vault Upload
+              <UploadCloud size={16} className="text-purple-500" /> Vault Upload
             </h2>
             <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}>
               <X size={18} />
@@ -447,7 +437,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                         {draft.instrument || 'UNKNOWN'}
                       </p>
                       <p className="text-[9px] text-zinc-500 truncate">
-                        {draft.direction ? `${draft.direction} ${draft.playbook ? '• ' + draft.playbook : ''}` : 'Incomplete'}
+                        {draft.direction ? `${draft.direction}` : 'Incomplete'}
                       </p>
                     </div>
                     <button 
@@ -522,31 +512,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                     </div>
                   </div>
                   
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
-                      Playbook & Catalysts
-                    </label>
-                    <select 
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          const currentNotes = drafts[activeIndex].notes;
-                          updateActiveDraft('notes', currentNotes ? `${currentNotes}\n[${e.target.value}]` : `[${e.target.value}]`);
-                          e.target.value = "";
-                        }
-                      }} 
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" 
-                      disabled={isUploading}
-                    >
-                      <option value="">Insert Tag...</option>
-                      <optgroup label="Playbooks">
-                        {PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}
-                      </optgroup>
-                      <optgroup label="Catalysts">
-                        {CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}
-                      </optgroup>
-                    </select>
-                  </div>
-                  
                   <div className="flex flex-col gap-2 flex-1 mt-2">
                     <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
                       Structural Thesis
@@ -587,6 +552,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
         </div>
       </div>
       
+      {/* 🚨 Peek Overlay for Upload Modal */}
       {isPeeking && drafts.length > 0 && drafts[activeIndex]?.imageSource && (
         <div className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 pointer-events-none animate-in fade-in duration-150">
           <img 
@@ -727,8 +693,8 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
           <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
             {trade.direction}
           </span>
-          {trade.playbook && (
-            <span className="text-[10px] text-zinc-400 font-medium">• {trade.playbook}</span>
+          {trade.reason && (
+            <span className="text-[10px] text-zinc-400 font-medium">• {trade.reason.replace(/\n/g, ', ')}</span>
           )}
           {isMt5Synced && (
             <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded ml-2 flex items-center gap-1">
@@ -822,6 +788,100 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
   )
 }
 
+// --- SETTINGS MODAL ---
+function CatalystSettingsModal({ isOpen, onClose, perfect, setPerfect, imperfect, setImperfect }: any) {
+  const [newPerfect, setNewPerfect] = useState('')
+  const [newImperfect, setNewImperfect] = useState('')
+
+  if (!isOpen) return null
+
+  const addPerfect = () => {
+    if (newPerfect.trim() && !perfect.includes(newPerfect.trim())) {
+      setPerfect([...perfect, newPerfect.trim()]);
+      setNewPerfect('');
+    }
+  }
+  
+  const addImperfect = () => {
+    if (newImperfect.trim() && !imperfect.includes(newImperfect.trim())) {
+      setImperfect([...imperfect, newImperfect.trim()]);
+      setNewImperfect('');
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-zinc-950 border border-zinc-800 rounded-xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
+          <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
+            <Settings size={16} className="text-zinc-400" /> Catalyst Settings
+          </h2>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white">
+            <X size={18} />
+          </button>
+        </div>
+        <div className="p-6 flex flex-col gap-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+          
+          <div>
+            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3 border-b border-emerald-500/20 pb-1">
+              Perfect Execution Catalysts
+            </h3>
+            <div className="flex gap-2 mb-3">
+              <input 
+                type="text" 
+                value={newPerfect} 
+                onChange={e => setNewPerfect(e.target.value)} 
+                onKeyDown={e => e.key === 'Enter' && addPerfect()} 
+                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-emerald-500 transition-colors" 
+                placeholder="Add new catalyst..." 
+              />
+              <button onClick={addPerfect} className="px-3 bg-emerald-600 hover:bg-emerald-500 rounded text-white transition-colors">
+                <Plus size={14}/>
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {perfect.map((c: string) => (
+                <span key={c} className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded flex items-center gap-1.5">
+                  {c} 
+                  <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setPerfect(perfect.filter((item: string) => item !== c))}/>
+                </span>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <h3 className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3 border-b border-red-500/20 pb-1">
+              Imperfect Execution Catalysts
+            </h3>
+            <div className="flex gap-2 mb-3">
+              <input 
+                type="text" 
+                value={newImperfect} 
+                onChange={e => setNewImperfect(e.target.value)} 
+                onKeyDown={e => e.key === 'Enter' && addImperfect()} 
+                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-red-500 transition-colors" 
+                placeholder="Add new catalyst..." 
+              />
+              <button onClick={addImperfect} className="px-3 bg-red-600 hover:bg-red-500 rounded text-white transition-colors">
+                <Plus size={14}/>
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {imperfect.map((c: string) => (
+                <span key={c} className="text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded flex items-center gap-1.5">
+                  {c} 
+                  <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setImperfect(imperfect.filter((item: string) => item !== c))}/>
+                </span>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // --- MAIN DESK CLIENT ---
 export default function DeskClient() {
   const supabase = createBrowserClient(
@@ -834,15 +894,20 @@ export default function DeskClient() {
   const [isVaultOpen, setIsVaultOpen] = useState(false)
   const [isAuditOpen, setIsAuditOpen] = useState(false)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [isCatalystSettingsOpen, setIsCatalystSettingsOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
   
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
 
+  // 🚨 Custom Catalyst States
+  const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
+  const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
+
   const [logPair, setLogPair] = useState<string>('') 
   const [logDirection, setLogDirection] = useState<'LONG' | 'SHORT' | null>(null)
-  const [logPlaybook, setLogPlaybook] = useState('')
+  const [logCatalystText, setLogCatalystText] = useState('')
   const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
 
   const [isMT5ModalOpen, setIsMT5ModalOpen] = useState(false)
@@ -854,6 +919,7 @@ export default function DeskClient() {
   const [chartScale, setChartScale] = useState(1)
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
 
+  // Initialization & LocalStorage
   useEffect(() => {
     const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
     handleResize(); 
@@ -864,12 +930,19 @@ export default function DeskClient() {
   useEffect(() => {
     const vault = localStorage.getItem('desk_vault_open')
     const audit = localStorage.getItem('desk_audit_open')
+    const savedPerfect = localStorage.getItem('desk_perfect_catalysts')
+    const savedImperfect = localStorage.getItem('desk_imperfect_catalysts')
+    
     if (vault) setIsVaultOpen(vault === 'true')
     if (audit) setIsAuditOpen(audit === 'true')
+    if (savedPerfect) setPerfectCatalysts(JSON.parse(savedPerfect))
+    if (savedImperfect) setImperfectCatalysts(JSON.parse(savedImperfect))
   }, [])
 
   useEffect(() => { localStorage.setItem('desk_vault_open', String(isVaultOpen)) }, [isVaultOpen])
   useEffect(() => { localStorage.setItem('desk_audit_open', String(isAuditOpen)) }, [isAuditOpen])
+  useEffect(() => { localStorage.setItem('desk_perfect_catalysts', JSON.stringify(perfectCatalysts)) }, [perfectCatalysts])
+  useEffect(() => { localStorage.setItem('desk_imperfect_catalysts', JSON.stringify(imperfectCatalysts)) }, [imperfectCatalysts])
 
   useEffect(() => {
     const initData = async () => {
@@ -897,7 +970,7 @@ export default function DeskClient() {
             day: new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
             symbol: d.symbol, 
             direction: d.direction, 
-            playbook: d.playbook, 
+            reason: d.reason, // We map the unified text to reason
             execution: d.execution_type, 
             rr: d.rr, 
             outcome: d.outcome, 
@@ -930,7 +1003,7 @@ export default function DeskClient() {
         user_id: user.id, 
         symbol: logPair, 
         direction: logDirection, 
-        playbook: logPlaybook || null, 
+        reason: logCatalystText || null, // Map the text area to reason
         execution_type: logExecution
       }
       const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
@@ -941,7 +1014,7 @@ export default function DeskClient() {
           day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
           symbol: data[0].symbol, 
           direction: data[0].direction, 
-          playbook: data[0].playbook, 
+          reason: data[0].reason, 
           execution: data[0].execution_type, 
           rr: '', 
           outcome: '', 
@@ -950,14 +1023,15 @@ export default function DeskClient() {
       }
       setLogPair(''); 
       setLogDirection(null); 
-      setLogPlaybook(''); 
+      setLogCatalystText(''); 
       setLogExecution(null); 
       setIsAuditOpen(false); 
     }
-  }, [tradesTakenToday, logPair, logDirection, logPlaybook, logExecution, user, supabase]);
+  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, user, supabase]);
 
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
+  // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -973,10 +1047,12 @@ export default function DeskClient() {
         setIsMT5ModalOpen(false); 
         setIsVaultOpen(false); 
         setIsAuditOpen(false);
+        setIsCatalystSettingsOpen(false);
         return; 
       }
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
+      if (isCatalystSettingsOpen) return;
 
       if (e.code === 'KeyV' && e.altKey) { 
         e.preventDefault(); 
@@ -1029,7 +1105,7 @@ export default function DeskClient() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [todaySetups, activeTodayId, logPair, logDirection, logPlaybook, logExecution, isAlreadyLogged, tradesTakenToday, handleLockEntry]);
+  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, handleLockEntry]);
 
   useEffect(() => {
     const activeSetup = setups.find(s => s.id === activeTodayId)
@@ -1163,6 +1239,9 @@ export default function DeskClient() {
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
 
+  // Determine which catalysts to show in the dropdown based on execution state
+  const activeCatalystList = logExecution === 'Perfect' ? perfectCatalysts : logExecution === 'Imperfect' ? imperfectCatalysts : [];
+
   return (
     <>
       <div className="relative flex flex-col lg:flex-row h-auto min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
@@ -1173,6 +1252,7 @@ export default function DeskClient() {
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
           
+          {/* --- TOP SECTION: TODAY'S FOCUS --- */}
           <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 lg:h-[calc(50%-4px)]">
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
             <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
@@ -1218,7 +1298,6 @@ export default function DeskClient() {
                                 e.stopPropagation(); 
                                 setLogPair(setup.symbol); 
                                 setLogDirection(setup.direction); 
-                                setLogPlaybook(setup.playbook); 
                                 setIsAuditOpen(true); 
                               }} 
                               className="p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" 
@@ -1244,11 +1323,6 @@ export default function DeskClient() {
                           <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'bg-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'bg-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
                             {setup.direction || 'N/A'}
                           </span>
-                          {setup.playbook && (
-                            <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">
-                              {setup.playbook}
-                            </span>
-                          )}
                         </div>
                       </div>
                     )
@@ -1315,6 +1389,7 @@ export default function DeskClient() {
             </div>
           </div>
           
+          {/* --- BOTTOM SECTION: OPERATOR'S AUDIT --- */}
           <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
             <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
@@ -1334,10 +1409,18 @@ export default function DeskClient() {
 
             <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
               
+              {/* Capture Panel */}
               <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
                 <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
                   <div className="flex justify-between items-end">
-                    <h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3>
+                    
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3>
+                      <button onClick={() => setIsCatalystSettingsOpen(true)} className="text-zinc-500 hover:text-white transition-colors" title="Edit Custom Catalysts">
+                        <Settings size={12} />
+                      </button>
+                    </div>
+
                     <span className={`text-[9px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>
                       {tradesTakenToday}/2 TRADES
                     </span>
@@ -1355,7 +1438,7 @@ export default function DeskClient() {
                           onClick={() => { 
                             setLogPair(''); 
                             setLogDirection(null); 
-                            setLogPlaybook(''); 
+                            setLogCatalystText(''); 
                             setLogExecution(null); 
                           }} 
                           className="text-zinc-500 hover:text-red-400 transition-colors"
@@ -1364,6 +1447,7 @@ export default function DeskClient() {
                         </button>
                       </div>
                       
+                      {/* 🚨 Unified Execution & Catalyst Appending Layout */}
                       <div className="flex gap-3">
                         <div className="flex-[1.5] flex flex-col gap-2">
                           <div className="flex gap-2">
@@ -1401,28 +1485,24 @@ export default function DeskClient() {
                           </div>
                         </div>
                         
-                        <div className="flex-1 flex flex-col gap-2">
+                        <div className="flex-[2] flex flex-col gap-2">
                           <select 
+                            value="" // Always empty to act as an action menu
                             onChange={(e) => {
                               if (e.target.value) {
-                                setLogPlaybook(prev => prev ? `${prev} | ${e.target.value}` : e.target.value);
-                                e.target.value = '';
+                                setLogCatalystText(prev => prev ? `${prev}\n[${e.target.value}]` : `[${e.target.value}]`);
                               }
                             }} 
+                            disabled={!logExecution}
                             className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500 transition-colors"
                           >
-                            <option value="">Add Tag...</option>
-                            <optgroup label="Playbooks">
-                              {PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}
-                            </optgroup>
-                            <optgroup label="Catalysts">
-                              {CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}
-                            </optgroup>
+                            <option value="" disabled>{logExecution ? "Add Tag..." : "Select Execution..."}</option>
+                            {activeCatalystList.map((c: string) => <option key={c} value={c}>{c}</option>)}
                           </select>
                           <textarea 
-                            value={logPlaybook} 
-                            onChange={(e) => setLogPlaybook(e.target.value)} 
-                            placeholder="Select tags or type manually..." 
+                            value={logCatalystText} 
+                            onChange={(e) => setLogCatalystText(e.target.value)} 
+                            placeholder="Select tags above or type manually..." 
                             className="w-full flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none resize-none custom-scrollbar focus:border-blue-500 transition-colors"
                           />
                         </div>
@@ -1472,6 +1552,7 @@ export default function DeskClient() {
           </div>
         </div>
         
+        {/* --- RIGHT SECTION: WEEKLY VAULT --- */}
         <div className={`fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-zinc-950 border-l border-zinc-800 lg:rounded-xl shadow-2xl transition-transform lg:transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-600/50 to-transparent"></div>
           <div className="h-14 lg:h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 text-white">
@@ -1513,6 +1594,7 @@ export default function DeskClient() {
           </div>
         </div>
 
+        {/* --- MODALS --- */}
         <MT5SyncModal isOpen={isMT5ModalOpen} onClose={() => { setIsMT5ModalOpen(false); setMt5File(null); }} file={mt5File} pendingLogs={pendingReconciliation} onConfirm={handleMT5Confirm} />
         <SetupUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} onSave={handleBulkUpload} />
         
@@ -1528,6 +1610,16 @@ export default function DeskClient() {
             </div>
           </div>
         )}
+
+        {/* Custom Catalyst Settings Modal */}
+        <CatalystSettingsModal 
+          isOpen={isCatalystSettingsOpen} 
+          onClose={() => setIsCatalystSettingsOpen(false)} 
+          perfect={perfectCatalysts} 
+          setPerfect={setPerfectCatalysts} 
+          imperfect={imperfectCatalysts} 
+          setImperfect={setImperfectCatalysts} 
+        />
 
         {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
           <div 
