@@ -5,11 +5,18 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Papa from 'papaparse'
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, 
   Target, ArrowRight, ArrowLeft, Eye, Bold, List,
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check
 } from 'lucide-react'
+
+// Initialize the Next.js SSR Browser Client
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
 
@@ -116,7 +123,7 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpe
           const mt5Time = new Date(pos.time.replace(/\./g, '/')).getTime() - (offsetHours * 3600000)
           const diff = Math.abs(logTime - mt5Time)
           
-          if (diff < 14400000 && diff < smallestDiff) { // Match if within 4-hour window
+          if (diff < 14400000 && diff < smallestDiff) { 
             smallestDiff = diff
             let outcome = pos.profit > 0 ? 'TP' : (pos.profit < 0 ? 'SL' : 'BE')
             let rr = 0
@@ -332,7 +339,6 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
 }
 
 function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: string, outcome: string, rr: string, afterImageUrl: string, missingReason?: string) => void, user: any }) {
-  // 🚨 FIXED: useEffect ensures state updates when MT5 sync finds a match and mutates the trade prop
   const [outcome, setOutcome] = useState(trade.outcome || '')
   const [rr, setRr] = useState(trade.rr ? trade.rr.toString() : '')
   const [missingReason, setMissingReason] = useState('')
@@ -404,7 +410,6 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
 }
 
 export default function DeskClient() {
-  // 🚨 FIXED: Supabase client properly scoped inside the component to prevent rehydration mismatch issues
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -416,7 +421,6 @@ export default function DeskClient() {
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
-  const [previewSetup, setPreviewSetup] = useState<any | null>(null)
   
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
@@ -431,6 +435,11 @@ export default function DeskClient() {
   const [isMT5ModalOpen, setIsMT5ModalOpen] = useState(false)
   const [mt5File, setMt5File] = useState<File | null>(null)
   const mt5InputRef = useRef<HTMLInputElement>(null)
+
+  // 🚨 NEW: Interaction & Peeking States
+  const [isPeeking, setIsPeeking] = useState(false)
+  const [isHoveringFocus, setIsHoveringFocus] = useState(false)
+  const peekTimer = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
@@ -476,6 +485,43 @@ export default function DeskClient() {
       return () => clearTimeout(timeoutId)
     }
   }, [setups, activeTodayId, user, supabase])
+
+  // 🚨 NEW: Keyboard Traversal Logic (Space & Shift+Space)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isHoveringFocus || todaySetups.length === 0) return;
+      
+      const target = e.target as HTMLElement;
+      // Do not trigger traversal if user is typing in notes/inputs
+      if (
+        target.tagName === 'INPUT' || 
+        target.tagName === 'TEXTAREA' || 
+        target.isContentEditable ||
+        target.tagName === 'SELECT'
+      ) {
+        return;
+      }
+
+      if (e.code === 'Space') {
+        e.preventDefault(); // Stop page from scrolling
+        const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
+        if (currentIndex === -1) return;
+
+        if (e.shiftKey) {
+          // Go Up (Previous)
+          const prevIndex = (currentIndex - 1 + todaySetups.length) % todaySetups.length;
+          setActiveTodayId(todaySetups[prevIndex].id);
+        } else {
+          // Go Down (Next)
+          const nextIndex = (currentIndex + 1) % todaySetups.length;
+          setActiveTodayId(todaySetups[nextIndex].id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isHoveringFocus, todaySetups, activeTodayId]);
 
   const handleConfirmPush = async () => {
     if(confirmPushId && user) {
@@ -577,164 +623,206 @@ export default function DeskClient() {
     })
   }
 
+  // 🚨 NEW: Peek Logic Handlers
+  const handlePeekStart = () => {
+    peekTimer.current = setTimeout(() => setIsPeeking(true), 400); // 400ms hold triggers peek
+  };
+
+  const handlePeekEnd = () => {
+    if (peekTimer.current) clearTimeout(peekTimer.current);
+    setIsPeeking(false);
+  };
+
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
   return (
-    <div className="relative flex flex-col lg:flex-row h-auto min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
-      {isVaultOpen && <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[40]" onClick={() => setIsVaultOpen(false)} />}
+    <>
+      <div className="relative flex flex-col lg:flex-row h-auto min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
+        {isVaultOpen && <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[40]" onClick={() => setIsVaultOpen(false)} />}
 
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
-        
-        {/* 🚨 STRICT 50/50 LOCK: Top half permanently fixed on desktop */}
-        <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 lg:h-[calc(50%-4px)]">
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
-          <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
-            <div className="flex items-center gap-4">
-              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Crosshair size={14} className="text-blue-500" /> Today's Focus</h2>
-              <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-black border border-zinc-800 px-2 py-0.5 rounded shadow-inner">{todaySetups.length} Pairs Locked</span>
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
+          
+          {/* =========================================
+              TOP SECTION: TODAY'S FOCUS
+          ========================================= */}
+          <div 
+            className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 lg:h-[calc(50%-4px)]"
+            onMouseEnter={() => setIsHoveringFocus(true)}
+            onMouseLeave={() => setIsHoveringFocus(false)}
+          >
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
+            <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
+              <div className="flex items-center gap-4">
+                <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Crosshair size={14} className="text-blue-500" /> Today's Focus</h2>
+                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-black border border-zinc-800 px-2 py-0.5 rounded shadow-inner">{todaySetups.length} Pairs Locked</span>
+              </div>
+              <button onClick={() => setIsVaultOpen(!isVaultOpen)} className="text-zinc-400 hover:text-white p-1.5 bg-black border border-zinc-800 rounded-md shadow-sm"><Menu size={14} /></button>
             </div>
-            <button onClick={() => setIsVaultOpen(!isVaultOpen)} className="text-zinc-400 hover:text-white p-1.5 bg-black border border-zinc-800 rounded-md shadow-sm"><Menu size={14} /></button>
-          </div>
 
-          <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
-            <div className="w-full lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-800 flex flex-row lg:flex-col bg-zinc-950/50 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
-              {todaySetups.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4"><Target size={20} className="mb-2 opacity-50" /><span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span></div>
-              ) : (
-                todaySetups.map(setup => {
-                  const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
-                  return (
-                    <div key={`today-${setup.id}`} onClick={() => setActiveTodayId(setup.id)} className={`min-w-[140px] lg:min-w-0 p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-md' : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'}`}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>{setup.symbol}</span>
-                        <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setLogPlaybook(setup.playbook); setIsAuditOpen(true); }} className="p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution"><Target size={12} /></button>
-                          {canRemove && <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400" title="Remove (1hr limit)"><ArrowLeft size={12} /></button>}
+            <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
+              <div className="w-full lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-800 flex flex-row lg:flex-col bg-zinc-950/50 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
+                {todaySetups.length === 0 ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4"><Target size={20} className="mb-2 opacity-50" /><span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span></div>
+                ) : (
+                  todaySetups.map(setup => {
+                    const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
+                    return (
+                      <div key={`today-${setup.id}`} onClick={() => setActiveTodayId(setup.id)} className={`min-w-[140px] lg:min-w-0 p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-md' : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'}`}>
+                        <div className="flex justify-between items-center mb-1">
+                          <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>{setup.symbol}</span>
+                          <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setLogPlaybook(setup.playbook); setIsAuditOpen(true); }} className="p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution"><Target size={12} /></button>
+                            {canRemove && <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400" title="Remove (1hr limit)"><ArrowLeft size={12} /></button>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
+                          <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook || 'No Playbook'}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
-                        <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook || 'No Playbook'}</span>
+                    )
+                  })
+                )}
+              </div>
+
+              {/* 🚨 UPGRADED: Interactive Canvas Wrapper */}
+              <div 
+                className="w-full h-[250px] sm:h-[300px] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden"
+                onMouseDown={handlePeekStart}
+                onMouseUp={handlePeekEnd}
+                onMouseLeave={handlePeekEnd}
+                onTouchStart={handlePeekStart}
+                onTouchEnd={handlePeekEnd}
+              >
+                {activeSetup?.imageUrl ? (
+                  <TransformWrapper
+                    initialScale={1}
+                    minScale={0.5}
+                    maxScale={10}
+                    centerOnInit={true}
+                    wheel={{ step: 0.1 }}
+                    doubleClick={{ mode: 'reset' }}
+                    panning={{ disabled: false }}
+                  >
+                    <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img 
+                        src={activeSetup.imageUrl} 
+                        alt={activeSetup.symbol} 
+                        className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950 cursor-grab active:cursor-grabbing pointer-events-auto" 
+                        draggable={false} 
+                      />
+                    </TransformComponent>
+                  </TransformWrapper>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0">
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="w-full lg:w-80 shrink-0 flex flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
+                <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0"><RichNotesEditor activeSetup={activeSetup} onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} /></div>
+              </div>
+            </div>
+          </div>
+          
+          <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
+            <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
+              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Activity size={14} className="text-emerald-500" /> Operator's Audit</h2>
+              <button className="text-zinc-500 hover:text-white flex items-center gap-2">{pendingReconciliation.length > 0 && !isAuditOpen && <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-black border border-zinc-800 px-2 py-0.5 rounded">{pendingReconciliation.length} Pending</span>}{isAuditOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</button>
+            </div>
+
+            <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
+              
+              <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
+                <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
+                  <div className="flex justify-between items-end"><h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3><span className={`text-[9px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>{tradesTakenToday}/2 TRADES</span></div>
+                  {!logPair ? <div className="py-2.5 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span></div> : (
+                    <div className="bg-black border border-zinc-700 rounded-xl p-4 shadow-inner flex flex-col gap-3">
+                      <div className="flex justify-between items-center mb-1"><span className="text-[16px] font-black text-white tracking-wider">{logPair}</span><button onClick={() => { setLogPair(''); setLogDirection(null); setLogPlaybook(''); setLogExecution(null); setLogReason(''); }} className="text-zinc-500 hover:text-red-400 transition-colors"><X size={14}/></button></div>
+                      <div className="flex gap-2"><button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Long</button><button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Short</button></div>
+                      <select value={logPlaybook} onChange={(e) => setLogPlaybook(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500"><option value="" disabled>Select Playbook...</option>{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</select>
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        <button onClick={() => setLogExecution('Perfect')} className={`py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}><CheckCircle size={16} /><span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span></button>
+                        <button onClick={() => setLogExecution('Imperfect')} className={`py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}><AlertTriangle size={16} /><span className="text-[9px] font-bold uppercase tracking-widest">Imperfect</span></button>
                       </div>
+                      {logExecution === 'Imperfect' && !isAlreadyLogged && <select value={logReason} onChange={(e) => setLogReason(e.target.value)} className="w-full bg-zinc-900 border border-red-500/30 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-red-500/80 transition-colors mt-1"><option value="" disabled>Catalyst (Can skip to Weekend)</option><option value="FOMO">FOMO / Rushed Entry</option><option value="Revenge">Revenge Trading</option><option value="Boredom">Boredom / Forced Setup</option><option value="Ignored Plan">Ignored Trading Plan</option></select>}
+                      <button disabled={!logDirection || !logPlaybook || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} onClick={handleLockEntry} className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 ${isAlreadyLogged ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'}`}>{isAlreadyLogged ? 'Already Logged Today' : 'Lock Entry'}</button>
                     </div>
-                  )
-                })
-              )}
-            </div>
+                  )}
+                </div>
+              </div>
 
-            <div className="w-full h-[250px] sm:h-[300px] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner">
-              {activeSetup?.imageUrl ? <img src={activeSetup.imageUrl} alt={activeSetup.symbol} className="absolute inset-0 max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950 p-4 m-auto" /> : <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0"><span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span></div>}
-            </div>
+              <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
+                  
+                  {/* MT5 DROPZONE */}
+                  {pendingReconciliation.length > 0 && (
+                    <div 
+                      onDragOver={e => e.preventDefault()} 
+                      onDrop={handleMT5Drop}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 border border-blue-500/20 border-dashed rounded-lg hover:bg-blue-500/10 transition-colors cursor-pointer"
+                      onClick={() => mt5InputRef.current?.click()}
+                    >
+                      <DownloadCloud size={14} className="text-blue-500" />
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Sync MT5 Report</span>
+                      <input type="file" ref={mt5InputRef} accept=".csv, .htm, .html" className="hidden" onChange={handleMT5Select} />
+                    </div>
+                  )}
+                </div>
 
-            <div className="w-full lg:w-80 shrink-0 flex flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
-              <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0"><RichNotesEditor activeSetup={activeSetup} onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} /></div>
+                <div className="flex flex-col gap-2.5">
+                  {pendingReconciliation.length === 0 ? (
+                    <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups</span></div>
+                  ) : (
+                    pendingReconciliation.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
         
-        {/* 🚨 STRICT 50/50 LOCK: Black void appears when collapsed on desktop */}
-        <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
-          <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
-            <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Activity size={14} className="text-emerald-500" /> Operator's Audit</h2>
-            <button className="text-zinc-500 hover:text-white flex items-center gap-2">{pendingReconciliation.length > 0 && !isAuditOpen && <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-black border border-zinc-800 px-2 py-0.5 rounded">{pendingReconciliation.length} Pending</span>}{isAuditOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}</button>
+        <div className={`fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-zinc-950 border-l border-zinc-800 lg:rounded-xl shadow-2xl transition-transform lg:transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-600/50 to-transparent"></div>
+          <div className="h-14 lg:h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 text-white"><h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-purple-400" /> Weekly Vault</h2><button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-zinc-500 hover:text-white p-1"><X size={18} /></button></div>
+          <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3 text-white">
+            {weeklySetups.length === 0 ? <div className="text-center p-6 text-zinc-600"><span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span></div> : weeklySetups.map((setup) => (
+              <div key={`weekly-${setup.id}`} className="w-full p-3 border border-zinc-800/80 bg-black rounded-lg flex justify-between items-center group hover:border-zinc-600 transition-colors shrink-0 shadow-sm">
+                <div className="flex flex-col min-w-0 pr-2"><span className="text-[13px] font-bold tracking-wide text-zinc-300 group-hover:text-white transition-colors truncate">{setup.symbol}</span><span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span></div>
+                <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
+                  <button onClick={() => setConfirmPushId(setup.id)} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm">Push <ArrowRight size={12} /></button>
+                </div>
+              </div>
+            ))}
           </div>
-
-          <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
-            
-            <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
-              <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
-                <div className="flex justify-between items-end"><h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3><span className={`text-[9px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>{tradesTakenToday}/2 TRADES</span></div>
-                {!logPair ? <div className="py-2.5 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span></div> : (
-                  <div className="bg-black border border-zinc-700 rounded-xl p-4 shadow-inner flex flex-col gap-3">
-                    <div className="flex justify-between items-center mb-1"><span className="text-[16px] font-black text-white tracking-wider">{logPair}</span><button onClick={() => { setLogPair(''); setLogDirection(null); setLogPlaybook(''); setLogExecution(null); setLogReason(''); }} className="text-zinc-500 hover:text-red-400 transition-colors"><X size={14}/></button></div>
-                    <div className="flex gap-2"><button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Long</button><button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Short</button></div>
-                    <select value={logPlaybook} onChange={(e) => setLogPlaybook(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500"><option value="" disabled>Select Playbook...</option>{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</select>
-                    <div className="grid grid-cols-2 gap-2 mt-1">
-                      <button onClick={() => setLogExecution('Perfect')} className={`py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}><CheckCircle size={16} /><span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span></button>
-                      <button onClick={() => setLogExecution('Imperfect')} className={`py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}><AlertTriangle size={16} /><span className="text-[9px] font-bold uppercase tracking-widest">Imperfect</span></button>
-                    </div>
-                    {logExecution === 'Imperfect' && !isAlreadyLogged && <select value={logReason} onChange={(e) => setLogReason(e.target.value)} className="w-full bg-zinc-900 border border-red-500/30 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-red-500/80 transition-colors mt-1"><option value="" disabled>Catalyst (Can skip to Weekend)</option><option value="FOMO">FOMO / Rushed Entry</option><option value="Revenge">Revenge Trading</option><option value="Boredom">Boredom / Forced Setup</option><option value="Ignored Plan">Ignored Trading Plan</option></select>}
-                    <button disabled={!logDirection || !logPlaybook || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} onClick={handleLockEntry} className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 ${isAlreadyLogged ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'}`}>{isAlreadyLogged ? 'Already Logged Today' : 'Lock Entry'}</button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
-                
-                {/* MT5 DROPZONE */}
-                {pendingReconciliation.length > 0 && (
-                  <div 
-                    onDragOver={e => e.preventDefault()} 
-                    onDrop={handleMT5Drop}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 border border-blue-500/20 border-dashed rounded-lg hover:bg-blue-500/10 transition-colors cursor-pointer"
-                    onClick={() => mt5InputRef.current?.click()}
-                  >
-                    <DownloadCloud size={14} className="text-blue-500" />
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Sync MT5 Report</span>
-                    <input type="file" ref={mt5InputRef} accept=".csv, .htm, .html" className="hidden" onChange={handleMT5Select} />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col gap-2.5">
-                {pendingReconciliation.length === 0 ? (
-                  <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups</span></div>
-                ) : (
-                  pendingReconciliation.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)
-                )}
-              </div>
-            </div>
-          </div>
+          <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4"><button onClick={() => setIsUploadModalOpen(true)} className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none"><Plus size={14} /> Add Weekly Setups</button></div>
         </div>
+
+        <MT5SyncModal isOpen={isMT5ModalOpen} onClose={() => { setIsMT5ModalOpen(false); setMt5File(null); }} file={mt5File} pendingLogs={pendingReconciliation} onConfirm={handleMT5Confirm} />
+        <SetupUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} onSave={handleBulkUpload} />
+        
+        {confirmPushId && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
+            <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl">
+              <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-widest">Confirm Push</h3>
+              <p className="text-xs text-zinc-400 mb-6 leading-relaxed">Lock this setup into Today's Focus? Removal is only allowed for the first 60 minutes.</p>
+              <div className="flex gap-3"><button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 text-[10px] font-bold uppercase hover:bg-zinc-800">Cancel</button><button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-[10px] font-bold uppercase shadow-md hover:bg-blue-500">Push to Today</button></div>
+            </div>
+          </div>
+        )}
+
+        {/* 🚨 THE IMMERSIVE PEEK OVERLAY 🚨 */}
+        {isPeeking && activeSetup?.imageUrl && (
+          <div className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 pointer-events-none">
+            <img src={activeSetup.imageUrl} alt="Peeking" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+          </div>
+        )}
       </div>
-      
-      <div className={`fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-zinc-950 border-l border-zinc-800 lg:rounded-xl shadow-2xl transition-transform lg:transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-600/50 to-transparent"></div>
-        <div className="h-14 lg:h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 text-white"><h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-purple-400" /> Weekly Vault</h2><button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-zinc-500 hover:text-white p-1"><X size={18} /></button></div>
-        <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3 text-white">
-          {weeklySetups.length === 0 ? <div className="text-center p-6 text-zinc-600"><span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span></div> : weeklySetups.map((setup) => (
-            <div key={`weekly-${setup.id}`} className="w-full p-3 border border-zinc-800/80 bg-black rounded-lg flex justify-between items-center group hover:border-zinc-600 transition-colors shrink-0 shadow-sm">
-              <div className="flex flex-col min-w-0 pr-2"><span className="text-[13px] font-bold tracking-wide text-zinc-300 group-hover:text-white transition-colors truncate">{setup.symbol}</span><span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span></div>
-              <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={14} /></button>
-                <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
-                <button onClick={() => setConfirmPushId(setup.id)} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm">Push <ArrowRight size={12} /></button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4"><button onClick={() => setIsUploadModalOpen(true)} className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none"><Plus size={14} /> Add Weekly Setups</button></div>
-      </div>
-
-      <MT5SyncModal isOpen={isMT5ModalOpen} onClose={() => { setIsMT5ModalOpen(false); setMt5File(null); }} file={mt5File} pendingLogs={pendingReconciliation} onConfirm={handleMT5Confirm} />
-      <SetupUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} onSave={handleBulkUpload} />
-      
-      {confirmPushId && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
-          <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl">
-            <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-widest">Confirm Push</h3>
-            <p className="text-xs text-zinc-400 mb-6 leading-relaxed">Lock this setup into Today's Focus? Removal is only allowed for the first 60 minutes.</p>
-            <div className="flex gap-3"><button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 text-[10px] font-bold uppercase hover:bg-zinc-800">Cancel</button><button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-[10px] font-bold uppercase shadow-md hover:bg-blue-500">Push to Today</button></div>
-          </div>
-        </div>
-      )}
-
-      {previewSetup && (
-        <div onClick={() => setPreviewSetup(null)} className="fixed inset-0 z-[300] bg-black/95 flex items-center justify-center p-4 sm:p-8 cursor-zoom-out">
-          <div onClick={e => e.stopPropagation()} className="max-w-6xl w-full h-full max-h-[800px] bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl flex flex-col md:flex-row overflow-hidden cursor-default">
-            <div className="flex-[2.5] bg-black border-b md:border-b-0 md:border-r border-zinc-800 p-4 sm:p-6 flex items-center justify-center relative shadow-inner min-h-[300px]">{previewSetup.imageUrl ? <img src={previewSetup.imageUrl} alt={previewSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl" /> : <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No Image Data</span>}</div>
-            <div className="flex-1 flex flex-col min-w-0 md:min-w-[300px] overflow-hidden bg-zinc-950">
-              <div className="p-5 border-b border-zinc-800 bg-zinc-900/50 flex items-center justify-between shrink-0"><span className="text-base font-black text-white tracking-widest">{previewSetup.symbol} Setup</span><button onClick={() => setPreviewSetup(null)} className="text-zinc-500 hover:text-white p-1 bg-black border border-zinc-800 rounded shadow-sm"><X size={16} /></button></div>
-              <div className="p-6 overflow-y-auto custom-scrollbar flex-1 text-[13px] text-zinc-300 font-medium leading-relaxed" dangerouslySetInnerHTML={{ __html: previewSetup.notes || '<p class="text-zinc-600 italic">No notes logged for this setup.</p>' }} />
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   )
 }
