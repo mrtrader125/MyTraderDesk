@@ -8,7 +8,7 @@ import Papa from 'papaparse'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen
 } from 'lucide-react'
 
 // Default Catalyst Lists
@@ -512,6 +512,31 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                     </div>
                   </div>
                   
+                  <div className="flex flex-col gap-2">
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
+                      Playbook & Catalysts
+                    </label>
+                    <select 
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const currentNotes = drafts[activeIndex].notes;
+                          updateActiveDraft('notes', currentNotes ? `${currentNotes}\n[${e.target.value}]` : `[${e.target.value}]`);
+                          e.target.value = "";
+                        }
+                      }} 
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" 
+                      disabled={isUploading}
+                    >
+                      <option value="">Insert Tag...</option>
+                      <optgroup label="Playbooks">
+                        {PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}
+                      </optgroup>
+                      <optgroup label="Catalysts">
+                        {CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}
+                      </optgroup>
+                    </select>
+                  </div>
+                  
                   <div className="flex flex-col gap-2 flex-1 mt-2">
                     <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
                       Structural Thesis
@@ -901,7 +926,7 @@ export default function DeskClient() {
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
 
-  // 🚨 Custom Catalyst States
+  // Custom Catalyst States
   const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
   const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
 
@@ -918,6 +943,9 @@ export default function DeskClient() {
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [chartScale, setChartScale] = useState(1)
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
+
+  // 🚨 New state for Mobile Notes Popup
+  const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
   // Initialization & LocalStorage
   useEffect(() => {
@@ -970,7 +998,7 @@ export default function DeskClient() {
             day: new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
             symbol: d.symbol, 
             direction: d.direction, 
-            reason: d.reason, // We map the unified text to reason
+            reason: d.reason,
             execution: d.execution_type, 
             rr: d.rr, 
             outcome: d.outcome, 
@@ -1003,7 +1031,7 @@ export default function DeskClient() {
         user_id: user.id, 
         symbol: logPair, 
         direction: logDirection, 
-        reason: logCatalystText || null, // Map the text area to reason
+        reason: logCatalystText || null, 
         execution_type: logExecution
       }
       const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
@@ -1048,11 +1076,12 @@ export default function DeskClient() {
         setIsVaultOpen(false); 
         setIsAuditOpen(false);
         setIsCatalystSettingsOpen(false);
+        setIsMobileNotesOpen(false);
         return; 
       }
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
-      if (isCatalystSettingsOpen) return;
+      if (isCatalystSettingsOpen || isMobileNotesOpen) return;
 
       if (e.code === 'KeyV' && e.altKey) { 
         e.preventDefault(); 
@@ -1105,7 +1134,7 @@ export default function DeskClient() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, handleLockEntry]);
+  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, isMobileNotesOpen, handleLockEntry]);
 
   useEffect(() => {
     const activeSetup = setups.find(s => s.id === activeTodayId)
@@ -1238,13 +1267,12 @@ export default function DeskClient() {
   };
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
-
-  // Determine which catalysts to show in the dropdown based on execution state
   const activeCatalystList = logExecution === 'Perfect' ? perfectCatalysts : logExecution === 'Imperfect' ? imperfectCatalysts : [];
 
   return (
     <>
-      <div className="relative flex flex-col lg:flex-row h-auto min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
+      {/* 🚨 Mobile Note: lg:overflow-hidden keeps desktop static, overflow-y-auto lets mobile scroll if needed */}
+      <div className="relative flex flex-col lg:flex-row h-[100dvh] lg:min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
         
         {isVaultOpen && (
           <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[40]" onClick={() => setIsVaultOpen(false)} />
@@ -1253,8 +1281,10 @@ export default function DeskClient() {
         <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
           
           {/* --- TOP SECTION: TODAY'S FOCUS --- */}
-          <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 lg:h-[calc(50%-4px)]">
+          {/* 🚨 Mobile Note: Takes full height on mobile (h-full), 50% on desktop */}
+          <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 h-full lg:h-[calc(50%-4px)]">
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
+            
             <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
               <div className="flex items-center gap-4">
                 <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
@@ -1266,14 +1296,17 @@ export default function DeskClient() {
               </div>
               <button 
                 onClick={() => setIsVaultOpen(!isVaultOpen)} 
-                className="text-zinc-400 hover:text-white p-1.5 bg-black border border-zinc-800 rounded-md shadow-sm"
+                className="hidden lg:block text-zinc-400 hover:text-white p-1.5 bg-black border border-zinc-800 rounded-md shadow-sm"
               >
                 <Menu size={14} />
               </button>
             </div>
 
+            {/* 🚨 Mobile Note: Flex column on mobile (flex-col), row on desktop (lg:flex-row) */}
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
-              <div className="w-full lg:w-56 shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-800 flex flex-row lg:flex-col bg-zinc-950/50 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
+              
+              {/* --- LIST COMPONENT (Order 2 on Mobile, Order 1 on Desktop) --- */}
+              <div className="order-2 lg:order-1 w-full lg:w-56 shrink-0 flex-1 lg:flex-none border-t lg:border-t-0 lg:border-r border-zinc-800 flex flex-col bg-zinc-950/50 overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
                 {todaySetups.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
                     <Target size={20} className="mb-2 opacity-50" />
@@ -1286,13 +1319,26 @@ export default function DeskClient() {
                       <div 
                         key={`today-${setup.id}`} 
                         onClick={() => setActiveTodayId(setup.id)} 
-                        className={`min-w-[140px] lg:min-w-0 p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-md' : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'}`}
+                        className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-md' : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'}`}
                       >
                         <div className="flex justify-between items-center mb-1">
                           <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                             {setup.symbol}
                           </span>
                           <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                            
+                            {/* Mobile Only: Info Icon */}
+                            {activeTodayId === setup.id && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} 
+                                className="lg:hidden p-1 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400" 
+                                title="View Notes"
+                              >
+                                <Info size={14} />
+                              </button>
+                            )}
+
+                            {/* Desktop Only: Stage Execution */}
                             <button 
                               onClick={(e) => { 
                                 e.stopPropagation(); 
@@ -1300,11 +1346,13 @@ export default function DeskClient() {
                                 setLogDirection(setup.direction); 
                                 setIsAuditOpen(true); 
                               }} 
-                              className="p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" 
+                              className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" 
                               title="Stage Execution"
                             >
                               <Target size={12} />
                             </button>
+                            
+                            {/* Both: Remove */}
                             {canRemove && (
                               <button 
                                 onClick={(e) => { 
@@ -1330,8 +1378,9 @@ export default function DeskClient() {
                 )}
               </div>
 
+              {/* --- CHART COMPONENT (Order 1 on Mobile, Order 2 on Desktop) --- */}
               <div 
-                className="w-full h-[250px] sm:h-[300px] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group"
+                className="order-1 lg:order-2 w-full flex-[1.5] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group"
                 onMouseDown={handlePeekStart}
                 onMouseUp={handlePeekEnd}
                 onMouseLeave={handlePeekEnd}
@@ -1349,13 +1398,14 @@ export default function DeskClient() {
                       wheel={{ step: 0.1 }}
                       doubleClick={{ mode: 'reset' }}
                       panning={{ disabled: false }}
+                      pinch={{ step: 5 }}
                       onTransformed={(ref) => setChartScale(ref.state.scale)}
                     >
                       <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <img 
                           src={activeSetup.imageUrl} 
                           alt={activeSetup.symbol} 
-                          className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950 cursor-grab active:cursor-grabbing pointer-events-auto" 
+                          className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
                           draggable={false} 
                         />
                       </TransformComponent>
@@ -1378,7 +1428,8 @@ export default function DeskClient() {
                 )}
               </div>
 
-              <div className="w-full lg:w-80 shrink-0 flex flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
+              {/* --- DESKTOP NOTES COMPONENT (Hidden on Mobile) --- */}
+              <div className="hidden lg:flex order-3 w-full lg:w-80 shrink-0 flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
                 <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0">
                   <RichNotesEditor 
                     activeSetup={activeSetup} 
@@ -1389,8 +1440,8 @@ export default function DeskClient() {
             </div>
           </div>
           
-          {/* --- BOTTOM SECTION: OPERATOR'S AUDIT --- */}
-          <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
+          {/* --- BOTTOM SECTION: ACTION LOGS (Hidden on Mobile) --- */}
+          <div className={`hidden lg:flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
             <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
               <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
@@ -1447,7 +1498,6 @@ export default function DeskClient() {
                         </button>
                       </div>
                       
-                      {/* 🚨 Unified Execution & Catalyst Appending Layout */}
                       <div className="flex gap-3">
                         <div className="flex-[1.5] flex flex-col gap-2">
                           <div className="flex gap-2">
@@ -1487,7 +1537,7 @@ export default function DeskClient() {
                         
                         <div className="flex-[2] flex flex-col gap-2">
                           <select 
-                            value="" // Always empty to act as an action menu
+                            value=""
                             onChange={(e) => {
                               if (e.target.value) {
                                 setLogCatalystText(prev => prev ? `${prev}\n[${e.target.value}]` : `[${e.target.value}]`);
@@ -1552,8 +1602,8 @@ export default function DeskClient() {
           </div>
         </div>
         
-        {/* --- RIGHT SECTION: WEEKLY VAULT --- */}
-        <div className={`fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-zinc-950 border-l border-zinc-800 lg:rounded-xl shadow-2xl transition-transform lg:transition-all duration-300 flex flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
+        {/* --- RIGHT SECTION: WEEKLY VAULT (Hidden on Mobile) --- */}
+        <div className={`hidden lg:flex fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-zinc-950 border-l border-zinc-800 lg:rounded-xl shadow-2xl transition-transform lg:transition-all duration-300 flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-600/50 to-transparent"></div>
           <div className="h-14 lg:h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 text-white">
             <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
@@ -1621,6 +1671,33 @@ export default function DeskClient() {
           setImperfect={setImperfectCatalysts} 
         />
 
+        {/* 🚨 Mobile Notes Bottom Sheet Popup */}
+        {isMobileNotesOpen && activeSetup && (
+          <div 
+            className="lg:hidden fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200"
+            onClick={() => setIsMobileNotesOpen(false)}
+          >
+            <div 
+              className="w-full h-[50vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-zinc-800/60 flex justify-between items-center bg-zinc-900/40 rounded-t-2xl">
+                <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
+                  <BookOpen size={14} className="text-blue-500" />
+                  {activeSetup.symbol} Thesis
+                </h3>
+                <button onClick={() => setIsMobileNotesOpen(false)} className="text-zinc-500 hover:text-white p-1">
+                  <X size={16}/>
+                </button>
+              </div>
+              <div className="p-5 overflow-y-auto custom-scrollbar flex-1 text-sm text-zinc-300 leading-relaxed font-medium">
+                 <div dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 🚨 Peek Overlay */}
         {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
           <div 
             className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`}
