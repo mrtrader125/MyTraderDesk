@@ -11,9 +11,8 @@ import {
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen
 } from 'lucide-react'
 
-// Default Catalyst Lists
-const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
-const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
+const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
+const CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
 
 type DraftSetup = {
   id: string;
@@ -667,7 +666,8 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
   }, [trade.outcome, trade.rr])
 
   const handleWheel = (e: React.WheelEvent<HTMLSelectElement>) => {
-    const outcomes = ['', 'TP', 'SL', 'BE'];
+    // 🚨 ADDED 'HOLD' TO OUTCOMES
+    const outcomes = ['', 'TP', 'SL', 'BE', 'HOLD'];
     const dir = e.deltaY > 0 ? 1 : -1;
     let next = outcomes.indexOf(outcome) + dir;
     if (next >= outcomes.length) next = outcomes.length - 1;
@@ -736,6 +736,7 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
+        {/* 🚨 ADDED 'HOLD' OPTION */}
         <select 
           value={outcome} 
           onChange={e => setOutcome(e.target.value)} 
@@ -747,6 +748,7 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
           <option value="TP">Hit TP</option>
           <option value="SL">Hit SL</option>
           <option value="BE">Break Even</option>
+          <option value="HOLD">Hold (Carry)</option>
         </select>
         
         <div className="relative w-full sm:w-24">
@@ -802,11 +804,11 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
         </div>
 
         <button 
-          disabled={!outcome || !rr || isSaving} 
+          disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} 
           onClick={handleSave} 
           className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors sm:ml-auto shrink-0"
         >
-          {isSaving ? 'Saving...' : 'Settle Trade'}
+          {isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}
         </button>
       </div>
     </div>
@@ -926,6 +928,9 @@ export default function DeskClient() {
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
 
+  // 🚨 NEW: Track Executed Symbols globally for Vault sorting
+  const [executedSymbols, setExecutedSymbols] = useState<string[]>([])
+
   // Custom Catalyst States
   const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
   const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
@@ -944,7 +949,6 @@ export default function DeskClient() {
   const [chartScale, setChartScale] = useState(1)
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
 
-  // 🚨 New state for Mobile Notes Popup
   const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
   // Initialization & LocalStorage
@@ -976,44 +980,85 @@ export default function DeskClient() {
     const initData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
-      if (user) {
-        setUser(user)
-        const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
-        if (setupsData) {
-          setSetups(setupsData.map(d => ({ 
-            id: d.id, 
-            symbol: d.symbol, 
-            direction: d.direction, 
-            playbook: d.playbook, 
-            notes: d.notes, 
-            imageUrl: d.image_url, 
-            isToday: d.is_today, 
-            addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null 
-          })))
+      if (!user) return;
+      
+      setUser(user)
+
+      // 🚨 1. FETCH LOGS FIRST (To know what's executed)
+      const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+      
+      if (logsData) {
+        // Track un-reconciled or "HOLD" trades for the queue
+        setPendingReconciliation(logsData.filter(d => !d.is_reconciled || d.outcome === 'HOLD').map(d => ({ 
+          id: d.id, 
+          day: new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
+          symbol: d.symbol, 
+          direction: d.direction, 
+          reason: d.reason,
+          execution: d.execution_type, 
+          rr: d.rr, 
+          outcome: d.outcome, 
+          created_at: d.created_at 
+        })))
+        
+        const todayStr = new Date().toDateString()
+        setTradesTakenToday(logsData.filter(d => new Date(d.created_at).toDateString() === todayStr).length)
+
+        // Generate list of symbols executed THIS week
+        const now = new Date()
+        const dayOfWeek = now.getDay() 
+        const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+        const startOfWeek = new Date(now.setDate(diffToMonday))
+        startOfWeek.setHours(0, 0, 0, 0)
+        
+        const executedThisWeek = logsData
+          .filter(l => new Date(l.created_at).getTime() >= startOfWeek.getTime())
+          .map(l => l.symbol)
+        
+        setExecutedSymbols(executedThisWeek)
+      }
+
+      // 🚨 2. FETCH SETUPS & APPLY AUTO-RESET
+      const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+      
+      if (setupsData) {
+        const todayStr = new Date().toDateString();
+        const expiredSetups = setupsData.filter(s => s.is_today && new Date(s.added_to_today_at).toDateString() !== todayStr);
+        
+        // Auto-Reset stale "Today's Focus" items back to Vault-only
+        if (expiredSetups.length > 0) {
+          const expiredIds = expiredSetups.map(s => s.id);
+          await supabase.from('user_desk_setups').update({ is_today: false, added_to_today_at: null }).in('id', expiredIds);
+          expiredSetups.forEach(s => { s.is_today = false; s.added_to_today_at = null; });
         }
-        const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).eq('is_reconciled', false).order('created_at', { ascending: false })
-        if (logsData) {
-          setPendingReconciliation(logsData.map(d => ({ 
-            id: d.id, 
-            day: new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
-            symbol: d.symbol, 
-            direction: d.direction, 
-            reason: d.reason,
-            execution: d.execution_type, 
-            rr: d.rr, 
-            outcome: d.outcome, 
-            created_at: d.created_at 
-          })))
-          const today = new Date().toDateString()
-          setTradesTakenToday(logsData.filter(d => new Date(d.created_at).toDateString() === today).length)
-        }
+
+        setSetups(setupsData.map(d => ({ 
+          id: d.id, 
+          symbol: d.symbol, 
+          direction: d.direction, 
+          playbook: d.playbook, 
+          notes: d.notes, 
+          imageUrl: d.image_url, 
+          isToday: d.is_today, 
+          addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null 
+        })))
       }
     }
     initData()
   }, [supabase])
 
+  // 🚨 3. VAULT RENDERING LOGIC
   const todaySetups = setups.filter(s => s.isToday)
-  const weeklySetups = setups.filter(s => !s.isToday)
+  
+  // Weekly Vault now shows ALL setups, sorted by execution state
+  const weeklySetups = [...setups].sort((a, b) => {
+    const aExec = executedSymbols.includes(a.symbol);
+    const bExec = executedSymbols.includes(b.symbol);
+    if (aExec && !bExec) return 1; // Push executed to bottom
+    if (!aExec && bExec) return -1;
+    return 0;
+  });
+
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -1048,6 +1093,9 @@ export default function DeskClient() {
           outcome: '', 
           created_at: data[0].created_at 
         }, ...prev]);
+        
+        // Update global executed tracking instantly
+        setExecutedSymbols(prev => [...prev, data[0].symbol]);
       }
       setLogPair(''); 
       setLogDirection(null); 
@@ -1057,7 +1105,7 @@ export default function DeskClient() {
     }
   }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, user, supabase]);
 
-  const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
+  const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair) || executedSymbols.includes(logPair);
 
   // Global Keyboard Shortcuts
   useEffect(() => {
@@ -1153,14 +1201,6 @@ export default function DeskClient() {
     }
   }
 
-  const toggleTodayStatus = async (id: string) => {
-    if (!user) return
-    const setup = setups.find(s => s.id === id)
-    if (!setup) return
-    setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday, addedToTodayAt: null } : s))
-    await supabase.from('user_desk_setups').update({ is_today: !setup.isToday, added_to_today_at: null }).eq('id', id)
-  }
-
   const deleteSetup = async (id: string) => {
     if (!user) return
     const setupToDelete = setups.find(s => s.id === id);
@@ -1218,8 +1258,17 @@ export default function DeskClient() {
       }
     }
 
-    const updateData: any = { is_reconciled: true, outcome, rr: parseFloat(rr), after_image_url: finalUrl || null }
-    setPendingReconciliation(prev => prev.filter(p => p.id !== id))
+    // 🚨 If HOLD, we update outcome but DO NOT reconcile.
+    const isReconciled = outcome !== 'HOLD';
+
+    const updateData: any = { is_reconciled: isReconciled, outcome, rr: parseFloat(rr) || null, after_image_url: finalUrl || null }
+    
+    if (isReconciled) {
+      setPendingReconciliation(prev => prev.filter(p => p.id !== id))
+    } else {
+      setPendingReconciliation(prev => prev.map(p => p.id === id ? { ...p, outcome: 'HOLD' } : p))
+    }
+
     await supabase.from('user_desk_logs').update(updateData).eq('id', id)
   }
 
@@ -1269,9 +1318,18 @@ export default function DeskClient() {
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   const activeCatalystList = logExecution === 'Perfect' ? perfectCatalysts : logExecution === 'Imperfect' ? imperfectCatalysts : [];
 
+  // 🚨 Split the Settlement Queue logic based on Week vs Hold
+  const now = new Date()
+  const dayOfWeek = now.getDay() 
+  const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+  const startOfCurrentWeek = new Date(now.setDate(diffToMonday))
+  startOfCurrentWeek.setHours(0, 0, 0, 0)
+  
+  const currentWeekPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() >= startOfCurrentWeek.getTime() && t.outcome !== 'HOLD');
+  const heldOverPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() < startOfCurrentWeek.getTime() || t.outcome === 'HOLD');
+
   return (
     <>
-      {/* 🚨 Mobile Note: lg:overflow-hidden keeps desktop static, overflow-y-auto lets mobile scroll if needed */}
       <div className="relative flex flex-col lg:flex-row h-[100dvh] lg:min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
         
         {isVaultOpen && (
@@ -1280,8 +1338,6 @@ export default function DeskClient() {
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
           
-          {/* --- TOP SECTION: TODAY'S FOCUS --- */}
-          {/* 🚨 Mobile Note: Takes full height on mobile (h-full), 50% on desktop */}
           <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 h-full lg:h-[calc(50%-4px)]">
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
             
@@ -1302,10 +1358,8 @@ export default function DeskClient() {
               </button>
             </div>
 
-            {/* 🚨 Mobile Note: Flex column on mobile (flex-col), row on desktop (lg:flex-row) */}
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
               
-              {/* --- LIST COMPONENT (Order 2 on Mobile, Order 1 on Desktop) --- */}
               <div className="order-2 lg:order-1 w-full lg:w-56 shrink-0 flex-1 lg:flex-none border-t lg:border-t-0 lg:border-r border-zinc-800 flex flex-col bg-zinc-950/50 overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
                 {todaySetups.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
@@ -1314,7 +1368,7 @@ export default function DeskClient() {
                   </div>
                 ) : (
                   todaySetups.map(setup => {
-                    const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
+                    const isExecuted = executedSymbols.includes(setup.symbol);
                     return (
                       <div 
                         key={`today-${setup.id}`} 
@@ -1326,51 +1380,28 @@ export default function DeskClient() {
                             {setup.symbol}
                           </span>
                           <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                            
-                            {/* Mobile Only: Info Icon */}
                             {activeTodayId === setup.id && (
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} 
-                                className="lg:hidden p-1 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400" 
-                                title="View Notes"
-                              >
+                              <button onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} className="lg:hidden p-1 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400" title="View Notes">
                                 <Info size={14} />
                               </button>
                             )}
-
-                            {/* Desktop Only: Stage Execution */}
-                            <button 
-                              onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setLogPair(setup.symbol); 
-                                setLogDirection(setup.direction); 
-                                setIsAuditOpen(true); 
-                              }} 
-                              className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" 
-                              title="Stage Execution"
-                            >
-                              <Target size={12} />
-                            </button>
-                            
-                            {/* Both: Remove */}
-                            {canRemove && (
-                              <button 
-                                onClick={(e) => { 
-                                  e.stopPropagation(); 
-                                  toggleTodayStatus(setup.id); 
-                                }} 
-                                className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400" 
-                                title="Remove (1hr limit)"
-                              >
-                                <ArrowLeft size={12} />
+                            {/* Disable execution staging if already executed */}
+                            {!isExecuted && (
+                              <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
+                                <Target size={12} />
                               </button>
                             )}
+                            <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400" title="Remove from Today">
+                              <ArrowLeft size={12} />
+                            </button>
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'bg-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'bg-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
                             {setup.direction || 'N/A'}
                           </span>
+                          {/* 🚨 Show Executed Tag dynamically */}
+                          {isExecuted && <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-bold uppercase truncate">Executed</span>}
                         </div>
                       </div>
                     )
@@ -1378,14 +1409,9 @@ export default function DeskClient() {
                 )}
               </div>
 
-              {/* --- CHART COMPONENT (Order 1 on Mobile, Order 2 on Desktop) --- */}
               <div 
                 className="order-1 lg:order-2 w-full flex-[1.5] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group"
-                onMouseDown={handlePeekStart}
-                onMouseUp={handlePeekEnd}
-                onMouseLeave={handlePeekEnd}
-                onTouchStart={handlePeekStart}
-                onTouchEnd={handlePeekEnd}
+                onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}
               >
                 {activeSetup?.imageUrl ? (
                   <>
@@ -1402,57 +1428,35 @@ export default function DeskClient() {
                       onTransformed={(ref) => setChartScale(ref.state.scale)}
                     >
                       <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img 
-                          src={activeSetup.imageUrl} 
-                          alt={activeSetup.symbol} 
-                          className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
-                          draggable={false} 
-                        />
+                        <img src={activeSetup.imageUrl} alt={activeSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" draggable={false} />
                       </TransformComponent>
                     </TransformWrapper>
-
                     {chartScale !== 1 && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }}
-                        className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100"
-                        title="View Full Screen"
-                      >
-                        <Maximize size={16} />
-                      </button>
+                      <button onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }} className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100" title="View Full Screen"><Maximize size={16} /></button>
                     )}
                   </>
                 ) : (
-                  <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0">
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span>
-                  </div>
+                  <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0"><span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span></div>
                 )}
               </div>
 
-              {/* --- DESKTOP NOTES COMPONENT (Hidden on Mobile) --- */}
               <div className="hidden lg:flex order-3 w-full lg:w-80 shrink-0 flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
                 <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0">
-                  <RichNotesEditor 
-                    activeSetup={activeSetup} 
-                    onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} 
-                  />
+                  <RichNotesEditor activeSetup={activeSetup} onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} />
                 </div>
               </div>
             </div>
           </div>
           
-          {/* --- BOTTOM SECTION: ACTION LOGS (Hidden on Mobile) --- */}
           <div className={`hidden lg:flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
             <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
               <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                <Activity size={14} className="text-emerald-500" /> 
-                Action Logs <span className="text-[10px] text-zinc-600 font-mono ml-1 opacity-70">[A]</span>
+                <Activity size={14} className="text-emerald-500" /> Action Logs <span className="text-[10px] text-zinc-600 font-mono ml-1 opacity-70">[A]</span>
               </h2>
               <button className="text-zinc-500 hover:text-white flex items-center gap-2">
                 {pendingReconciliation.length > 0 && !isAuditOpen && (
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-black border border-zinc-800 px-2 py-0.5 rounded">
-                    {pendingReconciliation.length} Pending
-                  </span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-black border border-zinc-800 px-2 py-0.5 rounded">{pendingReconciliation.length} Pending</span>
                 )}
                 {isAuditOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
               </button>
@@ -1460,18 +1464,13 @@ export default function DeskClient() {
 
             <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
               
-              {/* Capture Panel */}
               <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
                 <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
                   <div className="flex justify-between items-end">
-                    
                     <div className="flex items-center gap-2">
                       <h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3>
-                      <button onClick={() => setIsCatalystSettingsOpen(true)} className="text-zinc-500 hover:text-white transition-colors" title="Edit Custom Catalysts">
-                        <Settings size={12} />
-                      </button>
+                      <button onClick={() => setIsCatalystSettingsOpen(true)} className="text-zinc-500 hover:text-white transition-colors" title="Edit Custom Catalysts"><Settings size={12} /></button>
                     </div>
-
                     <span className={`text-[9px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>
                       {tradesTakenToday}/2 TRADES
                     </span>
@@ -1485,84 +1484,30 @@ export default function DeskClient() {
                     <div className="bg-black border border-zinc-700 rounded-xl p-4 shadow-inner flex flex-col gap-3">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-[16px] font-black text-white tracking-wider">{logPair}</span>
-                        <button 
-                          onClick={() => { 
-                            setLogPair(''); 
-                            setLogDirection(null); 
-                            setLogCatalystText(''); 
-                            setLogExecution(null); 
-                          }} 
-                          className="text-zinc-500 hover:text-red-400 transition-colors"
-                        >
-                          <X size={14}/>
-                        </button>
+                        <button onClick={() => { setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); }} className="text-zinc-500 hover:text-red-400 transition-colors"><X size={14}/></button>
                       </div>
                       
                       <div className="flex gap-3">
                         <div className="flex-[1.5] flex flex-col gap-2">
                           <div className="flex gap-2">
-                            <button 
-                              onClick={() => setLogDirection('LONG')} 
-                              className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}
-                            >
-                              Long
-                            </button>
-                            <button 
-                              onClick={() => setLogDirection('SHORT')} 
-                              className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}
-                            >
-                              Short
-                            </button>
+                            <button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Long</button>
+                            <button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Short</button>
                           </div>
-                          
                           <div className="flex flex-col gap-2 mt-1">
-                            <button 
-                              onClick={() => setLogExecution('Perfect')} 
-                              className={`py-2 px-3 border rounded-lg flex items-center justify-between transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
-                            >
-                              <span className="font-mono text-[10px] opacity-60">[1]</span>
-                              <span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span>
-                              <CheckCircle size={13} />
-                            </button>
-                            <button 
-                              onClick={() => setLogExecution('Imperfect')} 
-                              className={`py-2 px-3 border rounded-lg flex items-center justify-between transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
-                            >
-                              <span className="font-mono text-[10px] opacity-60">[2]</span>
-                              <span className="text-[9px] font-bold uppercase tracking-widest">Imperfect</span>
-                              <AlertTriangle size={13} />
-                            </button>
+                            <button onClick={() => setLogExecution('Perfect')} className={`py-2 px-3 border rounded-lg flex items-center justify-between transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}><span className="font-mono text-[10px] opacity-60">[1]</span><span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span><CheckCircle size={13} /></button>
+                            <button onClick={() => setLogExecution('Imperfect')} className={`py-2 px-3 border rounded-lg flex items-center justify-between transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}><span className="font-mono text-[10px] opacity-60">[2]</span><span className="text-[9px] font-bold uppercase tracking-widest">Imperfect</span><AlertTriangle size={13} /></button>
                           </div>
                         </div>
-                        
                         <div className="flex-[2] flex flex-col gap-2">
-                          <select 
-                            value=""
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                setLogCatalystText(prev => prev ? `${prev}\n[${e.target.value}]` : `[${e.target.value}]`);
-                              }
-                            }} 
-                            disabled={!logExecution}
-                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500 transition-colors"
-                          >
+                          <select value="" onChange={(e) => { if (e.target.value) setLogCatalystText(prev => prev ? `${prev}\n[${e.target.value}]` : `[${e.target.value}]`); }} disabled={!logExecution} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500 transition-colors">
                             <option value="" disabled>{logExecution ? "Add Tag..." : "Select Execution..."}</option>
                             {activeCatalystList.map((c: string) => <option key={c} value={c}>{c}</option>)}
                           </select>
-                          <textarea 
-                            value={logCatalystText} 
-                            onChange={(e) => setLogCatalystText(e.target.value)} 
-                            placeholder="Select tags above or type manually..." 
-                            className="w-full flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none resize-none custom-scrollbar focus:border-blue-500 transition-colors"
-                          />
+                          <textarea value={logCatalystText} onChange={(e) => setLogCatalystText(e.target.value)} placeholder="Select tags above or type manually..." className="w-full flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none resize-none custom-scrollbar focus:border-blue-500 transition-colors" />
                         </div>
                       </div>
 
-                      <button 
-                        disabled={!logDirection || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} 
-                        onClick={handleLockEntry} 
-                        className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 flex items-center justify-center gap-2 ${isAlreadyLogged ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'}`}
-                      >
+                      <button disabled={!logDirection || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} onClick={handleLockEntry} className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 flex items-center justify-center gap-2 ${isAlreadyLogged ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'}`}>
                         {isAlreadyLogged ? 'Already Logged Today' : <>Lock Entry <span className="font-mono text-[9px] opacity-70">[ENTER]</span></>}
                       </button>
                     </div>
@@ -1571,80 +1516,92 @@ export default function DeskClient() {
               </div>
 
               <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Post-Trade Settlement Queue</span>
-                  {pendingReconciliation.length > 0 && (
-                    <div 
-                      onDragOver={e => e.preventDefault()} 
-                      onDrop={handleMT5Drop}
-                      className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 border border-blue-500/20 border-dashed rounded-lg hover:bg-blue-500/10 transition-colors cursor-pointer"
-                      onClick={() => mt5InputRef.current?.click()}
-                    >
-                      <DownloadCloud size={14} className="text-blue-500" />
-                      <span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Sync MT5 Report</span>
-                      <input type="file" ref={mt5InputRef} accept=".csv, .htm, .html" className="hidden" onChange={handleMT5Select} />
+                
+                {/* 🚨 Split rendering for Current Week vs Legacy/Hold */}
+                <div className="flex flex-col gap-6">
+                  {/* Current Week Queue */}
+                  <div>
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Post-Trade Settlement Queue</span>
+                      {currentWeekPending.length > 0 && (
+                        <div onDragOver={e => e.preventDefault()} onDrop={handleMT5Drop} className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 border border-blue-500/20 border-dashed rounded-lg hover:bg-blue-500/10 transition-colors cursor-pointer" onClick={() => mt5InputRef.current?.click()}><DownloadCloud size={14} className="text-blue-500" /><span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Sync MT5 Report</span><input type="file" ref={mt5InputRef} accept=".csv, .htm, .html" className="hidden" onChange={handleMT5Select} /></div>
+                      )}
+                    </div>
+                    <div className="flex flex-col gap-2.5">
+                      {currentWeekPending.length === 0 ? (
+                        <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups this week</span></div>
+                      ) : (
+                        currentWeekPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Legacy / Carried Over Queue */}
+                  {heldOverPending.length > 0 && (
+                    <div className="pt-4 border-t border-zinc-800/50 mt-2">
+                      <div className="flex items-center gap-2 mb-4 shrink-0">
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Legacy / Carried Over</span>
+                      </div>
+                      <div className="flex flex-col gap-2.5 opacity-80 hover:opacity-100 transition-opacity">
+                        {heldOverPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)}
+                      </div>
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col gap-2.5">
-                  {pendingReconciliation.length === 0 ? (
-                    <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups</span>
-                    </div>
-                  ) : (
-                    pendingReconciliation.map((trade) => (
-                      <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />
-                    ))
-                  )}
-                </div>
+
               </div>
             </div>
           </div>
         </div>
         
-        {/* --- RIGHT SECTION: WEEKLY VAULT (Hidden on Mobile) --- */}
         <div className={`hidden lg:flex fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-zinc-950 border-l border-zinc-800 lg:rounded-xl shadow-2xl transition-transform lg:transition-all duration-300 flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-600/50 to-transparent"></div>
           <div className="h-14 lg:h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 text-white">
-            <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-              <UploadCloud size={14} className="text-purple-400" /> Weekly Vault <span className="text-[10px] text-zinc-600 font-mono ml-1 opacity-70">[V]</span>
-            </h2>
+            <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-purple-400" /> Weekly Vault <span className="text-[10px] text-zinc-600 font-mono ml-1 opacity-70">[V]</span></h2>
             <button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-zinc-500 hover:text-white p-1"><X size={18} /></button>
           </div>
           
           <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3 text-white">
             {weeklySetups.length === 0 ? (
-              <div className="text-center p-6 text-zinc-600">
-                <span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span>
-              </div>
+              <div className="text-center p-6 text-zinc-600"><span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span></div>
             ) : (
-              weeklySetups.map((setup) => (
-                <div key={`weekly-${setup.id}`} className="w-full p-3 border border-zinc-800/80 bg-black rounded-lg flex justify-between items-center group hover:border-zinc-600 transition-colors shrink-0 shadow-sm">
-                  <div className="flex flex-col min-w-0 pr-2">
-                    <span className="text-[13px] font-bold tracking-wide text-zinc-300 group-hover:text-white transition-colors truncate">{setup.symbol}</span>
-                    <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span>
+              weeklySetups.map((setup) => {
+                const isExecuted = executedSymbols.includes(setup.symbol);
+                const isPushedToToday = setup.isToday;
+
+                return (
+                  <div key={`weekly-${setup.id}`} className="w-full p-3 border border-zinc-800/80 bg-black rounded-lg flex flex-col justify-between group hover:border-zinc-600 transition-colors shrink-0 shadow-sm gap-2">
+                    <div className="flex justify-between items-start">
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <span className="text-[13px] font-bold tracking-wide text-zinc-300 group-hover:text-white transition-colors truncate">{setup.symbol}</span>
+                        <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={14} /></button>
+                        <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
+                        
+                        {/* Only show Push button if it's NOT already in Today's focus and NOT executed */}
+                        {!isPushedToToday && !isExecuted && (
+                          <button onClick={() => setConfirmPushId(setup.id)} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm">Push <ArrowRight size={12} /></button>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* 🚨 Tag Status Indicators */}
+                    <div className="flex gap-1.5">
+                      {isExecuted && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 tracking-widest w-fit">Executed</span>}
+                      {isPushedToToday && !isExecuted && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-blue-500/30 text-blue-400 bg-blue-500/10 tracking-widest w-fit">Active Today</span>}
+                    </div>
+
                   </div>
-                  <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={14} /></button>
-                    <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
-                    <button onClick={() => setConfirmPushId(setup.id)} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm">Push <ArrowRight size={12} /></button>
-                  </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
           
-          <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4">
-            <button 
-              onClick={() => setIsUploadModalOpen(true)} 
-              className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none"
-            >
-              <Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span>
-            </button>
-          </div>
+          <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4"><button onClick={() => setIsUploadModalOpen(true)} className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none"><Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></button></div>
         </div>
 
-        {/* --- MODALS --- */}
         <MT5SyncModal isOpen={isMT5ModalOpen} onClose={() => { setIsMT5ModalOpen(false); setMt5File(null); }} file={mt5File} pendingLogs={pendingReconciliation} onConfirm={handleMT5Confirm} />
         <SetupUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} onSave={handleBulkUpload} />
         
@@ -1653,42 +1610,19 @@ export default function DeskClient() {
             <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl">
               <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-widest">Confirm Push</h3>
               <p className="text-xs text-zinc-400 mb-6 leading-relaxed">Lock this setup into Today's Focus? Removal is only allowed for the first 60 minutes.</p>
-              <div className="flex gap-3">
-                <button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 text-[10px] font-bold uppercase hover:bg-zinc-800">Cancel</button>
-                <button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-[10px] font-bold uppercase shadow-md hover:bg-blue-500">Push to Today</button>
-              </div>
+              <div className="flex gap-3"><button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 text-[10px] font-bold uppercase hover:bg-zinc-800">Cancel</button><button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-[10px] font-bold uppercase shadow-md hover:bg-blue-500">Push to Today</button></div>
             </div>
           </div>
         )}
 
-        {/* Custom Catalyst Settings Modal */}
-        <CatalystSettingsModal 
-          isOpen={isCatalystSettingsOpen} 
-          onClose={() => setIsCatalystSettingsOpen(false)} 
-          perfect={perfectCatalysts} 
-          setPerfect={setPerfectCatalysts} 
-          imperfect={imperfectCatalysts} 
-          setImperfect={setImperfectCatalysts} 
-        />
+        <CatalystSettingsModal isOpen={isCatalystSettingsOpen} onClose={() => setIsCatalystSettingsOpen(false)} perfect={perfectCatalysts} setPerfect={setPerfectCatalysts} imperfect={imperfectCatalysts} setImperfect={setImperfectCatalysts} />
 
-        {/* 🚨 Mobile Notes Bottom Sheet Popup */}
         {isMobileNotesOpen && activeSetup && (
-          <div 
-            className="lg:hidden fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200"
-            onClick={() => setIsMobileNotesOpen(false)}
-          >
-            <div 
-              className="w-full h-[50vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300"
-              onClick={e => e.stopPropagation()}
-            >
+          <div className="lg:hidden fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200" onClick={() => setIsMobileNotesOpen(false)}>
+            <div className="w-full h-[50vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300" onClick={e => e.stopPropagation()}>
               <div className="p-4 border-b border-zinc-800/60 flex justify-between items-center bg-zinc-900/40 rounded-t-2xl">
-                <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
-                  <BookOpen size={14} className="text-blue-500" />
-                  {activeSetup.symbol} Thesis
-                </h3>
-                <button onClick={() => setIsMobileNotesOpen(false)} className="text-zinc-500 hover:text-white p-1">
-                  <X size={16}/>
-                </button>
+                <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2"><BookOpen size={14} className="text-blue-500" />{activeSetup.symbol} Thesis</h3>
+                <button onClick={() => setIsMobileNotesOpen(false)} className="text-zinc-500 hover:text-white p-1"><X size={16}/></button>
               </div>
               <div className="p-5 overflow-y-auto custom-scrollbar flex-1 text-sm text-zinc-300 leading-relaxed font-medium">
                  <div dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} />
@@ -1697,12 +1631,8 @@ export default function DeskClient() {
           </div>
         )}
 
-        {/* 🚨 Peek Overlay */}
         {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
-          <div 
-            className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`}
-            onClick={() => { if (isFullScreen) setIsFullScreen(false); }}
-          >
+          <div className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`} onClick={() => { if (isFullScreen) setIsFullScreen(false); }}>
             <img src={activeSetup.imageUrl} alt="Peek" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
           </div>
         )}
