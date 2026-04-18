@@ -8,7 +8,7 @@ import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'reac
 import { 
   Crosshair, CheckCircle2, Clock, 
   Target, Globe2, Activity, Lock, X, AlertTriangle, Type,
-  ChevronLeft, ChevronRight, BookOpen, Maximize, AlertCircle
+  ChevronLeft, ChevronRight, BookOpen, Maximize
 } from 'lucide-react'
 
 const supabase = createBrowserClient(
@@ -469,7 +469,7 @@ export default function PersonalDashboard() {
   }
 
   return (
-    <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
+    <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-y-auto lg:overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
         {isLoading || !layoutLoaded ? (
           <div className="flex-1 flex items-center justify-center">
@@ -478,14 +478,16 @@ export default function PersonalDashboard() {
         ) : (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
-            <div className="h-1/2 shrink-0 p-3 sm:p-4 flex gap-4 min-h-0 overflow-hidden">
+            {/* --- TOP SECTION (Mobile: Stacked, Desktop: Side-by-Side) --- */}
+            {/* 🚨 Mobile structural changes: flex-col, h-full, scrolling allowed */}
+            <div className="flex flex-col lg:flex-row h-full lg:h-1/2 shrink-0 p-3 sm:p-4 gap-4 min-h-0 overflow-y-auto lg:overflow-hidden">
               
-              {/* --- WIDGET GRID --- */}
+              {/* --- WIDGET GRID (Mobile: Bottom, Desktop: Left) --- */}
               <div 
                 ref={gridRef}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDropOnGrid}
-                className="w-[60%] shrink-0 min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
+                className="order-2 lg:order-1 w-full lg:w-[60%] shrink-0 min-h-[300px] lg:min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
               >
                 {Array.from({ length: 49 }).map((_, i) => (
                   <div key={`slot-${i}`} className="w-full h-full rounded border border-dashed border-zinc-800/10 pointer-events-none" />
@@ -589,8 +591,8 @@ export default function PersonalDashboard() {
 
               </div>
 
-              {/* --- ROUTINE TRACKER (OPERATOR'S PLAYBOOK ENFORCER) --- */}
-              <div className="w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0 relative">
+              {/* --- ROUTINE TRACKER (Mobile: Top, Desktop: Right) --- */}
+              <div className="order-1 lg:order-2 w-full lg:w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0 relative">
                 
                 {/* Quick Nav Hints */}
                 <div className="absolute top-3 right-3 flex gap-2 z-10">
@@ -610,7 +612,7 @@ export default function PersonalDashboard() {
                   </h3>
                 </div>
 
-                <div className="flex flex-col overflow-y-auto custom-scrollbar flex-1 pr-2 pl-1 relative">
+                <div className="flex flex-col overflow-y-visible lg:overflow-y-auto custom-scrollbar flex-1 pr-2 pl-1 relative">
                   
                   {/* Vertical Connecting Line */}
                   <div className="absolute left-[13px] top-2 bottom-6 w-px bg-zinc-800/60 z-0" />
@@ -671,7 +673,7 @@ export default function PersonalDashboard() {
                     <div className="flex flex-col flex-1 mt-0.5">
                       <span className="text-xs font-bold tracking-wide text-zinc-200 flex items-center justify-between">
                         Live Execution
-                        <div className="flex gap-1 items-center">
+                        <div className="flex gap-1 items-center pr-2">
                            <div className={`h-1.5 w-6 rounded-sm ${tradesTakenToday >= 1 ? 'bg-zinc-800' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}`} />
                            <div className={`h-1.5 w-6 rounded-sm ${tradesTakenToday >= 2 ? 'bg-zinc-800' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}`} />
                         </div>
@@ -705,8 +707,8 @@ export default function PersonalDashboard() {
               </div>
             </div>
 
-            {/* --- BOTTOM SECTION: ACTIVE FOCUS --- */}
-            <div className={`h-1/2 shrink-0 flex flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0 transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'w-full' : 'w-48 sm:w-56 border-r border-zinc-800/60'}`}>
+            {/* --- BOTTOM SECTION: ACTIVE FOCUS (Hidden on Mobile) --- */}
+            <div className={`hidden lg:flex shrink-0 flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0 transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'w-full h-1/2' : 'w-48 xl:w-56 border-r border-zinc-800/60 h-1/2'}`}>
               
               <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#050505]">
                 <div className="flex items-center gap-2 min-w-0">
@@ -734,7 +736,7 @@ export default function PersonalDashboard() {
 
               <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
                 
-                <div className={`shrink-0 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5 ${isTodayFocusExpanded ? 'w-48 sm:w-56 border-r border-zinc-800/60' : 'w-full'}`}>
+                <div className={`shrink-0 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5 ${isTodayFocusExpanded ? 'w-48 xl:w-56 border-r border-zinc-800/60' : 'w-full'}`}>
                   {todaySetups.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
                       <Target size={20} className="mb-2 opacity-50" />
