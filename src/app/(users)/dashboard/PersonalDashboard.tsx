@@ -8,7 +8,7 @@ import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'reac
 import { 
   Crosshair, CheckCircle2, Clock, 
   Target, Globe2, Activity, Lock, X, AlertTriangle, Type,
-  ChevronLeft, ChevronRight, BookOpen, Maximize
+  ChevronLeft, ChevronRight, BookOpen, Maximize, AlertCircle
 } from 'lucide-react'
 
 const supabase = createBrowserClient(
@@ -46,16 +46,13 @@ export default function PersonalDashboard() {
   const [layoutLoaded, setLayoutLoaded] = useState(false)
   
   const [todaySetups, setTodaySetups] = useState<any[]>([])
+  const [vaultSetupCount, setVaultSetupCount] = useState(0)
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
+  
   const [weekProgress, setWeekProgress] = useState<any[]>([])
-  const [routineStatus, setRoutineStatus] = useState({
-    sundayPrep: false,
-    dailyFiltered: false,
-    execution: 'pending' as 'perfect' | 'imperfect' | 'pending',
-    weekendWindup: false,
-    isWeekend: false
-  })
-
+  const [tradesTakenToday, setTradesTakenToday] = useState(0)
+  const [pendingReconciliationsCount, setPendingReconciliationsCount] = useState(0)
+  
   const [isTodayFocusExpanded, setIsTodayFocusExpanded] = useState(true)
 
   const [time, setTime] = useState<Date | null>(null) 
@@ -72,7 +69,7 @@ export default function PersonalDashboard() {
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
-  // 🚨 Interactive Chart States
+  // Interactive Chart States
   const [isPeeking, setIsPeeking] = useState(false)
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [chartScale, setChartScale] = useState(1)
@@ -180,12 +177,15 @@ export default function PersonalDashboard() {
       }
       const user = session.user
 
+      // Fetch Setups
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('added_to_today_at', { ascending: false })
       const activeSetups = setupsData?.filter(s => s.is_today) || []
       const vaultSetups = setupsData?.filter(s => !s.is_today) || []
 
       setTodaySetups(activeSetups.map(d => ({ id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url })))
+      setVaultSetupCount(vaultSetups.length)
 
+      // Fetch Logs for the Week
       const now = new Date()
       const dayOfWeek = now.getDay() 
       const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
@@ -194,9 +194,11 @@ export default function PersonalDashboard() {
 
       const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).gte('created_at', startOfWeek.toISOString())
 
+      // Calculate Discipline Progress
       const progress = []
       const daysFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-      let currentExecutionStatus: 'perfect' | 'imperfect' | 'pending' = 'pending'
+      
+      let todayTradeCount = 0;
 
       for (let i = 0; i < 5; i++) {
         const targetDate = new Date(startOfWeek)
@@ -211,10 +213,10 @@ export default function PersonalDashboard() {
         
         if (dateString === todayString) {
           isToday = true
+          todayTradeCount = dayLogs.length
           if (dayLogs.length > 0) {
             const hasImperfect = dayLogs.some(l => l.execution_type === 'Imperfect')
             status = hasImperfect ? 'imperfect' : 'perfect'
-            currentExecutionStatus = status
           } else {
             status = 'current'
           }
@@ -228,18 +230,12 @@ export default function PersonalDashboard() {
         }
         progress.push({ day: daysFull[i], status, isPast, isToday })
       }
+      
       setWeekProgress(progress)
+      setTradesTakenToday(todayTradeCount)
 
-      const isWeekendNow = new Date().getDay() === 5 || new Date().getDay() === 6 
       const pendingReconciliations = logsData?.filter(l => !l.is_reconciled) || []
-
-      setRoutineStatus({
-        sundayPrep: vaultSetups.length > 0, 
-        dailyFiltered: activeSetups.length >= 2, 
-        execution: currentExecutionStatus,
-        weekendWindup: logsData && logsData.length > 0 && pendingReconciliations.length === 0, 
-        isWeekend: isWeekendNow
-      })
+      setPendingReconciliationsCount(pendingReconciliations.length)
 
       setIsLoading(false)
     }
@@ -252,7 +248,7 @@ export default function PersonalDashboard() {
     else if (todaySetups.length === 0) setActiveTodayId(null)
   }, [todaySetups, activeTodayId])
 
-  // 🚨 AUTO-RESET ZOOM ON SWITCH
+  // AUTO-RESET ZOOM ON SWITCH
   useEffect(() => {
     if (activeTodayId && transformRef.current) {
       transformRef.current.resetTransform();
@@ -260,7 +256,7 @@ export default function PersonalDashboard() {
     }
   }, [activeTodayId]);
 
-  // 🚨 GLOBAL HOTKEYS FOR DASHBOARD
+  // GLOBAL HOTKEYS FOR DASHBOARD
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -276,11 +272,13 @@ export default function PersonalDashboard() {
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
 
+      // Active Focus Toggles
       if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         setIsTodayFocusExpanded(prev => !prev);
       }
 
+      // Quick Links
       if (e.code === 'KeyJ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         router.push('/journal');
@@ -293,6 +291,7 @@ export default function PersonalDashboard() {
 
       if (todaySetups.length === 0) return;
 
+      // Spacebar Traversal
       if (e.code === 'Space') {
         e.preventDefault(); 
         const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
@@ -312,7 +311,7 @@ export default function PersonalDashboard() {
   }, [todaySetups, activeTodayId, router]);
 
 
-  // 🚨 SMART PEEK LOGIC
+  // SMART PEEK LOGIC
   const handlePeekStart = () => {
     if (chartScale !== 1) return; 
     peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
@@ -323,6 +322,7 @@ export default function PersonalDashboard() {
     setIsPeeking(false);
   };
 
+  // Drag & Drop Logic for Grid
   const checkOverlap = (rect1: Omit<Widget, 'id' | 'fontIdx'>, rect2: Omit<Widget, 'id' | 'fontIdx'>) => {
     return (
       rect1.x < rect2.x + rect2.w &&
@@ -386,10 +386,7 @@ export default function PersonalDashboard() {
       const proposedWidget = { ...prev[id], x: safeX, y: safeY }
       const otherId = id === 'local' ? 'session' : 'local'
 
-      if (checkOverlap(proposedWidget, prev[otherId])) {
-        return prev; 
-      }
-
+      if (checkOverlap(proposedWidget, prev[otherId])) return prev; 
       return { ...prev, [id]: proposedWidget }
     })
   }
@@ -423,11 +420,7 @@ export default function PersonalDashboard() {
       setWidgets(prev => {
         const proposedWidget = { ...prev[id], w: newW, h: newH }
         const otherId = id === 'local' ? 'session' : 'local'
-
-        if (checkOverlap(proposedWidget, prev[otherId])) {
-          return prev; 
-        }
-
+        if (checkOverlap(proposedWidget, prev[otherId])) return prev; 
         return { ...prev, [id]: proposedWidget }
       })
     }
@@ -451,8 +444,8 @@ export default function PersonalDashboard() {
   }
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
-  const todayName = weekProgress.find(d => d.isToday)?.day || 'Today'
-  const pastDays = weekProgress.filter(d => d.isPast)
+  const isWeekendNow = new Date().getDay() === 5 || new Date().getDay() === 6 
+  const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
 
   const formatTime = (timeStr: string, fontIdx: number) => {
     if (!timeStr) return '--:--:--'
@@ -487,6 +480,7 @@ export default function PersonalDashboard() {
 
             <div className="h-1/2 shrink-0 p-3 sm:p-4 flex gap-4 min-h-0 overflow-hidden">
               
+              {/* --- WIDGET GRID --- */}
               <div 
                 ref={gridRef}
                 onDragOver={(e) => e.preventDefault()}
@@ -497,6 +491,7 @@ export default function PersonalDashboard() {
                   <div key={`slot-${i}`} className="w-full h-full rounded border border-dashed border-zinc-800/10 pointer-events-none" />
                 ))}
 
+                {/* Local Time Widget */}
                 <div 
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'local')}
@@ -542,6 +537,7 @@ export default function PersonalDashboard() {
                   </div>
                 </div>
 
+                {/* Session Widget */}
                 <div 
                   draggable 
                   onDragStart={(e) => handleDragStart(e, 'session')}
@@ -593,10 +589,11 @@ export default function PersonalDashboard() {
 
               </div>
 
+              {/* --- ROUTINE TRACKER (OPERATOR'S PLAYBOOK ENFORCER) --- */}
               <div className="w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0 relative">
                 
-                {/* 🚨 Quick Nav Hints */}
-                <div className="absolute top-2 right-2 flex gap-2 z-10">
+                {/* Quick Nav Hints */}
+                <div className="absolute top-3 right-3 flex gap-2 z-10">
                   <Link href="/desk" className="flex flex-col items-center p-1.5 rounded-lg bg-zinc-950 border border-zinc-800/50 text-zinc-500 hover:text-emerald-400 hover:border-emerald-500/30 transition-all shadow-sm" title="Go to Desk [D]">
                     <span className="text-[8px] font-mono tracking-widest leading-none mb-0.5">[D]</span>
                     <Crosshair size={12}/>
@@ -607,77 +604,100 @@ export default function PersonalDashboard() {
                   </Link>
                 </div>
 
-                <div className="flex justify-between items-center mb-4 border-b border-zinc-800/50 pb-3 shrink-0 pt-2">
-                  <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
-                    <Activity size={14} className="text-blue-500" /> Routine Tracker
+                <div className="flex justify-between items-center mb-4 pb-3 shrink-0 pt-1">
+                  <h3 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                    <Activity size={14} className="text-blue-500" /> Operator Pipeline
                   </h3>
                 </div>
 
-                <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-2">
+                <div className="flex flex-col overflow-y-auto custom-scrollbar flex-1 pr-2 pl-1 relative">
                   
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${routineStatus.sundayPrep ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-950 border-zinc-700 text-transparent'}`}>
-                        <CheckCircle2 size={12} />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className={`text-xs font-bold tracking-wide ${routineStatus.sundayPrep ? 'text-zinc-400 line-through' : 'text-zinc-200'}`}>Weekly Macro Prep</span>
-                      </div>
+                  {/* Vertical Connecting Line */}
+                  <div className="absolute left-[13px] top-2 bottom-6 w-px bg-zinc-800/60 z-0" />
+
+                  {/* Phase 1: Macro Prep */}
+                  <div className="flex items-start gap-4 relative z-10 mb-6">
+                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${vaultSetupCount > 0 ? 'border-emerald-500 text-emerald-400' : 'border-zinc-700 text-transparent'}`}>
+                      {vaultSetupCount > 0 && <CheckCircle2 size={12} />}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className={`text-xs font-bold tracking-wide ${vaultSetupCount > 0 ? 'text-zinc-500' : 'text-zinc-200'}`}>Weekly Macro Prep</span>
+                      <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">Sunday Filter (Max 15-20)</span>
                     </div>
                   </div>
 
-                  {pastDays.length > 0 && (
-                    <div className="flex flex-wrap gap-2 ml-7">
-                      {pastDays.map(day => (
-                        <div key={day.day} className="flex items-center gap-1.5 px-2.5 py-1 bg-zinc-800/20 border border-zinc-700/30 rounded backdrop-blur-sm">
-                          <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">{day.day.substring(0,3)}</span>
-                          {day.status === 'perfect' && <CheckCircle2 size={10} className="text-emerald-500" />}
-                          {day.status === 'imperfect' && <AlertTriangle size={10} className="text-amber-500" />}
-                          {day.status === 'missed' && <X size={10} className="text-red-500" />}
-                        </div>
+                  {/* Phase 2: Today Filtering (Daily Sniper) */}
+                  <div className="flex items-start gap-4 relative z-10 mb-6">
+                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${
+                      todaySetups.length > 0 && todaySetups.length <= 5 ? 'border-emerald-500 text-emerald-400' : 
+                      todaySetups.length > 5 ? 'border-red-500 text-red-400' :
+                      'border-blue-500/50 text-transparent'
+                    }`}>
+                      {todaySetups.length > 0 && todaySetups.length <= 5 ? <CheckCircle2 size={12} /> : 
+                       todaySetups.length > 5 ? <AlertTriangle size={10} /> :
+                       <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className={`text-xs font-bold tracking-wide ${todaySetups.length > 0 && todaySetups.length <= 5 ? 'text-zinc-500' : 'text-zinc-200'}`}>
+                        Daily Sniper Routine
+                      </span>
+                      {todaySetups.length > 5 ? (
+                        <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest mt-0.5">RULE BREAK: Max 5 Allowed</span>
+                      ) : (
+                        <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">Stage Alerts & Walk Away</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Phase 3 & 4: Discipline Chain & Hard Stop */}
+                  <div className="flex items-start gap-4 relative z-10 mb-6">
+                    <div className="flex flex-col items-center mt-0.5 shrink-0 bg-[#0a0a0a] py-1">
+                      {pastDays.map((day, i) => (
+                         <div key={day.day} className="flex flex-col items-center">
+                           <div 
+                             className={`w-2.5 h-2.5 rounded-full ${
+                               day.status === 'perfect' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 
+                               day.status === 'imperfect' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]' : 
+                               'bg-zinc-800'
+                             }`} 
+                             title={day.day} 
+                           />
+                           {i < pastDays.length - 1 && (
+                             <div className={`w-px h-3 ${day.status === 'imperfect' ? 'bg-red-500/50' : 'bg-zinc-700'}`} />
+                           )}
+                         </div>
                       ))}
                     </div>
-                  )}
-
-                  <div className="flex items-center justify-between mt-1">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-4 h-4 rounded-sm border flex items-center justify-center ${routineStatus.dailyFiltered ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-blue-500/10 border-blue-500/50 text-transparent'}`}>
-                        {routineStatus.dailyFiltered ? <CheckCircle2 size={12} /> : <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className={`text-xs font-bold tracking-wide text-zinc-200`}>
-                          Today Filtering <span className="text-blue-400/80 ml-1">[{todayName}]</span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between ml-7 border-l-2 border-zinc-800/50 pl-3">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center ${
-                        routineStatus.execution === 'perfect' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 
-                        routineStatus.execution === 'imperfect' ? 'bg-red-500/20 border-red-500 text-red-400' : 
-                        'bg-zinc-950 border-zinc-700 text-transparent'
-                      }`}>
-                        {routineStatus.execution === 'perfect' ? <CheckCircle2 size={10} /> : routineStatus.execution === 'imperfect' ? <AlertTriangle size={8} /> : null}
-                      </div>
-                      <span className="text-xs font-bold tracking-wide text-zinc-400">Execution Grading</span>
-                    </div>
-                    {routineStatus.execution !== 'pending' && (
-                      <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${routineStatus.execution === 'perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                        {routineStatus.execution}
+                    <div className="flex flex-col flex-1 mt-0.5">
+                      <span className="text-xs font-bold tracking-wide text-zinc-200 flex items-center justify-between">
+                        Live Execution
+                        <div className="flex gap-1 items-center">
+                           <div className={`h-1.5 w-6 rounded-sm ${tradesTakenToday >= 1 ? 'bg-zinc-800' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}`} />
+                           <div className={`h-1.5 w-6 rounded-sm ${tradesTakenToday >= 2 ? 'bg-zinc-800' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}`} />
+                        </div>
                       </span>
-                    )}
+                      {tradesTakenToday >= 2 ? (
+                        <span className="text-[9px] text-red-400 font-black uppercase tracking-widest mt-1.5 px-2 py-1 bg-red-500/10 rounded border border-red-500/20 inline-block w-fit">
+                          HARD STOP ACTIVE: CLOSE TERMINAL
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">Pre-Outcome Mentality Log</span>
+                      )}
+                    </div>
                   </div>
 
-                  <div className={`flex items-center justify-between mt-auto pt-3 border-t border-zinc-800/50 ${!routineStatus.isWeekend ? 'opacity-40 grayscale' : ''}`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-sm border bg-zinc-950 border-zinc-700 flex items-center justify-center">
-                        {!routineStatus.isWeekend ? <Lock size={10} className="text-zinc-500" /> : routineStatus.weekendWindup && <CheckCircle2 size={12} className="text-emerald-500" />}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-xs font-bold tracking-wide text-zinc-400">Weekend Wind-up</span>
-                      </div>
+                  {/* Phase 5: Weekend Windup */}
+                  <div className={`flex items-start gap-4 relative z-10 ${!isWeekendNow ? 'opacity-40 grayscale' : ''}`}>
+                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${
+                      isWeekendNow && pendingReconciliationsCount === 0 && tradesTakenToday > 0 ? 'border-emerald-500 text-emerald-400' : 'border-zinc-700 text-transparent'
+                    }`}>
+                      {isWeekendNow && pendingReconciliationsCount === 0 && tradesTakenToday > 0 && <CheckCircle2 size={12} />}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-xs font-bold tracking-wide text-zinc-200">Weekend Settlement</span>
+                      <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">
+                        {pendingReconciliationsCount > 0 ? `${pendingReconciliationsCount} Trades Pending Math Log` : 'Post-Outcome Math Locked'}
+                      </span>
                     </div>
                   </div>
 
@@ -685,30 +705,31 @@ export default function PersonalDashboard() {
               </div>
             </div>
 
+            {/* --- BOTTOM SECTION: ACTIVE FOCUS --- */}
             <div className={`h-1/2 shrink-0 flex flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0 transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'w-full' : 'w-48 sm:w-56 border-r border-zinc-800/60'}`}>
               
               <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#050505]">
-               <div className="flex items-center gap-2 min-w-0">
-  <Crosshair size={14} className="text-blue-500 shrink-0" />
-  <h2 className="text-xs font-bold text-white uppercase tracking-widest truncate">
-    {isTodayFocusExpanded ? "Active Focus" : "Focus"} 
-    {isTodayFocusExpanded && <span className="font-mono text-[9px] text-zinc-500 ml-1.5 opacity-70">[A]</span>}
-  </h2>
-</div>
-<div className="flex items-center gap-3 shrink-0 ml-2">
-  {isTodayFocusExpanded && (
-    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest hidden sm:block">
-      {todaySetups.length} Pairs Locked
-    </span>
-  )}
-  <button 
-    onClick={() => setIsTodayFocusExpanded(!isTodayFocusExpanded)}
-    className="text-zinc-500 hover:text-white transition-colors p-1"
-    title={isTodayFocusExpanded ? "Collapse Focus Workspace [A]" : "Expand Focus Workspace [A]"}
-  >
-    {isTodayFocusExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-  </button>
-</div>
+                <div className="flex items-center gap-2 min-w-0">
+                  <Crosshair size={14} className="text-blue-500 shrink-0" />
+                  <h2 className="text-xs font-bold text-white uppercase tracking-widest truncate">
+                    {isTodayFocusExpanded ? "Active Focus" : "Focus"} 
+                    {isTodayFocusExpanded && <span className="font-mono text-[9px] text-zinc-500 ml-1.5 opacity-70">[A]</span>}
+                  </h2>
+                </div>
+                <div className="flex items-center gap-3 shrink-0 ml-2">
+                  {isTodayFocusExpanded && (
+                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest hidden sm:block">
+                      {todaySetups.length} Pairs Locked
+                    </span>
+                  )}
+                  <button 
+                    onClick={() => setIsTodayFocusExpanded(!isTodayFocusExpanded)}
+                    className="text-zinc-500 hover:text-white transition-colors p-1"
+                    title={isTodayFocusExpanded ? "Collapse Focus Workspace [A]" : "Expand Focus Workspace [A]"}
+                  >
+                    {isTodayFocusExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
@@ -744,7 +765,7 @@ export default function PersonalDashboard() {
 
                 <div className={`flex flex-row min-w-0 overflow-hidden transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'flex-1 opacity-100' : 'w-0 opacity-0'}`}>
                   
-                  {/* 🚨 Interactive Dashboard Canvas */}
+                  {/* Interactive Dashboard Canvas */}
                   <div 
                     className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60 group overflow-hidden"
                     onMouseDown={handlePeekStart}
@@ -765,6 +786,7 @@ export default function PersonalDashboard() {
                           doubleClick={{ mode: 'reset' }}
                           panning={{ disabled: false }}
                           onTransformed={(ref) => setChartScale(ref.state.scale)}
+                          ref={transformRef}
                         >
                           <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <img 
@@ -815,7 +837,7 @@ export default function PersonalDashboard() {
         )}
       </div>
 
-      {/* 🚨 Overlays */}
+      {/* Overlays */}
       {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
         <div 
           className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`}
