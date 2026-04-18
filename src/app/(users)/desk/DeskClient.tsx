@@ -166,7 +166,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
 
-  // 🚨 Peek states for Upload Modal
   const [isPeeking, setIsPeeking] = useState(false)
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
 
@@ -236,18 +235,15 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 
   const handleSaveAll = async () => {
     setIsUploading(true)
-    // 🚨 Playbook and Notes are now completely optional. Only instrument and direction are required.
     const validDrafts = drafts.filter(d => d.instrument.trim() !== '' && d.direction !== '')
     await onSave(validDrafts)
     setIsUploading(false)
     onClose()
   }
 
-  // 🚨 Peek handlers for Upload Modal
   const handlePeekStart = () => { peekTimer.current = setTimeout(() => setIsPeeking(true), 400); };
   const handlePeekEnd = () => { if (peekTimer.current) clearTimeout(peekTimer.current); setIsPeeking(false); };
 
-  // 🚨 Smart Backdrop Close Logic
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget && drafts.length === 0 && !linkInput) {
       onClose();
@@ -263,10 +259,9 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        onClick={handleBackdropClick} // Smart Close
+        onClick={handleBackdropClick}
       >
         <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px] relative" onClick={e => e.stopPropagation()}>
-          
           {isDragging && (
             <div className="absolute inset-0 z-50 bg-purple-500/10 border-4 border-purple-500/50 border-dashed rounded-xl flex items-center justify-center pointer-events-none backdrop-blur-sm m-2">
               <div className="bg-black/90 px-8 py-6 rounded-2xl flex flex-col items-center shadow-2xl">
@@ -285,16 +280,10 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
             <div className="w-full lg:w-[200px] border-b lg:border-b-0 lg:border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
               <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
                 <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5" disabled={isUploading}><Plus size={14} /> Add Images</button>
-                
                 <div className="flex gap-1">
                   <input 
-                    type="text" 
-                    value={linkInput} 
-                    onChange={(e) => setLinkInput(e.target.value)} 
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
-                    placeholder="Paste URL..." 
-                    className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-purple-500 transition-colors" 
-                    disabled={isUploading} 
+                    type="text" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
+                    placeholder="Paste URL..." className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-purple-500 transition-colors" disabled={isUploading} 
                   />
                   <button onClick={handlePasteClick} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded transition-colors" disabled={isUploading} title="Paste Text"><Clipboard size={12}/></button>
                   <button onClick={handleAddLink} className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors" disabled={isUploading} title="Add"><Plus size={12}/></button>
@@ -313,7 +302,6 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
             <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
               {drafts.length > 0 && drafts[activeIndex] ? (
                 <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full text-white">
-                  {/* 🚨 Added Peek functionality to Upload preview */}
                   <div 
                     className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center mb-2 relative"
                     onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}
@@ -324,7 +312,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                     <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label><input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" disabled={isUploading}/></div>
                     <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Macro Bias</label><div className="flex gap-2"><button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>LONG</button><button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>SHORT</button></div></div>
                   </div>
-                  <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Playbook Strategy</label><select value={drafts[activeIndex].playbook} onChange={(e) => updateActiveDraft('playbook', e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" disabled={isUploading}><option value="">Select Playbook...</option>{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
+                  <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Playbook Strategy</label><input type="text" list="playbook-options" value={drafts[activeIndex].playbook} onChange={(e) => updateActiveDraft('playbook', e.target.value)} placeholder="Type or Select Setup..." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" disabled={isUploading} /><datalist id="playbook-options">{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</datalist></div>
                   <div className="flex flex-col gap-2 flex-1 mt-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label><textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500 transition-colors resize-none custom-scrollbar" disabled={isUploading}/></div>
                 </div>
               ) : <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 p-6"><UploadCloud size={40} className="mb-4 opacity-50" /><p className="text-sm font-medium text-center">Drag & Drop images anywhere<br/><span className="text-[10px] opacity-70">or use Ctrl+V to paste a screenshot</span></p></div>}
@@ -332,13 +320,11 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
           </div>
           <div className="p-4 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center shrink-0">
             <span className="text-xs font-medium text-zinc-500">{drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged</span>
-            {/* 🚨 Playbook and Notes are NOT required to save */}
             <button onClick={handleSaveAll} disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction) || isUploading} className="px-6 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500">{isUploading ? 'Saving...' : 'Save to Vault'}</button>
           </div>
         </div>
       </div>
       
-      {/* 🚨 Peek Overlay for Upload Modal */}
       {isPeeking && drafts.length > 0 && drafts[activeIndex]?.imageSource && (
         <div className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 pointer-events-none animate-in fade-in duration-150">
           <img src={drafts[activeIndex].imageSource!} alt="Peek" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
@@ -369,6 +355,7 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   )
 }
 
+// 🚨 FIXED: Scroll Selection for Outcomes & Optional Image
 function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: string, outcome: string, rr: string, afterImageUrl: string, missingReason?: string) => void, user: any }) {
   const [outcome, setOutcome] = useState(trade.outcome || '')
   const [rr, setRr] = useState(trade.rr ? trade.rr.toString() : '')
@@ -380,11 +367,21 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
 
   const handleSave = async () => { setIsSaving(true); await onSave(trade.id, outcome, rr, tvUrl, missingReason); setIsSaving(false); }
   
+  // Scroll Select Logic
+  const handleWheel = (e: React.WheelEvent<HTMLSelectElement>) => {
+    const outcomes = ['', 'TP', 'SL', 'BE'];
+    const dir = e.deltaY > 0 ? 1 : -1;
+    let next = outcomes.indexOf(outcome) + dir;
+    if (next >= outcomes.length) next = outcomes.length - 1;
+    if (next < 0) next = 0;
+    setOutcome(outcomes[next]);
+  };
+
   const needsReason = trade.execution === 'Imperfect' && !trade.reason
   const isMt5Synced = trade.outcome && trade.rr !== undefined
 
   return (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col gap-4 shadow-sm shrink-0">
+    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col gap-4 shadow-sm shrink-0 hover:border-zinc-700 transition-colors">
       <div className="flex justify-between items-center border-b border-zinc-800/50 pb-3">
         <div className="flex items-center gap-3">
           <span className="text-[13px] font-black text-white">{trade.symbol}</span>
@@ -401,18 +398,18 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
       <div className="flex flex-col sm:flex-row gap-3">
         {needsReason && (
           <select value={missingReason} onChange={e => setMissingReason(e.target.value)} className="flex-1 sm:flex-none sm:w-32 bg-black border border-red-500/50 rounded-lg px-2 py-1.5 text-[10px] font-bold text-zinc-300 outline-none uppercase">
-            <option value="">Log Catalyst...</option>
-            <option value="FOMO">FOMO</option>
-            <option value="Revenge">Revenge</option>
-            <option value="Boredom">Boredom</option>
+            <option value="">Log Catalyst...</option><option value="FOMO">FOMO</option><option value="Revenge">Revenge</option><option value="Boredom">Boredom</option>
           </select>
         )}
         
-        <select value={outcome} onChange={e => setOutcome(e.target.value)} className={`w-full sm:w-28 bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-blue-500`}>
-          <option value="">Outcome</option>
-          <option value="TP">Hit TP</option>
-          <option value="SL">Hit SL</option>
-          <option value="BE">Break Even</option>
+        <select 
+          value={outcome} 
+          onChange={e => setOutcome(e.target.value)} 
+          onWheel={handleWheel}
+          className={`w-full sm:w-28 bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-blue-500 cursor-ns-resize`}
+          title="Scroll to change"
+        >
+          <option value="">Outcome</option><option value="TP">Hit TP</option><option value="SL">Hit SL</option><option value="BE">Break Even</option>
         </select>
         
         <div className="relative w-full sm:w-24">
@@ -421,11 +418,12 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
         </div>
 
         <div className="relative flex-1">
-          <input type="text" value={tvUrl} onChange={e => setTvUrl(e.target.value)} placeholder="Paste TradingView URL (Alt+S)..." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-2 text-[10px] font-bold text-zinc-300 outline-none focus:border-blue-500 transition-all placeholder:text-zinc-600" />
+          <input type="text" value={tvUrl} onChange={e => setTvUrl(e.target.value)} placeholder="TradingView URL..." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-8 pr-3 py-2 text-[10px] font-bold text-zinc-300 outline-none focus:border-blue-500 transition-all placeholder:text-zinc-600" />
           <LinkIcon size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500" />
         </div>
 
-        <button disabled={!outcome || !rr || !tvUrl || (needsReason && !missingReason) || isSaving} onClick={handleSave} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors sm:ml-auto shrink-0">
+        {/* 🚨 TV URL is now perfectly optional */}
+        <button disabled={!outcome || !rr || (needsReason && !missingReason) || isSaving} onClick={handleSave} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors sm:ml-auto shrink-0">
           {isSaving ? 'Saving...' : 'Reconcile'}
         </button>
       </div>
@@ -441,13 +439,11 @@ export default function DeskClient() {
 
   const [user, setUser] = useState<any>(null)
   
-  // 🚨 UI States - Start closed, but we check localStorage after mount
   const [isVaultOpen, setIsVaultOpen] = useState(false)
   const [isAuditOpen, setIsAuditOpen] = useState(false)
   
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [confirmPushId, setConfirmPushId] = useState<string | null>(null)
-  const [previewSetup, setPreviewSetup] = useState<any | null>(null)
   
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
@@ -468,7 +464,7 @@ export default function DeskClient() {
   const [chartScale, setChartScale] = useState(1)
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
 
-  // 🚨 Load states from LocalStorage on mount
+  // 🚨 UI Memory
   useEffect(() => {
     const vault = localStorage.getItem('desk_vault_open')
     const audit = localStorage.getItem('desk_audit_open')
@@ -476,7 +472,6 @@ export default function DeskClient() {
     if (audit) setIsAuditOpen(audit === 'true')
   }, [])
 
-  // 🚨 Save states to LocalStorage on change
   useEffect(() => { localStorage.setItem('desk_vault_open', String(isVaultOpen)) }, [isVaultOpen])
   useEffect(() => { localStorage.setItem('desk_audit_open', String(isAuditOpen)) }, [isAuditOpen])
 
@@ -523,7 +518,6 @@ export default function DeskClient() {
 
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
-  // 🚨 GLOBAL KEYBOARD SHORTCUTS & UNIVERSAL ESCAPE
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -533,7 +527,7 @@ export default function DeskClient() {
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') {
           target.blur();
         }
-        setIsFullScreen(false); setPreviewSetup(null); setConfirmPushId(null); setIsUploadModalOpen(false); setIsMT5ModalOpen(false); setIsVaultOpen(false); setIsAuditOpen(false);
+        setIsFullScreen(false); setConfirmPushId(null); setIsUploadModalOpen(false); setIsMT5ModalOpen(false); setIsVaultOpen(false); setIsAuditOpen(false);
         return; 
       }
 
@@ -552,7 +546,7 @@ export default function DeskClient() {
         if (e.code === 'Digit1' || e.code === 'Numpad1') { e.preventDefault(); setLogExecution('Perfect'); }
         if (e.code === 'Digit2' || e.code === 'Numpad2') { e.preventDefault(); setLogExecution('Imperfect'); }
         if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-          if (logDirection && logExecution) { // Playbook is optional, so we don't check for it here
+          if (logDirection && logExecution) { 
             e.preventDefault();
             handleLockEntry();
           }
@@ -615,24 +609,9 @@ export default function DeskClient() {
     await supabase.from('user_desk_setups').delete().eq('id', id)
   }
 
-  const handleBulkUpload = async (draftsToSave: any[]) => {
-    if (!user) return alert("Authentication Error: No active user session found.")
-    const newSetups = []
-    for (const draft of draftsToSave) {
-      let finalImageUrl = draft.imageSource
-      if (draft.file) {
-        const { data } = await supabase.storage.from('user-desk-images').upload(`${user.id}/${Math.random()}.${draft.file.name.split('.').pop()}`, draft.file)
-        if (data) finalImageUrl = supabase.storage.from('user-desk-images').getPublicUrl(data.path).data.publicUrl
-      } else if (finalImageUrl && finalImageUrl.startsWith('blob:')) finalImageUrl = null 
-      newSetups.push({ user_id: user.id, symbol: draft.instrument, direction: draft.direction, playbook: draft.playbook, notes: draft.notes, image_url: finalImageUrl, is_today: false })
-    }
-    const { data } = await supabase.from('user_desk_setups').insert(newSetups).select()
-    if (data) setSetups(prev => [...data.map(d => ({ id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url, isToday: false, addedToTodayAt: null })), ...prev])
-  }
-
   const handleSaveReconciliation = async (id: string, outcome: string, rr: string, afterUrl: string, missingReason?: string) => {
     if (!user) return
-    const updateData: any = { is_reconciled: true, outcome, rr: parseFloat(rr), after_image_url: afterUrl }
+    const updateData: any = { is_reconciled: true, outcome, rr: parseFloat(rr), after_image_url: afterUrl || null }
     if (missingReason) updateData.reason = missingReason
     setPendingReconciliation(prev => prev.filter(p => p.id !== id))
     await supabase.from('user_desk_logs').update(updateData).eq('id', id)
@@ -779,18 +758,38 @@ export default function DeskClient() {
                   {!logPair ? <div className="py-2.5 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span></div> : (
                     <div className="bg-black border border-zinc-700 rounded-xl p-4 shadow-inner flex flex-col gap-3">
                       <div className="flex justify-between items-center mb-1"><span className="text-[16px] font-black text-white tracking-wider">{logPair}</span><button onClick={() => { setLogPair(''); setLogDirection(null); setLogPlaybook(''); setLogExecution(null); setLogReason(''); }} className="text-zinc-500 hover:text-red-400 transition-colors"><X size={14}/></button></div>
-                      <div className="flex gap-2"><button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Long</button><button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Short</button></div>
-                      <select value={logPlaybook} onChange={(e) => setLogPlaybook(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500"><option value="">Select Playbook...</option>{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</select>
-                      <div className="grid grid-cols-2 gap-2 mt-1">
-                        <button onClick={() => setLogExecution('Perfect')} className={`py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}>
-                          <CheckCircle size={16} />
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-center leading-tight">Perfect<br/><span className="text-[10px] font-mono opacity-60">[1]</span></span>
-                        </button>
-                        <button onClick={() => setLogExecution('Imperfect')} className={`py-3 border rounded-xl flex flex-col items-center gap-1.5 transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}>
-                          <AlertTriangle size={16} />
-                          <span className="text-[9px] font-bold uppercase tracking-widest text-center leading-tight">Imperfect<br/><span className="text-[10px] font-mono opacity-60">[2]</span></span>
-                        </button>
+                      
+                      {/* 🚨 Redesigned Action Row (Direction + Executions vs Playbook Box) */}
+                      <div className="flex gap-3">
+                        <div className="flex-[1.5] flex flex-col gap-2">
+                          <div className="flex gap-2">
+                            <button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Long</button>
+                            <button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Short</button>
+                          </div>
+                          <div className="flex flex-col gap-2 mt-1">
+                            <button onClick={() => setLogExecution('Perfect')} className={`py-2 px-3 border rounded-lg flex items-center justify-between transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}>
+                              <span className="font-mono text-[10px] opacity-60">[1]</span>
+                              <span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span>
+                              <CheckCircle size={13} />
+                            </button>
+                            <button onClick={() => setLogExecution('Imperfect')} className={`py-2 px-3 border rounded-lg flex items-center justify-between transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}>
+                              <span className="font-mono text-[10px] opacity-60">[2]</span>
+                              <span className="text-[9px] font-bold uppercase tracking-widest">Imperfect</span>
+                              <AlertTriangle size={13} />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="flex-1 flex flex-col">
+                          <input 
+                            type="text" list="playbook-options" value={logPlaybook} onChange={(e) => setLogPlaybook(e.target.value)} 
+                            placeholder="Playbook / Strategy..." 
+                            className="w-full h-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500 transition-colors" 
+                          />
+                          <datalist id="playbook-options">{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</datalist>
+                        </div>
                       </div>
+
                       {logExecution === 'Imperfect' && !isAlreadyLogged && <select value={logReason} onChange={(e) => setLogReason(e.target.value)} className="w-full bg-zinc-900 border border-red-500/30 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-red-500/80 transition-colors mt-1"><option value="" disabled>Catalyst (Can skip to Weekend)</option><option value="FOMO">FOMO / Rushed Entry</option><option value="Revenge">Revenge Trading</option><option value="Boredom">Boredom / Forced Setup</option><option value="Ignored Plan">Ignored Trading Plan</option></select>}
                       <button disabled={!logDirection || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} onClick={handleLockEntry} className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 flex items-center justify-center gap-2 ${isAlreadyLogged ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'}`}>
                         {isAlreadyLogged ? 'Already Logged Today' : <>Lock Entry <span className="font-mono text-[9px] opacity-70">[ENTER]</span></>}
@@ -802,7 +801,7 @@ export default function DeskClient() {
 
               <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Weekend Reconciliation Queue</span>
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Post-Trade Settlement Queue</span>
                   {pendingReconciliation.length > 0 && (
                     <div 
                       onDragOver={e => e.preventDefault()} 
