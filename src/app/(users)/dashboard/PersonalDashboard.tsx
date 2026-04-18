@@ -1,13 +1,14 @@
-// src/app/(users)/dashboard/PersonalDashboard.tsx
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { 
   Crosshair, CheckCircle2, Clock, 
   Target, Globe2, Activity, Lock, X, AlertTriangle, Type,
-  ChevronLeft, ChevronRight, BookOpen
+  ChevronLeft, ChevronRight, BookOpen, Maximize
 } from 'lucide-react'
 
 const supabase = createBrowserClient(
@@ -39,6 +40,7 @@ const sanitizeLayout = (data: any) => {
 }
 
 export default function PersonalDashboard() {
+  const router = useRouter()
   const [mounted, setMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [layoutLoaded, setLayoutLoaded] = useState(false)
@@ -69,6 +71,13 @@ export default function PersonalDashboard() {
   })
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
+
+  // 🚨 Interactive Chart States
+  const [isPeeking, setIsPeeking] = useState(false)
+  const [isFullScreen, setIsFullScreen] = useState(false)
+  const [chartScale, setChartScale] = useState(1)
+  const peekTimer = useRef<NodeJS.Timeout | null>(null)
+  const transformRef = useRef<ReactZoomPanPinchRef>(null)
 
   const fontStyles = [
     "font-mono font-black tracking-tighter text-zinc-100",   
@@ -242,6 +251,77 @@ export default function PersonalDashboard() {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) setActiveTodayId(todaySetups[0].id)
     else if (todaySetups.length === 0) setActiveTodayId(null)
   }, [todaySetups, activeTodayId])
+
+  // 🚨 AUTO-RESET ZOOM ON SWITCH
+  useEffect(() => {
+    if (activeTodayId && transformRef.current) {
+      transformRef.current.resetTransform();
+      setChartScale(1);
+    }
+  }, [activeTodayId]);
+
+  // 🚨 GLOBAL HOTKEYS FOR DASHBOARD
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+
+      if (e.code === 'Escape') {
+        e.preventDefault();
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') {
+          target.blur();
+        }
+        setIsFullScreen(false);
+        return; 
+      }
+
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
+
+      if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        setIsTodayFocusExpanded(prev => !prev);
+      }
+
+      if (e.code === 'KeyJ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        router.push('/journal');
+      }
+
+      if (e.code === 'KeyD' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        router.push('/desk');
+      }
+
+      if (todaySetups.length === 0) return;
+
+      if (e.code === 'Space') {
+        e.preventDefault(); 
+        const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
+        if (currentIndex === -1) return;
+        if (e.shiftKey) {
+          const prevIndex = (currentIndex - 1 + todaySetups.length) % todaySetups.length;
+          setActiveTodayId(todaySetups[prevIndex].id);
+        } else {
+          const nextIndex = (currentIndex + 1) % todaySetups.length;
+          setActiveTodayId(todaySetups[nextIndex].id);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [todaySetups, activeTodayId, router]);
+
+
+  // 🚨 SMART PEEK LOGIC
+  const handlePeekStart = () => {
+    if (chartScale !== 1) return; 
+    peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
+  };
+
+  const handlePeekEnd = () => {
+    if (peekTimer.current) clearTimeout(peekTimer.current);
+    setIsPeeking(false);
+  };
 
   const checkOverlap = (rect1: Omit<Widget, 'id' | 'fontIdx'>, rect2: Omit<Widget, 'id' | 'fontIdx'>) => {
     return (
@@ -513,18 +593,24 @@ export default function PersonalDashboard() {
 
               </div>
 
-              <div className="w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0">
-                {/* --- ADDED JOURNAL LINK HERE --- */}
-                <div className="flex justify-between items-center mb-4 border-b border-zinc-800/50 pb-3 shrink-0">
+              <div className="w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0 relative">
+                
+                {/* 🚨 Quick Nav Hints */}
+                <div className="absolute top-2 right-2 flex gap-2 z-10">
+                  <Link href="/desk" className="flex flex-col items-center p-1.5 rounded-lg bg-zinc-950 border border-zinc-800/50 text-zinc-500 hover:text-emerald-400 hover:border-emerald-500/30 transition-all shadow-sm" title="Go to Desk [D]">
+                    <span className="text-[8px] font-mono tracking-widest leading-none mb-0.5">[D]</span>
+                    <Crosshair size={12}/>
+                  </Link>
+                  <Link href="/journal" className="flex flex-col items-center p-1.5 rounded-lg bg-zinc-950 border border-zinc-800/50 text-zinc-500 hover:text-purple-400 hover:border-purple-500/30 transition-all shadow-sm" title="Go to Journal [J]">
+                    <span className="text-[8px] font-mono tracking-widest leading-none mb-0.5">[J]</span>
+                    <BookOpen size={12}/>
+                  </Link>
+                </div>
+
+                <div className="flex justify-between items-center mb-4 border-b border-zinc-800/50 pb-3 shrink-0 pt-2">
                   <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5">
                     <Activity size={14} className="text-blue-500" /> Routine Tracker
                   </h3>
-                  <Link 
-                    href="/journal" 
-                    className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-widest text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded transition-colors border border-purple-500/20 shadow-sm"
-                  >
-                    <BookOpen size={10} /> Journal
-                  </Link>
                 </div>
 
                 <div className="flex flex-col gap-4 overflow-y-auto custom-scrollbar flex-1 pr-2">
@@ -605,7 +691,8 @@ export default function PersonalDashboard() {
                 <div className="flex items-center gap-2 min-w-0">
                   <Crosshair size={14} className="text-blue-500 shrink-0" />
                   <h2 className="text-xs font-bold text-white uppercase tracking-widest truncate">
-                    {isTodayFocusExpanded ? "Today's Focus" : "Focus"}
+                    {isTodayFocusExpanded ? "Today's Focus" : "Focus"} 
+                    {isTodayFocusExpanded && <span className="font-mono text-[9px] text-zinc-500 ml-1.5 opacity-70">[F]</span>}
                   </h2>
                 </div>
                 <div className="flex items-center gap-3 shrink-0 ml-2">
@@ -617,7 +704,7 @@ export default function PersonalDashboard() {
                   <button 
                     onClick={() => setIsTodayFocusExpanded(!isTodayFocusExpanded)}
                     className="text-zinc-500 hover:text-white transition-colors p-1"
-                    title={isTodayFocusExpanded ? "Collapse Focus Workspace" : "Expand Focus Workspace"}
+                    title={isTodayFocusExpanded ? "Collapse Focus Workspace [F]" : "Expand Focus Workspace [F]"}
                   >
                     {isTodayFocusExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
                   </button>
@@ -648,7 +735,7 @@ export default function PersonalDashboard() {
                         </span>
                         <div className="flex items-center gap-1.5">
                           <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
-                          <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook || 'No Playbook'}</span>
+                          {setup.playbook && <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook}</span>}
                         </div>
                       </div>
                     ))
@@ -656,11 +743,49 @@ export default function PersonalDashboard() {
                 </div>
 
                 <div className={`flex flex-row min-w-0 overflow-hidden transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'flex-1 opacity-100' : 'w-0 opacity-0'}`}>
-                  <div className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60">
-                    {activeSetup ? (
-                      <div className="absolute inset-0 p-3 flex items-center justify-center">
-                        <img src={activeSetup.imageUrl} alt={`${activeSetup.symbol} Chart`} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl" />
-                      </div>
+                  
+                  {/* 🚨 Interactive Dashboard Canvas */}
+                  <div 
+                    className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60 group overflow-hidden"
+                    onMouseDown={handlePeekStart}
+                    onMouseUp={handlePeekEnd}
+                    onMouseLeave={handlePeekEnd}
+                    onTouchStart={handlePeekStart}
+                    onTouchEnd={handlePeekEnd}
+                  >
+                    {activeSetup?.imageUrl ? (
+                      <>
+                        <TransformWrapper
+                          key={activeSetup.id}
+                          initialScale={1}
+                          minScale={0.5}
+                          maxScale={10}
+                          centerOnInit={true}
+                          wheel={{ step: 0.1 }}
+                          doubleClick={{ mode: 'reset' }}
+                          panning={{ disabled: false }}
+                          onTransformed={(ref) => setChartScale(ref.state.scale)}
+                        >
+                          <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img 
+                              src={activeSetup.imageUrl} 
+                              alt={`${activeSetup.symbol} Chart`} 
+                              className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
+                              draggable={false} 
+                            />
+                          </TransformComponent>
+                        </TransformWrapper>
+
+                        {chartScale !== 1 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }}
+                            className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100"
+                            title="View Full Screen"
+                          >
+                            <Maximize size={16} />
+                          </button>
+                        )}
+                      </>
                     ) : (
                       <div className="flex-1 flex items-center justify-center text-zinc-700">
                         <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Select a pair to view</span>
@@ -689,6 +814,16 @@ export default function PersonalDashboard() {
           </div>
         )}
       </div>
+
+      {/* 🚨 Overlays */}
+      {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
+        <div 
+          className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`}
+          onClick={() => { if (isFullScreen) setIsFullScreen(false); }}
+        >
+          <img src={activeSetup.imageUrl} alt="Peek" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+        </div>
+      )}
     </div>
   )
 }
