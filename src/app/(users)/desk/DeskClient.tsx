@@ -8,7 +8,7 @@ import Papa from 'papaparse'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard
 } from 'lucide-react'
 
 const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
@@ -164,17 +164,63 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   const [linkInput, setLinkInput] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [isDragging, setIsDragging] = useState(false) // 🚨 Drag state
 
   const extractInstrument = (text: string) => { const match = text.toUpperCase().match(/[A-Z0-9]{4,8}/); return match ? match[0] : '' }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 🚨 Handle Image Paster (Ctrl+V Screenshots)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      const files: File[] = [];
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          const file = items[i].getAsFile();
+          if (file) files.push(file);
+        }
+      }
+      if (files.length > 0) {
+        const newDrafts = files.map(file => ({ id: Math.random().toString(36).substr(2, 9), imageSource: URL.createObjectURL(file), file, instrument: extractInstrument(file.name), direction: '' as '', playbook: '', notes: '' }));
+        setDrafts(prev => [...prev, ...newDrafts]);
+        if (drafts.length === 0) setActiveIndex(0);
+      }
+    };
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, [isOpen, drafts.length]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement> | { target: { files: FileList | null } }) => {
     const files = e.target.files
     if (files && files.length > 0) {
-      const newDrafts: DraftSetup[] = Array.from(files).map(file => ({ id: Math.random().toString(36).substr(2, 9), imageSource: URL.createObjectURL(file), file, instrument: extractInstrument(file.name), direction: '', playbook: '', notes: '' }))
+      const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+      const newDrafts: DraftSetup[] = imageFiles.map(file => ({ id: Math.random().toString(36).substr(2, 9), imageSource: URL.createObjectURL(file), file, instrument: extractInstrument(file.name), direction: '', playbook: '', notes: '' }))
       setDrafts(prev => [...prev, ...newDrafts])
       if (drafts.length === 0) setActiveIndex(0)
     }
   }
+
+  // 🚨 Drag & Drop Handlers
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileChange({ target: { files: e.dataTransfer.files } });
+    }
+  };
+
+  const handlePasteClick = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text) setLinkInput(text);
+    } catch (err) {
+      console.error('Failed to read clipboard', err);
+      alert('Clipboard text access blocked by browser. Please use Ctrl+V to paste.');
+    }
+  };
 
   const handleAddLink = () => {
     if (!linkInput) return
@@ -198,17 +244,48 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px]">
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px] relative">
+        
+        {/* 🚨 Drag Overlay */}
+        {isDragging && (
+          <div className="absolute inset-0 z-50 bg-purple-500/10 border-4 border-purple-500/50 border-dashed rounded-xl flex items-center justify-center pointer-events-none backdrop-blur-sm m-2">
+            <div className="bg-black/90 px-8 py-6 rounded-2xl flex flex-col items-center shadow-2xl">
+              <UploadCloud size={48} className="text-purple-500 mb-3 animate-bounce" />
+              <p className="text-white font-black text-xl tracking-widest uppercase">Drop Images to Stage</p>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
           <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2"><UploadCloud size={16} className="text-purple-500" /> Vault Upload</h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}><X size={18} /></button>
         </div>
+        
         <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
           <div className="w-full lg:w-[200px] border-b lg:border-b-0 lg:border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
             <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
               <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5" disabled={isUploading}><Plus size={14} /> Add Images</button>
-              <div className="flex gap-1"><input type="text" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} placeholder="Paste URL..." className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-blue-500" disabled={isUploading} /><button onClick={handleAddLink} className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors" disabled={isUploading}><Plus size={12}/></button></div>
+              
+              {/* 🚨 One-Click Paste & Enter Handler */}
+              <div className="flex gap-1">
+                <input 
+                  type="text" 
+                  value={linkInput} 
+                  onChange={(e) => setLinkInput(e.target.value)} 
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
+                  placeholder="Paste URL..." 
+                  className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-purple-500 transition-colors" 
+                  disabled={isUploading} 
+                />
+                <button onClick={handlePasteClick} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded transition-colors" disabled={isUploading} title="Paste Text"><Clipboard size={12}/></button>
+                <button onClick={handleAddLink} className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors" disabled={isUploading} title="Add"><Plus size={12}/></button>
+              </div>
               <input type="file" multiple ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
             </div>
             <div className="flex-1 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-2 flex flex-row lg:flex-col gap-2 text-white">
@@ -228,10 +305,10 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                   <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label><input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" disabled={isUploading}/></div>
                   <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Macro Bias</label><div className="flex gap-2"><button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>LONG</button><button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>SHORT</button></div></div>
                 </div>
-                <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Playbook Strategy</label><select value={drafts[activeIndex].playbook} onChange={(e) => updateActiveDraft('playbook', e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500" disabled={isUploading}><option value="" disabled>Select Core Setup...</option>{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
-                <div className="flex flex-col gap-2 flex-1 mt-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label><textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors resize-none custom-scrollbar" disabled={isUploading}/></div>
+                <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Playbook Strategy</label><select value={drafts[activeIndex].playbook} onChange={(e) => updateActiveDraft('playbook', e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" disabled={isUploading}><option value="" disabled>Select Core Setup...</option>{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
+                <div className="flex flex-col gap-2 flex-1 mt-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label><textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500 transition-colors resize-none custom-scrollbar" disabled={isUploading}/></div>
               </div>
-            ) : <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 p-6"><UploadCloud size={40} className="mb-4 opacity-50" /><p className="text-sm font-medium text-center">Add images or links to start bulk uploading.</p></div>}
+            ) : <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 p-6"><UploadCloud size={40} className="mb-4 opacity-50" /><p className="text-sm font-medium text-center">Drag & Drop images anywhere<br/><span className="text-[10px] opacity-70">or use Ctrl+V to paste a screenshot</span></p></div>}
           </div>
         </div>
         <div className="p-4 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center shrink-0">
@@ -243,21 +320,15 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   )
 }
 
-// 🚨 FIXED: Tiptap Cursor Jumping Bug
 function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate: (id: string, notes: string) => void }) {
   const editor = useEditor({
     extensions: [StarterKit],
     content: activeSetup?.notes || '',
     editorProps: { attributes: { class: 'flex-1 w-full bg-transparent border-none focus:outline-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar overflow-y-auto min-h-0' } },
-    onUpdate: ({ editor }) => { 
-      if (activeSetup) onUpdate(activeSetup.id, editor.getHTML()) 
-    },
+    onUpdate: ({ editor }) => { if (activeSetup) onUpdate(activeSetup.id, editor.getHTML()) },
   })
-
-  // Removed the destructive re-render hook. The `key` attribute on the parent handles resets.
-
+  useEffect(() => { if (editor && activeSetup && editor.getHTML() !== activeSetup.notes) editor.commands.setContent(activeSetup.notes || '') }, [activeSetup?.id, editor])
   if (!activeSetup) return <div className="w-full h-full flex items-center justify-center text-center"><p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p></div>;
-
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden tiptap-wrapper">
       <div className="flex items-center gap-1 pb-2 mb-2 border-b border-zinc-800/60 shrink-0">
@@ -376,7 +447,6 @@ export default function DeskClient() {
     else if (todaySetups.length === 0) { setActiveTodayId(null); if(logPair) setLogPair(''); }
   }, [todaySetups.length, activeTodayId])
 
-  // 🚨 FIXED: Wrap the Database Lock function so the Event Listener doesn't crash
   const handleLockEntry = useCallback(async () => {
     if (tradesTakenToday < 2 && logPair && logDirection && logPlaybook && logExecution && user) {
       const newLog = { user_id: user.id, symbol: logPair, direction: logDirection, playbook: logPlaybook, execution_type: logExecution, reason: logReason || null }
@@ -392,12 +462,11 @@ export default function DeskClient() {
 
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair);
 
-  // 🚨 FIXED: GLOBAL KEYBOARD SHORTCUTS
+  // 🚨 GLOBAL KEYBOARD SHORTCUTS & UNIVERSAL ESCAPE
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
 
-      // 1. UNIVERSAL ESCAPE
       if (e.code === 'Escape') {
         e.preventDefault();
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') {
@@ -407,14 +476,19 @@ export default function DeskClient() {
         return; 
       }
 
-      // Stop other hotkeys if actively typing
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
 
-      // 2. Layout Toggles [V] & [A]
-      if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setIsVaultOpen(prev => !prev); }
-      if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); setIsAuditOpen(prev => !prev); }
+      // 🚨 Vault Modal [Alt + V]
+      if (e.code === 'KeyV' && e.altKey) {
+        e.preventDefault(); 
+        setIsUploadModalOpen(true); 
+        return;
+      }
 
-      // 3. Fast Execution Logging [1, 2, Enter]
+      // Vault & Audit Toggles
+      if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setIsVaultOpen(prev => !prev); }
+      if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setIsAuditOpen(prev => !prev); }
+
       if (logPair && !isAlreadyLogged && tradesTakenToday < 2) {
         if (e.code === 'Digit1' || e.code === 'Numpad1') { e.preventDefault(); setLogExecution('Perfect'); }
         if (e.code === 'Digit2' || e.code === 'Numpad2') { e.preventDefault(); setLogExecution('Imperfect'); }
@@ -428,7 +502,6 @@ export default function DeskClient() {
 
       if (todaySetups.length === 0) return;
 
-      // 4. Spacebar Traversal
       if (e.code === 'Space') {
         e.preventDefault(); 
         const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
@@ -570,7 +643,6 @@ export default function DeskClient() {
                 )}
               </div>
 
-              {/* 🚨 FIXED: Auto-reset zoom with `key` without breaking peeking */}
               <div 
                 className="w-full h-[250px] sm:h-[300px] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group"
                 onMouseDown={handlePeekStart}
@@ -593,37 +665,21 @@ export default function DeskClient() {
                       onTransformed={(ref) => setChartScale(ref.state.scale)}
                     >
                       <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img 
-                          src={activeSetup.imageUrl} 
-                          alt={activeSetup.symbol} 
-                          className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950 cursor-grab active:cursor-grabbing pointer-events-auto" 
-                          draggable={false} 
-                        />
+                        <img src={activeSetup.imageUrl} alt={activeSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl bg-zinc-950 cursor-grab active:cursor-grabbing pointer-events-auto" draggable={false} />
                       </TransformComponent>
                     </TransformWrapper>
 
                     {chartScale !== 1 && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }}
-                        className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100"
-                        title="View Full Screen"
-                      >
+                      <button onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }} className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100" title="View Full Screen">
                         <Maximize size={16} />
                       </button>
                     )}
                   </>
-                ) : (
-                  <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0">
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span>
-                  </div>
-                )}
+                ) : <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0"><span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span></div>}
               </div>
 
-              {/* 🚨 FIXED: Rich Text Editor now reloads gracefully based on `key` */}
               <div className="w-full lg:w-80 shrink-0 flex flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
-                <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0">
-                  <RichNotesEditor key={`editor-${activeSetup?.id || 'none'}`} activeSetup={activeSetup} onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} />
-                </div>
+                <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0"><RichNotesEditor activeSetup={activeSetup} onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} /></div>
               </div>
             </div>
           </div>
@@ -713,7 +769,11 @@ export default function DeskClient() {
               </div>
             ))}
           </div>
-          <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4"><button onClick={() => setIsUploadModalOpen(true)} className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none"><Plus size={14} /> Add Weekly Setups</button></div>
+          <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4">
+            <button onClick={() => setIsUploadModalOpen(true)} className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none">
+              <Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span>
+            </button>
+          </div>
         </div>
 
         <MT5SyncModal isOpen={isMT5ModalOpen} onClose={() => { setIsMT5ModalOpen(false); setMt5File(null); }} file={mt5File} pendingLogs={pendingReconciliation} onConfirm={handleMT5Confirm} />
