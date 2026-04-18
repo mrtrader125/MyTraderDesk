@@ -276,7 +276,7 @@ export default function PersonalDashboard() {
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
 
-      if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         setIsTodayFocusExpanded(prev => !prev);
       }
@@ -688,27 +688,27 @@ export default function PersonalDashboard() {
             <div className={`h-1/2 shrink-0 flex flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0 transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'w-full' : 'w-48 sm:w-56 border-r border-zinc-800/60'}`}>
               
               <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#050505]">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Crosshair size={14} className="text-blue-500 shrink-0" />
-                  <h2 className="text-xs font-bold text-white uppercase tracking-widest truncate">
-                    {isTodayFocusExpanded ? "Today's Focus" : "Focus"} 
-                    {isTodayFocusExpanded && <span className="font-mono text-[9px] text-zinc-500 ml-1.5 opacity-70">[F]</span>}
-                  </h2>
-                </div>
-                <div className="flex items-center gap-3 shrink-0 ml-2">
-                  {isTodayFocusExpanded && (
-                    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest hidden sm:block">
-                      {todaySetups.length} Pairs Locked
-                    </span>
-                  )}
-                  <button 
-                    onClick={() => setIsTodayFocusExpanded(!isTodayFocusExpanded)}
-                    className="text-zinc-500 hover:text-white transition-colors p-1"
-                    title={isTodayFocusExpanded ? "Collapse Focus Workspace [F]" : "Expand Focus Workspace [F]"}
-                  >
-                    {isTodayFocusExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-                  </button>
-                </div>
+               <div className="flex items-center gap-2 min-w-0">
+  <Crosshair size={14} className="text-blue-500 shrink-0" />
+  <h2 className="text-xs font-bold text-white uppercase tracking-widest truncate">
+    {isTodayFocusExpanded ? "Active Focus" : "Focus"} 
+    {isTodayFocusExpanded && <span className="font-mono text-[9px] text-zinc-500 ml-1.5 opacity-70">[A]</span>}
+  </h2>
+</div>
+<div className="flex items-center gap-3 shrink-0 ml-2">
+  {isTodayFocusExpanded && (
+    <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest hidden sm:block">
+      {todaySetups.length} Pairs Locked
+    </span>
+  )}
+  <button 
+    onClick={() => setIsTodayFocusExpanded(!isTodayFocusExpanded)}
+    className="text-zinc-500 hover:text-white transition-colors p-1"
+    title={isTodayFocusExpanded ? "Collapse Focus Workspace [A]" : "Expand Focus Workspace [A]"}
+  >
+    {isTodayFocusExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+  </button>
+</div>
               </div>
 
               <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
