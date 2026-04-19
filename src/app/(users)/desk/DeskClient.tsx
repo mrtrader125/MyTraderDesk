@@ -8,10 +8,9 @@ import Papa from 'papaparse'
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock
 } from 'lucide-react'
 
-// 🚨 THESE CONSTANTS MUST BE AT THE TOP
 const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
 const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
 const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
@@ -950,6 +949,7 @@ export default function DeskClient() {
 
   const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
+  // Initialization & LocalStorage
   useEffect(() => {
     const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
     handleResize(); 
@@ -1052,6 +1052,31 @@ export default function DeskClient() {
 
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
 
+  // 🚨 Time calculations for Dopamine Gate
+  const now = new Date()
+  const dayOfWeek = now.getDay() 
+  const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 // Saturday (6) or Sunday (0)
+  
+  const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+  const startOfCurrentWeek = new Date(now.setDate(diffToMonday))
+  startOfCurrentWeek.setHours(0, 0, 0, 0)
+  
+  const currentWeekPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() >= startOfCurrentWeek.getTime() && t.outcome !== 'HOLD');
+  const heldOverPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() < startOfCurrentWeek.getTime() || t.outcome === 'HOLD');
+
+  // 🚨 The Accountability Lock Logic
+  const isVaultLocked = isWeekendNow && currentWeekPending.length > 0;
+
+  // Weekly Debrief State
+  const debriefKey = `desk_weekly_debrief_${startOfCurrentWeek.getTime()}`;
+  const [weeklyDebrief, setWeeklyDebrief] = useState('');
+  useEffect(() => { setWeeklyDebrief(localStorage.getItem(debriefKey) || ''); }, [debriefKey]);
+  const handleDebriefChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setWeeklyDebrief(e.target.value);
+    localStorage.setItem(debriefKey, e.target.value);
+  };
+
+
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
       setActiveTodayId(todaySetups[0].id)
@@ -1122,7 +1147,7 @@ export default function DeskClient() {
 
       if (e.code === 'KeyV' && e.altKey) { 
         e.preventDefault(); 
-        setIsUploadModalOpen(true); 
+        if (!isVaultLocked) setIsUploadModalOpen(true); 
         return; 
       }
 
@@ -1171,7 +1196,7 @@ export default function DeskClient() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, isMobileNotesOpen, handleLockEntry]);
+  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, isMobileNotesOpen, isVaultLocked, handleLockEntry]);
 
   useEffect(() => {
     const activeSetup = setups.find(s => s.id === activeTodayId)
@@ -1309,18 +1334,6 @@ export default function DeskClient() {
     if (peekTimer.current) clearTimeout(peekTimer.current);
     setIsPeeking(false);
   };
-
-  const activeSetup = todaySetups.find(s => s.id === activeTodayId)
-  const activeCatalystList = logExecution === 'Perfect' ? perfectCatalysts : logExecution === 'Imperfect' ? imperfectCatalysts : [];
-
-  const now = new Date()
-  const dayOfWeek = now.getDay() 
-  const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
-  const startOfCurrentWeek = new Date(now.setDate(diffToMonday))
-  startOfCurrentWeek.setHours(0, 0, 0, 0)
-  
-  const currentWeekPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() >= startOfCurrentWeek.getTime() && t.outcome !== 'HOLD');
-  const heldOverPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() < startOfCurrentWeek.getTime() || t.outcome === 'HOLD');
 
   return (
     <>
@@ -1522,7 +1535,13 @@ export default function DeskClient() {
                       )}
                     </div>
                     <div className="flex flex-col gap-2.5">
-                      {currentWeekPending.length === 0 ? (
+                      {currentWeekPending.length === 0 && isWeekendNow ? (
+                        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3">
+                           <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><CheckCircle2 size={14}/> Week Cleared</h3>
+                           <textarea value={weeklyDebrief} onChange={handleDebriefChange} placeholder="Log your main behavioral takeaways for the week..." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none resize-none min-h-[80px] custom-scrollbar focus:border-emerald-500 transition-colors" />
+                           <p className="text-[9px] text-zinc-500 font-bold uppercase">Vault is unlocked for next week's prep.</p>
+                        </div>
+                      ) : currentWeekPending.length === 0 ? (
                         <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups this week</span></div>
                       ) : (
                         currentWeekPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)
@@ -1590,7 +1609,28 @@ export default function DeskClient() {
             )}
           </div>
           
-          <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4"><button onClick={() => setIsUploadModalOpen(true)} className="w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed border-zinc-700 bg-black rounded-lg text-[10px] font-bold uppercase tracking-widest text-zinc-400 hover:text-white hover:border-blue-500/50 transition-all shadow-inner hover:shadow-none"><Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></button></div>
+          <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4">
+            <button 
+              onClick={() => {
+                if (isVaultLocked) {
+                  alert("You must settle all trades in the Post-Trade Settlement Queue before prepping for the new week.");
+                  return;
+                }
+                setIsUploadModalOpen(true);
+              }} 
+              className={`w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all shadow-inner hover:shadow-none ${
+                isVaultLocked 
+                  ? 'bg-zinc-900 border-red-500/30 text-red-500/50 cursor-not-allowed' 
+                  : 'bg-black border-zinc-700 text-zinc-400 hover:text-white hover:border-blue-500/50'
+              }`}
+            >
+              {isVaultLocked ? (
+                <><Lock size={14} /> Settle Trades to Unlock</>
+              ) : (
+                <><Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></>
+              )}
+            </button>
+          </div>
         </div>
 
         <MT5SyncModal isOpen={isMT5ModalOpen} onClose={() => { setIsMT5ModalOpen(false); setMt5File(null); }} file={mt5File} pendingLogs={pendingReconciliation} onConfirm={handleMT5Confirm} />
