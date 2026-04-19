@@ -8,7 +8,7 @@ import Papa from 'papaparse'
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock, Copy
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, CheckCircle2, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock, Copy
 } from 'lucide-react'
 
 // 🚨 CONSTANTS MUST BE AT THE TOP
@@ -823,6 +823,7 @@ function ReconciliationItem({ trade, onSave, onSplit, user }: { trade: any, onSa
            )}
         </div>
 
+        {/* 🚨 HOLD CONFIRMATION UI */}
         {showHoldConfirm ? (
           <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto shrink-0 animate-in fade-in zoom-in-95 duration-200">
             <span className="text-[9px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden xl:block mr-1">
@@ -1151,6 +1152,7 @@ export default function DeskClient() {
     initData()
   }, [getSecureTime])
 
+  // Midnight Auto-Wipe Interval (Live Tab Update via Secure Time)
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
       const todayStr = getSecureTime().toDateString();
@@ -1566,14 +1568,7 @@ export default function DeskClient() {
                       ref={transformRef}
                     >
                       <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img 
-                          src={activeSetup.imageUrl} 
-                          loading="eager" 
-                          decoding="async" 
-                          alt={activeSetup.symbol} 
-                          className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
-                          draggable={false} 
-                        />
+                        <img src={activeSetup.imageUrl} alt={activeSetup.symbol} loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" draggable={false} />
                       </TransformComponent>
                     </TransformWrapper>
                     {chartScale !== 1 && (
@@ -1727,6 +1722,7 @@ export default function DeskClient() {
                       <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={14} /></button>
                         
+                        {/* 🚨 Deletion Bug Fix: Hide trash can if executed */}
                         {!isExecuted && (
                            <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
                         )}
