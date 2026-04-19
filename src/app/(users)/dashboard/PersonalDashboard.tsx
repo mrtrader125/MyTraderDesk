@@ -93,8 +93,8 @@ export default function PersonalDashboard() {
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
 
-  const [timeOffset, setTimeOffset] = useState(0);
-
+const [timeOffset, setTimeOffset] = useState(0);
+  
   // 🚨 2. DERIVED STATES AND CALLBACKS
   const getSecureTime = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
 
@@ -115,13 +115,15 @@ export default function PersonalDashboard() {
   useEffect(() => {
     const fetchTime = async () => {
       try {
-        const res = await fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata', { cache: 'no-store' });
+        // Swapped to a stronger, unblocked API
+        const res = await fetch('https://timeapi.io/api/Time/current/zone?timeZone=Asia/Kolkata', { cache: 'no-store' });
         if (!res.ok) throw new Error('API Blocked');
         const data = await res.json();
-        const realTime = new Date(data.datetime).getTime();
+        // TimeAPI uses 'dateTime' instead of 'datetime'
+        const realTime = new Date(data.dateTime).getTime();
         setTimeOffset(realTime - Date.now());
       } catch (error) {
-        setTimeOffset(0); // Silently falls back
+        setTimeOffset(0); // Silently falls back if connection drops
       }
     };
     fetchTime();
