@@ -1,10 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Key, ShieldCheck, Mail, BadgeCheck, Shield, Loader2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Key, ShieldCheck, Mail, BadgeCheck, Shield, Loader2, ArrowLeftRight } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 
-// 🚨 INJECTED VIA SERVER PROPS
 export default function SecurityClient({ userEmail }: { userEmail: string }) {
   // Toast Notification State
   const [message, setMessage] = useState<{type: 'success' | 'error', text: string} | null>(null)
@@ -16,9 +15,39 @@ export default function SecurityClient({ userEmail }: { userEmail: string }) {
   const [newPassword, setNewPassword] = useState('')
   const [isUpdating, setIsUpdating] = useState(false)
 
+  // 🚨 NEW: Trading Preferences State
+  const [terminology, setTerminology] = useState<'LONG_SHORT' | 'BUY_SELL'>('LONG_SHORT')
+  const [isTerminologyLoading, setIsTerminologyLoading] = useState(true)
+
   const showToast = (text: string, type: 'success' | 'error') => {
     setMessage({ text, type })
     setTimeout(() => setMessage(null), 4000)
+  }
+
+  // Fetch initial preferences on mount
+  useEffect(() => {
+    const loadPreferences = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.user_metadata?.trade_terminology) {
+        setTerminology(user.user_metadata.trade_terminology)
+      }
+      setIsTerminologyLoading(false)
+    }
+    loadPreferences()
+  }, [])
+
+  // Handle Terminology Update
+  const handleTerminologyChange = async (val: 'LONG_SHORT' | 'BUY_SELL') => {
+    setTerminology(val)
+    const { error } = await supabase.auth.updateUser({
+      data: { trade_terminology: val }
+    })
+
+    if (error) {
+      showToast('Failed to update terminology.', 'error')
+    } else {
+      showToast('Display preferences updated.', 'success')
+    }
   }
 
   // 1. Send Magic Reset Link via Email
@@ -27,7 +56,6 @@ export default function SecurityClient({ userEmail }: { userEmail: string }) {
     setIsSendingReset(true)
 
     try {
-      // 🚨 FIX: Dynamic routing to perfectly match 'www', non-'www', or localhost domains
       const targetUrl = `${window.location.origin}/update-password`;
 
       const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
@@ -71,7 +99,51 @@ export default function SecurityClient({ userEmail }: { userEmail: string }) {
 
   return (
     <div className="max-w-3xl space-y-6 md:space-y-8 relative animate-in fade-in duration-500">
+      
+      {/* 🚨 TRADING PREFERENCES MODULE */}
       <div>
+        <h2 className="text-lg md:text-xl font-black text-white uppercase tracking-tight mb-1">Preferences</h2>
+        <p className="text-[10px] md:text-xs font-bold text-neutral-500 uppercase tracking-widest leading-relaxed">Customize your platform display language.</p>
+      </div>
+
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm">
+        <h3 className="text-xs md:text-sm font-black text-white uppercase tracking-widest mb-5 md:mb-6 flex items-center">
+          <ArrowLeftRight className="mr-2 text-neutral-500" size={16} /> Trade Terminology
+        </h3>
+        
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 md:gap-6 p-4 md:p-5 border border-neutral-800 rounded-xl md:rounded-2xl bg-[#050505] shadow-inner">
+          <div className="flex-1">
+            <p className="text-[11px] md:text-xs font-bold text-white tracking-widest truncate">Directional Labels</p>
+            <p className="text-[9px] md:text-[10px] font-medium text-neutral-500 mt-1.5 md:mt-1 max-w-sm leading-relaxed">
+              Switch between institutional (Long/Short) or retail (Buy/Sell) phrasing. This only changes the UI, your underlying data remains identical.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-black border border-neutral-800 rounded-lg p-1 shrink-0 w-full md:w-auto">
+            {isTerminologyLoading ? (
+               <div className="px-6 py-2 text-[10px] text-neutral-500 font-bold uppercase tracking-widest animate-pulse w-full text-center">Loading...</div>
+            ) : (
+              <>
+                <button 
+                  onClick={() => handleTerminologyChange('LONG_SHORT')}
+                  className={`flex-1 md:flex-none px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded transition-colors ${terminology === 'LONG_SHORT' ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-500 hover:text-white'}`}
+                >
+                  Long / Short
+                </button>
+                <button 
+                  onClick={() => handleTerminologyChange('BUY_SELL')}
+                  className={`flex-1 md:flex-none px-4 py-2 text-[10px] font-bold uppercase tracking-widest rounded transition-colors ${terminology === 'BUY_SELL' ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-500 hover:text-white'}`}
+                >
+                  Buy / Sell
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* SECURITY HEADER */}
+      <div className="pt-4">
         <h2 className="text-lg md:text-xl font-black text-white uppercase tracking-tight mb-1">Security</h2>
         <p className="text-[10px] md:text-xs font-bold text-neutral-500 uppercase tracking-widest leading-relaxed">Manage your account security and password settings.</p>
       </div>
