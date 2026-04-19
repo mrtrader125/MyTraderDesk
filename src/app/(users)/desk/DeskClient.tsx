@@ -842,9 +842,6 @@ function ReconciliationItem({ trade, onSave, onSplit, user }: { trade: any, onSa
           </div>
         ) : (
           <div className="flex gap-2 w-full sm:w-auto shrink-0">
-            <button onClick={() => onSplit(trade.id)} className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors border border-zinc-800 shrink-0" title="Split Position (Partial Close)">
-               <Copy size={14} />
-            </button>
             <button 
               disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} 
               onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} 
@@ -1400,21 +1397,6 @@ export default function DeskClient() {
     await supabase.from('user_desk_logs').update(updateData).eq('id', id)
   }
 
-  const handleSplitTrade = async (id: string) => {
-    if (!user) return;
-    const tradeToSplit = pendingReconciliation.find(t => t.id === id);
-    if (!tradeToSplit) return;
-
-    const newLog = {
-        user_id: user.id,
-        symbol: tradeToSplit.symbol,
-        direction: tradeToSplit.direction,
-        reason: tradeToSplit.reason,
-        execution_type: tradeToSplit.execution,
-        is_reconciled: false,
-        created_at: tradeToSplit.created_at 
-    };
-
     const { data } = await supabase.from('user_desk_logs').insert([newLog]).select();
     if (data && data[0]) {
         setPendingReconciliation(prev => {
@@ -1695,7 +1677,7 @@ export default function DeskClient() {
                       ) : currentWeekPending.length === 0 ? (
                         <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups this week</span></div>
                       ) : (
-                        currentWeekPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} onSplit={handleSplitTrade} />)
+                        currentWeekPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)
                       )}
                     </div>
                   </div>
@@ -1706,7 +1688,7 @@ export default function DeskClient() {
                         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Legacy / Carried Over</span>
                       </div>
                       <div className="flex flex-col gap-2.5 opacity-80 hover:opacity-100 transition-opacity">
-                        {heldOverPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} onSplit={handleSplitTrade} />)}
+                        {heldOverPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)}
                       </div>
                     </div>
                   )}
