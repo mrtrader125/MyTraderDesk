@@ -65,6 +65,15 @@ export default function PersonalDashboard() {
   const [isTodayFocusExpanded, setIsTodayFocusExpanded] = useState(true)
   const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
+  // 🚨 TRADING PREFERENCES STATE
+  const [terminology, setTerminology] = useState<'LONG_SHORT' | 'BUY_SELL'>('LONG_SHORT')
+
+  const displayDirection = useCallback((dir: string | null | undefined) => {
+    if (!dir) return 'N/A';
+    if (terminology === 'BUY_SELL') return dir === 'LONG' ? 'BUY' : 'SELL';
+    return dir;
+  }, [terminology])
+
   const [time, setTime] = useState<Date | null>(null) 
   const [sessionInfo, setSessionInfo] = useState({ 
     name: 'Determining...', 
@@ -313,6 +322,10 @@ export default function PersonalDashboard() {
 
       if (session.user.user_metadata?.desk_timezone) {
         setUserTimezone(session.user.user_metadata.desk_timezone)
+      }
+
+      if (session.user.user_metadata?.trade_terminology) {
+        setTerminology(session.user.user_metadata.trade_terminology)
       }
 
       await loadDashboardData(session.user)
@@ -876,7 +889,10 @@ export default function PersonalDashboard() {
                             )}
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
+                            {/* 🚨 TERMINOLOGY HELPER APPLIED HERE */}
+                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
+                              {displayDirection(setup.direction)}
+                            </span>
                             {setup.playbook && <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook}</span>}
                           </div>
                         </div>
