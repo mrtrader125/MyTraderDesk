@@ -238,6 +238,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
+
   const [isPeeking, setIsPeeking] = useState(false)
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
 
@@ -987,12 +988,24 @@ export default function DeskClient() {
   const [weeklyDebrief, setWeeklyDebrief] = useState('');
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
 
-  // 🚨 2. ALL CALLBACKS AND DERIVED STATE
+  // 🚨 2. DERIVED STATES AND CALLBACKS
   const getSecureTime = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
+
+  const now = getSecureTime();
+  const dayOfWeek = now.getDay();
+  const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0;
+  
+  // Safe Date Math - creates a fresh date object without mutating `now`
+  const startOfCurrentWeek = new Date(now.getTime());
+  const diffToMonday = startOfCurrentWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+  startOfCurrentWeek.setDate(diffToMonday);
+  startOfCurrentWeek.setHours(0, 0, 0, 0);
+
+  const debriefKey = `desk_weekly_debrief_${startOfCurrentWeek.getTime()}`;
 
   const todaySetups = setups.filter(s => s.isToday);
   const activeSetup = todaySetups.find(s => s.id === activeTodayId);
-  const pushesToday = setups.filter(s => s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() === getSecureTime().toDateString()).length;
+  const pushesToday = setups.filter(s => s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() === now.toDateString()).length;
   const canPushMore = pushesToday < 5;
 
   const weeklySetups = [...setups].sort((a, b) => {
@@ -1003,21 +1016,14 @@ export default function DeskClient() {
     return 0;
   });
 
-  const now = getSecureTime()
-  const dayOfWeek = now.getDay() 
-  const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0
-  
-  const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
-  const startOfCurrentWeek = new Date(now.setDate(diffToMonday))
-  startOfCurrentWeek.setHours(0, 0, 0, 0)
-  
   const currentWeekPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() >= startOfCurrentWeek.getTime() && t.outcome !== 'HOLD');
   const heldOverPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() < startOfCurrentWeek.getTime() || t.outcome === 'HOLD');
 
   const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
   const isVaultLocked = !isPrepWindow || (isPrepWindow && currentWeekPending.length > 0);
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair) || executedSymbols.includes(logPair);
-  const debriefKey = `desk_weekly_debrief_${startOfCurrentWeek.getTime()}`;
+  const activeCatalystList = logExecution === 'Perfect' ? perfectCatalysts : logExecution === 'Imperfect' ? imperfectCatalysts : [];
+
 
   // 🚨 3. ALL USEEFFECTS
   useEffect(() => {
@@ -1029,7 +1035,7 @@ export default function DeskClient() {
         const realTime = new Date(data.datetime).getTime();
         setTimeOffset(realTime - Date.now());
       } catch (error) {
-        setTimeOffset(0); // Silently falls back
+        setTimeOffset(0); // Silently falls back if connection drops
       }
     };
     fetchTime();
@@ -1112,14 +1118,16 @@ export default function DeskClient() {
         const todayStr = getSecureTime().toDateString()
         setTradesTakenToday(logsData.filter(d => new Date(d.created_at).toDateString() === todayStr).length)
 
-        const currentTime = getSecureTime()
-        const dayOfWeekNow = currentTime.getDay() 
-        const diffToMon = currentTime.getDate() - dayOfWeekNow + (dayOfWeekNow === 0 ? -6 : 1)
-        const startOfThisWeek = new Date(currentTime.setDate(diffToMon))
-        startOfThisWeek.setHours(0, 0, 0, 0)
+        // Safe time math again
+        const initNow = getSecureTime();
+        const initDayOfWeek = initNow.getDay();
+        const initDiffToMon = initNow.getDate() - initDayOfWeek + (initDayOfWeek === 0 ? -6 : 1);
+        const initStartOfWeek = new Date(initNow.getTime());
+        initStartOfWeek.setDate(initDiffToMon);
+        initStartOfWeek.setHours(0, 0, 0, 0);
         
         const executedThisWeek = logsData
-          .filter(l => new Date(l.created_at).getTime() >= startOfThisWeek.getTime())
+          .filter(l => new Date(l.created_at).getTime() >= initStartOfWeek.getTime())
           .map(l => l.symbol)
         
         setExecutedSymbols(executedThisWeek)
@@ -1152,7 +1160,6 @@ export default function DeskClient() {
     initData()
   }, [getSecureTime])
 
-  // Midnight Auto-Wipe Interval (Live Tab Update via Secure Time)
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
       const todayStr = getSecureTime().toDateString();
@@ -1293,6 +1300,7 @@ export default function DeskClient() {
     }
   }, [setups, activeTodayId, user])
 
+
   // 🚨 4. EVENT HANDLERS
   const handleDebriefChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setWeeklyDebrief(e.target.value);
@@ -1301,10 +1309,10 @@ export default function DeskClient() {
 
   const handleConfirmPush = async () => {
     if(confirmPushId && user) {
-      const now = getSecureTime()
-      setSetups(prev => prev.map(s => s.id === confirmPushId ? { ...s, isToday: true, addedToTodayAt: now.getTime() } : s))
+      const nowPush = getSecureTime()
+      setSetups(prev => prev.map(s => s.id === confirmPushId ? { ...s, isToday: true, addedToTodayAt: nowPush.getTime() } : s))
       setConfirmPushId(null)
-      await supabase.from('user_desk_setups').update({ is_today: true, added_to_today_at: now.toISOString() }).eq('id', confirmPushId)
+      await supabase.from('user_desk_setups').update({ is_today: true, added_to_today_at: nowPush.toISOString() }).eq('id', confirmPushId)
     }
   }
 
@@ -1464,8 +1472,6 @@ export default function DeskClient() {
     setIsPeeking(false);
   };
 
-  const activeCatalystList = logExecution === 'Perfect' ? perfectCatalysts : logExecution === 'Imperfect' ? imperfectCatalysts : [];
-
   return (
     <>
       <div className="relative flex flex-col lg:flex-row h-[100dvh] lg:min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
@@ -1568,7 +1574,14 @@ export default function DeskClient() {
                       ref={transformRef}
                     >
                       <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <img src={activeSetup.imageUrl} alt={activeSetup.symbol} loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" draggable={false} />
+                        <img 
+                          src={activeSetup.imageUrl} 
+                          alt={activeSetup.symbol} 
+                          loading="eager" 
+                          decoding="async" 
+                          className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
+                          draggable={false} 
+                        />
                       </TransformComponent>
                     </TransformWrapper>
                     {chartScale !== 1 && (
