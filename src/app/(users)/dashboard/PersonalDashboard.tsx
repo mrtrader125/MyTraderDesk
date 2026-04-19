@@ -177,13 +177,26 @@ export default function PersonalDashboard() {
       }
       const user = session.user
 
-      // Fetch Setups
+      // 🚨 Auto-Reset Stale "Today" Setups logic added here
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('added_to_today_at', { ascending: false })
+      
+      if (setupsData) {
+        const todayStr = new Date().toDateString();
+        const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && new Date(s.added_to_today_at).toDateString() !== todayStr);
+        
+        if (expiredSetups.length > 0) {
+          const expiredIds = expiredSetups.map(s => s.id);
+          await supabase.from('user_desk_setups').update({ is_today: false, added_to_today_at: null }).in('id', expiredIds);
+          expiredSetups.forEach(s => { s.is_today = false; s.added_to_today_at = null; });
+        }
+      }
+
       const activeSetups = setupsData?.filter(s => s.is_today) || []
-      const vaultSetups = setupsData?.filter(s => !s.is_today) || []
+      
+      // Weekly prep means there are ANY setups mapped for the week.
+      setVaultSetupCount(setupsData?.length || 0)
 
       setTodaySetups(activeSetups.map(d => ({ id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url })))
-      setVaultSetupCount(vaultSetups.length)
 
       // Fetch Logs for the Week
       const now = new Date()
@@ -234,7 +247,8 @@ export default function PersonalDashboard() {
       setWeekProgress(progress)
       setTradesTakenToday(todayTradeCount)
 
-      const pendingReconciliations = logsData?.filter(l => !l.is_reconciled) || []
+      // 🚨 Only count un-reconciled items that are NOT marked as 'HOLD'
+      const pendingReconciliations = logsData?.filter(l => !l.is_reconciled && l.outcome !== 'HOLD') || []
       setPendingReconciliationsCount(pendingReconciliations.length)
 
       setIsLoading(false)
@@ -444,8 +458,9 @@ export default function PersonalDashboard() {
   }
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
+  
   // 6 is Saturday, 0 is Sunday
-const isWeekendNow = new Date().getDay() === 6 || new Date().getDay() === 0 
+  const isWeekendNow = new Date().getDay() === 6 || new Date().getDay() === 0 
   const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
 
   const formatTime = (timeStr: string, fontIdx: number) => {
