@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -8,14 +8,8 @@ import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'reac
 import { 
   Crosshair, CheckCircle2, Clock, 
   Target, Globe2, Activity, Lock, X, AlertTriangle, Type,
-  ChevronLeft, ChevronRight, BookOpen, Maximize, Settings,
-  DownloadCloud, Link as LinkIcon, Image as ImageIcon, Clipboard, Plus, Info
+  ChevronLeft, ChevronRight, BookOpen, Maximize, Info
 } from 'lucide-react'
-
-// 🚨 CONSTANTS MUST BE AT THE TOP
-const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
-const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
-const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
 
 const fontStyles = [
   "font-mono font-black tracking-tighter text-zinc-100",   
@@ -27,13 +21,12 @@ const fontStyles = [
 type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx: number }
 const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v4'
 
-// 🚨 GLOBAL SUPABASE CLIENT (Fixes "Multiple GoTrueClient instances" warning)
+// 🚨 GLOBAL SUPABASE CLIENT
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// Hard sanitize loaded layouts to prevent JS string concatenation bugs in collision math
 const sanitizeLayout = (data: any) => {
   if (!data || !data.local || !data.session) return null;
   return {
@@ -93,37 +86,50 @@ export default function PersonalDashboard() {
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
 
-const [timeOffset, setTimeOffset] = useState(0);
+  // 🚨 2. ROBUST TIME ENGINE (Fixes the Interval Closure Trap)
+  const [timeOffset, setTimeOffset] = useState(0);
+  const timeOffsetRef = useRef(0); // Ensures setInterval always reads the latest offset
+
+  const getTrueUTC = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
   
-  // 🚨 2. DERIVED STATES AND CALLBACKS
-  const getSecureTime = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
+  const getISTDate = useCallback(() => {
+    const utc = getTrueUTC();
+    return new Date(utc.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  }, [getTrueUTC]);
+
+  const adjustDbToIST = (utcString: string) => new Date(new Date(utcString).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+  const getISTDateString = useCallback((timestamp: number) => {
+    return new Date(new Date(timestamp).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })).toDateString();
+  }, []);
 
   const todaySetups = setups.filter(s => s.isToday)
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
 
-  const pushesToday = setups.filter(s => s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() === getSecureTime().toDateString()).length;
+  const pushesToday = setups.filter(s => s.addedToTodayAt && getISTDateString(s.addedToTodayAt) === getISTDate().toDateString()).length;
   
-  const now = getSecureTime()
+  const now = getISTDate()
   const dayOfWeek = now.getDay() 
-  const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 // Saturday (6) or Sunday (0)
+  const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 
   const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
   const isVaultLocked = !isPrepWindow || (isPrepWindow && pendingReconciliationsCount > 0);
   
   const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
 
+
   // 🚨 3. ALL USEEFFECTS
   useEffect(() => {
     const fetchTime = async () => {
       try {
-        // Swapped to a stronger, unblocked API
-        const res = await fetch('https://timeapi.io/api/Time/current/zone?timeZone=Asia/Kolkata', { cache: 'no-store' });
+        const res = await fetch('https://timeapi.io/api/Time/current/zone?timeZone=UTC', { cache: 'no-store' });
         if (!res.ok) throw new Error('API Blocked');
         const data = await res.json();
-        // TimeAPI uses 'dateTime' instead of 'datetime'
-        const realTime = new Date(data.dateTime).getTime();
-        setTimeOffset(realTime - Date.now());
+        const trueUTC = new Date(data.dateTime + "Z").getTime();
+        const offset = trueUTC - Date.now();
+        setTimeOffset(offset);
+        timeOffsetRef.current = offset;
       } catch (error) {
-        setTimeOffset(0); // Silently falls back if connection drops
+        setTimeOffset(0); 
+        timeOffsetRef.current = 0;
       }
     };
     fetchTime();
@@ -141,9 +147,7 @@ const [timeOffset, setTimeOffset] = useState(0);
             return 
           }
         }
-      } catch (e) {
-        console.error("Failed to load layout from cloud", e)
-      }
+      } catch (e) {}
 
       const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY)
       if (savedLayout) {
@@ -151,9 +155,7 @@ const [timeOffset, setTimeOffset] = useState(0);
           const parsed = JSON.parse(savedLayout)
           const sanitized = sanitizeLayout(parsed)
           if (sanitized) setWidgets(sanitized)
-        } catch (e) {
-          console.error("Failed to load playground layout from local", e)
-        }
+        } catch (e) {}
       }
       setLayoutLoaded(true)
     }
@@ -162,30 +164,28 @@ const [timeOffset, setTimeOffset] = useState(0);
 
   useEffect(() => {
     if (!layoutLoaded) return;
-    
     localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(widgets))
-
     const timeoutId = setTimeout(async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          await supabase.auth.updateUser({
-            data: { desk_layout: widgets }
-          })
+          await supabase.auth.updateUser({ data: { desk_layout: widgets } })
         }
       } catch (e) {}
     }, 2000)
-
     return () => clearTimeout(timeoutId)
   }, [widgets, layoutLoaded])
 
   useEffect(() => {
     setMounted(true)
     const timer = setInterval(() => {
-      const current = new Date()
-      setTime(current)
+      // Local time for top-left widget display
+      const currentLocal = new Date();
+      setTime(currentLocal);
       
-      const utcHour = current.getUTCHours()
+      // True UTC for Interbank Session logic (Unhackable)
+      const trueUTC = new Date(Date.now() + timeOffsetRef.current);
+      const utcHour = trueUTC.getUTCHours();
       
       const isSydney = utcHour >= 22 || utcHour < 7
       const isTokyo = utcHour >= 0 && utcHour < 9
@@ -205,7 +205,7 @@ const [timeOffset, setTimeOffset] = useState(0);
 
       setSessionInfo({
         name: sName,
-        localTime: current.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        localTime: trueUTC.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         isOverlap
       })
     }, 1000)
@@ -225,8 +225,8 @@ const [timeOffset, setTimeOffset] = useState(0);
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('added_to_today_at', { ascending: false })
       
       if (setupsData) {
-        const todayStr = getSecureTime().toDateString();
-        const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && new Date(s.added_to_today_at).toDateString() !== todayStr);
+        const todayStr = getISTDate().toDateString();
+        const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && adjustDbToIST(s.added_to_today_at).toDateString() !== todayStr);
         
         if (expiredSetups.length > 0) {
           const expiredIds = expiredSetups.map(s => s.id);
@@ -243,30 +243,34 @@ const [timeOffset, setTimeOffset] = useState(0);
         notes: d.notes, 
         imageUrl: d.image_url, 
         isToday: d.is_today, 
-        addedToTodayAt: d.added_to_today_at 
+        addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null
       })) : [];
       
       setSetups(parsedSetups);
       setVaultSetupCount(parsedSetups.length)
 
-      const currentTime = getSecureTime()
-      const dayOfWeekNow = currentTime.getDay() 
-      const diffToMon = currentTime.getDate() - dayOfWeekNow + (dayOfWeekNow === 0 ? -6 : 1)
-      const startOfWeek = new Date(currentTime.setDate(diffToMon))
-      startOfWeek.setHours(0, 0, 0, 0)
+      // Fetch last 10 days of logs to guarantee we don't miss anything due to UTC timezone offsets
+      const safeFetchDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).gte('created_at', safeFetchDate)
 
-      const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).gte('created_at', startOfWeek.toISOString())
+      const initNow = getISTDate();
+      const initDayOfWeek = initNow.getDay();
+      const initDiffToMon = initNow.getDate() - initDayOfWeek + (initDayOfWeek === 0 ? -6 : 1);
+      const startOfWeekIST = new Date(initNow.getTime());
+      startOfWeekIST.setDate(initDiffToMon);
+      startOfWeekIST.setHours(0, 0, 0, 0);
 
       const progress = []
       const daysFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
       let todayTradeCount = 0;
 
       for (let i = 0; i < 5; i++) {
-        const targetDate = new Date(startOfWeek)
-        targetDate.setDate(startOfWeek.getDate() + i)
+        const targetDate = new Date(startOfWeekIST)
+        targetDate.setDate(startOfWeekIST.getDate() + i)
         const dateString = targetDate.toDateString()
-        const todayString = getSecureTime().toDateString()
-        const dayLogs = logsData?.filter(l => new Date(l.created_at).toDateString() === dateString) || []
+        const todayString = getISTDate().toDateString()
+        
+        const dayLogs = logsData?.filter(l => adjustDbToIST(l.created_at).toDateString() === dateString) || []
 
         let status = 'pending'
         let isPast = false
@@ -281,7 +285,7 @@ const [timeOffset, setTimeOffset] = useState(0);
           } else {
             status = 'current'
           }
-        } else if (targetDate < getSecureTime()) {
+        } else if (targetDate.getTime() < getISTDate().getTime() && dateString !== todayString) {
           isPast = true
           if (dayLogs.length === 0) {
             status = 'missed'
@@ -295,20 +299,20 @@ const [timeOffset, setTimeOffset] = useState(0);
       setWeekProgress(progress)
       setTradesTakenToday(todayTradeCount)
 
-      const pendingReconciliations = logsData?.filter(l => !l.is_reconciled && l.outcome !== 'HOLD' && new Date(l.created_at).getTime() >= startOfWeek.getTime()) || []
+      const pendingReconciliations = logsData?.filter(l => !l.is_reconciled && l.outcome !== 'HOLD' && adjustDbToIST(l.created_at).getTime() >= startOfWeekIST.getTime()) || []
       setPendingReconciliationsCount(pendingReconciliations.length)
 
       setIsLoading(false)
     }
 
     fetchDashboardData()
-  }, [getSecureTime])
+  }, [getISTDate])
 
   // Midnight Auto-Wipe Interval
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
-      const todayStr = getSecureTime().toDateString();
-      const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() !== todayStr);
+      const todayStr = getISTDate().toDateString();
+      const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && getISTDateString(s.addedToTodayAt) !== todayStr);
       
       if (hasStaleSetups) {
         window.location.reload();
@@ -316,7 +320,7 @@ const [timeOffset, setTimeOffset] = useState(0);
     }, 60000); 
     
     return () => clearInterval(checkMidnightWipe);
-  }, [setups, getSecureTime]);
+  }, [setups, getISTDate, getISTDateString]);
 
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
@@ -367,6 +371,7 @@ const [timeOffset, setTimeOffset] = useState(0);
 
       if (todaySetups.length === 0) return;
 
+      // Spacebar Traversal
       if (e.code === 'Space') {
         e.preventDefault(); 
         const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
@@ -817,26 +822,26 @@ const [timeOffset, setTimeOffset] = useState(0);
                     todaySetups.map(setup => {
                       return (
                         <div 
-                          key={`today-${setup.id}`} 
-                          onClick={() => setActiveTodayId(setup.id)} 
-                          className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-md' : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'}`}
+                          key={`today-${setup.id}`}
+                          onClick={() => setActiveTodayId(setup.id)}
+                          className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group ${
+                            activeTodayId === setup.id 
+                              ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
+                              : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
+                          }`}
                         >
                           <div className="flex justify-between items-center mb-1">
                             <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                               {setup.symbol}
                             </span>
-                            <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                              {activeTodayId === setup.id && (
-                                <button onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} className="lg:hidden p-1 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400" title="View Notes">
-                                  <Info size={14} />
-                                </button>
-                              )}
-                            </div>
+                            {activeTodayId === setup.id && (
+                              <button onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} className="lg:hidden p-1 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity" title="View Notes">
+                                <Info size={14} />
+                              </button>
+                            )}
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
-                              {setup.direction || 'N/A'}
-                            </span>
+                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
                             {setup.playbook && <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook}</span>}
                           </div>
                         </div>
@@ -847,13 +852,12 @@ const [timeOffset, setTimeOffset] = useState(0);
 
                 <div className={`flex flex-row min-w-0 overflow-hidden transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'flex-1 opacity-100' : 'w-0 opacity-0'}`}>
                   
-                  {/* Interactive Dashboard Canvas */}
                   <div 
                     className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60 group overflow-hidden"
-                    onMouseDown={handlePeekStart} 
-                    onMouseUp={handlePeekEnd} 
-                    onMouseLeave={handlePeekEnd} 
-                    onTouchStart={handlePeekStart} 
+                    onMouseDown={handlePeekStart}
+                    onMouseUp={handlePeekEnd}
+                    onMouseLeave={handlePeekEnd}
+                    onTouchStart={handlePeekStart}
                     onTouchEnd={handlePeekEnd}
                   >
                     {activeSetup?.imageUrl ? (
@@ -867,17 +871,16 @@ const [timeOffset, setTimeOffset] = useState(0);
                           wheel={{ step: 0.1 }}
                           doubleClick={{ mode: 'reset' }}
                           panning={{ disabled: false }}
-                          pinch={{ step: 5 }}
                           onTransformed={(ref) => setChartScale(ref.state.scale)}
                           ref={transformRef}
                         >
                           <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <img 
                               src={activeSetup.imageUrl} 
-                              alt={activeSetup.symbol} 
-                              loading="eager" 
+                              alt={`${activeSetup.symbol} Chart`}
+                              loading="eager"
                               decoding="async" 
-                              className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
+                              className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
                               draggable={false} 
                             />
                           </TransformComponent>
@@ -895,13 +898,13 @@ const [timeOffset, setTimeOffset] = useState(0);
                       </>
                     ) : (
                       <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0">
-                        <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Select a pair</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Select a pair to view</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="hidden lg:flex order-3 w-full lg:w-80 shrink-0 flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
-                    <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0">
+                  <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
+                    <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
                       {activeSetup ? (
                         <div 
                           className="w-full h-full overflow-y-auto custom-scrollbar text-xs text-zinc-300 leading-relaxed font-medium"
@@ -922,24 +925,13 @@ const [timeOffset, setTimeOffset] = useState(0);
         )}
       </div>
 
-      {/* 🚨 Mobile Notes Bottom Sheet Popup */}
+      {/* 🚨 Mobile Notes Overlay */}
       {isMobileNotesOpen && activeSetup && (
-        <div 
-          className="lg:hidden fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200"
-          onClick={() => setIsMobileNotesOpen(false)}
-        >
-          <div 
-            className="w-full h-[50vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300"
-            onClick={e => e.stopPropagation()}
-          >
+        <div className="lg:hidden fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200" onClick={() => setIsMobileNotesOpen(false)}>
+          <div className="w-full h-[50vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300" onClick={e => e.stopPropagation()}>
             <div className="p-4 border-b border-zinc-800/60 flex justify-between items-center bg-zinc-900/40 rounded-t-2xl">
-              <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
-                <BookOpen size={14} className="text-blue-500" />
-                {activeSetup.symbol} Thesis
-              </h3>
-              <button onClick={() => setIsMobileNotesOpen(false)} className="text-zinc-500 hover:text-white p-1">
-                <X size={16}/>
-              </button>
+              <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2"><BookOpen size={14} className="text-blue-500" />{activeSetup.symbol} Thesis</h3>
+              <button onClick={() => setIsMobileNotesOpen(false)} className="text-zinc-500 hover:text-white p-1"><X size={16}/></button>
             </div>
             <div className="p-5 overflow-y-auto custom-scrollbar flex-1 text-sm text-zinc-300 leading-relaxed font-medium">
                <div dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} />
@@ -948,19 +940,13 @@ const [timeOffset, setTimeOffset] = useState(0);
         </div>
       )}
 
-      {/* 🚨 Full Screen Overlays */}
+      {/* 🚨 Full Screen Chart Overlays */}
       {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
         <div 
           className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`}
           onClick={() => { if (isFullScreen) setIsFullScreen(false); }}
         >
-          <img 
-            src={activeSetup.imageUrl} 
-            alt="Peek" 
-            loading="eager" 
-            decoding="async" 
-            className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" 
-          />
+          <img src={activeSetup.imageUrl} alt="Peek" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
         </div>
       )}
     </div>
