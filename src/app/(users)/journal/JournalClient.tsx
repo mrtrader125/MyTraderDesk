@@ -22,7 +22,7 @@ type TradeLog = {
   playbook: string
   execution_type: 'Perfect' | 'Imperfect'
   reason: string | null
-  outcome: 'TP' | 'SL' | 'BE'
+  outcome: 'TP' | 'SL' | 'BE' | 'HOLD'
   rr: number
   after_image_url: string | null
   setup_id: string | null
@@ -44,7 +44,7 @@ export default function JournalClient() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) return
 
-      // 🚨 CRITICAL FIX: The query now joins the user_desk_setups table using the setup_id foreign key
+      // Pulling from both tables simultaneously using the setup_id foreign key
       let query = supabase
         .from('user_desk_logs')
         .select('*, user_desk_setups(image_url, notes)')
@@ -83,17 +83,17 @@ export default function JournalClient() {
   const stats = useMemo(() => {
     if (logs.length === 0) return null
 
-    const totalTrades = logs.length
-    const wins = logs.filter(l => l.outcome === 'TP').length
-    const winRate = ((wins / totalTrades) * 100).toFixed(1)
+    const settledTrades = logs.filter(l => l.outcome !== 'HOLD')
+    const totalTrades = settledTrades.length
+    const wins = settledTrades.filter(l => l.outcome === 'TP').length
+    const winRate = totalTrades > 0 ? ((wins / totalTrades) * 100).toFixed(1) : "0.0"
     
-    const netRR = logs.reduce((sum, l) => sum + (l.rr || 0), 0)
+    const netRR = settledTrades.reduce((sum, l) => sum + (l.rr || 0), 0)
     
-    const perfectTrades = logs.filter(l => l.execution_type === 'Perfect')
-    const perfectRR = perfectTrades.reduce((sum, l) => sum + (l.rr || 0), 0)
-    const perfectRate = ((perfectTrades.length / totalTrades) * 100).toFixed(1)
+    const perfectTrades = settledTrades.filter(l => l.execution_type === 'Perfect')
+    const perfectRate = totalTrades > 0 ? ((perfectTrades.length / totalTrades) * 100).toFixed(1) : "0.0"
 
-    const imperfectTrades = logs.filter(l => l.execution_type === 'Imperfect')
+    const imperfectTrades = settledTrades.filter(l => l.execution_type === 'Imperfect')
     const imperfectRR = imperfectTrades.reduce((sum, l) => sum + (l.rr || 0), 0)
 
     const reasons = imperfectTrades.map(l => l.reason).filter(Boolean) as string[]
@@ -101,7 +101,7 @@ export default function JournalClient() {
     const topLeak = Object.keys(leakCounts).length > 0 ? Object.keys(leakCounts).reduce((a, b) => leakCounts[a] > leakCounts[b] ? a : b) : 'None'
 
     let runningRR = 0
-    const chartData = [...logs].reverse().map((log, index) => {
+    const chartData = [...settledTrades].reverse().map((log, index) => {
       runningRR += (log.rr || 0)
       return {
         name: `T${index + 1}`,
@@ -111,13 +111,13 @@ export default function JournalClient() {
       }
     })
 
-    return { totalTrades, winRate, netRR, perfectRate, perfectRR, imperfectRR, topLeak, chartData }
+    return { totalTrades, winRate, netRR, perfectRate, imperfectRR, topLeak, chartData }
   }, [logs])
 
   const activeTrade = logs.find(l => l.id === activeTradeId)
 
   if (isLoading) {
-    return <div className="flex h-[calc(100vh-70px)] items-center justify-center bg-black"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>
+    return <div className="flex h-[calc(100vh-70px)] items-center justify-center bg-[#030303]"><div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>
   }
 
   return (
@@ -250,7 +250,7 @@ export default function JournalClient() {
                           <span className={`text-[8px] font-bold px-1 py-0.5 rounded border ${log.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>{log.direction}</span>
                         </div>
                       </td>
-                      <td className="px-3 py-2.5 text-zinc-400 text-[9px] uppercase font-bold tracking-wider">{log.playbook}</td>
+                      <td className="px-3 py-2.5 text-zinc-400 text-[9px] uppercase font-bold tracking-wider">{log.playbook || 'N/A'}</td>
                       <td className="px-3 py-2.5 text-center">
                         <span className={`inline-flex items-center gap-1 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded ${log.execution_type === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
                           {log.execution_type === 'Perfect' ? <CheckCircle size={9}/> : <AlertTriangle size={9}/>}
@@ -303,7 +303,7 @@ export default function JournalClient() {
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border tracking-widest ${activeTrade.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
                       {activeTrade.direction}
                     </span>
-                    <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest px-1">{activeTrade.playbook}</span>
+                    <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest px-1">{activeTrade.playbook || 'No Playbook'}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className={`text-[10px] font-bold uppercase flex items-center gap-1 ${activeTrade.execution_type === 'Perfect' ? 'text-emerald-400' : 'text-red-400'}`}>
@@ -320,7 +320,7 @@ export default function JournalClient() {
               {/* Chart Review & Notes Area */}
               <div className="flex-1 flex flex-col p-3 gap-3 min-h-0 bg-[#030303]">
                 
-                {/* 🚨 THE FIX: Before/After Toggle & Zoomable Image Area */}
+                {/* Before/After Toggle & Zoomable Image Area */}
                 <div className="flex items-center justify-between shrink-0">
                   <div className="flex items-center gap-1 bg-black border border-zinc-800 rounded p-1 shadow-inner">
                     <button 
@@ -339,7 +339,7 @@ export default function JournalClient() {
                   <span className="text-[9px] text-zinc-600 uppercase font-bold flex items-center gap-1"><Maximize2 size={10}/> Scroll to Zoom</span>
                 </div>
                 
-                {/* 🚨 THE FIX: Dynamic Image Display with Pan & Zoom */}
+                {/* Dynamic Image Display with Pan & Zoom */}
                 <div className="flex-1 bg-[#0a0a0a] border border-zinc-800 rounded-xl overflow-hidden relative shadow-inner min-h-0 flex items-center justify-center group">
                   <TransformWrapper
                     key={`${activeTrade.id}-${viewMode}`}
@@ -366,7 +366,7 @@ export default function JournalClient() {
                   </TransformWrapper>
                 </div>
 
-                {/* 🚨 THE FIX: Dynamic Notes Display */}
+                {/* Dynamic Notes Display */}
                 <div className="h-32 sm:h-40 bg-[#0a0a0a] border border-zinc-800 rounded-xl p-4 overflow-y-auto custom-scrollbar shrink-0 shadow-inner">
                   <h3 className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 border-b border-zinc-800/50 pb-1">
                     {viewMode === 'BEFORE' ? 'Structural Thesis' : 'Execution Catalysts'}
@@ -374,15 +374,21 @@ export default function JournalClient() {
                   
                   {viewMode === 'BEFORE' ? (
                     <div 
-                      className="text-xs text-zinc-300 leading-relaxed font-medium"
+                      className="text-xs text-zinc-300 leading-relaxed font-medium tiptap-render"
                       dangerouslySetInnerHTML={{ __html: activeTrade.user_desk_setups?.notes || '<p class="text-zinc-600 italic">No thesis notes logged prior to entry.</p>' }} 
                     />
                   ) : (
                     <div className="text-xs text-zinc-300 leading-relaxed font-medium">
                       {activeTrade.reason ? (
-                        <span className={`px-2 py-1 rounded bg-black border font-bold uppercase ${activeTrade.execution_type === 'Perfect' ? 'border-emerald-500/20 text-emerald-400' : 'border-red-500/20 text-red-400'}`}>
-                          {activeTrade.reason}
-                        </span>
+                        <div className="flex flex-wrap gap-2">
+                          {activeTrade.reason.split('\n').map((cat, idx) => (
+                            cat.trim() ? (
+                              <span key={idx} className={`px-2 py-1 rounded bg-black border font-bold uppercase text-[10px] ${activeTrade.execution_type === 'Perfect' ? 'border-emerald-500/20 text-emerald-400' : 'border-red-500/20 text-red-400'}`}>
+                                {cat.replace(/[\[\]]/g, '')}
+                              </span>
+                            ) : null
+                          ))}
+                        </div>
                       ) : (
                         <span className="text-zinc-600 italic">No execution catalysts logged.</span>
                       )}
@@ -401,6 +407,11 @@ export default function JournalClient() {
         )}
       </div>
 
+      <style dangerouslySetInnerHTML={{__html: `
+        .tiptap-render ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; } 
+        .tiptap-render li { margin-bottom: 0.25rem; } 
+        .tiptap-render b, .tiptap-render strong { color: #f4f4f5; font-weight: 800; } 
+      `}} />
     </div>
   )
 }
