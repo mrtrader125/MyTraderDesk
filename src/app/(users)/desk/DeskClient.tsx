@@ -33,7 +33,7 @@ type DraftSetup = {
 }
 
 // --- MT5 SYNC MODAL ---
-function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpen: boolean, onClose: () => void, file: File | null, pendingLogs: any[], onConfirm: (matches: any[]) => void }) {
+function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm, displayDirection }: { isOpen: boolean, onClose: () => void, file: File | null, pendingLogs: any[], onConfirm: (matches: any[]) => void, displayDirection: (d: string | null | undefined) => string }) {
   const [offsetHours, setOffsetHours] = useState(0)
   const [parsedData, setParsedData] = useState<any[]>([])
   const [isParsing, setIsParsing] = useState(false)
@@ -180,7 +180,7 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpe
                     <div className="flex items-center gap-2">
                       <span className="font-black text-white">{m.log.symbol}</span>
                       <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${m.log.direction === 'LONG' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                        {m.log.direction}
+                        {displayDirection(m.log.direction)}
                       </span>
                     </div>
                     <span className="text-[10px] text-zinc-400 mt-1">
@@ -231,7 +231,7 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpe
 }
 
 // --- SETUP UPLOAD MODAL ---
-function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClose: () => void; onSave: (setups: any[]) => void }) {
+function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpen: boolean; onClose: () => void; onSave: (setups: any[]) => void; displayDirection: (d: string | null | undefined) => string }) {
   const [drafts, setDrafts] = useState<DraftSetup[]>([])
   const [activeIndex, setActiveIndex] = useState<number>(0)
   const [linkInput, setLinkInput] = useState('')
@@ -451,7 +451,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                         {draft.instrument || 'UNKNOWN'}
                       </p>
                       <p className="text-[9px] text-zinc-500 truncate">
-                        {draft.direction ? `${draft.direction}` : 'Incomplete'}
+                        {draft.direction ? displayDirection(draft.direction) : 'Incomplete'}
                       </p>
                     </div>
                     <button 
@@ -516,13 +516,13 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                           onClick={() => updateActiveDraft('direction', 'LONG')} 
                           className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}
                         >
-                          LONG
+                          {displayDirection('LONG')}
                         </button>
                         <button 
                           onClick={() => updateActiveDraft('direction', 'SHORT')} 
                           className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}
                         >
-                          SHORT
+                          {displayDirection('SHORT')}
                         </button>
                       </div>
                     </div>
@@ -668,7 +668,7 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
 }
 
 // --- RECONCILIATION ITEM ---
-function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: string, outcome: string, rr: string, afterImageUrl: string, afterFile?: File | null) => void, user: any }) {
+function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: any, onSave: (id: string, outcome: string, rr: string, afterImageUrl: string, afterFile?: File | null) => void, user: any, displayDirection: (d: string | null | undefined) => string }) {
   const [outcome, setOutcome] = useState(trade.outcome || '')
   const [rr, setRr] = useState(trade.rr ? trade.rr.toString() : '')
   
@@ -740,7 +740,7 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
         <div className="flex items-center gap-3">
           <span className="text-[13px] font-black text-white">{trade.symbol}</span>
           <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
-            {trade.direction}
+            {displayDirection(trade.direction)}
           </span>
           {trade.reason && (
             <span className="text-[10px] text-zinc-400 font-medium">• {trade.reason.replace(/\n/g, ', ')}</span>
@@ -1000,6 +1000,15 @@ export default function DeskClient() {
   const [timeOffset, setTimeOffset] = useState(0);
   const [weeklyDebrief, setWeeklyDebrief] = useState('');
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
+  
+  // 🚨 TRADING PREFERENCES STATE
+  const [terminology, setTerminology] = useState<'LONG_SHORT' | 'BUY_SELL'>('LONG_SHORT')
+
+  const displayDirection = useCallback((dir: string | null | undefined) => {
+    if (!dir) return 'N/A';
+    if (terminology === 'BUY_SELL') return dir === 'LONG' ? 'BUY' : 'SELL';
+    return dir;
+  }, [terminology])
 
   // 🚨 2. DERIVED SECURE TIME LOGIC
   const getTrueUTC = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
@@ -1105,6 +1114,10 @@ export default function DeskClient() {
       if (!user) return;
       
       setUser(user)
+
+      if (user.user_metadata?.trade_terminology) {
+        setTerminology(user.user_metadata.trade_terminology);
+      }
 
       if (user.user_metadata?.desk_perfect_catalysts) {
         setPerfectCatalysts(user.user_metadata.desk_perfect_catalysts);
@@ -1544,7 +1557,7 @@ export default function DeskClient() {
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'bg-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'bg-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
-                            {setup.direction || 'N/A'}
+                            {displayDirection(setup.direction)}
                           </span>
                           {isExecuted && <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-bold uppercase truncate">Executed</span>}
                         </div>
@@ -1644,8 +1657,12 @@ export default function DeskClient() {
                       <div className="flex gap-3">
                         <div className="flex-[1.5] flex flex-col gap-2">
                           <div className="flex gap-2">
-                            <button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Long</button>
-                            <button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>Short</button>
+                            <button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>
+                              {displayDirection('LONG')}
+                            </button>
+                            <button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>
+                              {displayDirection('SHORT')}
+                            </button>
                           </div>
                           <div className="flex flex-col gap-2 mt-1">
                             <button onClick={() => setLogExecution('Perfect')} className={`py-2 px-3 border rounded-lg flex items-center justify-between transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}><span className="font-mono text-[10px] opacity-60">[1]</span><span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span><CheckCircle size={13} /></button>
@@ -1689,7 +1706,7 @@ export default function DeskClient() {
                       ) : currentWeekPending.length === 0 ? (
                         <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups this week</span></div>
                       ) : (
-                        currentWeekPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)
+                        currentWeekPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} displayDirection={displayDirection} />)
                       )}
                     </div>
                   </div>
@@ -1700,7 +1717,7 @@ export default function DeskClient() {
                         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Legacy / Carried Over</span>
                       </div>
                       <div className="flex flex-col gap-2.5 opacity-80 hover:opacity-100 transition-opacity">
-                        {heldOverPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)}
+                        {heldOverPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} displayDirection={displayDirection} />)}
                       </div>
                     </div>
                   )}
@@ -1789,8 +1806,8 @@ export default function DeskClient() {
           </div>
         </div>
 
-        <MT5SyncModal isOpen={isMT5ModalOpen} onClose={() => { setIsMT5ModalOpen(false); setMt5File(null); }} file={mt5File} pendingLogs={pendingReconciliation} onConfirm={handleMT5Confirm} />
-        <SetupUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} onSave={handleBulkUpload} />
+        <MT5SyncModal isOpen={isMT5ModalOpen} onClose={() => { setIsMT5ModalOpen(false); setMt5File(null); }} file={mt5File} pendingLogs={pendingReconciliation} onConfirm={handleMT5Confirm} displayDirection={displayDirection} />
+        <SetupUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} onSave={handleBulkUpload} displayDirection={displayDirection} />
         
         {confirmPushId && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
