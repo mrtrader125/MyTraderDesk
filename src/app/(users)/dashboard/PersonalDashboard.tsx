@@ -9,7 +9,7 @@ import {
   Crosshair, CheckCircle2, Clock, 
   Target, Globe2, Activity, Lock, X, AlertTriangle, Type,
   ChevronLeft, ChevronRight, BookOpen, Maximize, Settings,
-  DownloadCloud, Link as LinkIcon, Image as ImageIcon, Clipboard, Plus
+  DownloadCloud, Link as LinkIcon, Image as ImageIcon, Clipboard, Plus, Copy
 } from 'lucide-react'
 
 // 🚨 CONSTANTS MUST BE AT THE TOP
@@ -99,6 +99,18 @@ export default function PersonalDashboard() {
 
   const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
   const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
+
+  // 🚨 WorldTimeAPI Enforcer (Prevents Local Clock Cheat)
+  const [timeOffset, setTimeOffset] = useState(0);
+  useEffect(() => {
+    fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata')
+      .then(res => res.json())
+      .then(data => {
+        const realTime = new Date(data.datetime).getTime();
+        setTimeOffset(realTime - Date.now());
+      }).catch(() => setTimeOffset(0));
+  }, []);
+  const getSecureTime = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
 
   // 🚨 Supabase Sync for Settings
   useEffect(() => {
@@ -229,7 +241,7 @@ export default function PersonalDashboard() {
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('added_to_today_at', { ascending: false })
       
       if (setupsData) {
-        const todayStr = new Date().toDateString();
+        const todayStr = getSecureTime().toDateString();
         const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && new Date(s.added_to_today_at).toDateString() !== todayStr);
         
         if (expiredSetups.length > 0) {
@@ -247,7 +259,7 @@ export default function PersonalDashboard() {
       setVaultSetupCount(parsedSetups.length)
       setTodaySetups(activeSetups)
 
-      const now = new Date()
+      const now = getSecureTime()
       const dayOfWeek = now.getDay() 
       const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
       const startOfWeek = new Date(now.setDate(diffToMonday))
@@ -264,7 +276,7 @@ export default function PersonalDashboard() {
         const targetDate = new Date(startOfWeek)
         targetDate.setDate(startOfWeek.getDate() + i)
         const dateString = targetDate.toDateString()
-        const todayString = new Date().toDateString()
+        const todayString = getSecureTime().toDateString()
         const dayLogs = logsData?.filter(l => new Date(l.created_at).toDateString() === dateString) || []
 
         let status = 'pending'
@@ -280,7 +292,7 @@ export default function PersonalDashboard() {
           } else {
             status = 'current'
           }
-        } else if (targetDate < new Date()) {
+        } else if (targetDate < getSecureTime()) {
           isPast = true
           if (dayLogs.length === 0) {
             status = 'missed'
@@ -301,12 +313,12 @@ export default function PersonalDashboard() {
     }
 
     fetchDashboardData()
-  }, [])
+  }, [getSecureTime])
 
-  // 🚨 Midnight Auto-Wipe Interval (Live Tab Update)
+  // 🚨 Midnight Auto-Wipe Interval (Live Tab Update via Secure Time)
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
-      const todayStr = new Date().toDateString();
+      const todayStr = getSecureTime().toDateString();
       const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() !== todayStr);
       
       if (hasStaleSetups) {
@@ -315,7 +327,7 @@ export default function PersonalDashboard() {
     }, 60000); 
     
     return () => clearInterval(checkMidnightWipe);
-  }, [setups]);
+  }, [setups, getSecureTime]);
 
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) setActiveTodayId(todaySetups[0].id)
@@ -329,11 +341,17 @@ export default function PersonalDashboard() {
     }
   }, [activeTodayId]);
 
+  // 🚨 5-Bullet Staging Limit Calculation
+  const pushesToday = setups.filter(s => s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() === getSecureTime().toDateString()).length;
+
   // The Accountability Lock Logic
-  const now = new Date()
+  const now = getSecureTime()
   const dayOfWeek = now.getDay() 
   const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 // Saturday (6) or Sunday (0)
-  const isVaultLocked = isWeekendNow && pendingReconciliationsCount > 0;
+  
+  // Prep is ONLY allowed on Weekends or Monday before 5:30 AM
+  const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
+  const isVaultLocked = !isPrepWindow || (isPrepWindow && pendingReconciliationsCount > 0);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -698,7 +716,7 @@ export default function PersonalDashboard() {
                     <div className="flex flex-col">
                       <span className={`text-xs font-bold tracking-wide ${vaultSetupCount > 0 ? 'text-zinc-500' : 'text-zinc-200'}`}>Weekly Macro Prep</span>
                       <span className={`text-[9px] font-medium uppercase tracking-widest mt-0.5 ${isVaultLocked ? 'text-red-400' : 'text-zinc-500'}`}>
-                        {isVaultLocked ? 'Locked: Complete Wind-up First' : 'Sunday Filter (Max 15-20)'}
+                        {isVaultLocked ? (!isPrepWindow ? 'Locked Until Weekend' : 'Locked: Complete Wind-up First') : 'Sunday Filter (Max 15-20)'}
                       </span>
                     </div>
                   </div>
@@ -706,22 +724,22 @@ export default function PersonalDashboard() {
                   {/* Phase 2: Today Filtering (Daily Sniper) */}
                   <div className="flex items-start gap-4 relative z-10 mb-6">
                     <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${
-                      todaySetups.length > 0 && todaySetups.length <= 5 ? 'border-emerald-500 text-emerald-400' : 
-                      todaySetups.length > 5 ? 'border-red-500 text-red-400' :
+                      pushesToday > 0 && pushesToday <= 5 ? 'border-emerald-500 text-emerald-400' : 
+                      pushesToday > 5 ? 'border-red-500 text-red-400' :
                       'border-blue-500/50 text-transparent'
                     }`}>
-                      {todaySetups.length > 0 && todaySetups.length <= 5 ? <CheckCircle2 size={12} /> : 
-                       todaySetups.length > 5 ? <AlertTriangle size={10} /> :
+                      {pushesToday > 0 && pushesToday <= 5 ? <CheckCircle2 size={12} /> : 
+                       pushesToday > 5 ? <AlertTriangle size={10} /> :
                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
                     </div>
                     <div className="flex flex-col">
-                      <span className={`text-xs font-bold tracking-wide ${todaySetups.length > 0 && todaySetups.length <= 5 ? 'text-zinc-500' : 'text-zinc-200'}`}>
+                      <span className={`text-xs font-bold tracking-wide ${pushesToday > 0 && pushesToday <= 5 ? 'text-zinc-500' : 'text-zinc-200'}`}>
                         Daily Sniper Routine
                       </span>
-                      {todaySetups.length > 5 ? (
+                      {pushesToday > 5 ? (
                         <span className="text-[9px] text-red-400 font-bold uppercase tracking-widest mt-0.5">RULE BREAK: Max 5 Allowed</span>
                       ) : (
-                        <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">Stage Alerts & Walk Away</span>
+                        <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">Staged: {pushesToday}/5 Pairs</span>
                       )}
                     </div>
                   </div>
@@ -820,40 +838,29 @@ export default function PersonalDashboard() {
                   ) : (
                     todaySetups.map(setup => {
                       const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
-                      const isExecuted = executedSymbols.includes(setup.symbol);
                       return (
                         <div 
-                          key={`today-${setup.id}`} 
-                          onClick={() => setActiveTodayId(setup.id)} 
-                          className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-md' : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'}`}
+                          key={`today-${setup.id}`}
+                          onClick={() => setActiveTodayId(setup.id)}
+                          className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group ${
+                            activeTodayId === setup.id 
+                              ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
+                              : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
+                          }`}
                         >
                           <div className="flex justify-between items-center mb-1">
                             <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                               {setup.symbol}
                             </span>
-                            <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                              {activeTodayId === setup.id && (
-                                <button onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} className="lg:hidden p-1 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400" title="View Notes">
-                                  <Info size={14} />
-                                </button>
-                              )}
-                              {!isExecuted && (
-                                <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
-                                  <Target size={12} />
-                                </button>
-                              )}
-                              {canRemove && (
-                                <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400" title="Remove (1hr limit)">
-                                  <ArrowLeft size={12} />
-                                </button>
-                              )}
-                            </div>
+                            {canRemove && (
+                              <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" title="Remove (1hr limit)">
+                                <ArrowLeft size={12} />
+                              </button>
+                            )}
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'bg-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'bg-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
-                              {setup.direction || 'N/A'}
-                            </span>
-                            {isExecuted && <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-bold uppercase truncate">Executed</span>}
+                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
+                            {setup.playbook && <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook}</span>}
                           </div>
                         </div>
                       )
@@ -861,43 +868,73 @@ export default function PersonalDashboard() {
                   )}
                 </div>
 
-                <div 
-                  className="order-1 lg:order-2 w-full flex-[1.5] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group"
-                  onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}
-                >
-                  {activeSetup?.imageUrl ? (
-                    <>
-                      <TransformWrapper
-                        key={activeSetup.id}
-                        initialScale={1}
-                        minScale={0.5}
-                        maxScale={10}
-                        centerOnInit={true}
-                        wheel={{ step: 0.1 }}
-                        doubleClick={{ mode: 'reset' }}
-                        panning={{ disabled: false }}
-                        pinch={{ step: 5 }}
-                        onTransformed={(ref) => setChartScale(ref.state.scale)}
-                        ref={transformRef}
-                      >
-                        <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <img src={activeSetup.imageUrl} alt={activeSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" draggable={false} />
-                        </TransformComponent>
-                      </TransformWrapper>
-                      {chartScale !== 1 && (
-                        <button onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }} className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100" title="View Full Screen"><Maximize size={16} /></button>
-                      )}
-                    </>
-                  ) : (
-                    <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0"><span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span></div>
-                  )}
-                </div>
+                <div className={`flex flex-row min-w-0 overflow-hidden transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'flex-1 opacity-100' : 'w-0 opacity-0'}`}>
+                  
+                  <div 
+                    className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60 group overflow-hidden"
+                    onMouseDown={handlePeekStart}
+                    onMouseUp={handlePeekEnd}
+                    onMouseLeave={handlePeekEnd}
+                    onTouchStart={handlePeekStart}
+                    onTouchEnd={handlePeekEnd}
+                  >
+                    {activeSetup?.imageUrl ? (
+                      <>
+                        <TransformWrapper
+                          key={activeSetup.id}
+                          initialScale={1}
+                          minScale={0.5}
+                          maxScale={10}
+                          centerOnInit={true}
+                          wheel={{ step: 0.1 }}
+                          doubleClick={{ mode: 'reset' }}
+                          panning={{ disabled: false }}
+                          onTransformed={(ref) => setChartScale(ref.state.scale)}
+                          ref={transformRef}
+                        >
+                          <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <img 
+                              src={activeSetup.imageUrl} 
+                              alt={`${activeSetup.symbol} Chart`} 
+                              className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
+                              draggable={false} 
+                            />
+                          </TransformComponent>
+                        </TransformWrapper>
 
-                <div className="hidden lg:flex order-3 w-full lg:w-80 shrink-0 flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
-                  <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0">
-                    <RichNotesEditor activeSetup={activeSetup} onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} />
+                        {chartScale !== 1 && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }}
+                            className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100"
+                            title="View Full Screen"
+                          >
+                            <Maximize size={16} />
+                          </button>
+                        )}
+                      </>
+                    ) : (
+                      <div className="flex-1 flex items-center justify-center text-zinc-700">
+                        <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Select a pair to view</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
+                    <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
+                      {activeSetup ? (
+                        <div 
+                          className="w-full h-full overflow-y-auto custom-scrollbar text-xs text-zinc-300 leading-relaxed font-medium"
+                          dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} 
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-center">
+                          <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest whitespace-nowrap">No active notes</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
+
               </div>
             </div>
           </div>
