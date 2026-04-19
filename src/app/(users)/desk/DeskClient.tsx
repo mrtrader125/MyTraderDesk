@@ -11,6 +11,7 @@ import {
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock
 } from 'lucide-react'
 
+// 🚨 CONSTANTS MUST BE AT THE TOP
 const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
 const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
 const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
@@ -659,12 +660,18 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
   const [afterPreview, setAfterPreview] = useState<string | null>(null)
   
   const [isSaving, setIsSaving] = useState(false)
+  const [showHoldConfirm, setShowHoldConfirm] = useState(false) // 🚨 HOLD Confirmation State
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { 
     setOutcome(trade.outcome || ''); 
     setRr(trade.rr ? trade.rr.toString() : ''); 
   }, [trade.outcome, trade.rr])
+
+  // Reset confirmation if they scroll off HOLD
+  useEffect(() => {
+    setShowHoldConfirm(false);
+  }, [outcome])
 
   const handleWheel = (e: React.WheelEvent<HTMLSelectElement>) => {
     const outcomes = ['', 'TP', 'SL', 'BE', 'HOLD'];
@@ -702,10 +709,11 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
     }
   }
 
-  const handleSave = async () => { 
+  const executeSave = async () => { 
     setIsSaving(true); 
     await onSave(trade.id, outcome, rr, afterInput, afterFile); 
     setIsSaving(false); 
+    setShowHoldConfirm(false);
   }
   
   const isMt5Synced = trade.outcome && trade.rr !== undefined
@@ -802,13 +810,26 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
            )}
         </div>
 
-        <button 
-          disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} 
-          onClick={handleSave} 
-          className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors sm:ml-auto shrink-0"
-        >
-          {isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}
-        </button>
+        {/* 🚨 HOLD CONFIRMATION UI */}
+        {showHoldConfirm ? (
+          <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto shrink-0 animate-in fade-in zoom-in-95 duration-200">
+            <span className="text-[9px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden xl:block mr-1">
+              Are you actually holding<br/>or avoiding a loss?
+            </span>
+            <button onClick={() => setShowHoldConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors">Cancel</button>
+            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)]">
+              {isSaving ? '...' : 'Confirm'}
+            </button>
+          </div>
+        ) : (
+          <button 
+            disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} 
+            onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} 
+            className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors sm:ml-auto shrink-0"
+          >
+            {isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}
+          </button>
+        )}
       </div>
     </div>
   )
@@ -949,7 +970,6 @@ export default function DeskClient() {
 
   const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
-  // 🚨 1. Initialization & LocalStorage loading
   useEffect(() => {
     const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
     handleResize(); 
@@ -968,7 +988,7 @@ export default function DeskClient() {
   useEffect(() => { localStorage.setItem('desk_vault_open', String(isVaultOpen)) }, [isVaultOpen])
   useEffect(() => { localStorage.setItem('desk_audit_open', String(isAuditOpen)) }, [isAuditOpen])
 
-  // 🚨 2. Supabase Sync for Settings
+  // 🚨 Supabase Settings Sync
   useEffect(() => {
     const syncCatalysts = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -993,7 +1013,6 @@ export default function DeskClient() {
       
       setUser(user)
 
-      // Load Settings from Supabase
       if (user.user_metadata?.desk_perfect_catalysts) {
         setPerfectCatalysts(user.user_metadata.desk_perfect_catalysts);
       } else {
@@ -1066,7 +1085,7 @@ export default function DeskClient() {
     initData()
   }, [supabase])
 
-  // 🚨 3. Midnight Auto-Wipe Interval (Live Tab Update)
+  // 🚨 Midnight Auto-Wipe Interval (Live Tab Update)
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
       const todayStr = new Date().toDateString();
@@ -1105,7 +1124,6 @@ export default function DeskClient() {
 
   const isVaultLocked = isWeekendNow && currentWeekPending.length > 0;
 
-  // Weekly Debrief State
   const debriefKey = `desk_weekly_debrief_${startOfCurrentWeek.getTime()}`;
   const [weeklyDebrief, setWeeklyDebrief] = useState('');
   useEffect(() => { setWeeklyDebrief(localStorage.getItem(debriefKey) || ''); }, [debriefKey]);
