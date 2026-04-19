@@ -8,7 +8,7 @@ import Papa from 'papaparse'
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, CheckCircle2, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock, Copy
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, CheckCircle2, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock
 } from 'lucide-react'
 
 // 🚨 CONSTANTS MUST BE AT THE TOP
@@ -16,7 +16,7 @@ const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Break
 const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
 const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
 
-// 🚨 GLOBAL SUPABASE CLIENT (Fixes "Multiple GoTrueClient instances" warning)
+// 🚨 GLOBAL SUPABASE CLIENT
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -342,10 +342,19 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
     } 
   }
 
+  // 🚨 Revoke Memory Leak Fix included here
   const handleSaveAll = async () => {
     setIsUploading(true)
     const validDrafts = drafts.filter(d => d.instrument.trim() !== '' && d.direction !== '')
     await onSave(validDrafts)
+    
+    // Clear RAM
+    drafts.forEach(d => {
+      if (d.imageSource && d.imageSource.startsWith('blob:')) {
+        URL.revokeObjectURL(d.imageSource);
+      }
+    });
+
     setIsUploading(false)
     onClose()
   }
@@ -992,10 +1001,16 @@ export default function DeskClient() {
   const [weeklyDebrief, setWeeklyDebrief] = useState('');
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
 
-  // 🚨 2. DERIVED STATES AND CALLBACKS
-  const getSecureTime = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
+  // 🚨 2. DERIVED SECURE TIME LOGIC
+  const getTrueUTC = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
 
-  const now = getSecureTime();
+  const getISTDate = useCallback(() => {
+    const utc = getTrueUTC();
+    const istStr = utc.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
+    return new Date(istStr); // Forces the JS Date to act like it is physically inside India
+  }, [getTrueUTC]);
+
+  const now = getISTDate();
   const dayOfWeek = now.getDay();
   const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0;
   
@@ -1020,8 +1035,11 @@ export default function DeskClient() {
     return 0;
   });
 
-  const currentWeekPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() >= startOfCurrentWeek.getTime() && t.outcome !== 'HOLD');
-  const heldOverPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() < startOfCurrentWeek.getTime() || t.outcome === 'HOLD');
+  // DB Sync Time Helper
+  const adjustDbToIST = (utcString: string) => new Date(new Date(utcString).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+
+  const currentWeekPending = pendingReconciliation.filter(t => adjustDbToIST(t.created_at).getTime() >= startOfCurrentWeek.getTime() && t.outcome !== 'HOLD');
+  const heldOverPending = pendingReconciliation.filter(t => adjustDbToIST(t.created_at).getTime() < startOfCurrentWeek.getTime() || t.outcome === 'HOLD');
 
   const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
   const isVaultLocked = !isPrepWindow || (isPrepWindow && currentWeekPending.length > 0);
@@ -1033,13 +1051,13 @@ export default function DeskClient() {
   useEffect(() => {
     const fetchTime = async () => {
       try {
-        // Swapped to a stronger, unblocked API
-        const res = await fetch('https://timeapi.io/api/Time/current/zone?timeZone=Asia/Kolkata', { cache: 'no-store' });
+        // Swapped to pure UTC API response
+        const res = await fetch('https://timeapi.io/api/Time/current/zone?timeZone=UTC', { cache: 'no-store' });
         if (!res.ok) throw new Error('API Blocked');
         const data = await res.json();
-        // TimeAPI uses 'dateTime' instead of 'datetime'
-        const realTime = new Date(data.dateTime).getTime();
-        setTimeOffset(realTime - Date.now());
+        // TimeAPI strings don't have timezone flags, so we MUST append "Z" to force JS to parse it as UTC
+        const trueUTC = new Date(data.dateTime + "Z").getTime();
+        setTimeOffset(trueUTC - Date.now());
       } catch (error) {
         setTimeOffset(0); // Silently falls back if connection drops
       }
@@ -1106,28 +1124,25 @@ export default function DeskClient() {
         if (savedImperfect) setImperfectCatalysts(JSON.parse(savedImperfect));
       }
 
-      // Helper to align DB UTC time with Spoofed IST
-      const adjustDbTime = (utcString: string) => new Date(new Date(utcString).getTime() + timeOffset);
-
       const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       
       if (logsData) {
         setPendingReconciliation(logsData.filter(d => !d.is_reconciled || d.outcome === 'HOLD').map(d => ({ 
           id: d.id, 
-          day: adjustDbTime(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
+          day: adjustDbToIST(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
           symbol: d.symbol, 
           direction: d.direction, 
           reason: d.reason,
           execution: d.execution_type, 
           rr: d.rr, 
           outcome: d.outcome, 
-          created_at: d.created_at // Keep true UTC for MT5 Sync
+          created_at: d.created_at // Keep true UTC
         })))
         
-        const todayStr = getSecureTime().toDateString()
-        setTradesTakenToday(logsData.filter(d => adjustDbTime(d.created_at).toDateString() === todayStr).length)
+        const todayStr = getISTDate().toDateString()
+        setTradesTakenToday(logsData.filter(d => adjustDbToIST(d.created_at).toDateString() === todayStr).length)
 
-        const initNow = getSecureTime();
+        const initNow = getISTDate();
         const initDayOfWeek = initNow.getDay();
         const initDiffToMon = initNow.getDate() - initDayOfWeek + (initDayOfWeek === 0 ? -6 : 1);
         const initStartOfWeek = new Date(initNow.getTime());
@@ -1135,7 +1150,7 @@ export default function DeskClient() {
         initStartOfWeek.setHours(0, 0, 0, 0);
         
         const executedThisWeek = logsData
-          .filter(l => adjustDbTime(l.created_at).getTime() >= initStartOfWeek.getTime())
+          .filter(l => adjustDbToIST(l.created_at).getTime() >= initStartOfWeek.getTime())
           .map(l => l.symbol)
         
         setExecutedSymbols(executedThisWeek)
@@ -1144,8 +1159,8 @@ export default function DeskClient() {
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       
       if (setupsData) {
-        const todayStr = getSecureTime().toDateString();
-        const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && adjustDbTime(s.added_to_today_at).toDateString() !== todayStr);
+        const todayStr = getTrueUTC().toDateString();
+        const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && new Date(s.added_to_today_at).toDateString() !== todayStr);
         
         if (expiredSetups.length > 0) {
           const expiredIds = expiredSetups.map(s => s.id);
@@ -1161,16 +1176,16 @@ export default function DeskClient() {
           notes: d.notes, 
           imageUrl: d.image_url, 
           isToday: d.is_today, 
-          addedToTodayAt: d.added_to_today_at ? adjustDbTime(d.added_to_today_at).getTime() : null 
+          addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null 
         })))
       }
     }
     initData()
-  }, [getSecureTime, timeOffset])
+  }, [getISTDate, getTrueUTC, timeOffset])
 
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
-      const todayStr = getSecureTime().toDateString();
+      const todayStr = getTrueUTC().toDateString();
       const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() !== todayStr);
       
       if (hasStaleSetups) {
@@ -1179,7 +1194,7 @@ export default function DeskClient() {
     }, 60000); 
     
     return () => clearInterval(checkMidnightWipe);
-  }, [setups, getSecureTime]);
+  }, [setups, getTrueUTC]);
 
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
@@ -1202,7 +1217,8 @@ export default function DeskClient() {
       const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
       if (data && data[0]) {
         setTradesTakenToday(prev => prev + 1);
-        const spoofedNow = getSecureTime();
+        
+        const spoofedNow = getISTDate();
         setPendingReconciliation(prev => [{ 
           id: data[0].id, 
           day: spoofedNow.toLocaleDateString('en-US', { weekday: 'short' }), 
@@ -1223,7 +1239,7 @@ export default function DeskClient() {
       setLogExecution(null); 
       setIsAuditOpen(false); 
     }
-  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, user, getSecureTime]);
+  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, user, getISTDate]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1318,9 +1334,8 @@ export default function DeskClient() {
 
   const handleConfirmPush = async () => {
     if(confirmPushId && user) {
-      const trueUtcNow = new Date();
-      const spoofedNow = getSecureTime();
-      setSetups(prev => prev.map(s => s.id === confirmPushId ? { ...s, isToday: true, addedToTodayAt: spoofedNow.getTime() } : s))
+      const trueUtcNow = getTrueUTC();
+      setSetups(prev => prev.map(s => s.id === confirmPushId ? { ...s, isToday: true, addedToTodayAt: trueUtcNow.getTime() } : s))
       setConfirmPushId(null)
       await supabase.from('user_desk_setups').update({ is_today: true, added_to_today_at: trueUtcNow.toISOString() }).eq('id', confirmPushId)
     }
@@ -1339,23 +1354,29 @@ export default function DeskClient() {
     const setupToDelete = setups.find(s => s.id === id);
     if (setupToDelete && setupToDelete.imageUrl && setupToDelete.imageUrl.includes('supabase')) {
         const match = setupToDelete.imageUrl.match(/user-desk-images\/(.+)$/);
-        if (match && match[1]) await supabase.storage.from('user-desk-images').remove([match[1]]);
+        if (match && match[1]) {
+           const cleanPath = match[1].split('?')[0]; // 🚨 Fixes Supabase query param error
+           await supabase.storage.from('user-desk-images').remove([cleanPath]);
+        }
     }
     setSetups(prev => prev.filter(s => s.id !== id))
     await supabase.from('user_desk_setups').delete().eq('id', id)
   }
 
+  // 🚨 Parallel Upload Fix (Speed Boost)
   const handleBulkUpload = async (draftsToSave: any[]) => {
     if (!user) return alert("Authentication Error: No active user session found.")
-    const newSetups = []
-    for (const draft of draftsToSave) {
-      let finalImageUrl = draft.imageSource
+    
+    const uploadPromises = draftsToSave.map(async (draft) => {
+      let finalImageUrl = draft.imageSource;
       if (draft.file) {
-        const { data } = await supabase.storage.from('user-desk-images').upload(`${user.id}/${Math.random()}.${draft.file.name.split('.').pop()}`, draft.file)
-        if (data) finalImageUrl = supabase.storage.from('user-desk-images').getPublicUrl(data.path).data.publicUrl
-      } else if (finalImageUrl && finalImageUrl.startsWith('blob:')) finalImageUrl = null 
+        const { data } = await supabase.storage.from('user-desk-images').upload(`${user.id}/${Math.random()}.${draft.file.name.split('.').pop()}`, draft.file);
+        if (data) finalImageUrl = supabase.storage.from('user-desk-images').getPublicUrl(data.path).data.publicUrl;
+      } else if (finalImageUrl && finalImageUrl.startsWith('blob:')) {
+        finalImageUrl = null;
+      }
       
-      newSetups.push({ 
+      return { 
         user_id: user.id, 
         symbol: draft.instrument, 
         direction: draft.direction, 
@@ -1363,9 +1384,12 @@ export default function DeskClient() {
         notes: draft.notes, 
         image_url: finalImageUrl, 
         is_today: false 
-      })
-    }
-    const { data } = await supabase.from('user_desk_setups').insert(newSetups).select()
+      };
+    });
+
+    const newSetupsPayload = await Promise.all(uploadPromises);
+
+    const { data } = await supabase.from('user_desk_setups').insert(newSetupsPayload).select();
     if (data) {
       setSetups(prev => [...data.map(d => ({ 
         id: d.id, 
@@ -1376,7 +1400,7 @@ export default function DeskClient() {
         imageUrl: d.image_url, 
         isToday: false, 
         addedToTodayAt: null 
-      })), ...prev])
+      })), ...prev]);
     }
   }
 
@@ -1486,7 +1510,7 @@ export default function DeskClient() {
                   </div>
                 ) : (
                   todaySetups.map(setup => {
-                    const canRemove = setup.addedToTodayAt && (getSecureTime().getTime() - setup.addedToTodayAt < 3600000);
+                    const canRemove = setup.addedToTodayAt && (getTrueUTC().getTime() - setup.addedToTodayAt < 3600000); // 🚨 1-Hour Fix
                     const isExecuted = executedSymbols.includes(setup.symbol);
                     return (
                       <div 
