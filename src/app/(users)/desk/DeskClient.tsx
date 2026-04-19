@@ -949,7 +949,7 @@ export default function DeskClient() {
 
   const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
-  // Initialization & LocalStorage
+  // 🚨 1. Initialization & LocalStorage loading
   useEffect(() => {
     const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
     handleResize(); 
@@ -960,19 +960,30 @@ export default function DeskClient() {
   useEffect(() => {
     const vault = localStorage.getItem('desk_vault_open')
     const audit = localStorage.getItem('desk_audit_open')
-    const savedPerfect = localStorage.getItem('desk_perfect_catalysts')
-    const savedImperfect = localStorage.getItem('desk_imperfect_catalysts')
     
     if (vault) setIsVaultOpen(vault === 'true')
     if (audit) setIsAuditOpen(audit === 'true')
-    if (savedPerfect) setPerfectCatalysts(JSON.parse(savedPerfect))
-    if (savedImperfect) setImperfectCatalysts(JSON.parse(savedImperfect))
   }, [])
 
   useEffect(() => { localStorage.setItem('desk_vault_open', String(isVaultOpen)) }, [isVaultOpen])
   useEffect(() => { localStorage.setItem('desk_audit_open', String(isAuditOpen)) }, [isAuditOpen])
-  useEffect(() => { localStorage.setItem('desk_perfect_catalysts', JSON.stringify(perfectCatalysts)) }, [perfectCatalysts])
-  useEffect(() => { localStorage.setItem('desk_imperfect_catalysts', JSON.stringify(imperfectCatalysts)) }, [imperfectCatalysts])
+
+  // 🚨 2. Supabase Sync for Settings
+  useEffect(() => {
+    const syncCatalysts = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.auth.updateUser({
+          data: {
+            desk_perfect_catalysts: perfectCatalysts,
+            desk_imperfect_catalysts: imperfectCatalysts
+          }
+        })
+      }
+    }
+    const timeoutId = setTimeout(syncCatalysts, 2000)
+    return () => clearTimeout(timeoutId)
+  }, [perfectCatalysts, imperfectCatalysts])
 
   useEffect(() => {
     const initData = async () => {
@@ -981,6 +992,21 @@ export default function DeskClient() {
       if (!user) return;
       
       setUser(user)
+
+      // Load Settings from Supabase
+      if (user.user_metadata?.desk_perfect_catalysts) {
+        setPerfectCatalysts(user.user_metadata.desk_perfect_catalysts);
+      } else {
+        const savedPerfect = localStorage.getItem('desk_perfect_catalysts');
+        if (savedPerfect) setPerfectCatalysts(JSON.parse(savedPerfect));
+      }
+      
+      if (user.user_metadata?.desk_imperfect_catalysts) {
+        setImperfectCatalysts(user.user_metadata.desk_imperfect_catalysts);
+      } else {
+        const savedImperfect = localStorage.getItem('desk_imperfect_catalysts');
+        if (savedImperfect) setImperfectCatalysts(JSON.parse(savedImperfect));
+      }
 
       const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       
@@ -1040,6 +1066,20 @@ export default function DeskClient() {
     initData()
   }, [supabase])
 
+  // 🚨 3. Midnight Auto-Wipe Interval (Live Tab Update)
+  useEffect(() => {
+    const checkMidnightWipe = setInterval(() => {
+      const todayStr = new Date().toDateString();
+      const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() !== todayStr);
+      
+      if (hasStaleSetups) {
+        window.location.reload();
+      }
+    }, 60000); 
+    
+    return () => clearInterval(checkMidnightWipe);
+  }, [setups]);
+
   const todaySetups = setups.filter(s => s.isToday)
   
   const weeklySetups = [...setups].sort((a, b) => {
@@ -1052,7 +1092,6 @@ export default function DeskClient() {
 
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
 
-  // 🚨 Time calculations for Dopamine Gate
   const now = new Date()
   const dayOfWeek = now.getDay() 
   const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 // Saturday (6) or Sunday (0)
@@ -1064,7 +1103,6 @@ export default function DeskClient() {
   const currentWeekPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() >= startOfCurrentWeek.getTime() && t.outcome !== 'HOLD');
   const heldOverPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() < startOfCurrentWeek.getTime() || t.outcome === 'HOLD');
 
-  // 🚨 The Accountability Lock Logic
   const isVaultLocked = isWeekendNow && currentWeekPending.length > 0;
 
   // Weekly Debrief State
@@ -1590,7 +1628,11 @@ export default function DeskClient() {
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={14} /></button>
-                        <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
+                        
+                        {/* 🚨 Deletion Bug Fix: Hide trash can if executed */}
+                        {!isExecuted && (
+                           <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
+                        )}
                         
                         {!isPushedToToday && !isExecuted && (
                           <button onClick={() => setConfirmPushId(setup.id)} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm">Push <ArrowRight size={12} /></button>
