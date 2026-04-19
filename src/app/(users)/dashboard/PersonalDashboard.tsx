@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -8,8 +8,14 @@ import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'reac
 import { 
   Crosshair, CheckCircle2, Clock, 
   Target, Globe2, Activity, Lock, X, AlertTriangle, Type,
-  ChevronLeft, ChevronRight, BookOpen, Maximize
+  ChevronLeft, ChevronRight, BookOpen, Maximize, Settings,
+  DownloadCloud, Link as LinkIcon, Image as ImageIcon, Clipboard, Plus
 } from 'lucide-react'
+
+// 🚨 ADDED THE MISSING CONSTANTS HERE
+const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
+const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
+const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -82,6 +88,17 @@ export default function PersonalDashboard() {
     "font-serif font-light tracking-wide text-zinc-300",     
     "font-sans font-thin tracking-widest text-zinc-400"      
   ]
+
+  // Action Log UI States
+  const [logPair, setLogPair] = useState<string>('') 
+  const [logDirection, setLogDirection] = useState<'LONG' | 'SHORT' | null>(null)
+  const [logCatalystText, setLogCatalystText] = useState('')
+  const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
+  const [isCatalystSettingsOpen, setIsCatalystSettingsOpen] = useState(false)
+  const [isAuditOpen, setIsAuditOpen] = useState(false)
+
+  const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
+  const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
 
   useEffect(() => {
     const loadLayout = async () => {
@@ -177,7 +194,7 @@ export default function PersonalDashboard() {
       }
       const user = session.user
 
-      // 🚨 Auto-Reset Stale "Today" Setups logic added here
+      // Auto-Reset Stale "Today" Setups logic
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('added_to_today_at', { ascending: false })
       
       if (setupsData) {
@@ -193,12 +210,9 @@ export default function PersonalDashboard() {
 
       const activeSetups = setupsData?.filter(s => s.is_today) || []
       
-      // Weekly prep means there are ANY setups mapped for the week.
       setVaultSetupCount(setupsData?.length || 0)
-
       setTodaySetups(activeSetups.map(d => ({ id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url })))
 
-      // Fetch Logs for the Week
       const now = new Date()
       const dayOfWeek = now.getDay() 
       const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
@@ -207,7 +221,6 @@ export default function PersonalDashboard() {
 
       const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).gte('created_at', startOfWeek.toISOString())
 
-      // Calculate Discipline Progress
       const progress = []
       const daysFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
       
@@ -247,7 +260,6 @@ export default function PersonalDashboard() {
       setWeekProgress(progress)
       setTradesTakenToday(todayTradeCount)
 
-      // 🚨 Only count un-reconciled items that are NOT marked as 'HOLD'
       const pendingReconciliations = logsData?.filter(l => !l.is_reconciled && l.outcome !== 'HOLD') || []
       setPendingReconciliationsCount(pendingReconciliations.length)
 
@@ -286,13 +298,11 @@ export default function PersonalDashboard() {
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
 
-      // Active Focus Toggles
       if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         setIsTodayFocusExpanded(prev => !prev);
       }
 
-      // Quick Links
       if (e.code === 'KeyJ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         router.push('/journal');
@@ -336,7 +346,6 @@ export default function PersonalDashboard() {
     setIsPeeking(false);
   };
 
-  // Drag & Drop Logic for Grid
   const checkOverlap = (rect1: Omit<Widget, 'id' | 'fontIdx'>, rect2: Omit<Widget, 'id' | 'fontIdx'>) => {
     return (
       rect1.x < rect2.x + rect2.w &&
