@@ -3,10 +3,10 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { 
   BookOpen, Activity, AlertTriangle, CheckCircle, 
-  TrendingUp, TrendingDown, Crosshair, Calendar, 
-  Image as ImageIcon, Target, Filter, ChevronRight
+  TrendingUp, Crosshair, ImageIcon, Target, Maximize2
 } from 'lucide-react'
 
 const supabase = createBrowserClient(
@@ -25,6 +25,11 @@ type TradeLog = {
   outcome: 'TP' | 'SL' | 'BE'
   rr: number
   after_image_url: string | null
+  setup_id: string | null
+  user_desk_setups?: {
+    image_url: string | null
+    notes: string | null
+  } | null
 }
 
 export default function JournalClient() {
@@ -32,15 +37,17 @@ export default function JournalClient() {
   const [isLoading, setIsLoading] = useState(true)
   const [activeTradeId, setActiveTradeId] = useState<string | null>(null)
   const [timeFilter, setTimeFilter] = useState<'ALL' | 'MONTH' | 'WEEK'>('ALL')
+  const [viewMode, setViewMode] = useState<'BEFORE' | 'AFTER'>('BEFORE')
 
   useEffect(() => {
     const fetchJournalData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) return
 
+      // 🚨 CRITICAL FIX: The query now joins the user_desk_setups table using the setup_id foreign key
       let query = supabase
         .from('user_desk_logs')
-        .select('*')
+        .select('*, user_desk_setups(image_url, notes)')
         .eq('user_id', session.user.id)
         .eq('is_reconciled', true)
         .order('created_at', { ascending: false })
@@ -58,7 +65,7 @@ export default function JournalClient() {
       const { data } = await query
 
       if (data) {
-        setLogs(data)
+        setLogs(data as any)
         if (data.length > 0) setActiveTradeId(data[0].id)
       }
       setIsLoading(false)
@@ -66,6 +73,11 @@ export default function JournalClient() {
 
     fetchJournalData()
   }, [timeFilter])
+
+  // Reset view mode to "Before" whenever a new trade is selected
+  useEffect(() => {
+    setViewMode('BEFORE')
+  }, [activeTradeId])
 
   // --- DERIVED METRICS ---
   const stats = useMemo(() => {
@@ -84,12 +96,10 @@ export default function JournalClient() {
     const imperfectTrades = logs.filter(l => l.execution_type === 'Imperfect')
     const imperfectRR = imperfectTrades.reduce((sum, l) => sum + (l.rr || 0), 0)
 
-    // Find the biggest behavioral leak
     const reasons = imperfectTrades.map(l => l.reason).filter(Boolean) as string[]
     const leakCounts = reasons.reduce((acc, r) => { acc[r] = (acc[r] || 0) + 1; return acc }, {} as Record<string, number>)
     const topLeak = Object.keys(leakCounts).length > 0 ? Object.keys(leakCounts).reduce((a, b) => leakCounts[a] > leakCounts[b] ? a : b) : 'None'
 
-    // Chart Data (Reverse for chronological order)
     let runningRR = 0
     const chartData = [...logs].reverse().map((log, index) => {
       runningRR += (log.rr || 0)
@@ -118,15 +128,15 @@ export default function JournalClient() {
         
         {/* HEADER & METRICS */}
         <div className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl shrink-0">
-          <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5">
+          <div className="h-10 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-4">
             <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
               <Activity size={14} className="text-blue-500" /> Performance Mirror
             </h2>
-            <div className="flex items-center gap-2 bg-black border border-zinc-800 rounded-lg p-1">
+            <div className="flex items-center gap-1 bg-black border border-zinc-800 rounded p-0.5">
               {['WEEK', 'MONTH', 'ALL'].map(t => (
                 <button 
                   key={t} onClick={() => setTimeFilter(t as any)}
-                  className={`text-[9px] font-bold uppercase tracking-widest px-3 py-1 rounded transition-colors ${timeFilter === t ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+                  className={`text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded transition-colors ${timeFilter === t ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
                   {t}
                 </button>
@@ -135,39 +145,39 @@ export default function JournalClient() {
           </div>
 
           {!stats ? (
-            <div className="p-8 text-center text-zinc-600 text-sm font-bold uppercase tracking-widest">No reconciled data available</div>
+            <div className="p-6 text-center text-zinc-600 text-xs font-bold uppercase tracking-widest">No reconciled data available</div>
           ) : (
-            <div className="p-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-black border border-zinc-800/80 rounded-lg p-3 flex flex-col shadow-inner">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Net Yield</span>
-                <div className="flex items-end gap-2">
-                  <span className={`text-2xl font-black tracking-tighter ${stats.netRR >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            <div className="p-3 grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="bg-black border border-zinc-800/80 rounded-lg p-2.5 flex flex-col shadow-inner">
+                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-0.5">Net Yield</span>
+                <div className="flex items-end gap-1.5">
+                  <span className={`text-xl font-black tracking-tighter ${stats.netRR >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                     {stats.netRR > 0 ? '+' : ''}{stats.netRR.toFixed(2)}R
                   </span>
                 </div>
               </div>
               
-              <div className="bg-black border border-zinc-800/80 rounded-lg p-3 flex flex-col shadow-inner">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Strike Rate</span>
-                <div className="flex items-end gap-2">
-                  <span className="text-2xl font-black tracking-tighter text-white">{stats.winRate}%</span>
-                  <span className="text-[10px] font-bold text-zinc-500 mb-1.5 uppercase">/{stats.totalTrades} Trades</span>
+              <div className="bg-black border border-zinc-800/80 rounded-lg p-2.5 flex flex-col shadow-inner">
+                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-0.5">Strike Rate</span>
+                <div className="flex items-end gap-1.5">
+                  <span className="text-xl font-black tracking-tighter text-white">{stats.winRate}%</span>
+                  <span className="text-[9px] font-bold text-zinc-500 mb-1 uppercase">/{stats.totalTrades}</span>
                 </div>
               </div>
 
-              <div className="bg-black border border-zinc-800/80 rounded-lg p-3 flex flex-col shadow-inner">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Discipline Index</span>
-                <div className="flex items-end gap-2">
-                  <span className="text-2xl font-black tracking-tighter text-blue-400">{stats.perfectRate}%</span>
-                  <span className="text-[10px] font-bold text-zinc-500 mb-1.5 uppercase">Perfect Ex.</span>
+              <div className="bg-black border border-zinc-800/80 rounded-lg p-2.5 flex flex-col shadow-inner">
+                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-0.5">Discipline Index</span>
+                <div className="flex items-end gap-1.5">
+                  <span className="text-xl font-black tracking-tighter text-blue-400">{stats.perfectRate}%</span>
+                  <span className="text-[9px] font-bold text-zinc-500 mb-1 uppercase">Perfect</span>
                 </div>
               </div>
 
-              <div className="bg-black border border-zinc-800/80 rounded-lg p-3 flex flex-col shadow-inner border-l-2 border-l-red-500/30">
-                <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest mb-1">Primary Leak</span>
+              <div className="bg-black border border-zinc-800/80 rounded-lg p-2.5 flex flex-col shadow-inner border-l-2 border-l-red-500/30">
+                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mb-0.5">Primary Leak</span>
                 <div className="flex flex-col justify-center flex-1">
-                  <span className="text-sm font-black tracking-wider text-red-400 uppercase">{stats.topLeak}</span>
-                  <span className="text-[10px] font-bold text-zinc-500 uppercase">Cost: {stats.imperfectRR.toFixed(2)}R</span>
+                  <span className="text-xs font-black tracking-wider text-red-400 uppercase truncate" title={stats.topLeak}>{stats.topLeak}</span>
+                  <span className="text-[9px] font-bold text-zinc-500 uppercase">Cost: {stats.imperfectRR.toFixed(2)}R</span>
                 </div>
               </div>
             </div>
@@ -176,13 +186,13 @@ export default function JournalClient() {
 
         {/* CHART SECTION */}
         {stats && stats.chartData.length > 0 && (
-          <div className="h-40 bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shrink-0 relative shadow-2xl">
-            <div className="absolute top-3 left-4 z-10 flex items-center gap-2">
-              <TrendingUp size={12} className="text-zinc-500" />
-              <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Cumulative RR</span>
+          <div className="h-32 bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shrink-0 relative shadow-2xl">
+            <div className="absolute top-2 left-3 z-10 flex items-center gap-1.5">
+              <TrendingUp size={10} className="text-zinc-500" />
+              <span className="text-[8px] font-bold uppercase tracking-widest text-zinc-500">Cumulative RR</span>
             </div>
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats.chartData} margin={{ top: 20, right: 0, left: 0, bottom: 0 }}>
+              <AreaChart data={stats.chartData} margin={{ top: 15, right: 0, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorRR" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
@@ -192,7 +202,7 @@ export default function JournalClient() {
                 <XAxis dataKey="name" hide />
                 <YAxis hide domain={['auto', 'auto']} />
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#09090b', borderColor: '#27272a', borderRadius: '8px', fontSize: '11px', fontWeight: 'bold' }}
+                  contentStyle={{ backgroundColor: '#09090b', borderColor: '#27272a', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold' }}
                   itemStyle={{ color: '#fff' }}
                   formatter={(value: number) => [`${value}R`, 'Cumulative']}
                   labelFormatter={(label, payload) => payload?.[0]?.payload?.symbol || label}
@@ -206,21 +216,21 @@ export default function JournalClient() {
 
         {/* TRADE BLOTTER */}
         <div className="flex-1 bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl flex flex-col min-h-0">
-          <div className="h-10 border-b border-zinc-800 bg-zinc-900/40 flex items-center px-5 shrink-0">
+          <div className="h-10 border-b border-zinc-800 bg-zinc-900/40 flex items-center px-4 shrink-0">
             <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
               <BookOpen size={14} className="text-purple-500" /> Trade Blotter
             </h2>
           </div>
           
-          <div className="flex-1 overflow-auto custom-scrollbar p-2">
-            <table className="w-full text-left text-xs whitespace-nowrap">
+          <div className="flex-1 overflow-auto custom-scrollbar p-1">
+            <table className="w-full text-left text-[11px] whitespace-nowrap">
               <thead className="sticky top-0 bg-zinc-950/95 backdrop-blur z-10 text-[9px] font-bold uppercase tracking-widest text-zinc-500 border-b border-zinc-800">
                 <tr>
-                  <th className="px-4 py-3 font-medium">Date</th>
-                  <th className="px-4 py-3 font-medium">Asset</th>
-                  <th className="px-4 py-3 font-medium">Playbook</th>
-                  <th className="px-4 py-3 font-medium text-center">Execution</th>
-                  <th className="px-4 py-3 font-medium text-right">Result</th>
+                  <th className="px-3 py-2 font-medium">Date</th>
+                  <th className="px-3 py-2 font-medium">Asset</th>
+                  <th className="px-3 py-2 font-medium">Playbook</th>
+                  <th className="px-3 py-2 font-medium text-center">Execution</th>
+                  <th className="px-3 py-2 font-medium text-right">Result</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-800/50">
@@ -233,23 +243,23 @@ export default function JournalClient() {
                       onClick={() => setActiveTradeId(log.id)}
                       className={`cursor-pointer transition-colors ${activeTradeId === log.id ? 'bg-zinc-800/50' : 'hover:bg-zinc-900/50'}`}
                     >
-                      <td className="px-4 py-3 text-zinc-400 font-mono text-[10px]">{date}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
+                      <td className="px-3 py-2.5 text-zinc-400 font-mono text-[9px]">{date}</td>
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-1.5">
                           <span className="font-bold text-zinc-200">{log.symbol}</span>
-                          <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded border ${log.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>{log.direction}</span>
+                          <span className={`text-[8px] font-bold px-1 py-0.5 rounded border ${log.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>{log.direction}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-zinc-400 text-[10px] uppercase font-bold tracking-wider">{log.playbook}</td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase px-2 py-0.5 rounded ${log.execution_type === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                          {log.execution_type === 'Perfect' ? <CheckCircle size={10}/> : <AlertTriangle size={10}/>}
+                      <td className="px-3 py-2.5 text-zinc-400 text-[9px] uppercase font-bold tracking-wider">{log.playbook}</td>
+                      <td className="px-3 py-2.5 text-center">
+                        <span className={`inline-flex items-center gap-1 text-[8px] font-bold uppercase px-1.5 py-0.5 rounded ${log.execution_type === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                          {log.execution_type === 'Perfect' ? <CheckCircle size={9}/> : <AlertTriangle size={9}/>}
                           {log.execution_type}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-black border border-zinc-800 ${isWin ? 'text-emerald-400' : log.rr < 0 ? 'text-red-400' : 'text-zinc-400'}`}>{log.outcome}</span>
+                      <td className="px-3 py-2.5 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-black border border-zinc-800 ${isWin ? 'text-emerald-400' : log.rr < 0 ? 'text-red-400' : 'text-zinc-400'}`}>{log.outcome}</span>
                           <span className={`font-mono font-bold ${isWin ? 'text-emerald-400' : log.rr < 0 ? 'text-red-400' : 'text-zinc-400'}`}>
                             {isWin ? '+' : ''}{log.rr.toFixed(2)}R
                           </span>
@@ -259,7 +269,7 @@ export default function JournalClient() {
                   )
                 })}
                 {logs.length === 0 && (
-                  <tr><td colSpan={5} className="px-4 py-10 text-center text-zinc-600 text-xs uppercase tracking-widest font-bold">No entries found</td></tr>
+                  <tr><td colSpan={5} className="px-4 py-8 text-center text-zinc-600 text-[10px] uppercase tracking-widest font-bold">No entries found</td></tr>
                 )}
               </tbody>
             </table>
@@ -268,89 +278,125 @@ export default function JournalClient() {
       </div>
 
       {/* RIGHT PANE: Trade Deep Dive */}
-      <div className="flex-1 lg:flex-[1.2] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl min-h-[400px] lg:min-h-0 relative">
+      <div className="flex-1 lg:flex-[1.2] flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl min-h-[500px] lg:min-h-0 relative">
         <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-zinc-600/50 to-transparent z-10"></div>
         
         {activeTrade ? (
           <>
-            {/* Action Bar */}
-            <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
-              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                <Target size={14} className="text-zinc-400" /> Trade Autopsy
+            {/* Compressed Action Bar */}
+            <div className="h-10 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-4 shrink-0">
+              <h2 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <Target size={12} className="text-zinc-400" /> Autopsy
               </h2>
-              <span className="text-[10px] font-mono text-zinc-500">ID: {activeTrade.id.split('-')[0]}</span>
+              <span className="text-[9px] font-mono text-zinc-500">ID: {activeTrade.id.split('-')[0]}</span>
             </div>
 
-            <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
               
-              {/* Autopsy Header */}
-              <div className="p-5 border-b border-zinc-800/50 bg-[#050505] flex flex-col gap-4 shrink-0">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h1 className="text-2xl font-black text-white tracking-wider flex items-center gap-3">
+              {/* Compressed Autopsy Header */}
+              <div className="p-3 border-b border-zinc-800/50 bg-[#050505] flex flex-col gap-2 shrink-0">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <h1 className="text-lg font-black text-white tracking-wider">
                       {activeTrade.symbol}
-                      <span className={`text-[10px] font-bold px-2 py-1 rounded border tracking-widest ${activeTrade.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
-                        {activeTrade.direction}
-                      </span>
                     </h1>
-                    <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-widest mt-1">{activeTrade.playbook}</p>
-                  </div>
-                  <div className="text-right flex flex-col items-end">
-                    <span className={`text-xl font-mono font-black ${activeTrade.rr > 0 ? 'text-emerald-400' : activeTrade.rr < 0 ? 'text-red-400' : 'text-zinc-400'}`}>
-                      {activeTrade.rr > 0 ? '+' : ''}{activeTrade.rr.toFixed(2)}R
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border tracking-widest ${activeTrade.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
+                      {activeTrade.direction}
                     </span>
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{activeTrade.outcome} Outcome</span>
+                    <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest px-1">{activeTrade.playbook}</span>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  <div className="bg-black border border-zinc-800 rounded-lg p-3 flex flex-col">
-                    <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1">Execution Quality</span>
-                    <span className={`text-xs font-bold uppercase flex items-center gap-1.5 ${activeTrade.execution_type === 'Perfect' ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {activeTrade.execution_type === 'Perfect' ? <CheckCircle size={12}/> : <AlertTriangle size={12}/>}
+                  <div className="flex items-center gap-3">
+                    <span className={`text-[10px] font-bold uppercase flex items-center gap-1 ${activeTrade.execution_type === 'Perfect' ? 'text-emerald-400' : 'text-red-400'}`}>
+                      {activeTrade.execution_type === 'Perfect' ? <CheckCircle size={10}/> : <AlertTriangle size={10}/>}
                       {activeTrade.execution_type}
                     </span>
+                    <span className={`text-sm font-mono font-black ${activeTrade.rr > 0 ? 'text-emerald-400' : activeTrade.rr < 0 ? 'text-red-400' : 'text-zinc-400'}`}>
+                      {activeTrade.rr > 0 ? '+' : ''}{activeTrade.rr.toFixed(2)}R
+                    </span>
                   </div>
-                  
-                  {activeTrade.execution_type === 'Imperfect' && activeTrade.reason && (
-                    <div className="bg-black border border-red-500/20 rounded-lg p-3 flex flex-col">
-                      <span className="text-[9px] font-bold text-red-500/60 uppercase tracking-widest mb-1">Error Catalyst</span>
-                      <span className="text-xs font-bold text-red-400 uppercase">{activeTrade.reason}</span>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {/* Chart Review */}
-              <div className="flex-1 flex flex-col p-5 gap-4 min-h-0">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
-                    <ImageIcon size={12} /> Post-Trade Reality
-                  </span>
+              {/* Chart Review & Notes Area */}
+              <div className="flex-1 flex flex-col p-3 gap-3 min-h-0 bg-[#030303]">
+                
+                {/* 🚨 THE FIX: Before/After Toggle & Zoomable Image Area */}
+                <div className="flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-1 bg-black border border-zinc-800 rounded p-1 shadow-inner">
+                    <button 
+                      onClick={() => setViewMode('BEFORE')} 
+                      className={`text-[9px] font-bold uppercase tracking-widest px-4 py-1.5 rounded transition-all ${viewMode === 'BEFORE' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                      Intent (Before)
+                    </button>
+                    <button 
+                      onClick={() => setViewMode('AFTER')} 
+                      className={`text-[9px] font-bold uppercase tracking-widest px-4 py-1.5 rounded transition-all ${viewMode === 'AFTER' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+                    >
+                      Reality (After)
+                    </button>
+                  </div>
+                  <span className="text-[9px] text-zinc-600 uppercase font-bold flex items-center gap-1"><Maximize2 size={10}/> Scroll to Zoom</span>
                 </div>
                 
-                <div className="flex-1 bg-[#0a0a0a] border border-zinc-800 rounded-xl overflow-hidden relative shadow-inner min-h-[250px] flex items-center justify-center">
-                  {activeTrade.after_image_url ? (
-                    <img 
-                      src={activeTrade.after_image_url} 
-                      alt="Post Trade Chart" 
-                      className="absolute inset-0 w-full h-full object-contain p-2 hover:scale-[1.02] transition-transform duration-300"
+                {/* 🚨 THE FIX: Dynamic Image Display with Pan & Zoom */}
+                <div className="flex-1 bg-[#0a0a0a] border border-zinc-800 rounded-xl overflow-hidden relative shadow-inner min-h-0 flex items-center justify-center group">
+                  <TransformWrapper
+                    key={`${activeTrade.id}-${viewMode}`}
+                    initialScale={1}
+                    minScale={0.5}
+                    maxScale={8}
+                    wheel={{ step: 0.1 }}
+                  >
+                    <TransformComponent wrapperStyle={{ width: '100%', height: '100%' }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {viewMode === 'BEFORE' ? (
+                        activeTrade.user_desk_setups?.image_url ? (
+                          <img src={activeTrade.user_desk_setups.image_url} alt="Intent Chart" className="max-w-full max-h-full object-contain p-2 cursor-grab active:cursor-grabbing" />
+                        ) : (
+                          <div className="flex flex-col items-center text-zinc-700"><ImageIcon size={24} className="mb-2 opacity-30" /><span className="text-[9px] font-bold uppercase tracking-widest">No Intent Chart</span></div>
+                        )
+                      ) : (
+                        activeTrade.after_image_url ? (
+                          <img src={activeTrade.after_image_url} alt="Reality Chart" className="max-w-full max-h-full object-contain p-2 cursor-grab active:cursor-grabbing" />
+                        ) : (
+                          <div className="flex flex-col items-center text-zinc-700"><ImageIcon size={24} className="mb-2 opacity-30" /><span className="text-[9px] font-bold uppercase tracking-widest">No Reality Chart</span></div>
+                        )
+                      )}
+                    </TransformComponent>
+                  </TransformWrapper>
+                </div>
+
+                {/* 🚨 THE FIX: Dynamic Notes Display */}
+                <div className="h-32 sm:h-40 bg-[#0a0a0a] border border-zinc-800 rounded-xl p-4 overflow-y-auto custom-scrollbar shrink-0 shadow-inner">
+                  <h3 className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 border-b border-zinc-800/50 pb-1">
+                    {viewMode === 'BEFORE' ? 'Structural Thesis' : 'Execution Catalysts'}
+                  </h3>
+                  
+                  {viewMode === 'BEFORE' ? (
+                    <div 
+                      className="text-xs text-zinc-300 leading-relaxed font-medium"
+                      dangerouslySetInnerHTML={{ __html: activeTrade.user_desk_setups?.notes || '<p class="text-zinc-600 italic">No thesis notes logged prior to entry.</p>' }} 
                     />
                   ) : (
-                    <div className="flex flex-col items-center justify-center text-zinc-700">
-                      <ImageIcon size={32} className="mb-2 opacity-30" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">No Reality Chart Logged</span>
+                    <div className="text-xs text-zinc-300 leading-relaxed font-medium">
+                      {activeTrade.reason ? (
+                        <span className={`px-2 py-1 rounded bg-black border font-bold uppercase ${activeTrade.execution_type === 'Perfect' ? 'border-emerald-500/20 text-emerald-400' : 'border-red-500/20 text-red-400'}`}>
+                          {activeTrade.reason}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-600 italic">No execution catalysts logged.</span>
+                      )}
                     </div>
                   )}
                 </div>
-              </div>
 
+              </div>
             </div>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-zinc-700 p-8 text-center">
-            <Target size={40} className="mb-4 opacity-20" />
-            <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Select a trade to view autopsy</span>
+            <Target size={32} className="mb-3 opacity-20" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Select a trade to view autopsy</span>
           </div>
         )}
       </div>
