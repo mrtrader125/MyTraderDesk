@@ -260,7 +260,8 @@ export default function PersonalDashboard() {
       setWeekProgress(progress)
       setTradesTakenToday(todayTradeCount)
 
-      const pendingReconciliations = logsData?.filter(l => !l.is_reconciled && l.outcome !== 'HOLD') || []
+      // 🚨 Calculate only un-held current-week reconciliations
+      const pendingReconciliations = logsData?.filter(l => !l.is_reconciled && l.outcome !== 'HOLD' && new Date(l.created_at).getTime() >= startOfWeek.getTime()) || []
       setPendingReconciliationsCount(pendingReconciliations.length)
 
       setIsLoading(false)
@@ -298,11 +299,13 @@ export default function PersonalDashboard() {
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
 
+      // Active Focus Toggles
       if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         setIsTodayFocusExpanded(prev => !prev);
       }
 
+      // Quick Links
       if (e.code === 'KeyJ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         router.push('/journal');
@@ -346,6 +349,7 @@ export default function PersonalDashboard() {
     setIsPeeking(false);
   };
 
+  // Drag & Drop Logic for Grid
   const checkOverlap = (rect1: Omit<Widget, 'id' | 'fontIdx'>, rect2: Omit<Widget, 'id' | 'fontIdx'>) => {
     return (
       rect1.x < rect2.x + rect2.w &&
@@ -468,8 +472,9 @@ export default function PersonalDashboard() {
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   
-  // 6 is Saturday, 0 is Sunday
+  // 🚨 Time Calculations
   const isWeekendNow = new Date().getDay() === 6 || new Date().getDay() === 0 
+  const isVaultLocked = isWeekendNow && pendingReconciliationsCount > 0;
   const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
 
   const formatTime = (timeStr: string, fontIdx: number) => {
@@ -504,7 +509,6 @@ export default function PersonalDashboard() {
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
             {/* --- TOP SECTION (Mobile: Stacked, Desktop: Side-by-Side) --- */}
-            {/* 🚨 Mobile structural changes: flex-col, h-full, scrolling allowed */}
             <div className="flex flex-col lg:flex-row h-full lg:h-1/2 shrink-0 p-3 sm:p-4 gap-4 min-h-0 overflow-y-auto lg:overflow-hidden">
               
               {/* --- WIDGET GRID (Mobile: Bottom, Desktop: Left) --- */}
@@ -642,14 +646,16 @@ export default function PersonalDashboard() {
                   {/* Vertical Connecting Line */}
                   <div className="absolute left-[13px] top-2 bottom-6 w-px bg-zinc-800/60 z-0" />
 
-                  {/* Phase 1: Macro Prep */}
-                  <div className="flex items-start gap-4 relative z-10 mb-6">
-                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${vaultSetupCount > 0 ? 'border-emerald-500 text-emerald-400' : 'border-zinc-700 text-transparent'}`}>
-                      {vaultSetupCount > 0 && <CheckCircle2 size={12} />}
+                  {/* 🚨 Phase 1: Macro Prep (Accountability Gated) */}
+                  <div className={`flex items-start gap-4 relative z-10 mb-6 ${isVaultLocked ? 'opacity-60' : ''}`}>
+                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${vaultSetupCount > 0 ? 'border-emerald-500 text-emerald-400' : isVaultLocked ? 'border-red-500/50 text-red-500/50' : 'border-zinc-700 text-transparent'}`}>
+                      {vaultSetupCount > 0 ? <CheckCircle2 size={12} /> : isVaultLocked ? <Lock size={10} /> : null}
                     </div>
                     <div className="flex flex-col">
                       <span className={`text-xs font-bold tracking-wide ${vaultSetupCount > 0 ? 'text-zinc-500' : 'text-zinc-200'}`}>Weekly Macro Prep</span>
-                      <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">Sunday Filter (Max 15-20)</span>
+                      <span className={`text-[9px] font-medium uppercase tracking-widest mt-0.5 ${isVaultLocked ? 'text-red-400' : 'text-zinc-500'}`}>
+                        {isVaultLocked ? 'Locked: Complete Wind-up First' : 'Sunday Filter (Max 15-20)'}
+                      </span>
                     </div>
                   </div>
 
@@ -768,25 +774,35 @@ export default function PersonalDashboard() {
                       <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Active</span>
                     </div>
                   ) : (
-                    todaySetups.map(setup => (
-                      <div 
-                        key={`today-${setup.id}`}
-                        onClick={() => setActiveTodayId(setup.id)}
-                        className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group ${
-                          activeTodayId === setup.id 
-                            ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
-                            : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
-                        }`}
-                      >
-                        <span className={`text-sm font-bold tracking-wider mb-1 ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
-                          {setup.symbol}
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
-                          {setup.playbook && <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook}</span>}
+                    todaySetups.map(setup => {
+                      const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
+                      return (
+                        <div 
+                          key={`today-${setup.id}`}
+                          onClick={() => setActiveTodayId(setup.id)}
+                          className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group ${
+                            activeTodayId === setup.id 
+                              ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
+                              : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center mb-1">
+                            <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                              {setup.symbol}
+                            </span>
+                            {canRemove && (
+                              <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" title="Remove (1hr limit)">
+                                <ArrowLeft size={12} />
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
+                            {setup.playbook && <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook}</span>}
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      )
+                    })
                   )}
                 </div>
 
