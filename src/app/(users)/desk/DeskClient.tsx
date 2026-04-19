@@ -767,83 +767,88 @@ function ReconciliationItem({ trade, onSave, onSplit, user }: { trade: any, onSa
           <option value="HOLD">Hold (Carry)</option>
         </select>
         
-        <div className="relative w-full sm:w-24">
-          <input 
-            type="number" 
-            value={rr} 
-            onChange={e => setRr(e.target.value)} 
-            placeholder="0.0" 
-            className={`w-full bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-blue-500`} 
-          />
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase">RR</span>
-        </div>
+        {/* 🚨 This hides the RR and Image inputs if the HOLD warning is active */}
+        {!showHoldConfirm && (
+          <>
+            <div className="relative w-full sm:w-24 shrink-0">
+              <input 
+                type="number" 
+                value={rr} 
+                onChange={e => setRr(e.target.value)} 
+                placeholder="0.0" 
+                className={`w-full bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-blue-500`} 
+              />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase">RR</span>
+            </div>
 
-        <div className="relative flex-1 flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1 pr-2 focus-within:border-blue-500 transition-all min-w-0">
-           {afterPreview ? (
-             <div className="flex-1 flex items-center gap-2 pl-2 overflow-hidden">
-               <img 
-                 src={afterPreview} 
-                 loading="eager" 
-                 decoding="async"
-                 className="h-6 w-6 object-cover rounded border border-zinc-700 shrink-0" 
-               />
-               <span className="text-[10px] font-bold text-zinc-400 truncate tracking-widest uppercase">Image Attached</span>
-               <button 
-                 onClick={() => { setAfterFile(null); setAfterPreview(null); }} 
-                 className="ml-auto text-zinc-500 hover:text-red-400 p-1"
-               >
-                 <X size={12}/>
-               </button>
-             </div>
-           ) : (
-             <>
-               <LinkIcon size={12} className="text-zinc-500 ml-2 shrink-0" />
-               <input 
-                 type="text" 
-                 value={afterInput} 
-                 onChange={e => setAfterInput(e.target.value)} 
-                 placeholder="TV URL or Paste Image..." 
-                 className="w-full bg-transparent border-none text-[10px] font-bold text-zinc-300 outline-none placeholder:text-zinc-600 px-2" 
-               />
-               <button 
-                 onClick={handlePaste} 
-                 className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" 
-                 title="Paste URL or Image"
-               >
-                 <Clipboard size={12}/>
-               </button>
-               <button 
-                 onClick={() => fileInputRef.current?.click()} 
-                 className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" 
-                 title="Upload Image"
-               >
-                 <ImageIcon size={12}/>
-               </button>
-               <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-             </>
-           )}
-        </div>
+            <div className="relative flex-1 flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1 pr-2 focus-within:border-blue-500 transition-all min-w-0">
+               {afterPreview ? (
+                 <div className="flex-1 flex items-center gap-2 pl-2 overflow-hidden">
+                   <img 
+                     src={afterPreview} 
+                     loading="eager" 
+                     decoding="async"
+                     className="h-6 w-6 object-cover rounded border border-zinc-700 shrink-0" 
+                   />
+                   <span className="text-[10px] font-bold text-zinc-400 truncate tracking-widest uppercase">Image Attached</span>
+                   <button 
+                     onClick={() => { setAfterFile(null); setAfterPreview(null); }} 
+                     className="ml-auto text-zinc-500 hover:text-red-400 p-1"
+                   >
+                     <X size={12}/>
+                   </button>
+                 </div>
+               ) : (
+                 <>
+                   <LinkIcon size={12} className="text-zinc-500 ml-2 shrink-0" />
+                   <input 
+                     type="text" 
+                     value={afterInput} 
+                     onChange={e => setAfterInput(e.target.value)} 
+                     placeholder="TV URL or Paste Image..." 
+                     className="w-full bg-transparent border-none text-[10px] font-bold text-zinc-300 outline-none placeholder:text-zinc-600 px-2" 
+                   />
+                   <button 
+                     onClick={handlePaste} 
+                     className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" 
+                     title="Paste URL or Image"
+                   >
+                     <Clipboard size={12}/>
+                   </button>
+                   <button 
+                     onClick={() => fileInputRef.current?.click()} 
+                     className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" 
+                     title="Upload Image"
+                   >
+                     <ImageIcon size={12}/>
+                   </button>
+                   <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                 </>
+               )}
+            </div>
+          </>
+        )}
 
-        {/* 🚨 HOLD CONFIRMATION UI */}
+        {/* 🚨 The Settle / Confirmation Buttons */}
         {showHoldConfirm ? (
-          <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto shrink-0 animate-in fade-in zoom-in-95 duration-200">
-            <span className="text-[9px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden xl:block mr-1">
+          <div className="flex items-center justify-end gap-3 flex-1 animate-in fade-in zoom-in-95 duration-200 min-w-0">
+            <span className="text-[10px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight mr-2 hidden sm:block">
               Are you actually holding<br/>or avoiding a loss?
             </span>
-            <button onClick={() => setShowHoldConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors">Cancel</button>
-            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)]">
+            <button onClick={() => setShowHoldConfirm(false)} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shrink-0">Cancel</button>
+            <button onClick={executeSave} disabled={isSaving} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)] shrink-0">
               {isSaving ? '...' : 'Confirm'}
             </button>
           </div>
         ) : (
-          <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
+          <div className="flex gap-2 w-full sm:w-auto shrink-0">
             <button onClick={() => onSplit(trade.id)} className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors border border-zinc-800 shrink-0" title="Split Position (Partial Close)">
                <Copy size={14} />
             </button>
             <button 
               disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} 
               onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} 
-              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors shrink-0"
+              className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors shrink-0"
             >
               {isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}
             </button>
