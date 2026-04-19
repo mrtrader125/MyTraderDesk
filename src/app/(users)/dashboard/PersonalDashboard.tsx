@@ -86,28 +86,36 @@ export default function PersonalDashboard() {
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
 
-  // 🚨 2. ROBUST TIME ENGINE (Fixes the Interval Closure Trap)
+  // 🚨 2. ROBUST TIME ENGINE 
   const [timeOffset, setTimeOffset] = useState(0);
-  const timeOffsetRef = useRef(0); // Ensures setInterval always reads the latest offset
+  const timeOffsetRef = useRef(0);
+  
+  // 🚨 FLAW 1 FIX: Dynamic Timezone resolution (Profile > Browser Local)
+  const [userTimezone, setUserTimezone] = useState(
+    typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC'
+  );
 
   const getTrueUTC = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
   
-  const getISTDate = useCallback(() => {
+  const getBaseDate = useCallback(() => {
     const utc = getTrueUTC();
-    return new Date(utc.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-  }, [getTrueUTC]);
+    return new Date(utc.toLocaleString('en-US', { timeZone: userTimezone }));
+  }, [getTrueUTC, userTimezone]);
 
-  const adjustDbToIST = (utcString: string) => new Date(new Date(utcString).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-  const getISTDateString = useCallback((timestamp: number) => {
-    return new Date(new Date(timestamp).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })).toDateString();
-  }, []);
+  const adjustDbToBase = useCallback((utcString: string) => {
+    return new Date(new Date(utcString).toLocaleString('en-US', { timeZone: userTimezone }));
+  }, [userTimezone]);
+  
+  const getBaseDateString = useCallback((timestamp: number) => {
+    return new Date(new Date(timestamp).toLocaleString('en-US', { timeZone: userTimezone })).toDateString();
+  }, [userTimezone]);
 
   const todaySetups = setups.filter(s => s.isToday)
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
 
-  const pushesToday = setups.filter(s => s.addedToTodayAt && getISTDateString(s.addedToTodayAt) === getISTDate().toDateString()).length;
+  const pushesToday = setups.filter(s => s.addedToTodayAt && getBaseDateString(s.addedToTodayAt) === getBaseDate().toDateString()).length;
   
-  const now = getISTDate()
+  const now = getBaseDate()
   const dayOfWeek = now.getDay() 
   const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 
   const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
@@ -179,11 +187,9 @@ export default function PersonalDashboard() {
   useEffect(() => {
     setMounted(true)
     const timer = setInterval(() => {
-      // Local time for top-left widget display
       const currentLocal = new Date();
       setTime(currentLocal);
       
-      // True UTC for Interbank Session logic (Unhackable)
       const trueUTC = new Date(Date.now() + timeOffsetRef.current);
       const utcHour = trueUTC.getUTCHours();
       
@@ -212,107 +218,136 @@ export default function PersonalDashboard() {
     return () => clearInterval(timer)
   }, [])
 
+  // 🚨 Extracted Data Fetcher for Realtime Hook capability
+  const loadDashboardData = useCallback(async (activeUser: any) => {
+    const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', activeUser.id).order('added_to_today_at', { ascending: false })
+    
+    if (setupsData) {
+      const todayStr = getBaseDate().toDateString();
+      const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && adjustDbToBase(s.added_to_today_at).toDateString() !== todayStr);
+      
+      if (expiredSetups.length > 0) {
+        const expiredIds = expiredSetups.map(s => s.id);
+        await supabase.from('user_desk_setups').update({ is_today: false, added_to_today_at: null }).in('id', expiredIds);
+        expiredSetups.forEach(s => { s.is_today = false; s.added_to_today_at = null; });
+      }
+    }
+
+    const parsedSetups = setupsData ? setupsData.map(d => ({ 
+      id: d.id, 
+      symbol: d.symbol, 
+      direction: d.direction, 
+      playbook: d.playbook, 
+      notes: d.notes, 
+      imageUrl: d.image_url, 
+      isToday: d.is_today, 
+      addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null
+    })) : [];
+    
+    setSetups(parsedSetups);
+    setVaultSetupCount(parsedSetups.length)
+
+    const safeFetchDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
+    const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', activeUser.id).gte('created_at', safeFetchDate)
+
+    const initNow = getBaseDate();
+    const initDayOfWeek = initNow.getDay();
+    const initDiffToMon = initNow.getDate() - initDayOfWeek + (initDayOfWeek === 0 ? -6 : 1);
+    const startOfWeekBase = new Date(initNow.getTime());
+    startOfWeekBase.setDate(initDiffToMon);
+    startOfWeekBase.setHours(0, 0, 0, 0);
+
+    const progress = []
+    const daysFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    let todayTradeCount = 0;
+
+    for (let i = 0; i < 5; i++) {
+      const targetDate = new Date(startOfWeekBase)
+      targetDate.setDate(startOfWeekBase.getDate() + i)
+      const dateString = targetDate.toDateString()
+      const todayString = getBaseDate().toDateString()
+      
+      const dayLogs = logsData?.filter(l => adjustDbToBase(l.created_at).toDateString() === dateString) || []
+
+      let status = 'pending'
+      let isPast = false
+      let isToday = false
+      
+      if (dateString === todayString) {
+        isToday = true
+        todayTradeCount = dayLogs.length
+        if (dayLogs.length > 0) {
+          const hasImperfect = dayLogs.some(l => l.execution_type === 'Imperfect')
+          status = hasImperfect ? 'imperfect' : 'perfect'
+        } else {
+          status = 'current'
+        }
+      } else if (targetDate.getTime() < getBaseDate().getTime() && dateString !== todayString) {
+        isPast = true
+        if (dayLogs.length === 0) {
+          status = 'missed'
+        } else {
+          status = dayLogs.some(l => l.execution_type === 'Imperfect') ? 'imperfect' : 'perfect'
+        }
+      }
+      progress.push({ day: daysFull[i], status, isPast, isToday })
+    }
+    
+    setWeekProgress(progress)
+    setTradesTakenToday(todayTradeCount)
+
+    const pendingReconciliations = logsData?.filter(l => !l.is_reconciled && l.outcome !== 'HOLD' && adjustDbToBase(l.created_at).getTime() >= startOfWeekBase.getTime()) || []
+    setPendingReconciliationsCount(pendingReconciliations.length)
+
+    setIsLoading(false)
+  }, [getBaseDate, adjustDbToBase]);
+
   useEffect(() => {
-    const fetchDashboardData = async () => {
+    const init = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) {
         setIsLoading(false)
         return
       }
-      const user = session.user
-      setUser(user)
+      setUser(session.user)
 
-      const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('added_to_today_at', { ascending: false })
-      
-      if (setupsData) {
-        const todayStr = getISTDate().toDateString();
-        const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && adjustDbToIST(s.added_to_today_at).toDateString() !== todayStr);
-        
-        if (expiredSetups.length > 0) {
-          const expiredIds = expiredSetups.map(s => s.id);
-          await supabase.from('user_desk_setups').update({ is_today: false, added_to_today_at: null }).in('id', expiredIds);
-          expiredSetups.forEach(s => { s.is_today = false; s.added_to_today_at = null; });
-        }
+      if (session.user.user_metadata?.desk_timezone) {
+        setUserTimezone(session.user.user_metadata.desk_timezone)
       }
 
-      const parsedSetups = setupsData ? setupsData.map(d => ({ 
-        id: d.id, 
-        symbol: d.symbol, 
-        direction: d.direction, 
-        playbook: d.playbook, 
-        notes: d.notes, 
-        imageUrl: d.image_url, 
-        isToday: d.is_today, 
-        addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null
-      })) : [];
-      
-      setSetups(parsedSetups);
-      setVaultSetupCount(parsedSetups.length)
-
-      // Fetch last 10 days of logs to guarantee we don't miss anything due to UTC timezone offsets
-      const safeFetchDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).gte('created_at', safeFetchDate)
-
-      const initNow = getISTDate();
-      const initDayOfWeek = initNow.getDay();
-      const initDiffToMon = initNow.getDate() - initDayOfWeek + (initDayOfWeek === 0 ? -6 : 1);
-      const startOfWeekIST = new Date(initNow.getTime());
-      startOfWeekIST.setDate(initDiffToMon);
-      startOfWeekIST.setHours(0, 0, 0, 0);
-
-      const progress = []
-      const daysFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-      let todayTradeCount = 0;
-
-      for (let i = 0; i < 5; i++) {
-        const targetDate = new Date(startOfWeekIST)
-        targetDate.setDate(startOfWeekIST.getDate() + i)
-        const dateString = targetDate.toDateString()
-        const todayString = getISTDate().toDateString()
-        
-        const dayLogs = logsData?.filter(l => adjustDbToIST(l.created_at).toDateString() === dateString) || []
-
-        let status = 'pending'
-        let isPast = false
-        let isToday = false
-        
-        if (dateString === todayString) {
-          isToday = true
-          todayTradeCount = dayLogs.length
-          if (dayLogs.length > 0) {
-            const hasImperfect = dayLogs.some(l => l.execution_type === 'Imperfect')
-            status = hasImperfect ? 'imperfect' : 'perfect'
-          } else {
-            status = 'current'
-          }
-        } else if (targetDate.getTime() < getISTDate().getTime() && dateString !== todayString) {
-          isPast = true
-          if (dayLogs.length === 0) {
-            status = 'missed'
-          } else {
-            status = dayLogs.some(l => l.execution_type === 'Imperfect') ? 'imperfect' : 'perfect'
-          }
-        }
-        progress.push({ day: daysFull[i], status, isPast, isToday })
-      }
-      
-      setWeekProgress(progress)
-      setTradesTakenToday(todayTradeCount)
-
-      const pendingReconciliations = logsData?.filter(l => !l.is_reconciled && l.outcome !== 'HOLD' && adjustDbToIST(l.created_at).getTime() >= startOfWeekIST.getTime()) || []
-      setPendingReconciliationsCount(pendingReconciliations.length)
-
-      setIsLoading(false)
+      await loadDashboardData(session.user)
     }
 
-    fetchDashboardData()
-  }, [getISTDate])
+    init()
+  }, [loadDashboardData])
+
+  // 🚨 FLAW 2 FIX: Realtime State Synchronization Across Tabs
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase.channel('dashboard-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_desk_setups', filter: `user_id=eq.${user.id}` },
+        () => loadDashboardData(user)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'user_desk_logs', filter: `user_id=eq.${user.id}` },
+        () => loadDashboardData(user)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    }
+  }, [user, loadDashboardData]);
 
   // Midnight Auto-Wipe Interval
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
-      const todayStr = getISTDate().toDateString();
-      const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && getISTDateString(s.addedToTodayAt) !== todayStr);
+      const todayStr = getBaseDate().toDateString();
+      const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && getBaseDateString(s.addedToTodayAt) !== todayStr);
       
       if (hasStaleSetups) {
         window.location.reload();
@@ -320,7 +355,7 @@ export default function PersonalDashboard() {
     }, 60000); 
     
     return () => clearInterval(checkMidnightWipe);
-  }, [setups, getISTDate, getISTDateString]);
+  }, [setups, getBaseDate, getBaseDateString]);
 
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
