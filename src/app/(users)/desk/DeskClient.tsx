@@ -5,14 +5,16 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import Papa from 'papaparse'
-import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen
 } from 'lucide-react'
 
+// 🚨 THESE CONSTANTS MUST BE AT THE TOP
 const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
-const CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
+const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
+const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
 
 type DraftSetup = {
   id: string;
@@ -666,7 +668,6 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
   }, [trade.outcome, trade.rr])
 
   const handleWheel = (e: React.WheelEvent<HTMLSelectElement>) => {
-    // 🚨 ADDED 'HOLD' TO OUTCOMES
     const outcomes = ['', 'TP', 'SL', 'BE', 'HOLD'];
     const dir = e.deltaY > 0 ? 1 : -1;
     let next = outcomes.indexOf(outcome) + dir;
@@ -736,7 +737,6 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        {/* 🚨 ADDED 'HOLD' OPTION */}
         <select 
           value={outcome} 
           onChange={e => setOutcome(e.target.value)} 
@@ -928,10 +928,8 @@ export default function DeskClient() {
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
 
-  // 🚨 NEW: Track Executed Symbols globally for Vault sorting
   const [executedSymbols, setExecutedSymbols] = useState<string[]>([])
 
-  // Custom Catalyst States
   const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
   const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
 
@@ -948,10 +946,10 @@ export default function DeskClient() {
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [chartScale, setChartScale] = useState(1)
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
+  const transformRef = useRef<ReactZoomPanPinchRef>(null)
 
   const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
-  // Initialization & LocalStorage
   useEffect(() => {
     const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
     handleResize(); 
@@ -984,11 +982,9 @@ export default function DeskClient() {
       
       setUser(user)
 
-      // 🚨 1. FETCH LOGS FIRST (To know what's executed)
       const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       
       if (logsData) {
-        // Track un-reconciled or "HOLD" trades for the queue
         setPendingReconciliation(logsData.filter(d => !d.is_reconciled || d.outcome === 'HOLD').map(d => ({ 
           id: d.id, 
           day: new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
@@ -1004,7 +1000,6 @@ export default function DeskClient() {
         const todayStr = new Date().toDateString()
         setTradesTakenToday(logsData.filter(d => new Date(d.created_at).toDateString() === todayStr).length)
 
-        // Generate list of symbols executed THIS week
         const now = new Date()
         const dayOfWeek = now.getDay() 
         const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
@@ -1018,14 +1013,12 @@ export default function DeskClient() {
         setExecutedSymbols(executedThisWeek)
       }
 
-      // 🚨 2. FETCH SETUPS & APPLY AUTO-RESET
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       
       if (setupsData) {
         const todayStr = new Date().toDateString();
-        const expiredSetups = setupsData.filter(s => s.is_today && new Date(s.added_to_today_at).toDateString() !== todayStr);
+        const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && new Date(s.added_to_today_at).toDateString() !== todayStr);
         
-        // Auto-Reset stale "Today's Focus" items back to Vault-only
         if (expiredSetups.length > 0) {
           const expiredIds = expiredSetups.map(s => s.id);
           await supabase.from('user_desk_setups').update({ is_today: false, added_to_today_at: null }).in('id', expiredIds);
@@ -1047,14 +1040,12 @@ export default function DeskClient() {
     initData()
   }, [supabase])
 
-  // 🚨 3. VAULT RENDERING LOGIC
   const todaySetups = setups.filter(s => s.isToday)
   
-  // Weekly Vault now shows ALL setups, sorted by execution state
   const weeklySetups = [...setups].sort((a, b) => {
     const aExec = executedSymbols.includes(a.symbol);
     const bExec = executedSymbols.includes(b.symbol);
-    if (aExec && !bExec) return 1; // Push executed to bottom
+    if (aExec && !bExec) return 1; 
     if (!aExec && bExec) return -1;
     return 0;
   });
@@ -1094,7 +1085,6 @@ export default function DeskClient() {
           created_at: data[0].created_at 
         }, ...prev]);
         
-        // Update global executed tracking instantly
         setExecutedSymbols(prev => [...prev, data[0].symbol]);
       }
       setLogPair(''); 
@@ -1107,7 +1097,6 @@ export default function DeskClient() {
 
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair) || executedSymbols.includes(logPair);
 
-  // Global Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -1201,6 +1190,14 @@ export default function DeskClient() {
     }
   }
 
+  const toggleTodayStatus = async (id: string) => {
+    if (!user) return
+    const setup = setups.find(s => s.id === id)
+    if (!setup) return
+    setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday, addedToTodayAt: null } : s))
+    await supabase.from('user_desk_setups').update({ is_today: !setup.isToday, added_to_today_at: null }).eq('id', id)
+  }
+
   const deleteSetup = async (id: string) => {
     if (!user) return
     const setupToDelete = setups.find(s => s.id === id);
@@ -1258,9 +1255,7 @@ export default function DeskClient() {
       }
     }
 
-    // 🚨 If HOLD, we update outcome but DO NOT reconcile.
     const isReconciled = outcome !== 'HOLD';
-
     const updateData: any = { is_reconciled: isReconciled, outcome, rr: parseFloat(rr) || null, after_image_url: finalUrl || null }
     
     if (isReconciled) {
@@ -1318,7 +1313,6 @@ export default function DeskClient() {
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   const activeCatalystList = logExecution === 'Perfect' ? perfectCatalysts : logExecution === 'Imperfect' ? imperfectCatalysts : [];
 
-  // 🚨 Split the Settlement Queue logic based on Week vs Hold
   const now = new Date()
   const dayOfWeek = now.getDay() 
   const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
@@ -1368,6 +1362,7 @@ export default function DeskClient() {
                   </div>
                 ) : (
                   todaySetups.map(setup => {
+                    const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
                     const isExecuted = executedSymbols.includes(setup.symbol);
                     return (
                       <div 
@@ -1385,22 +1380,22 @@ export default function DeskClient() {
                                 <Info size={14} />
                               </button>
                             )}
-                            {/* Disable execution staging if already executed */}
                             {!isExecuted && (
                               <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
                                 <Target size={12} />
                               </button>
                             )}
-                            <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400" title="Remove from Today">
-                              <ArrowLeft size={12} />
-                            </button>
+                            {canRemove && (
+                              <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400" title="Remove (1hr limit)">
+                                <ArrowLeft size={12} />
+                              </button>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
                           <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'bg-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'bg-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
                             {setup.direction || 'N/A'}
                           </span>
-                          {/* 🚨 Show Executed Tag dynamically */}
                           {isExecuted && <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-bold uppercase truncate">Executed</span>}
                         </div>
                       </div>
@@ -1426,6 +1421,7 @@ export default function DeskClient() {
                       panning={{ disabled: false }}
                       pinch={{ step: 5 }}
                       onTransformed={(ref) => setChartScale(ref.state.scale)}
+                      ref={transformRef}
                     >
                       <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         <img src={activeSetup.imageUrl} alt={activeSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" draggable={false} />
@@ -1517,9 +1513,7 @@ export default function DeskClient() {
 
               <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
                 
-                {/* 🚨 Split rendering for Current Week vs Legacy/Hold */}
                 <div className="flex flex-col gap-6">
-                  {/* Current Week Queue */}
                   <div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Post-Trade Settlement Queue</span>
@@ -1536,7 +1530,6 @@ export default function DeskClient() {
                     </div>
                   </div>
 
-                  {/* Legacy / Carried Over Queue */}
                   {heldOverPending.length > 0 && (
                     <div className="pt-4 border-t border-zinc-800/50 mt-2">
                       <div className="flex items-center gap-2 mb-4 shrink-0">
@@ -1580,14 +1573,12 @@ export default function DeskClient() {
                         <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={14} /></button>
                         <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
                         
-                        {/* Only show Push button if it's NOT already in Today's focus and NOT executed */}
                         {!isPushedToToday && !isExecuted && (
                           <button onClick={() => setConfirmPushId(setup.id)} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm">Push <ArrowRight size={12} /></button>
                         )}
                       </div>
                     </div>
                     
-                    {/* 🚨 Tag Status Indicators */}
                     <div className="flex gap-1.5">
                       {isExecuted && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 tracking-widest w-fit">Executed</span>}
                       {isPushedToToday && !isExecuted && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-blue-500/30 text-blue-400 bg-blue-500/10 tracking-widest w-fit">Active Today</span>}
