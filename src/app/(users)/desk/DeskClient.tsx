@@ -342,13 +342,11 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
     } 
   }
 
-  // 🚨 Revoke Memory Leak Fix included here
   const handleSaveAll = async () => {
     setIsUploading(true)
     const validDrafts = drafts.filter(d => d.instrument.trim() !== '' && d.direction !== '')
     await onSave(validDrafts)
     
-    // Clear RAM
     drafts.forEach(d => {
       if (d.imageSource && d.imageSource.startsWith('blob:')) {
         URL.revokeObjectURL(d.imageSource);
@@ -549,8 +547,8 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                       <optgroup label="Playbooks">
                         {PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}
                       </optgroup>
-                      <optgroup label="Catalysts">
-                        {CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}
+                      <optgroup label="Perfect Catalysts">
+                        {DEFAULT_PERFECT_CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}
                       </optgroup>
                     </select>
                   </div>
@@ -981,8 +979,10 @@ export default function DeskClient() {
   const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
   const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
 
+  // 🚨 LOGGING STATES (INCLUDING THE MISSING SETUP ID FIX)
   const [logPair, setLogPair] = useState<string>('') 
   const [logDirection, setLogDirection] = useState<'LONG' | 'SHORT' | null>(null)
+  const [logSetupId, setLogSetupId] = useState<string | null>(null)
   const [logCatalystText, setLogCatalystText] = useState('')
   const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
 
@@ -1007,14 +1007,13 @@ export default function DeskClient() {
   const getISTDate = useCallback(() => {
     const utc = getTrueUTC();
     const istStr = utc.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' });
-    return new Date(istStr); // Forces the JS Date to act like it is physically inside India
+    return new Date(istStr); 
   }, [getTrueUTC]);
 
   const now = getISTDate();
   const dayOfWeek = now.getDay();
   const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0;
   
-  // Safe Date Math - creates a fresh date object without mutating `now`
   const startOfCurrentWeek = new Date(now.getTime());
   const diffToMonday = startOfCurrentWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
   startOfCurrentWeek.setDate(diffToMonday);
@@ -1035,7 +1034,6 @@ export default function DeskClient() {
     return 0;
   });
 
-  // DB Sync Time Helper
   const adjustDbToIST = (utcString: string) => new Date(new Date(utcString).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
 
   const currentWeekPending = pendingReconciliation.filter(t => adjustDbToIST(t.created_at).getTime() >= startOfCurrentWeek.getTime() && t.outcome !== 'HOLD');
@@ -1051,15 +1049,13 @@ export default function DeskClient() {
   useEffect(() => {
     const fetchTime = async () => {
       try {
-        // Swapped to pure UTC API response
         const res = await fetch('https://timeapi.io/api/Time/current/zone?timeZone=UTC', { cache: 'no-store' });
         if (!res.ok) throw new Error('API Blocked');
         const data = await res.json();
-        // TimeAPI strings don't have timezone flags, so we MUST append "Z" to force JS to parse it as UTC
         const trueUTC = new Date(data.dateTime + "Z").getTime();
         setTimeOffset(trueUTC - Date.now());
       } catch (error) {
-        setTimeOffset(0); // Silently falls back if connection drops
+        setTimeOffset(0); 
       }
     };
     fetchTime();
@@ -1136,7 +1132,7 @@ export default function DeskClient() {
           execution: d.execution_type, 
           rr: d.rr, 
           outcome: d.outcome, 
-          created_at: d.created_at // Keep true UTC
+          created_at: d.created_at 
         })))
         
         const todayStr = getISTDate().toDateString()
@@ -1201,10 +1197,14 @@ export default function DeskClient() {
       setActiveTodayId(todaySetups[0].id)
     } else if (todaySetups.length === 0) { 
       setActiveTodayId(null); 
-      if(logPair) setLogPair(''); 
+      if(logPair) {
+        setLogPair(''); 
+        setLogSetupId(null);
+      }
     }
   }, [todaySetups.length, activeTodayId])
 
+  // 🚨 THE FIX: INCLUDES logSetupId IN THE PAYLOAD
   const handleLockEntry = useCallback(async () => {
     if (tradesTakenToday < 2 && logPair && logDirection && logExecution && user) {
       const newLog = { 
@@ -1212,7 +1212,8 @@ export default function DeskClient() {
         symbol: logPair, 
         direction: logDirection, 
         reason: logCatalystText || null, 
-        execution_type: logExecution
+        execution_type: logExecution,
+        setup_id: logSetupId // <-- Database connection established here
       }
       const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
       if (data && data[0]) {
@@ -1237,9 +1238,10 @@ export default function DeskClient() {
       setLogDirection(null); 
       setLogCatalystText(''); 
       setLogExecution(null); 
+      setLogSetupId(null);
       setIsAuditOpen(false); 
     }
-  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, user, getISTDate]);
+  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, logSetupId, user, getISTDate]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1355,7 +1357,7 @@ export default function DeskClient() {
     if (setupToDelete && setupToDelete.imageUrl && setupToDelete.imageUrl.includes('supabase')) {
         const match = setupToDelete.imageUrl.match(/user-desk-images\/(.+)$/);
         if (match && match[1]) {
-           const cleanPath = match[1].split('?')[0]; // 🚨 Fixes Supabase query param error
+           const cleanPath = match[1].split('?')[0]; 
            await supabase.storage.from('user-desk-images').remove([cleanPath]);
         }
     }
@@ -1363,7 +1365,6 @@ export default function DeskClient() {
     await supabase.from('user_desk_setups').delete().eq('id', id)
   }
 
-  // 🚨 Parallel Upload Fix (Speed Boost)
   const handleBulkUpload = async (draftsToSave: any[]) => {
     if (!user) return alert("Authentication Error: No active user session found.")
     
@@ -1510,7 +1511,7 @@ export default function DeskClient() {
                   </div>
                 ) : (
                   todaySetups.map(setup => {
-                    const canRemove = setup.addedToTodayAt && (getTrueUTC().getTime() - setup.addedToTodayAt < 3600000); // 🚨 1-Hour Fix
+                    const canRemove = setup.addedToTodayAt && (getTrueUTC().getTime() - setup.addedToTodayAt < 3600000);
                     const isExecuted = executedSymbols.includes(setup.symbol);
                     return (
                       <div 
@@ -1528,8 +1529,9 @@ export default function DeskClient() {
                                 <Info size={14} />
                               </button>
                             )}
+                            {/* 🚨 THE FIX: Target button now sets logSetupId to explicitly link to this specific setup */}
                             {!isExecuted && (
-                              <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
+                              <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setLogSetupId(setup.id); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
                                 <Target size={12} />
                               </button>
                             )}
@@ -1635,7 +1637,8 @@ export default function DeskClient() {
                     <div className="bg-black border border-zinc-700 rounded-xl p-4 shadow-inner flex flex-col gap-3">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-[16px] font-black text-white tracking-wider">{logPair}</span>
-                        <button onClick={() => { setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); }} className="text-zinc-500 hover:text-red-400 transition-colors"><X size={14}/></button>
+                        {/* 🚨 THE FIX: Make sure closing the log modal also clears the setup ID link */}
+                        <button onClick={() => { setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); setLogSetupId(null); }} className="text-zinc-500 hover:text-red-400 transition-colors"><X size={14}/></button>
                       </div>
                       
                       <div className="flex gap-3">
@@ -1733,7 +1736,6 @@ export default function DeskClient() {
                       <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={14} /></button>
                         
-                        {/* 🚨 Deletion Bug Fix: Hide trash can if executed */}
                         {!isExecuted && (
                            <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
                         )}
@@ -1816,7 +1818,6 @@ export default function DeskClient() {
           </div>
         )}
 
-        {/* 🚨 PREVIEW MODAL (Fully wired up with eager loading) */}
         {previewSetup && (
           <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150" onClick={() => setPreviewSetup(null)}>
             <div className="absolute top-4 right-4 z-10"><button onClick={() => setPreviewSetup(null)} className="p-2 bg-black/50 text-white rounded-full hover:bg-zinc-800 transition-colors"><X size={20}/></button></div>
