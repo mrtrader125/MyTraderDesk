@@ -11,11 +11,12 @@ import {
   Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock, Copy
 } from 'lucide-react'
 
+// 🚨 CONSTANTS MUST BE AT THE TOP
 const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
 const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
 const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
 
-// 🚨 Supabase initialized globally to prevent "Multiple Instances" warning
+// 🚨 GLOBAL SUPABASE CLIENT (Fixes "Multiple GoTrueClient instances" warning)
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -133,60 +134,96 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm }: { isOpe
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
       <div className="bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-3xl flex flex-col h-[80vh]">
+        
         <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
           <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
-            <DownloadCloud size={16} className="text-blue-500" /> MT5 Data Staging
+            <DownloadCloud size={16} className="text-blue-500" /> 
+            MT5 Data Staging
           </h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white"><X size={18}/></button>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white">
+            <X size={18}/>
+          </button>
         </div>
+        
         <div className="p-4 border-b border-zinc-800 bg-black flex items-center justify-between sm:justify-start gap-4">
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Broker Timezone Offset</span>
-            <span className="text-[9px] text-zinc-600 hidden sm:block">Adjust to align MT5 time with your local time.</span>
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
+              Broker Timezone Offset
+            </span>
+            <span className="text-[9px] text-zinc-600 hidden sm:block">
+              Adjust to align MT5 time with your local time.
+            </span>
           </div>
           <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
             <button onClick={() => setOffsetHours(p => p - 1)} className="px-3 py-1 hover:bg-zinc-800 rounded text-zinc-300 font-mono">-</button>
-            <span className="font-mono text-sm font-bold w-8 text-center text-white">{offsetHours > 0 ? `+${offsetHours}` : offsetHours}</span>
+            <span className="font-mono text-sm font-bold w-8 text-center text-white">
+              {offsetHours > 0 ? `+${offsetHours}` : offsetHours}
+            </span>
             <button onClick={() => setOffsetHours(p => p + 1)} className="px-3 py-1 hover:bg-zinc-800 rounded text-zinc-300 font-mono">+</button>
           </div>
         </div>
+
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-black">
           {isParsing ? (
-            <div className="flex items-center justify-center h-full text-zinc-500 text-sm uppercase tracking-widest font-bold">Parsing MT5 History...</div>
+            <div className="flex items-center justify-center h-full text-zinc-500 text-sm uppercase tracking-widest font-bold">
+              Parsing MT5 History...
+            </div>
           ) : (
             <div className="flex flex-col gap-3">
               {matches.map((m, i) => (
                 <div key={i} className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-center bg-zinc-950 border border-zinc-800 rounded-xl p-3">
+                  
                   <div className="flex-1 w-full flex flex-col p-3 bg-zinc-900/30 rounded-lg border border-zinc-800/50">
-                    <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">Logged Reality</span>
+                    <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">
+                      Logged Reality
+                    </span>
                     <div className="flex items-center gap-2">
                       <span className="font-black text-white">{m.log.symbol}</span>
-                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${m.log.direction === 'LONG' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{m.log.direction}</span>
+                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${m.log.direction === 'LONG' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                        {m.log.direction}
+                      </span>
                     </div>
-                    <span className="text-[10px] text-zinc-400 mt-1">{new Date(m.log.created_at).toLocaleTimeString()}</span>
+                    <span className="text-[10px] text-zinc-400 mt-1">
+                      {new Date(m.log.created_at).toLocaleTimeString()}
+                    </span>
                   </div>
+                  
                   <ArrowRight size={16} className="text-zinc-600 hidden sm:block rotate-90 sm:rotate-0" />
+                  
                   <div className={`flex-1 w-full flex flex-col p-3 rounded-lg border ${m.match ? 'bg-blue-500/5 border-blue-500/30' : 'bg-zinc-900/30 border-dashed border-zinc-800'}`}>
-                    <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">MT5 Broker Data</span>
+                    <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">
+                      MT5 Broker Data
+                    </span>
                     {m.match ? (
                       <>
                         <div className="flex items-center justify-between">
                           <span className="font-black text-white">{m.match.symbol}</span>
-                          <span className={`text-xs font-mono font-bold ${m.match.profit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>${m.match.profit.toFixed(2)}</span>
+                          <span className={`text-xs font-mono font-bold ${m.match.profit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                            ${m.match.profit.toFixed(2)}
+                          </span>
                         </div>
-                        <span className="text-[10px] text-zinc-400 mt-1">Ticket: {m.match.ticket} • Auto: {m.match.outcome}</span>
+                        <span className="text-[10px] text-zinc-400 mt-1">
+                          Ticket: {m.match.ticket} • Auto: {m.match.outcome}
+                        </span>
                       </>
                     ) : (
                       <span className="text-xs font-bold text-zinc-600 mt-1">No Match Found</span>
                     )}
                   </div>
+
                 </div>
               ))}
             </div>
           )}
         </div>
+        
         <div className="p-4 border-t border-zinc-800 bg-zinc-900/50 flex justify-end">
-          <button onClick={() => { onConfirm(matches); onClose(); }} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-colors flex items-center gap-2"><Check size={14} /> Sync Matches</button>
+          <button 
+            onClick={() => { onConfirm(matches); onClose(); }} 
+            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-colors flex items-center gap-2"
+          >
+            <Check size={14} /> Sync Matches
+          </button>
         </div>
       </div>
     </div>
@@ -259,6 +296,7 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
 
   const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
   const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
+  
   const handleDrop = (e: React.DragEvent) => { 
     e.preventDefault(); 
     setIsDragging(false); 
@@ -346,31 +384,75 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
             <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
               <UploadCloud size={16} className="text-purple-500" /> Vault Upload
             </h2>
-            <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}><X size={18} /></button>
+            <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}>
+              <X size={18} />
+            </button>
           </div>
           
           <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
             <div className="w-full lg:w-[200px] border-b lg:border-b-0 lg:border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
+              
               <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
-                <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5" disabled={isUploading}>
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5" 
+                  disabled={isUploading}
+                >
                   <Plus size={14} /> Add Images
                 </button>
+                
                 <div className="flex gap-1">
-                  <input type="text" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddLink()} placeholder="Paste URL..." className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-purple-500 transition-colors" disabled={isUploading} />
-                  <button onClick={handlePasteClick} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded transition-colors" disabled={isUploading} title="Paste Text"><Clipboard size={12}/></button>
-                  <button onClick={handleAddLink} className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors" disabled={isUploading} title="Add"><Plus size={12}/></button>
+                  <input 
+                    type="text" 
+                    value={linkInput} 
+                    onChange={(e) => setLinkInput(e.target.value)} 
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
+                    placeholder="Paste URL..." 
+                    className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-purple-500 transition-colors" 
+                    disabled={isUploading} 
+                  />
+                  <button 
+                    onClick={handlePasteClick} 
+                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded transition-colors" 
+                    disabled={isUploading} 
+                    title="Paste Text"
+                  >
+                    <Clipboard size={12}/>
+                  </button>
+                  <button 
+                    onClick={handleAddLink} 
+                    className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors" 
+                    disabled={isUploading} 
+                    title="Add"
+                  >
+                    <Plus size={12}/>
+                  </button>
                 </div>
                 <input type="file" multiple ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
               </div>
 
               <div className="flex-1 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-2 flex flex-row lg:flex-col gap-2 text-white">
                 {drafts.map((draft, idx) => (
-                  <div key={draft.id} onClick={() => setActiveIndex(idx)} className={`min-w-[150px] lg:min-w-0 p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-zinc-800 border-zinc-600' : 'bg-zinc-950 border-zinc-800/50 hover:bg-zinc-900'}`}>
+                  <div 
+                    key={draft.id} 
+                    onClick={() => setActiveIndex(idx)} 
+                    className={`min-w-[150px] lg:min-w-0 p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-zinc-800 border-zinc-600' : 'bg-zinc-950 border-zinc-800/50 hover:bg-zinc-900'}`}
+                  >
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold truncate">{draft.instrument || 'UNKNOWN'}</p>
-                      <p className="text-[9px] text-zinc-500 truncate">{draft.direction ? `${draft.direction}` : 'Incomplete'}</p>
+                      <p className="text-xs font-bold truncate">
+                        {draft.instrument || 'UNKNOWN'}
+                      </p>
+                      <p className="text-[9px] text-zinc-500 truncate">
+                        {draft.direction ? `${draft.direction}` : 'Incomplete'}
+                      </p>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} className="text-zinc-600 hover:text-red-400 p-1" disabled={isUploading}><X size={12}/></button>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} 
+                      className="text-zinc-600 hover:text-red-400 p-1" 
+                      disabled={isUploading}
+                    >
+                      <X size={12}/>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -379,9 +461,24 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
             <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
               {drafts.length > 0 && drafts[activeIndex] ? (
                 <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full text-white">
-                  <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center mb-2 relative" onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}>
+                  
+                  <div 
+                    className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center mb-2 relative"
+                    onMouseDown={handlePeekStart} 
+                    onMouseUp={handlePeekEnd} 
+                    onMouseLeave={handlePeekEnd} 
+                    onTouchStart={handlePeekStart} 
+                    onTouchEnd={handlePeekEnd}
+                  >
                     {drafts[activeIndex].imageSource ? (
-                      <img src={drafts[activeIndex].imageSource!} alt="Preview" className="w-full h-full object-contain p-2 cursor-pointer" draggable={false} />
+                      <img 
+                        src={drafts[activeIndex].imageSource!} 
+                        alt="Preview" 
+                        loading="eager" 
+                        decoding="async"
+                        className="w-full h-full object-contain p-2 cursor-pointer" 
+                        draggable={false} 
+                      />
                     ) : (
                       <ImageIcon className="w-10 h-10 text-zinc-700" />
                     )}
@@ -389,53 +486,115 @@ function SetupUploadModal({ isOpen, onClose, onSave }: { isOpen: boolean; onClos
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label>
-                      <input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" disabled={isUploading} />
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
+                        Instrument Ticker
+                      </label>
+                      <input 
+                        type="text" 
+                        value={drafts[activeIndex].instrument} 
+                        onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} 
+                        placeholder="e.g. GBPUSD" 
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" 
+                        disabled={isUploading}
+                      />
                     </div>
+                    
                     <div className="flex flex-col gap-2">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Macro Bias</label>
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
+                        Macro Bias
+                      </label>
                       <div className="flex gap-2">
-                        <button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>LONG</button>
-                        <button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>SHORT</button>
+                        <button 
+                          onClick={() => updateActiveDraft('direction', 'LONG')} 
+                          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}
+                        >
+                          LONG
+                        </button>
+                        <button 
+                          onClick={() => updateActiveDraft('direction', 'SHORT')} 
+                          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}
+                        >
+                          SHORT
+                        </button>
                       </div>
                     </div>
                   </div>
                   
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Playbook & Catalysts</label>
-                    <select onChange={(e) => { if (e.target.value) { updateActiveDraft('notes', drafts[activeIndex].notes ? `${drafts[activeIndex].notes}\n[${e.target.value}]` : `[${e.target.value}]`); e.target.value = ""; } }} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" disabled={isUploading}>
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
+                      Playbook & Catalysts
+                    </label>
+                    <select 
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          const currentNotes = drafts[activeIndex].notes;
+                          updateActiveDraft('notes', currentNotes ? `${currentNotes}\n[${e.target.value}]` : `[${e.target.value}]`);
+                          e.target.value = "";
+                        }
+                      }} 
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" 
+                      disabled={isUploading}
+                    >
                       <option value="">Insert Tag...</option>
-                      <optgroup label="Playbooks">{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</optgroup>
-                      <optgroup label="Catalysts">{CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}</optgroup>
+                      <optgroup label="Playbooks">
+                        {PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}
+                      </optgroup>
+                      <optgroup label="Catalysts">
+                        {CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}
+                      </optgroup>
                     </select>
                   </div>
                   
                   <div className="flex flex-col gap-2 flex-1 mt-2">
-                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label>
-                    <textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500 transition-colors resize-none custom-scrollbar" disabled={isUploading} />
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
+                      Structural Thesis
+                    </label>
+                    <textarea 
+                      value={drafts[activeIndex].notes} 
+                      onChange={(e) => updateActiveDraft('notes', e.target.value)} 
+                      placeholder="Log structural bias, liquidity sweeps, or entry triggers..." 
+                      className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500 transition-colors resize-none custom-scrollbar" 
+                      disabled={isUploading}
+                    />
                   </div>
                 </div>
               ) : (
                 <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 p-6">
                   <UploadCloud size={40} className="mb-4 opacity-50" />
-                  <p className="text-sm font-medium text-center">Drag & Drop images anywhere<br/><span className="text-[10px] opacity-70">or use Ctrl+V to paste a screenshot</span></p>
+                  <p className="text-sm font-medium text-center">
+                    Drag & Drop images anywhere<br/>
+                    <span className="text-[10px] opacity-70">or use Ctrl+V to paste a screenshot</span>
+                  </p>
                 </div>
               )}
             </div>
           </div>
           
           <div className="p-4 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center shrink-0">
-            <span className="text-xs font-medium text-zinc-500">{drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged</span>
-            <button onClick={handleSaveAll} disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction) || isUploading} className="px-6 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500">
+            <span className="text-xs font-medium text-zinc-500">
+              {drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged
+            </span>
+            <button 
+              onClick={handleSaveAll} 
+              disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction) || isUploading} 
+              className="px-6 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500"
+            >
               {isUploading ? 'Saving...' : 'Save to Vault'}
             </button>
           </div>
         </div>
       </div>
       
+      {/* 🚨 Peek Overlay for Upload Modal */}
       {isPeeking && drafts.length > 0 && drafts[activeIndex]?.imageSource && (
         <div className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 pointer-events-none animate-in fade-in duration-150">
-          <img src={drafts[activeIndex].imageSource!} alt="Peek" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+          <img 
+            src={drafts[activeIndex].imageSource!} 
+            alt="Peek" 
+            loading="eager" 
+            decoding="async"
+            className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" 
+          />
         </div>
       )}
     </>
@@ -466,7 +625,9 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   if (!activeSetup) {
     return (
       <div className="w-full h-full flex items-center justify-center text-center">
-        <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p>
+        <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
+          No active notes
+        </p>
       </div>
     );
   }
@@ -474,8 +635,18 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden tiptap-wrapper">
       <div className="flex items-center gap-1 pb-2 mb-2 border-b border-zinc-800/60 shrink-0">
-        <button onClick={() => editor?.chain().focus().toggleBold().run()} className={`p-1.5 rounded transition-colors ${editor?.isActive('bold') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}><Bold size={14} /></button>
-        <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={`p-1.5 rounded transition-colors ${editor?.isActive('bulletList') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}><List size={14} /></button>
+        <button 
+          onClick={() => editor?.chain().focus().toggleBold().run()} 
+          className={`p-1.5 rounded transition-colors ${editor?.isActive('bold') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+        >
+          <Bold size={14} />
+        </button>
+        <button 
+          onClick={() => editor?.chain().focus().toggleBulletList().run()} 
+          className={`p-1.5 rounded transition-colors ${editor?.isActive('bulletList') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
+        >
+          <List size={14} />
+        </button>
       </div>
       <EditorContent editor={editor} className="flex-1 flex flex-col min-h-0 overflow-hidden" />
       <style dangerouslySetInnerHTML={{__html: `
@@ -506,7 +677,9 @@ function ReconciliationItem({ trade, onSave, onSplit, user }: { trade: any, onSa
     setRr(trade.rr ? trade.rr.toString() : ''); 
   }, [trade.outcome, trade.rr])
 
-  useEffect(() => { setShowHoldConfirm(false); }, [outcome])
+  useEffect(() => {
+    setShowHoldConfirm(false);
+  }, [outcome])
 
   const handleWheel = (e: React.WheelEvent<HTMLSelectElement>) => {
     const outcomes = ['', 'TP', 'SL', 'BE', 'HOLD'];
@@ -558,18 +731,34 @@ function ReconciliationItem({ trade, onSave, onSplit, user }: { trade: any, onSa
       <div className="flex justify-between items-center border-b border-zinc-800/50 pb-3">
         <div className="flex items-center gap-3">
           <span className="text-[13px] font-black text-white">{trade.symbol}</span>
-          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>{trade.direction}</span>
-          {trade.reason && <span className="text-[10px] text-zinc-400 font-medium">• {trade.reason.replace(/\n/g, ', ')}</span>}
-          {isMt5Synced && <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded ml-2 flex items-center gap-1"><DownloadCloud size={10}/> MT5 Synced</span>}
+          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
+            {trade.direction}
+          </span>
+          {trade.reason && (
+            <span className="text-[10px] text-zinc-400 font-medium">• {trade.reason.replace(/\n/g, ', ')}</span>
+          )}
+          {isMt5Synced && (
+            <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded ml-2 flex items-center gap-1">
+              <DownloadCloud size={10}/> MT5 Synced
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold text-zinc-500 hidden sm:block">{trade.day}</span>
-          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{trade.execution}</span>
+          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+            {trade.execution}
+          </span>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <select value={outcome} onChange={e => setOutcome(e.target.value)} onWheel={handleWheel} className={`w-full sm:w-28 bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-blue-500 cursor-ns-resize`} title="Scroll to change">
+        <select 
+          value={outcome} 
+          onChange={e => setOutcome(e.target.value)} 
+          onWheel={handleWheel}
+          className={`w-full sm:w-28 bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-blue-500 cursor-ns-resize`}
+          title="Scroll to change"
+        >
           <option value="">Outcome</option>
           <option value="TP">Hit TP</option>
           <option value="SL">Hit SL</option>
@@ -578,23 +767,57 @@ function ReconciliationItem({ trade, onSave, onSplit, user }: { trade: any, onSa
         </select>
         
         <div className="relative w-full sm:w-24">
-          <input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className={`w-full bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-blue-500`} />
+          <input 
+            type="number" 
+            value={rr} 
+            onChange={e => setRr(e.target.value)} 
+            placeholder="0.0" 
+            className={`w-full bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-blue-500`} 
+          />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase">RR</span>
         </div>
 
         <div className="relative flex-1 flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1 pr-2 focus-within:border-blue-500 transition-all min-w-0">
            {afterPreview ? (
              <div className="flex-1 flex items-center gap-2 pl-2 overflow-hidden">
-               <img src={afterPreview} className="h-6 w-6 object-cover rounded border border-zinc-700 shrink-0" />
+               <img 
+                 src={afterPreview} 
+                 loading="eager" 
+                 decoding="async"
+                 className="h-6 w-6 object-cover rounded border border-zinc-700 shrink-0" 
+               />
                <span className="text-[10px] font-bold text-zinc-400 truncate tracking-widest uppercase">Image Attached</span>
-               <button onClick={() => { setAfterFile(null); setAfterPreview(null); }} className="ml-auto text-zinc-500 hover:text-red-400 p-1"><X size={12}/></button>
+               <button 
+                 onClick={() => { setAfterFile(null); setAfterPreview(null); }} 
+                 className="ml-auto text-zinc-500 hover:text-red-400 p-1"
+               >
+                 <X size={12}/>
+               </button>
              </div>
            ) : (
              <>
                <LinkIcon size={12} className="text-zinc-500 ml-2 shrink-0" />
-               <input type="text" value={afterInput} onChange={e => setAfterInput(e.target.value)} placeholder="TV URL or Paste Image..." className="w-full bg-transparent border-none text-[10px] font-bold text-zinc-300 outline-none placeholder:text-zinc-600 px-2" />
-               <button onClick={handlePaste} className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" title="Paste URL or Image"><Clipboard size={12}/></button>
-               <button onClick={() => fileInputRef.current?.click()} className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" title="Upload Image"><ImageIcon size={12}/></button>
+               <input 
+                 type="text" 
+                 value={afterInput} 
+                 onChange={e => setAfterInput(e.target.value)} 
+                 placeholder="TV URL or Paste Image..." 
+                 className="w-full bg-transparent border-none text-[10px] font-bold text-zinc-300 outline-none placeholder:text-zinc-600 px-2" 
+               />
+               <button 
+                 onClick={handlePaste} 
+                 className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" 
+                 title="Paste URL or Image"
+               >
+                 <Clipboard size={12}/>
+               </button>
+               <button 
+                 onClick={() => fileInputRef.current?.click()} 
+                 className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" 
+                 title="Upload Image"
+               >
+                 <ImageIcon size={12}/>
+               </button>
                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
              </>
            )}
@@ -602,14 +825,26 @@ function ReconciliationItem({ trade, onSave, onSplit, user }: { trade: any, onSa
 
         {showHoldConfirm ? (
           <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto shrink-0 animate-in fade-in zoom-in-95 duration-200">
-            <span className="text-[9px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden xl:block mr-1">Are you actually holding<br/>or avoiding a loss?</span>
+            <span className="text-[9px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden xl:block mr-1">
+              Are you actually holding<br/>or avoiding a loss?
+            </span>
             <button onClick={() => setShowHoldConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors">Cancel</button>
-            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)]">{isSaving ? '...' : 'Confirm'}</button>
+            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)]">
+              {isSaving ? '...' : 'Confirm'}
+            </button>
           </div>
         ) : (
           <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
-            <button onClick={() => onSplit(trade.id)} className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors border border-zinc-800 shrink-0" title="Split Position (Partial Close)"><Copy size={14} /></button>
-            <button disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors shrink-0">{isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}</button>
+            <button onClick={() => onSplit(trade.id)} className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors border border-zinc-800 shrink-0" title="Split Position (Partial Close)">
+               <Copy size={14} />
+            </button>
+            <button 
+              disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} 
+              onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} 
+              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors shrink-0"
+            >
+              {isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}
+            </button>
           </div>
         )}
       </div>
@@ -642,34 +877,69 @@ function CatalystSettingsModal({ isOpen, onClose, perfect, setPerfect, imperfect
     <div className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-zinc-950 border border-zinc-800 rounded-xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-          <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2"><Settings size={16} className="text-zinc-400" /> Catalyst Settings</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white"><X size={18} /></button>
+          <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
+            <Settings size={16} className="text-zinc-400" /> Catalyst Settings
+          </h2>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white">
+            <X size={18} />
+          </button>
         </div>
         <div className="p-6 flex flex-col gap-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+          
           <div>
-            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3 border-b border-emerald-500/20 pb-1">Perfect Execution Catalysts</h3>
+            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3 border-b border-emerald-500/20 pb-1">
+              Perfect Execution Catalysts
+            </h3>
             <div className="flex gap-2 mb-3">
-              <input type="text" value={newPerfect} onChange={e => setNewPerfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPerfect()} className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-emerald-500 transition-colors" placeholder="Add new catalyst..." />
-              <button onClick={addPerfect} className="px-3 bg-emerald-600 hover:bg-emerald-500 rounded text-white transition-colors"><Plus size={14}/></button>
+              <input 
+                type="text" 
+                value={newPerfect} 
+                onChange={e => setNewPerfect(e.target.value)} 
+                onKeyDown={e => e.key === 'Enter' && addPerfect()} 
+                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-emerald-500 transition-colors" 
+                placeholder="Add new catalyst..." 
+              />
+              <button onClick={addPerfect} className="px-3 bg-emerald-600 hover:bg-emerald-500 rounded text-white transition-colors">
+                <Plus size={14}/>
+              </button>
             </div>
             <div className="flex flex-wrap gap-2">
               {perfect.map((c: string) => (
-                <span key={c} className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded flex items-center gap-1.5">{c} <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setPerfect(perfect.filter((item: string) => item !== c))}/></span>
+                <span key={c} className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded flex items-center gap-1.5">
+                  {c} 
+                  <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setPerfect(perfect.filter((item: string) => item !== c))}/>
+                </span>
               ))}
             </div>
           </div>
+          
           <div>
-            <h3 className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3 border-b border-red-500/20 pb-1">Imperfect Execution Catalysts</h3>
+            <h3 className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3 border-b border-red-500/20 pb-1">
+              Imperfect Execution Catalysts
+            </h3>
             <div className="flex gap-2 mb-3">
-              <input type="text" value={newImperfect} onChange={e => setNewImperfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addImperfect()} className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-red-500 transition-colors" placeholder="Add new catalyst..." />
-              <button onClick={addImperfect} className="px-3 bg-red-600 hover:bg-red-500 rounded text-white transition-colors"><Plus size={14}/></button>
+              <input 
+                type="text" 
+                value={newImperfect} 
+                onChange={e => setNewImperfect(e.target.value)} 
+                onKeyDown={e => e.key === 'Enter' && addImperfect()} 
+                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-red-500 transition-colors" 
+                placeholder="Add new catalyst..." 
+              />
+              <button onClick={addImperfect} className="px-3 bg-red-600 hover:bg-red-500 rounded text-white transition-colors">
+                <Plus size={14}/>
+              </button>
             </div>
             <div className="flex flex-wrap gap-2">
               {imperfect.map((c: string) => (
-                <span key={c} className="text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded flex items-center gap-1.5">{c} <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setImperfect(imperfect.filter((item: string) => item !== c))}/></span>
+                <span key={c} className="text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded flex items-center gap-1.5">
+                  {c} 
+                  <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setImperfect(imperfect.filter((item: string) => item !== c))}/>
+                </span>
               ))}
             </div>
           </div>
+
         </div>
       </div>
     </div>
@@ -678,12 +948,14 @@ function CatalystSettingsModal({ isOpen, onClose, perfect, setPerfect, imperfect
 
 // --- MAIN DESK CLIENT ---
 export default function DeskClient() {
+  
+  // 🚨 1. ALL USESTATE HOOKS FIRST
   const [user, setUser] = useState<any>(null)
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
   const [executedSymbols, setExecutedSymbols] = useState<string[]>([])
-  const [previewSetup, setPreviewSetup] = useState<any>(null); // 🚨 FIXED MISSING PREVIEW STATE
+  const [previewSetup, setPreviewSetup] = useState<any>(null);
 
   const [isVaultOpen, setIsVaultOpen] = useState(false)
   const [isAuditOpen, setIsAuditOpen] = useState(false)
@@ -708,26 +980,17 @@ export default function DeskClient() {
   const [chartScale, setChartScale] = useState(1)
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
-  const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
-  // 🚨 WorldTimeAPI with fallback (Safe against connection reset)
+  const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
   const [timeOffset, setTimeOffset] = useState(0);
-  useEffect(() => {
-    fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata')
-      .then(res => res.json())
-      .then(data => {
-        const realTime = new Date(data.datetime).getTime();
-        setTimeOffset(realTime - Date.now());
-      }).catch(() => setTimeOffset(0)); // Silently falls back if blocked
-  }, []);
-  
+  const [weeklyDebrief, setWeeklyDebrief] = useState('');
+  const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
+
+  // 🚨 2. ALL CALLBACKS AND DERIVED STATE
   const getSecureTime = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
 
-  // Derived State Definitions MUST BE HERE to prevent ReferenceErrors
-  const todaySetups = setups.filter(s => s.isToday)
-  const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
-  const activeSetup = todaySetups.find(s => s.id === activeTodayId)
-
+  const todaySetups = setups.filter(s => s.isToday);
+  const activeSetup = todaySetups.find(s => s.id === activeTodayId);
   const pushesToday = setups.filter(s => s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() === getSecureTime().toDateString()).length;
   const canPushMore = pushesToday < 5;
 
@@ -742,6 +1005,7 @@ export default function DeskClient() {
   const now = getSecureTime()
   const dayOfWeek = now.getDay() 
   const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0
+  
   const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
   const startOfCurrentWeek = new Date(now.setDate(diffToMonday))
   startOfCurrentWeek.setHours(0, 0, 0, 0)
@@ -752,14 +1016,27 @@ export default function DeskClient() {
   const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
   const isVaultLocked = !isPrepWindow || (isPrepWindow && currentWeekPending.length > 0);
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair) || executedSymbols.includes(logPair);
-
   const debriefKey = `desk_weekly_debrief_${startOfCurrentWeek.getTime()}`;
-  const [weeklyDebrief, setWeeklyDebrief] = useState('');
-  useEffect(() => { setWeeklyDebrief(localStorage.getItem(debriefKey) || ''); }, [debriefKey]);
-  const handleDebriefChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setWeeklyDebrief(e.target.value);
-    localStorage.setItem(debriefKey, e.target.value);
-  };
+
+  // 🚨 3. ALL USEEFFECTS
+  useEffect(() => {
+    const fetchTime = async () => {
+      try {
+        const res = await fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata', { cache: 'no-store' });
+        if (!res.ok) throw new Error('API Blocked');
+        const data = await res.json();
+        const realTime = new Date(data.datetime).getTime();
+        setTimeOffset(realTime - Date.now());
+      } catch (error) {
+        setTimeOffset(0); // Silently falls back
+      }
+    };
+    fetchTime();
+  }, []);
+
+  useEffect(() => {
+    setWeeklyDebrief(localStorage.getItem(debriefKey) || ''); 
+  }, [debriefKey]);
 
   useEffect(() => {
     const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
@@ -782,7 +1059,12 @@ export default function DeskClient() {
     const syncCatalysts = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.auth.updateUser({ data: { desk_perfect_catalysts: perfectCatalysts, desk_imperfect_catalysts: imperfectCatalysts } })
+        await supabase.auth.updateUser({
+          data: {
+            desk_perfect_catalysts: perfectCatalysts,
+            desk_imperfect_catalysts: imperfectCatalysts
+          }
+        })
       }
     }
     const timeoutId = setTimeout(syncCatalysts, 2000)
@@ -794,20 +1076,36 @@ export default function DeskClient() {
       const { data: { session } } = await supabase.auth.getSession()
       const user = session?.user
       if (!user) return;
+      
       setUser(user)
 
-      if (user.user_metadata?.desk_perfect_catalysts) { setPerfectCatalysts(user.user_metadata.desk_perfect_catalysts); } 
-      else { const savedPerfect = localStorage.getItem('desk_perfect_catalysts'); if (savedPerfect) setPerfectCatalysts(JSON.parse(savedPerfect)); }
+      if (user.user_metadata?.desk_perfect_catalysts) {
+        setPerfectCatalysts(user.user_metadata.desk_perfect_catalysts);
+      } else {
+        const savedPerfect = localStorage.getItem('desk_perfect_catalysts');
+        if (savedPerfect) setPerfectCatalysts(JSON.parse(savedPerfect));
+      }
       
-      if (user.user_metadata?.desk_imperfect_catalysts) { setImperfectCatalysts(user.user_metadata.desk_imperfect_catalysts); } 
-      else { const savedImperfect = localStorage.getItem('desk_imperfect_catalysts'); if (savedImperfect) setImperfectCatalysts(JSON.parse(savedImperfect)); }
+      if (user.user_metadata?.desk_imperfect_catalysts) {
+        setImperfectCatalysts(user.user_metadata.desk_imperfect_catalysts);
+      } else {
+        const savedImperfect = localStorage.getItem('desk_imperfect_catalysts');
+        if (savedImperfect) setImperfectCatalysts(JSON.parse(savedImperfect));
+      }
 
       const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       
       if (logsData) {
         setPendingReconciliation(logsData.filter(d => !d.is_reconciled || d.outcome === 'HOLD').map(d => ({ 
-          id: d.id, day: new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), symbol: d.symbol, direction: d.direction, 
-          reason: d.reason, execution: d.execution_type, rr: d.rr, outcome: d.outcome, created_at: d.created_at 
+          id: d.id, 
+          day: new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
+          symbol: d.symbol, 
+          direction: d.direction, 
+          reason: d.reason,
+          execution: d.execution_type, 
+          rr: d.rr, 
+          outcome: d.outcome, 
+          created_at: d.created_at 
         })))
         
         const todayStr = getSecureTime().toDateString()
@@ -819,7 +1117,10 @@ export default function DeskClient() {
         const startOfThisWeek = new Date(currentTime.setDate(diffToMon))
         startOfThisWeek.setHours(0, 0, 0, 0)
         
-        const executedThisWeek = logsData.filter(l => new Date(l.created_at).getTime() >= startOfThisWeek.getTime()).map(l => l.symbol)
+        const executedThisWeek = logsData
+          .filter(l => new Date(l.created_at).getTime() >= startOfThisWeek.getTime())
+          .map(l => l.symbol)
+        
         setExecutedSymbols(executedThisWeek)
       }
 
@@ -828,27 +1129,38 @@ export default function DeskClient() {
       if (setupsData) {
         const todayStr = getSecureTime().toDateString();
         const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && new Date(s.added_to_today_at).toDateString() !== todayStr);
+        
         if (expiredSetups.length > 0) {
           const expiredIds = expiredSetups.map(s => s.id);
           await supabase.from('user_desk_setups').update({ is_today: false, added_to_today_at: null }).in('id', expiredIds);
           expiredSetups.forEach(s => { s.is_today = false; s.added_to_today_at = null; });
         }
+
         setSetups(setupsData.map(d => ({ 
-          id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, 
-          imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null 
+          id: d.id, 
+          symbol: d.symbol, 
+          direction: d.direction, 
+          playbook: d.playbook, 
+          notes: d.notes, 
+          imageUrl: d.image_url, 
+          isToday: d.is_today, 
+          addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null 
         })))
       }
     }
     initData()
   }, [getSecureTime])
 
-  // 🚨 Midnight Auto-Wipe
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
       const todayStr = getSecureTime().toDateString();
       const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() !== todayStr);
-      if (hasStaleSetups) window.location.reload();
+      
+      if (hasStaleSetups) {
+        window.location.reload();
+      }
     }, 60000); 
+    
     return () => clearInterval(checkMidnightWipe);
   }, [setups, getSecureTime]);
 
@@ -863,43 +1175,97 @@ export default function DeskClient() {
 
   const handleLockEntry = useCallback(async () => {
     if (tradesTakenToday < 2 && logPair && logDirection && logExecution && user) {
-      const newLog = { user_id: user.id, symbol: logPair, direction: logDirection, reason: logCatalystText || null, execution_type: logExecution }
+      const newLog = { 
+        user_id: user.id, 
+        symbol: logPair, 
+        direction: logDirection, 
+        reason: logCatalystText || null, 
+        execution_type: logExecution
+      }
       const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
       if (data && data[0]) {
         setTradesTakenToday(prev => prev + 1);
         setPendingReconciliation(prev => [{ 
-          id: data[0].id, day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
-          symbol: data[0].symbol, direction: data[0].direction, reason: data[0].reason, execution: data[0].execution_type, rr: '', outcome: '', created_at: data[0].created_at 
+          id: data[0].id, 
+          day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
+          symbol: data[0].symbol, 
+          direction: data[0].direction, 
+          reason: data[0].reason, 
+          execution: data[0].execution_type, 
+          rr: '', 
+          outcome: '', 
+          created_at: data[0].created_at 
         }, ...prev]);
+        
         setExecutedSymbols(prev => [...prev, data[0].symbol]);
       }
-      setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); setIsAuditOpen(false); 
+      setLogPair(''); 
+      setLogDirection(null); 
+      setLogCatalystText(''); 
+      setLogExecution(null); 
+      setIsAuditOpen(false); 
     }
   }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, user]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
+
       if (e.code === 'Escape') {
         e.preventDefault();
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') { target.blur(); }
-        setIsFullScreen(false); setConfirmPushId(null); setIsUploadModalOpen(false); setIsMT5ModalOpen(false); setIsVaultOpen(false); 
-        setIsAuditOpen(false); setIsCatalystSettingsOpen(false); setIsMobileNotesOpen(false); setPreviewSetup(null);
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') {
+          target.blur();
+        }
+        setIsFullScreen(false); 
+        setConfirmPushId(null); 
+        setIsUploadModalOpen(false); 
+        setIsMT5ModalOpen(false); 
+        setIsVaultOpen(false); 
+        setIsAuditOpen(false);
+        setIsCatalystSettingsOpen(false);
+        setIsMobileNotesOpen(false);
+        setPreviewSetup(null);
         return; 
       }
+
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
       if (isCatalystSettingsOpen || isMobileNotesOpen || previewSetup) return;
 
-      if (e.code === 'KeyV' && e.altKey) { e.preventDefault(); if (!isVaultLocked) setIsUploadModalOpen(true); return; }
-      if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setIsVaultOpen(prev => !prev); }
-      if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setIsAuditOpen(prev => !prev); }
+      if (e.code === 'KeyV' && e.altKey) { 
+        e.preventDefault(); 
+        if (!isVaultLocked) setIsUploadModalOpen(true); 
+        return; 
+      }
+
+      if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) { 
+        e.preventDefault(); 
+        setIsVaultOpen(prev => !prev); 
+      }
+
+      if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) { 
+        e.preventDefault(); 
+        setIsAuditOpen(prev => !prev); 
+      }
 
       if (logPair && !isAlreadyLogged && tradesTakenToday < 2) {
-        if (e.code === 'Digit1' || e.code === 'Numpad1') { e.preventDefault(); setLogExecution('Perfect'); }
-        if (e.code === 'Digit2' || e.code === 'Numpad2') { e.preventDefault(); setLogExecution('Imperfect'); }
-        if (e.code === 'Enter' || e.code === 'NumpadEnter') { if (logDirection && logExecution) { e.preventDefault(); handleLockEntry(); } }
+        if (e.code === 'Digit1' || e.code === 'Numpad1') { 
+          e.preventDefault(); 
+          setLogExecution('Perfect'); 
+        }
+        if (e.code === 'Digit2' || e.code === 'Numpad2') { 
+          e.preventDefault(); 
+          setLogExecution('Imperfect'); 
+        }
+        if (e.code === 'Enter' || e.code === 'NumpadEnter') {
+          if (logDirection && logExecution) { 
+            e.preventDefault(); 
+            handleLockEntry();
+          }
+        }
       }
+
       if (todaySetups.length === 0) return;
+
       if (e.code === 'Space') {
         e.preventDefault(); 
         const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
@@ -913,6 +1279,7 @@ export default function DeskClient() {
         }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, isMobileNotesOpen, isVaultLocked, handleLockEntry, previewSetup]);
@@ -923,6 +1290,12 @@ export default function DeskClient() {
       return () => clearTimeout(timeoutId)
     }
   }, [setups, activeTodayId, user])
+
+  // 🚨 4. EVENT HANDLERS
+  const handleDebriefChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setWeeklyDebrief(e.target.value);
+    localStorage.setItem(debriefKey, e.target.value);
+  };
 
   const handleConfirmPush = async () => {
     if(confirmPushId && user) {
@@ -963,28 +1336,50 @@ export default function DeskClient() {
       } else if (finalImageUrl && finalImageUrl.startsWith('blob:')) finalImageUrl = null 
       
       newSetups.push({ 
-        user_id: user.id, symbol: draft.instrument, direction: draft.direction, playbook: draft.playbook, notes: draft.notes, image_url: finalImageUrl, is_today: false 
+        user_id: user.id, 
+        symbol: draft.instrument, 
+        direction: draft.direction, 
+        playbook: draft.playbook, 
+        notes: draft.notes, 
+        image_url: finalImageUrl, 
+        is_today: false 
       })
     }
     const { data } = await supabase.from('user_desk_setups').insert(newSetups).select()
     if (data) {
       setSetups(prev => [...data.map(d => ({ 
-        id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url, isToday: false, addedToTodayAt: null 
+        id: d.id, 
+        symbol: d.symbol, 
+        direction: d.direction, 
+        playbook: d.playbook, 
+        notes: d.notes, 
+        imageUrl: d.image_url, 
+        isToday: false, 
+        addedToTodayAt: null 
       })), ...prev])
     }
   }
 
   const handleSaveReconciliation = async (id: string, outcome: string, rr: string, afterUrl: string, afterFile?: File | null) => {
     if (!user) return
+    
     let finalUrl = afterUrl;
     if (afterFile) {
       const { data } = await supabase.storage.from('user-desk-images').upload(`${user.id}/after_${Math.random()}.${afterFile.name.split('.').pop()}`, afterFile)
-      if (data) finalUrl = supabase.storage.from('user-desk-images').getPublicUrl(data.path).data.publicUrl
+      if (data) {
+        finalUrl = supabase.storage.from('user-desk-images').getPublicUrl(data.path).data.publicUrl
+      }
     }
+
     const isReconciled = outcome !== 'HOLD';
     const updateData: any = { is_reconciled: isReconciled, outcome, rr: parseFloat(rr) || null, after_image_url: finalUrl || null }
-    if (isReconciled) setPendingReconciliation(prev => prev.filter(p => p.id !== id))
-    else setPendingReconciliation(prev => prev.map(p => p.id === id ? { ...p, outcome: 'HOLD' } : p))
+    
+    if (isReconciled) {
+      setPendingReconciliation(prev => prev.filter(p => p.id !== id))
+    } else {
+      setPendingReconciliation(prev => prev.map(p => p.id === id ? { ...p, outcome: 'HOLD' } : p))
+    }
+
     await supabase.from('user_desk_logs').update(updateData).eq('id', id)
   }
 
@@ -992,22 +1387,53 @@ export default function DeskClient() {
     if (!user) return;
     const tradeToSplit = pendingReconciliation.find(t => t.id === id);
     if (!tradeToSplit) return;
-    const newLog = { user_id: user.id, symbol: tradeToSplit.symbol, direction: tradeToSplit.direction, reason: tradeToSplit.reason, execution_type: tradeToSplit.execution, is_reconciled: false, created_at: tradeToSplit.created_at };
+
+    const newLog = {
+        user_id: user.id,
+        symbol: tradeToSplit.symbol,
+        direction: tradeToSplit.direction,
+        reason: tradeToSplit.reason,
+        execution_type: tradeToSplit.execution,
+        is_reconciled: false,
+        created_at: tradeToSplit.created_at 
+    };
+
     const { data } = await supabase.from('user_desk_logs').insert([newLog]).select();
     if (data && data[0]) {
         setPendingReconciliation(prev => {
             const updated = [...prev];
             const index = updated.findIndex(t => t.id === id);
             updated.splice(index + 1, 0, {
-                id: data[0].id, day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }), symbol: data[0].symbol, direction: data[0].direction, reason: data[0].reason, execution: data[0].execution_type, rr: '', outcome: '', created_at: data[0].created_at
+                id: data[0].id,
+                day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }),
+                symbol: data[0].symbol,
+                direction: data[0].direction,
+                reason: data[0].reason,
+                execution: data[0].execution_type,
+                rr: '',
+                outcome: '',
+                created_at: data[0].created_at
             });
             return updated;
         });
     }
   }
 
-  const handleMT5Drop = (e: React.DragEvent) => { e.preventDefault(); if (e.dataTransfer.files && e.dataTransfer.files[0]) { setMt5File(e.dataTransfer.files[0]); setIsMT5ModalOpen(true); } }
-  const handleMT5Select = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files[0]) { setMt5File(e.target.files[0]); setIsMT5ModalOpen(true); } if (mt5InputRef.current) mt5InputRef.current.value = '' }
+  const handleMT5Drop = (e: React.DragEvent) => { 
+    e.preventDefault(); 
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) { 
+      setMt5File(e.dataTransfer.files[0]); 
+      setIsMT5ModalOpen(true); 
+    } 
+  }
+  
+  const handleMT5Select = (e: React.ChangeEvent<HTMLInputElement>) => { 
+    if (e.target.files && e.target.files[0]) { 
+      setMt5File(e.target.files[0]); 
+      setIsMT5ModalOpen(true); 
+    } 
+    if (mt5InputRef.current) mt5InputRef.current.value = '' 
+  }
 
   const handleMT5Confirm = (matches: any[]) => {
     setPendingReconciliation(prev => prev.map(log => {
@@ -1016,51 +1442,102 @@ export default function DeskClient() {
       return log
     }))
     matches.forEach(async m => {
-      if (m.match) await supabase.from('user_desk_logs').update({ mt5_position_id: m.match.ticket, outcome: m.match.outcome, rr: m.match.rr }).eq('id', m.log.id)
+      if (m.match) {
+        await supabase.from('user_desk_logs').update({ 
+          mt5_position_id: m.match.ticket, 
+          outcome: m.match.outcome, 
+          rr: m.match.rr 
+        }).eq('id', m.log.id)
+      }
     })
   }
 
-  const handlePeekStart = () => { if (chartScale !== 1) return; peekTimer.current = setTimeout(() => setIsPeeking(true), 400); };
-  const handlePeekEnd = () => { if (peekTimer.current) clearTimeout(peekTimer.current); setIsPeeking(false); };
+  const handlePeekStart = () => {
+    if (chartScale !== 1) return; 
+    peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
+  };
+
+  const handlePeekEnd = () => {
+    if (peekTimer.current) clearTimeout(peekTimer.current);
+    setIsPeeking(false);
+  };
 
   const activeCatalystList = logExecution === 'Perfect' ? perfectCatalysts : logExecution === 'Imperfect' ? imperfectCatalysts : [];
 
   return (
     <>
       <div className="relative flex flex-col lg:flex-row h-[100dvh] lg:min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
-        {isVaultOpen && <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[40]" onClick={() => setIsVaultOpen(false)} />}
+        
+        {isVaultOpen && (
+          <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[40]" onClick={() => setIsVaultOpen(false)} />
+        )}
+
         <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
+          
           <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 h-full lg:h-[calc(50%-4px)]">
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
             
             <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
               <div className="flex items-center gap-4">
-                <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Crosshair size={14} className="text-blue-500" /> Today's Focus</h2>
-                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-black border border-zinc-800 px-2 py-0.5 rounded shadow-inner">{todaySetups.length} Pairs Locked</span>
+                <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                  <Crosshair size={14} className="text-blue-500" /> Today's Focus
+                </h2>
+                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-black border border-zinc-800 px-2 py-0.5 rounded shadow-inner">
+                  {todaySetups.length} Pairs Locked
+                </span>
               </div>
-              <button onClick={() => setIsVaultOpen(!isVaultOpen)} className="hidden lg:block text-zinc-400 hover:text-white p-1.5 bg-black border border-zinc-800 rounded-md shadow-sm"><Menu size={14} /></button>
+              <button 
+                onClick={() => setIsVaultOpen(!isVaultOpen)} 
+                className="hidden lg:block text-zinc-400 hover:text-white p-1.5 bg-black border border-zinc-800 rounded-md shadow-sm"
+              >
+                <Menu size={14} />
+              </button>
             </div>
 
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
+              
               <div className="order-2 lg:order-1 w-full lg:w-56 shrink-0 flex-1 lg:flex-none border-t lg:border-t-0 lg:border-r border-zinc-800 flex flex-col bg-zinc-950/50 overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
                 {todaySetups.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4"><Target size={20} className="mb-2 opacity-50" /><span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span></div>
+                  <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
+                    <Target size={20} className="mb-2 opacity-50" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
+                  </div>
                 ) : (
                   todaySetups.map(setup => {
                     const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
                     const isExecuted = executedSymbols.includes(setup.symbol);
                     return (
-                      <div key={`today-${setup.id}`} onClick={() => setActiveTodayId(setup.id)} className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-md' : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'}`}>
+                      <div 
+                        key={`today-${setup.id}`} 
+                        onClick={() => setActiveTodayId(setup.id)} 
+                        className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-md' : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'}`}
+                      >
                         <div className="flex justify-between items-center mb-1">
-                          <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>{setup.symbol}</span>
+                          <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                            {setup.symbol}
+                          </span>
                           <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                            {activeTodayId === setup.id && <button onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} className="lg:hidden p-1 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400" title="View Notes"><Info size={14} /></button>}
-                            {!isExecuted && <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution"><Target size={12} /></button>}
-                            {canRemove && <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400" title="Remove (1hr limit)"><ArrowLeft size={12} /></button>}
+                            {activeTodayId === setup.id && (
+                              <button onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} className="lg:hidden p-1 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400" title="View Notes">
+                                <Info size={14} />
+                              </button>
+                            )}
+                            {!isExecuted && (
+                              <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
+                                <Target size={12} />
+                              </button>
+                            )}
+                            {canRemove && (
+                              <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400" title="Remove (1hr limit)">
+                                <ArrowLeft size={12} />
+                              </button>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'bg-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'bg-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'bg-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'bg-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
+                            {setup.direction || 'N/A'}
+                          </span>
                           {isExecuted && <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-bold uppercase truncate">Executed</span>}
                         </div>
                       </div>
@@ -1069,16 +1546,39 @@ export default function DeskClient() {
                 )}
               </div>
 
-              <div className="order-1 lg:order-2 w-full flex-[1.5] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group" onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}>
+              <div 
+                className="order-1 lg:order-2 w-full flex-[1.5] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group"
+                onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}
+              >
                 {activeSetup?.imageUrl ? (
                   <>
-                    <TransformWrapper key={activeSetup.id} initialScale={1} minScale={0.5} maxScale={10} centerOnInit={true} wheel={{ step: 0.1 }} doubleClick={{ mode: 'reset' }} panning={{ disabled: false }} pinch={{ step: 5 }} onTransformed={(ref) => setChartScale(ref.state.scale)} ref={transformRef}>
+                    <TransformWrapper
+                      key={activeSetup.id}
+                      initialScale={1}
+                      minScale={0.5}
+                      maxScale={10}
+                      centerOnInit={true}
+                      wheel={{ step: 0.1 }}
+                      doubleClick={{ mode: 'reset' }}
+                      panning={{ disabled: false }}
+                      pinch={{ step: 5 }}
+                      onTransformed={(ref) => setChartScale(ref.state.scale)}
+                      ref={transformRef}
+                    >
                       <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {/* 🚨 Added loading="eager" decoding="async" to prevent lazy load placeholders */}
-                        <img src={activeSetup.imageUrl} loading="eager" decoding="async" alt={activeSetup.symbol} className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" draggable={false} />
+                        <img 
+                          src={activeSetup.imageUrl} 
+                          loading="eager" 
+                          decoding="async" 
+                          alt={activeSetup.symbol} 
+                          className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
+                          draggable={false} 
+                        />
                       </TransformComponent>
                     </TransformWrapper>
-                    {chartScale !== 1 && <button onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }} className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100" title="View Full Screen"><Maximize size={16} /></button>}
+                    {chartScale !== 1 && (
+                      <button onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }} className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100" title="View Full Screen"><Maximize size={16} /></button>
+                    )}
                   </>
                 ) : (
                   <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0"><span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span></div>
@@ -1096,14 +1596,19 @@ export default function DeskClient() {
           <div className={`hidden lg:flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
             <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
-              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><Activity size={14} className="text-emerald-500" /> Action Logs <span className="text-[10px] text-zinc-600 font-mono ml-1 opacity-70">[A]</span></h2>
+              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <Activity size={14} className="text-emerald-500" /> Action Logs <span className="text-[10px] text-zinc-600 font-mono ml-1 opacity-70">[A]</span>
+              </h2>
               <button className="text-zinc-500 hover:text-white flex items-center gap-2">
-                {pendingReconciliation.length > 0 && !isAuditOpen && <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-black border border-zinc-800 px-2 py-0.5 rounded">{pendingReconciliation.length} Pending</span>}
+                {pendingReconciliation.length > 0 && !isAuditOpen && (
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-black border border-zinc-800 px-2 py-0.5 rounded">{pendingReconciliation.length} Pending</span>
+                )}
                 {isAuditOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
               </button>
             </div>
 
             <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
+              
               <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
                 <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
                   <div className="flex justify-between items-end">
@@ -1111,11 +1616,15 @@ export default function DeskClient() {
                       <h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3>
                       <button onClick={() => setIsCatalystSettingsOpen(true)} className="text-zinc-500 hover:text-white transition-colors" title="Edit Custom Catalysts"><Settings size={12} /></button>
                     </div>
-                    <span className={`text-[9px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>{tradesTakenToday}/2 TRADES</span>
+                    <span className={`text-[9px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>
+                      {tradesTakenToday}/2 TRADES
+                    </span>
                   </div>
 
                   {!logPair ? (
-                    <div className="py-2.5 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span></div>
+                    <div className="py-2.5 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span>
+                    </div>
                   ) : (
                     <div className="bg-black border border-zinc-700 rounded-xl p-4 shadow-inner flex flex-col gap-3">
                       <div className="flex justify-between items-center mb-1">
@@ -1152,6 +1661,7 @@ export default function DeskClient() {
               </div>
 
               <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
+                
                 <div className="flex flex-col gap-6">
                   <div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
@@ -1186,6 +1696,7 @@ export default function DeskClient() {
                     </div>
                   )}
                 </div>
+
               </div>
             </div>
           </div>
@@ -1216,7 +1727,9 @@ export default function DeskClient() {
                       <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={14} /></button>
                         
-                        {!isExecuted && <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>}
+                        {!isExecuted && (
+                           <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
+                        )}
                         
                         {!isPushedToToday && !isExecuted && (
                           <button 
@@ -1246,14 +1759,23 @@ export default function DeskClient() {
           <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4">
             <button 
               onClick={() => {
-                if (isVaultLocked) { alert(!isPrepWindow ? "Vault is locked. Weekly prep is only allowed from Saturday to Monday 5:30 AM." : "You must settle all trades in the Post-Trade Settlement Queue before prepping for the new week."); return; }
+                if (isVaultLocked) {
+                  alert(!isPrepWindow ? "Vault is locked. Weekly prep is only allowed from Saturday to Monday 5:30 AM." : "You must settle all trades in the Post-Trade Settlement Queue before prepping for the new week.");
+                  return;
+                }
                 setIsUploadModalOpen(true);
               }} 
               className={`w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all shadow-inner hover:shadow-none ${
-                isVaultLocked ? 'bg-zinc-900 border-red-500/30 text-red-500/50 cursor-not-allowed' : 'bg-black border-zinc-700 text-zinc-400 hover:text-white hover:border-blue-500/50'
+                isVaultLocked 
+                  ? 'bg-zinc-900 border-red-500/30 text-red-500/50 cursor-not-allowed' 
+                  : 'bg-black border-zinc-700 text-zinc-400 hover:text-white hover:border-blue-500/50'
               }`}
             >
-              {isVaultLocked ? <><Lock size={14} /> {!isPrepWindow ? 'Locked Until Weekend' : 'Settle Trades to Unlock'}</> : <><Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></>}
+              {isVaultLocked ? (
+                <><Lock size={14} /> {!isPrepWindow ? 'Locked Until Weekend' : 'Settle Trades to Unlock'}</>
+              ) : (
+                <><Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></>
+              )}
             </button>
           </div>
         </div>
@@ -1287,17 +1809,17 @@ export default function DeskClient() {
           </div>
         )}
 
-        {/* 🚨 THE MISSING PREVIEW MODAL */}
+        {/* 🚨 PREVIEW MODAL (Fully wired up with eager loading) */}
         {previewSetup && (
           <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150" onClick={() => setPreviewSetup(null)}>
             <div className="absolute top-4 right-4 z-10"><button onClick={() => setPreviewSetup(null)} className="p-2 bg-black/50 text-white rounded-full hover:bg-zinc-800 transition-colors"><X size={20}/></button></div>
-            <img src={previewSetup.imageUrl} alt="Preview" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl cursor-default" onClick={(e) => e.stopPropagation()} />
+            <img src={previewSetup.imageUrl} alt="Preview" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl cursor-default" onClick={(e) => e.stopPropagation()} />
           </div>
         )}
 
         {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
           <div className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`} onClick={() => { if (isFullScreen) setIsFullScreen(false); }}>
-            <img src={activeSetup.imageUrl} alt="Peek" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+            <img src={activeSetup.imageUrl} alt="Peek" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
           </div>
         )}
       </div>
