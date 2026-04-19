@@ -1374,6 +1374,7 @@ export default function DeskClient() {
     }
   }
 
+  // --- FIX: REPLACEMENT START ---
   const handleSaveReconciliation = async (id: string, outcome: string, rr: string, afterUrl: string, afterFile?: File | null) => {
     if (!user) return
     
@@ -1396,27 +1397,7 @@ export default function DeskClient() {
 
     await supabase.from('user_desk_logs').update(updateData).eq('id', id)
   }
-
-    const { data } = await supabase.from('user_desk_logs').insert([newLog]).select();
-    if (data && data[0]) {
-        setPendingReconciliation(prev => {
-            const updated = [...prev];
-            const index = updated.findIndex(t => t.id === id);
-            updated.splice(index + 1, 0, {
-                id: data[0].id,
-                day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }),
-                symbol: data[0].symbol,
-                direction: data[0].direction,
-                reason: data[0].reason,
-                execution: data[0].execution_type,
-                rr: '',
-                outcome: '',
-                created_at: data[0].created_at
-            });
-            return updated;
-        });
-    }
-  }
+  // --- FIX: REPLACEMENT END ---
 
   const handleMT5Drop = (e: React.DragEvent) => { 
     e.preventDefault(); 
