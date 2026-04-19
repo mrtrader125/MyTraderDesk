@@ -38,11 +38,25 @@ export default function JournalClient() {
   const [activeTradeId, setActiveTradeId] = useState<string | null>(null)
   const [timeFilter, setTimeFilter] = useState<'ALL' | 'MONTH' | 'WEEK'>('ALL')
   const [viewMode, setViewMode] = useState<'BEFORE' | 'AFTER'>('BEFORE')
+  
+  // 🚨 TRADING PREFERENCES STATE
+  const [terminology, setTerminology] = useState<'LONG_SHORT' | 'BUY_SELL'>('LONG_SHORT')
+
+  const displayDirection = (dir: string | null | undefined) => {
+    if (!dir) return 'N/A';
+    if (terminology === 'BUY_SELL') return dir === 'LONG' ? 'BUY' : 'SELL';
+    return dir;
+  }
 
   useEffect(() => {
     const fetchJournalData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) return
+
+      // Load Terminology Preference
+      if (session.user.user_metadata?.trade_terminology) {
+        setTerminology(session.user.user_metadata.trade_terminology)
+      }
 
       // Pulling from both tables simultaneously using the setup_id foreign key
       let query = supabase
@@ -247,7 +261,10 @@ export default function JournalClient() {
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold text-zinc-200">{log.symbol}</span>
-                          <span className={`text-[8px] font-bold px-1 py-0.5 rounded border ${log.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>{log.direction}</span>
+                          {/* 🚨 TERMINOLOGY HELPER APPLIED HERE */}
+                          <span className={`text-[8px] font-bold px-1 py-0.5 rounded border ${log.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
+                            {displayDirection(log.direction)}
+                          </span>
                         </div>
                       </td>
                       <td className="px-3 py-2.5 text-zinc-400 text-[9px] uppercase font-bold tracking-wider">{log.playbook || 'N/A'}</td>
@@ -300,8 +317,9 @@ export default function JournalClient() {
                     <h1 className="text-lg font-black text-white tracking-wider">
                       {activeTrade.symbol}
                     </h1>
+                    {/* 🚨 TERMINOLOGY HELPER APPLIED HERE */}
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border tracking-widest ${activeTrade.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
-                      {activeTrade.direction}
+                      {displayDirection(activeTrade.direction)}
                     </span>
                     <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest px-1">{activeTrade.playbook || 'No Playbook'}</span>
                   </div>
