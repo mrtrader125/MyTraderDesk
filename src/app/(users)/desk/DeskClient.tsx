@@ -661,7 +661,7 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
 }
 
 // --- RECONCILIATION ITEM ---
-function ReconciliationItem({ trade, onSave, onSplit, user }: { trade: any, onSave: (id: string, outcome: string, rr: string, afterImageUrl: string, afterFile?: File | null) => void, onSplit: (id: string) => void, user: any }) {
+function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: string, outcome: string, rr: string, afterImageUrl: string, afterFile?: File | null) => void, user: any }) {
   const [outcome, setOutcome] = useState(trade.outcome || '')
   const [rr, setRr] = useState(trade.rr ? trade.rr.toString() : '')
   
@@ -829,23 +829,25 @@ function ReconciliationItem({ trade, onSave, onSplit, user }: { trade: any, onSa
           </>
         )}
 
-        {/* 🚨 The Settle / Confirmation Buttons */}
+        {/* 🚨 HOLD CONFIRMATION UI - FIXED FLEXBOX COLLAPSE */}
         {showHoldConfirm ? (
-          <div className="flex items-center justify-end gap-3 flex-1 animate-in fade-in zoom-in-95 duration-200 min-w-0">
-            <span className="text-[10px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight mr-2 hidden sm:block">
-              Are you actually holding<br/>or avoiding a loss?
+          <div className="flex items-center justify-end gap-2 w-full sm:w-auto flex-1 animate-in fade-in zoom-in-95 duration-200">
+            <span className="text-[10px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden lg:block truncate">
+              Holding or avoiding loss?
             </span>
-            <button onClick={() => setShowHoldConfirm(false)} className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shrink-0">Cancel</button>
-            <button onClick={executeSave} disabled={isSaving} className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)] shrink-0">
+            <button onClick={() => setShowHoldConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors whitespace-nowrap shrink-0">
+              Cancel
+            </button>
+            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)] whitespace-nowrap shrink-0">
               {isSaving ? '...' : 'Confirm'}
             </button>
           </div>
         ) : (
-          <div className="flex gap-2 w-full sm:w-auto shrink-0">
+          <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
             <button 
               disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} 
               onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} 
-              className="flex-1 sm:flex-none px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors shrink-0"
+              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors shrink-0 whitespace-nowrap"
             >
               {isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}
             </button>
@@ -1104,25 +1106,27 @@ export default function DeskClient() {
         if (savedImperfect) setImperfectCatalysts(JSON.parse(savedImperfect));
       }
 
+      // Helper to align DB UTC time with Spoofed IST
+      const adjustDbTime = (utcString: string) => new Date(new Date(utcString).getTime() + timeOffset);
+
       const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       
       if (logsData) {
         setPendingReconciliation(logsData.filter(d => !d.is_reconciled || d.outcome === 'HOLD').map(d => ({ 
           id: d.id, 
-          day: new Date(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
+          day: adjustDbTime(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
           symbol: d.symbol, 
           direction: d.direction, 
           reason: d.reason,
           execution: d.execution_type, 
           rr: d.rr, 
           outcome: d.outcome, 
-          created_at: d.created_at 
+          created_at: d.created_at // Keep true UTC for MT5 Sync
         })))
         
         const todayStr = getSecureTime().toDateString()
-        setTradesTakenToday(logsData.filter(d => new Date(d.created_at).toDateString() === todayStr).length)
+        setTradesTakenToday(logsData.filter(d => adjustDbTime(d.created_at).toDateString() === todayStr).length)
 
-        // Safe time math again
         const initNow = getSecureTime();
         const initDayOfWeek = initNow.getDay();
         const initDiffToMon = initNow.getDate() - initDayOfWeek + (initDayOfWeek === 0 ? -6 : 1);
@@ -1131,7 +1135,7 @@ export default function DeskClient() {
         initStartOfWeek.setHours(0, 0, 0, 0);
         
         const executedThisWeek = logsData
-          .filter(l => new Date(l.created_at).getTime() >= initStartOfWeek.getTime())
+          .filter(l => adjustDbTime(l.created_at).getTime() >= initStartOfWeek.getTime())
           .map(l => l.symbol)
         
         setExecutedSymbols(executedThisWeek)
@@ -1141,7 +1145,7 @@ export default function DeskClient() {
       
       if (setupsData) {
         const todayStr = getSecureTime().toDateString();
-        const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && new Date(s.added_to_today_at).toDateString() !== todayStr);
+        const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && adjustDbTime(s.added_to_today_at).toDateString() !== todayStr);
         
         if (expiredSetups.length > 0) {
           const expiredIds = expiredSetups.map(s => s.id);
@@ -1157,12 +1161,12 @@ export default function DeskClient() {
           notes: d.notes, 
           imageUrl: d.image_url, 
           isToday: d.is_today, 
-          addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null 
+          addedToTodayAt: d.added_to_today_at ? adjustDbTime(d.added_to_today_at).getTime() : null 
         })))
       }
     }
     initData()
-  }, [getSecureTime])
+  }, [getSecureTime, timeOffset])
 
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
@@ -1198,9 +1202,10 @@ export default function DeskClient() {
       const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
       if (data && data[0]) {
         setTradesTakenToday(prev => prev + 1);
+        const spoofedNow = getSecureTime();
         setPendingReconciliation(prev => [{ 
           id: data[0].id, 
-          day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
+          day: spoofedNow.toLocaleDateString('en-US', { weekday: 'short' }), 
           symbol: data[0].symbol, 
           direction: data[0].direction, 
           reason: data[0].reason, 
@@ -1218,7 +1223,7 @@ export default function DeskClient() {
       setLogExecution(null); 
       setIsAuditOpen(false); 
     }
-  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, user]);
+  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, user, getSecureTime]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1313,10 +1318,11 @@ export default function DeskClient() {
 
   const handleConfirmPush = async () => {
     if(confirmPushId && user) {
-      const nowPush = getSecureTime()
-      setSetups(prev => prev.map(s => s.id === confirmPushId ? { ...s, isToday: true, addedToTodayAt: nowPush.getTime() } : s))
+      const trueUtcNow = new Date();
+      const spoofedNow = getSecureTime();
+      setSetups(prev => prev.map(s => s.id === confirmPushId ? { ...s, isToday: true, addedToTodayAt: spoofedNow.getTime() } : s))
       setConfirmPushId(null)
-      await supabase.from('user_desk_setups').update({ is_today: true, added_to_today_at: nowPush.toISOString() }).eq('id', confirmPushId)
+      await supabase.from('user_desk_setups').update({ is_today: true, added_to_today_at: trueUtcNow.toISOString() }).eq('id', confirmPushId)
     }
   }
 
@@ -1374,7 +1380,6 @@ export default function DeskClient() {
     }
   }
 
-  // --- FIX: REPLACEMENT START ---
   const handleSaveReconciliation = async (id: string, outcome: string, rr: string, afterUrl: string, afterFile?: File | null) => {
     if (!user) return
     
@@ -1397,7 +1402,6 @@ export default function DeskClient() {
 
     await supabase.from('user_desk_logs').update(updateData).eq('id', id)
   }
-  // --- FIX: REPLACEMENT END ---
 
   const handleMT5Drop = (e: React.DragEvent) => { 
     e.preventDefault(); 
@@ -1482,7 +1486,7 @@ export default function DeskClient() {
                   </div>
                 ) : (
                   todaySetups.map(setup => {
-                    const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
+                    const canRemove = setup.addedToTodayAt && (getSecureTime().getTime() - setup.addedToTodayAt < 3600000);
                     const isExecuted = executedSymbols.includes(setup.symbol);
                     return (
                       <div 
