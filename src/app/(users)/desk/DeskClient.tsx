@@ -8,7 +8,7 @@ import Papa from 'papaparse'
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock, Copy
 } from 'lucide-react'
 
 // 🚨 CONSTANTS MUST BE AT THE TOP
@@ -651,7 +651,7 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
 }
 
 // --- RECONCILIATION ITEM ---
-function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: string, outcome: string, rr: string, afterImageUrl: string, afterFile?: File | null) => void, user: any }) {
+function ReconciliationItem({ trade, onSave, onSplit, user }: { trade: any, onSave: (id: string, outcome: string, rr: string, afterImageUrl: string, afterFile?: File | null) => void, onSplit: (id: string) => void, user: any }) {
   const [outcome, setOutcome] = useState(trade.outcome || '')
   const [rr, setRr] = useState(trade.rr ? trade.rr.toString() : '')
   
@@ -660,7 +660,7 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
   const [afterPreview, setAfterPreview] = useState<string | null>(null)
   
   const [isSaving, setIsSaving] = useState(false)
-  const [showHoldConfirm, setShowHoldConfirm] = useState(false) // 🚨 HOLD Confirmation State
+  const [showHoldConfirm, setShowHoldConfirm] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { 
@@ -668,7 +668,6 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
     setRr(trade.rr ? trade.rr.toString() : ''); 
   }, [trade.outcome, trade.rr])
 
-  // Reset confirmation if they scroll off HOLD
   useEffect(() => {
     setShowHoldConfirm(false);
   }, [outcome])
@@ -810,7 +809,7 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
            )}
         </div>
 
-        {/* 🚨 HOLD CONFIRMATION UI */}
+        {/* 🚨 HOLD CONFIRMATION & SPLIT UI */}
         {showHoldConfirm ? (
           <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto shrink-0 animate-in fade-in zoom-in-95 duration-200">
             <span className="text-[9px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden xl:block mr-1">
@@ -822,13 +821,19 @@ function ReconciliationItem({ trade, onSave, user }: { trade: any, onSave: (id: 
             </button>
           </div>
         ) : (
-          <button 
-            disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} 
-            onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} 
-            className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors sm:ml-auto shrink-0"
-          >
-            {isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}
-          </button>
+          <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
+            {/* 🚨 Split Trade Button */}
+            <button onClick={() => onSplit(trade.id)} className="px-3 py-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white rounded-lg transition-colors border border-zinc-800 shrink-0" title="Split Position (Partial Close)">
+               <Copy size={14} />
+            </button>
+            <button 
+              disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} 
+              onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} 
+              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors shrink-0"
+            >
+              {isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}
+            </button>
+          </div>
         )}
       </div>
     </div>
@@ -970,6 +975,18 @@ export default function DeskClient() {
 
   const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
+  // 🚨 WorldTimeAPI Enforcer (Prevents Local Clock Cheat)
+  const [timeOffset, setTimeOffset] = useState(0);
+  useEffect(() => {
+    fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata')
+      .then(res => res.json())
+      .then(data => {
+        const realTime = new Date(data.datetime).getTime();
+        setTimeOffset(realTime - Date.now());
+      }).catch(() => setTimeOffset(0)); // Graceful fallback
+  }, []);
+  const getSecureTime = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
+
   useEffect(() => {
     const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
     handleResize(); 
@@ -1042,10 +1059,10 @@ export default function DeskClient() {
           created_at: d.created_at 
         })))
         
-        const todayStr = new Date().toDateString()
+        const todayStr = getSecureTime().toDateString()
         setTradesTakenToday(logsData.filter(d => new Date(d.created_at).toDateString() === todayStr).length)
 
-        const now = new Date()
+        const now = getSecureTime()
         const dayOfWeek = now.getDay() 
         const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
         const startOfWeek = new Date(now.setDate(diffToMonday))
@@ -1061,7 +1078,7 @@ export default function DeskClient() {
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       
       if (setupsData) {
-        const todayStr = new Date().toDateString();
+        const todayStr = getSecureTime().toDateString();
         const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && new Date(s.added_to_today_at).toDateString() !== todayStr);
         
         if (expiredSetups.length > 0) {
@@ -1083,12 +1100,12 @@ export default function DeskClient() {
       }
     }
     initData()
-  }, [supabase])
+  }, [supabase, getSecureTime])
 
-  // 🚨 Midnight Auto-Wipe Interval (Live Tab Update)
+  // 🚨 Midnight Auto-Wipe Interval (Live Tab Update via Secure Time)
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
-      const todayStr = new Date().toDateString();
+      const todayStr = getSecureTime().toDateString();
       const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() !== todayStr);
       
       if (hasStaleSetups) {
@@ -1097,10 +1114,14 @@ export default function DeskClient() {
     }, 60000); 
     
     return () => clearInterval(checkMidnightWipe);
-  }, [setups]);
+  }, [setups, getSecureTime]);
 
   const todaySetups = setups.filter(s => s.isToday)
   
+  // 🚨 5-Bullet Staging Limit Calculation
+  const pushesToday = setups.filter(s => s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() === getSecureTime().toDateString()).length;
+  const canPushMore = pushesToday < 5;
+
   const weeklySetups = [...setups].sort((a, b) => {
     const aExec = executedSymbols.includes(a.symbol);
     const bExec = executedSymbols.includes(b.symbol);
@@ -1111,7 +1132,7 @@ export default function DeskClient() {
 
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
 
-  const now = new Date()
+  const now = getSecureTime()
   const dayOfWeek = now.getDay() 
   const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 // Saturday (6) or Sunday (0)
   
@@ -1122,7 +1143,10 @@ export default function DeskClient() {
   const currentWeekPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() >= startOfCurrentWeek.getTime() && t.outcome !== 'HOLD');
   const heldOverPending = pendingReconciliation.filter(t => new Date(t.created_at).getTime() < startOfCurrentWeek.getTime() || t.outcome === 'HOLD');
 
-  const isVaultLocked = isWeekendNow && currentWeekPending.length > 0;
+  // 🚨 The Vault Lock Logic (Wednesday Cheat Patched)
+  // Prep is ONLY allowed on Weekends or Monday before 5:30 AM
+  const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
+  const isVaultLocked = !isPrepWindow || (isPrepWindow && currentWeekPending.length > 0);
 
   const debriefKey = `desk_weekly_debrief_${startOfCurrentWeek.getTime()}`;
   const [weeklyDebrief, setWeeklyDebrief] = useState('');
@@ -1131,7 +1155,6 @@ export default function DeskClient() {
     setWeeklyDebrief(e.target.value);
     localStorage.setItem(debriefKey, e.target.value);
   };
-
 
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
@@ -1264,7 +1287,7 @@ export default function DeskClient() {
 
   const handleConfirmPush = async () => {
     if(confirmPushId && user) {
-      const now = new Date()
+      const now = getSecureTime()
       setSetups(prev => prev.map(s => s.id === confirmPushId ? { ...s, isToday: true, addedToTodayAt: now.getTime() } : s))
       setConfirmPushId(null)
       await supabase.from('user_desk_setups').update({ is_today: true, added_to_today_at: now.toISOString() }).eq('id', confirmPushId)
@@ -1346,6 +1369,43 @@ export default function DeskClient() {
     }
 
     await supabase.from('user_desk_logs').update(updateData).eq('id', id)
+  }
+
+  // 🚨 Split Trade Logic (Partial Close)
+  const handleSplitTrade = async (id: string) => {
+    if (!user) return;
+    const tradeToSplit = pendingReconciliation.find(t => t.id === id);
+    if (!tradeToSplit) return;
+
+    const newLog = {
+        user_id: user.id,
+        symbol: tradeToSplit.symbol,
+        direction: tradeToSplit.direction,
+        reason: tradeToSplit.reason,
+        execution_type: tradeToSplit.execution,
+        is_reconciled: false,
+        created_at: tradeToSplit.created_at // Keep original date so it stays in the same week's queue
+    };
+
+    const { data } = await supabase.from('user_desk_logs').insert([newLog]).select();
+    if (data && data[0]) {
+        setPendingReconciliation(prev => {
+            const updated = [...prev];
+            const index = updated.findIndex(t => t.id === id);
+            updated.splice(index + 1, 0, {
+                id: data[0].id,
+                day: new Date(data[0].created_at).toLocaleDateString('en-US', { weekday: 'short' }),
+                symbol: data[0].symbol,
+                direction: data[0].direction,
+                reason: data[0].reason,
+                execution: data[0].execution_type,
+                rr: '',
+                outcome: '',
+                created_at: data[0].created_at
+            });
+            return updated;
+        });
+    }
   }
 
   const handleMT5Drop = (e: React.DragEvent) => { 
@@ -1600,7 +1660,7 @@ export default function DeskClient() {
                       ) : currentWeekPending.length === 0 ? (
                         <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups this week</span></div>
                       ) : (
-                        currentWeekPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)
+                        currentWeekPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} onSplit={handleSplitTrade} />)
                       )}
                     </div>
                   </div>
@@ -1611,7 +1671,7 @@ export default function DeskClient() {
                         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Legacy / Carried Over</span>
                       </div>
                       <div className="flex flex-col gap-2.5 opacity-80 hover:opacity-100 transition-opacity">
-                        {heldOverPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} />)}
+                        {heldOverPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} onSplit={handleSplitTrade} />)}
                       </div>
                     </div>
                   )}
@@ -1653,7 +1713,15 @@ export default function DeskClient() {
                         )}
                         
                         {!isPushedToToday && !isExecuted && (
-                          <button onClick={() => setConfirmPushId(setup.id)} className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm">Push <ArrowRight size={12} /></button>
+                          <button 
+                            onClick={() => {
+                              if (!canPushMore) alert("Daily Sniper Limit Reached: You have already pushed 5 pairs today.");
+                              else setConfirmPushId(setup.id);
+                            }} 
+                            className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm"
+                          >
+                            Push <ArrowRight size={12} />
+                          </button>
                         )}
                       </div>
                     </div>
@@ -1673,7 +1741,7 @@ export default function DeskClient() {
             <button 
               onClick={() => {
                 if (isVaultLocked) {
-                  alert("You must settle all trades in the Post-Trade Settlement Queue before prepping for the new week.");
+                  alert(!isPrepWindow ? "Vault is locked. Weekly prep is only allowed from Saturday to Monday 5:30 AM." : "You must settle all trades in the Post-Trade Settlement Queue before prepping for the new week.");
                   return;
                 }
                 setIsUploadModalOpen(true);
@@ -1685,7 +1753,7 @@ export default function DeskClient() {
               }`}
             >
               {isVaultLocked ? (
-                <><Lock size={14} /> Settle Trades to Unlock</>
+                <><Lock size={14} /> {!isPrepWindow ? 'Locked Until Weekend' : 'Settle Trades to Unlock'}</>
               ) : (
                 <><Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></>
               )}
