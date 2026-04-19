@@ -12,7 +12,6 @@ import {
   DownloadCloud, Link as LinkIcon, Image as ImageIcon, Clipboard, Plus
 } from 'lucide-react'
 
-// 🚨 ADDED THE MISSING CONSTANTS HERE
 const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
 const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
 const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
@@ -26,7 +25,6 @@ type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx:
 
 const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v4'
 
-// Hard sanitize loaded layouts to prevent JS string concatenation bugs in collision math
 const sanitizeLayout = (data: any) => {
   if (!data || !data.local || !data.session) return null;
   return {
@@ -75,7 +73,6 @@ export default function PersonalDashboard() {
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
-  // Interactive Chart States
   const [isPeeking, setIsPeeking] = useState(false)
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [chartScale, setChartScale] = useState(1)
@@ -89,7 +86,6 @@ export default function PersonalDashboard() {
     "font-sans font-thin tracking-widest text-zinc-400"      
   ]
 
-  // Action Log UI States
   const [logPair, setLogPair] = useState<string>('') 
   const [logDirection, setLogDirection] = useState<'LONG' | 'SHORT' | null>(null)
   const [logCatalystText, setLogCatalystText] = useState('')
@@ -99,6 +95,23 @@ export default function PersonalDashboard() {
 
   const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
   const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
+
+  // 🚨 2. Supabase Sync for Settings
+  useEffect(() => {
+    const syncCatalysts = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.auth.updateUser({
+          data: {
+            desk_perfect_catalysts: perfectCatalysts,
+            desk_imperfect_catalysts: imperfectCatalysts
+          }
+        })
+      }
+    }
+    const timeoutId = setTimeout(syncCatalysts, 2000)
+    return () => clearTimeout(timeoutId)
+  }, [perfectCatalysts, imperfectCatalysts])
 
   useEffect(() => {
     const loadLayout = async () => {
@@ -144,9 +157,7 @@ export default function PersonalDashboard() {
             data: { desk_layout: widgets }
           })
         }
-      } catch (e) {
-        console.error("Failed to sync layout to cloud", e)
-      }
+      } catch (e) {}
     }, 2000)
 
     return () => clearTimeout(timeoutId)
@@ -185,6 +196,8 @@ export default function PersonalDashboard() {
     return () => clearInterval(timer)
   }, [])
 
+  const [setups, setSetups] = useState<any[]>([]);
+
   useEffect(() => {
     const fetchDashboardData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -194,7 +207,21 @@ export default function PersonalDashboard() {
       }
       const user = session.user
 
-      // Auto-Reset Stale "Today" Setups logic
+      // Load Settings from Supabase
+      if (user.user_metadata?.desk_perfect_catalysts) {
+        setPerfectCatalysts(user.user_metadata.desk_perfect_catalysts);
+      } else {
+        const savedPerfect = localStorage.getItem('desk_perfect_catalysts');
+        if (savedPerfect) setPerfectCatalysts(JSON.parse(savedPerfect));
+      }
+      
+      if (user.user_metadata?.desk_imperfect_catalysts) {
+        setImperfectCatalysts(user.user_metadata.desk_imperfect_catalysts);
+      } else {
+        const savedImperfect = localStorage.getItem('desk_imperfect_catalysts');
+        if (savedImperfect) setImperfectCatalysts(JSON.parse(savedImperfect));
+      }
+
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('added_to_today_at', { ascending: false })
       
       if (setupsData) {
@@ -208,10 +235,13 @@ export default function PersonalDashboard() {
         }
       }
 
-      const activeSetups = setupsData?.filter(s => s.is_today) || []
+      const parsedSetups = setupsData ? setupsData.map(d => ({ id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at })) : [];
+      setSetups(parsedSetups);
+
+      const activeSetups = parsedSetups.filter(s => s.isToday)
       
-      setVaultSetupCount(setupsData?.length || 0)
-      setTodaySetups(activeSetups.map(d => ({ id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url })))
+      setVaultSetupCount(parsedSetups.length)
+      setTodaySetups(activeSetups)
 
       const now = new Date()
       const dayOfWeek = now.getDay() 
@@ -260,7 +290,6 @@ export default function PersonalDashboard() {
       setWeekProgress(progress)
       setTradesTakenToday(todayTradeCount)
 
-      // 🚨 Calculate only un-held current-week reconciliations
       const pendingReconciliations = logsData?.filter(l => !l.is_reconciled && l.outcome !== 'HOLD' && new Date(l.created_at).getTime() >= startOfWeek.getTime()) || []
       setPendingReconciliationsCount(pendingReconciliations.length)
 
@@ -270,12 +299,25 @@ export default function PersonalDashboard() {
     fetchDashboardData()
   }, [])
 
+  // 🚨 3. Midnight Auto-Wipe Interval (Live Tab Update)
+  useEffect(() => {
+    const checkMidnightWipe = setInterval(() => {
+      const todayStr = new Date().toDateString();
+      const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() !== todayStr);
+      
+      if (hasStaleSetups) {
+        window.location.reload();
+      }
+    }, 60000); 
+    
+    return () => clearInterval(checkMidnightWipe);
+  }, [setups]);
+
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) setActiveTodayId(todaySetups[0].id)
     else if (todaySetups.length === 0) setActiveTodayId(null)
   }, [todaySetups, activeTodayId])
 
-  // AUTO-RESET ZOOM ON SWITCH
   useEffect(() => {
     if (activeTodayId && transformRef.current) {
       transformRef.current.resetTransform();
@@ -283,7 +325,12 @@ export default function PersonalDashboard() {
     }
   }, [activeTodayId]);
 
-  // GLOBAL HOTKEYS FOR DASHBOARD
+  // The Accountability Lock Logic
+  const now = new Date()
+  const dayOfWeek = now.getDay() 
+  const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 // Saturday (6) or Sunday (0)
+  const isVaultLocked = isWeekendNow && pendingReconciliationsCount > 0;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -299,13 +346,11 @@ export default function PersonalDashboard() {
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
 
-      // Active Focus Toggles
       if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         setIsTodayFocusExpanded(prev => !prev);
       }
 
-      // Quick Links
       if (e.code === 'KeyJ' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         router.push('/journal');
@@ -318,7 +363,6 @@ export default function PersonalDashboard() {
 
       if (todaySetups.length === 0) return;
 
-      // Spacebar Traversal
       if (e.code === 'Space') {
         e.preventDefault(); 
         const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
@@ -338,7 +382,6 @@ export default function PersonalDashboard() {
   }, [todaySetups, activeTodayId, router]);
 
 
-  // SMART PEEK LOGIC
   const handlePeekStart = () => {
     if (chartScale !== 1) return; 
     peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
@@ -349,7 +392,6 @@ export default function PersonalDashboard() {
     setIsPeeking(false);
   };
 
-  // Drag & Drop Logic for Grid
   const checkOverlap = (rect1: Omit<Widget, 'id' | 'fontIdx'>, rect2: Omit<Widget, 'id' | 'fontIdx'>) => {
     return (
       rect1.x < rect2.x + rect2.w &&
@@ -472,9 +514,6 @@ export default function PersonalDashboard() {
 
   const activeSetup = todaySetups.find(s => s.id === activeTodayId)
   
-  // 🚨 Time Calculations
-  const isWeekendNow = new Date().getDay() === 6 || new Date().getDay() === 0 
-  const isVaultLocked = isWeekendNow && pendingReconciliationsCount > 0;
   const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
 
   const formatTime = (timeStr: string, fontIdx: number) => {
@@ -774,41 +813,30 @@ export default function PersonalDashboard() {
                       <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Active</span>
                     </div>
                   ) : (
-                    todaySetups.map(setup => {
-                      const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
-                      return (
-                        <div 
-                          key={`today-${setup.id}`}
-                          onClick={() => setActiveTodayId(setup.id)}
-                          className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group ${
-                            activeTodayId === setup.id 
-                              ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
-                              : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
-                          }`}
-                        >
-                          <div className="flex justify-between items-center mb-1">
-                            <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
-                              {setup.symbol}
-                            </span>
-                            {canRemove && (
-                              <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" title="Remove (1hr limit)">
-                                <ArrowLeft size={12} />
-                              </button>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
-                            {setup.playbook && <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook}</span>}
-                          </div>
+                    todaySetups.map(setup => (
+                      <div 
+                        key={`today-${setup.id}`}
+                        onClick={() => setActiveTodayId(setup.id)}
+                        className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group ${
+                          activeTodayId === setup.id 
+                            ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
+                            : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
+                        }`}
+                      >
+                        <span className={`text-sm font-bold tracking-wider mb-1 ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
+                          {setup.symbol}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
+                          {setup.playbook && <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook}</span>}
                         </div>
-                      )
-                    })
+                      </div>
+                    ))
                   )}
                 </div>
 
                 <div className={`flex flex-row min-w-0 overflow-hidden transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'flex-1 opacity-100' : 'w-0 opacity-0'}`}>
                   
-                  {/* Interactive Dashboard Canvas */}
                   <div 
                     className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60 group overflow-hidden"
                     onMouseDown={handlePeekStart}
