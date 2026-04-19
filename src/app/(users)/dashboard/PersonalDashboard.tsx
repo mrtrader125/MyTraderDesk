@@ -9,7 +9,7 @@ import {
   Crosshair, CheckCircle2, Clock, 
   Target, Globe2, Activity, Lock, X, AlertTriangle, Type,
   ChevronLeft, ChevronRight, BookOpen, Maximize, Settings,
-  DownloadCloud, Link as LinkIcon, Image as ImageIcon, Clipboard, Plus, Copy
+  DownloadCloud, Link as LinkIcon, Image as ImageIcon, Clipboard, Plus, Info
 } from 'lucide-react'
 
 // 🚨 CONSTANTS MUST BE AT THE TOP
@@ -17,14 +17,21 @@ const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Break
 const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
 const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
 
+const fontStyles = [
+  "font-mono font-black tracking-tighter text-zinc-100",   
+  "font-sans font-extrabold tracking-tight text-white",    
+  "font-serif font-light tracking-wide text-zinc-300",     
+  "font-sans font-thin tracking-widest text-zinc-400"      
+]
+
+type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx: number }
+const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v4'
+
+// 🚨 GLOBAL SUPABASE CLIENT (Fixes "Multiple GoTrueClient instances" warning)
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
-
-type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx: number }
-
-const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v4'
 
 // Hard sanitize loaded layouts to prevent JS string concatenation bugs in collision math
 const sanitizeLayout = (data: any) => {
@@ -47,11 +54,14 @@ const sanitizeLayout = (data: any) => {
 
 export default function PersonalDashboard() {
   const router = useRouter()
+  
+  // 🚨 1. ALL USESTATE HOOKS FIRST
+  const [user, setUser] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [layoutLoaded, setLayoutLoaded] = useState(false)
   
-  const [todaySetups, setTodaySetups] = useState<any[]>([])
+  const [setups, setSetups] = useState<any[]>([])
   const [vaultSetupCount, setVaultSetupCount] = useState(0)
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
   
@@ -60,6 +70,7 @@ export default function PersonalDashboard() {
   const [pendingReconciliationsCount, setPendingReconciliationsCount] = useState(0)
   
   const [isTodayFocusExpanded, setIsTodayFocusExpanded] = useState(true)
+  const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
   const [time, setTime] = useState<Date | null>(null) 
   const [sessionInfo, setSessionInfo] = useState({ 
@@ -72,62 +83,49 @@ export default function PersonalDashboard() {
     local: { id: 'local', x: 0, y: 0, w: 3, h: 3, fontIdx: 0 },
     session: { id: 'session', x: 0, y: 3, w: 3, h: 3, fontIdx: 0 }
   })
+  
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const gridRef = useRef<HTMLDivElement>(null)
 
-  // Interactive Chart States
   const [isPeeking, setIsPeeking] = useState(false)
   const [isFullScreen, setIsFullScreen] = useState(false)
   const [chartScale, setChartScale] = useState(1)
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
 
-  const fontStyles = [
-    "font-mono font-black tracking-tighter text-zinc-100",   
-    "font-sans font-extrabold tracking-tight text-white",    
-    "font-serif font-light tracking-wide text-zinc-300",     
-    "font-sans font-thin tracking-widest text-zinc-400"      
-  ]
-
-  // Action Log UI States
-  const [logPair, setLogPair] = useState<string>('') 
-  const [logDirection, setLogDirection] = useState<'LONG' | 'SHORT' | null>(null)
-  const [logCatalystText, setLogCatalystText] = useState('')
-  const [logExecution, setLogExecution] = useState<'Perfect' | 'Imperfect' | null>(null)
-  const [isCatalystSettingsOpen, setIsCatalystSettingsOpen] = useState(false)
-  const [isAuditOpen, setIsAuditOpen] = useState(false)
-
-  const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
-  const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
-
-  // 🚨 WorldTimeAPI Enforcer (Prevents Local Clock Cheat)
   const [timeOffset, setTimeOffset] = useState(0);
-  useEffect(() => {
-    fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata')
-      .then(res => res.json())
-      .then(data => {
-        const realTime = new Date(data.datetime).getTime();
-        setTimeOffset(realTime - Date.now());
-      }).catch(() => setTimeOffset(0));
-  }, []);
+
+  // 🚨 2. DERIVED STATES AND CALLBACKS
   const getSecureTime = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
 
-  // 🚨 Supabase Sync for Settings
+  const todaySetups = setups.filter(s => s.isToday)
+  const activeSetup = todaySetups.find(s => s.id === activeTodayId)
+
+  const pushesToday = setups.filter(s => s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() === getSecureTime().toDateString()).length;
+  
+  const now = getSecureTime()
+  const dayOfWeek = now.getDay() 
+  const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 // Saturday (6) or Sunday (0)
+  const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
+  const isVaultLocked = !isPrepWindow || (isPrepWindow && pendingReconciliationsCount > 0);
+  
+  const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
+
+  // 🚨 3. ALL USEEFFECTS
   useEffect(() => {
-    const syncCatalysts = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.auth.updateUser({
-          data: {
-            desk_perfect_catalysts: perfectCatalysts,
-            desk_imperfect_catalysts: imperfectCatalysts
-          }
-        })
+    const fetchTime = async () => {
+      try {
+        const res = await fetch('https://worldtimeapi.org/api/timezone/Asia/Kolkata', { cache: 'no-store' });
+        if (!res.ok) throw new Error('API Blocked');
+        const data = await res.json();
+        const realTime = new Date(data.datetime).getTime();
+        setTimeOffset(realTime - Date.now());
+      } catch (error) {
+        setTimeOffset(0); // Silently falls back
       }
-    }
-    const timeoutId = setTimeout(syncCatalysts, 2000)
-    return () => clearTimeout(timeoutId)
-  }, [perfectCatalysts, imperfectCatalysts])
+    };
+    fetchTime();
+  }, []);
 
   useEffect(() => {
     const loadLayout = async () => {
@@ -182,10 +180,10 @@ export default function PersonalDashboard() {
   useEffect(() => {
     setMounted(true)
     const timer = setInterval(() => {
-      const now = new Date()
-      setTime(now)
+      const current = new Date()
+      setTime(current)
       
-      const utcHour = now.getUTCHours()
+      const utcHour = current.getUTCHours()
       
       const isSydney = utcHour >= 22 || utcHour < 7
       const isTokyo = utcHour >= 0 && utcHour < 9
@@ -205,14 +203,12 @@ export default function PersonalDashboard() {
 
       setSessionInfo({
         name: sName,
-        localTime: now.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        localTime: current.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         isOverlap
       })
     }, 1000)
     return () => clearInterval(timer)
   }, [])
-
-  const [setups, setSetups] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -222,21 +218,7 @@ export default function PersonalDashboard() {
         return
       }
       const user = session.user
-
-      // Load Settings from Supabase
-      if (user.user_metadata?.desk_perfect_catalysts) {
-        setPerfectCatalysts(user.user_metadata.desk_perfect_catalysts);
-      } else {
-        const savedPerfect = localStorage.getItem('desk_perfect_catalysts');
-        if (savedPerfect) setPerfectCatalysts(JSON.parse(savedPerfect));
-      }
-      
-      if (user.user_metadata?.desk_imperfect_catalysts) {
-        setImperfectCatalysts(user.user_metadata.desk_imperfect_catalysts);
-      } else {
-        const savedImperfect = localStorage.getItem('desk_imperfect_catalysts');
-        if (savedImperfect) setImperfectCatalysts(JSON.parse(savedImperfect));
-      }
+      setUser(user)
 
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('added_to_today_at', { ascending: false })
       
@@ -251,25 +233,30 @@ export default function PersonalDashboard() {
         }
       }
 
-      const parsedSetups = setupsData ? setupsData.map(d => ({ id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at })) : [];
-      setSetups(parsedSetups);
-
-      const activeSetups = parsedSetups.filter(s => s.isToday)
+      const parsedSetups = setupsData ? setupsData.map(d => ({ 
+        id: d.id, 
+        symbol: d.symbol, 
+        direction: d.direction, 
+        playbook: d.playbook, 
+        notes: d.notes, 
+        imageUrl: d.image_url, 
+        isToday: d.is_today, 
+        addedToTodayAt: d.added_to_today_at 
+      })) : [];
       
+      setSetups(parsedSetups);
       setVaultSetupCount(parsedSetups.length)
-      setTodaySetups(activeSetups)
 
-      const now = getSecureTime()
-      const dayOfWeek = now.getDay() 
-      const diffToMonday = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
-      const startOfWeek = new Date(now.setDate(diffToMonday))
+      const currentTime = getSecureTime()
+      const dayOfWeekNow = currentTime.getDay() 
+      const diffToMon = currentTime.getDate() - dayOfWeekNow + (dayOfWeekNow === 0 ? -6 : 1)
+      const startOfWeek = new Date(currentTime.setDate(diffToMon))
       startOfWeek.setHours(0, 0, 0, 0)
 
       const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).gte('created_at', startOfWeek.toISOString())
 
       const progress = []
       const daysFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-      
       let todayTradeCount = 0;
 
       for (let i = 0; i < 5; i++) {
@@ -315,7 +302,7 @@ export default function PersonalDashboard() {
     fetchDashboardData()
   }, [getSecureTime])
 
-  // 🚨 Midnight Auto-Wipe Interval (Live Tab Update via Secure Time)
+  // Midnight Auto-Wipe Interval
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
       const todayStr = getSecureTime().toDateString();
@@ -330,8 +317,11 @@ export default function PersonalDashboard() {
   }, [setups, getSecureTime]);
 
   useEffect(() => {
-    if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) setActiveTodayId(todaySetups[0].id)
-    else if (todaySetups.length === 0) setActiveTodayId(null)
+    if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
+      setActiveTodayId(todaySetups[0].id)
+    } else if (todaySetups.length === 0) {
+      setActiveTodayId(null)
+    }
   }, [todaySetups, activeTodayId])
 
   useEffect(() => {
@@ -340,18 +330,6 @@ export default function PersonalDashboard() {
       setChartScale(1);
     }
   }, [activeTodayId]);
-
-  // 🚨 5-Bullet Staging Limit Calculation
-  const pushesToday = setups.filter(s => s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() === getSecureTime().toDateString()).length;
-
-  // The Accountability Lock Logic
-  const now = getSecureTime()
-  const dayOfWeek = now.getDay() 
-  const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 // Saturday (6) or Sunday (0)
-  
-  // Prep is ONLY allowed on Weekends or Monday before 5:30 AM
-  const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
-  const isVaultLocked = !isPrepWindow || (isPrepWindow && pendingReconciliationsCount > 0);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -363,10 +341,12 @@ export default function PersonalDashboard() {
           target.blur();
         }
         setIsFullScreen(false);
+        setIsMobileNotesOpen(false);
         return; 
       }
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
+      if (isMobileNotesOpen) return;
 
       if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
@@ -385,7 +365,6 @@ export default function PersonalDashboard() {
 
       if (todaySetups.length === 0) return;
 
-      // Spacebar Traversal
       if (e.code === 'Space') {
         e.preventDefault(); 
         const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
@@ -402,9 +381,10 @@ export default function PersonalDashboard() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [todaySetups, activeTodayId, router]);
+  }, [todaySetups, activeTodayId, router, isMobileNotesOpen]);
 
 
+  // 🚨 4. EVENT HANDLERS
   const handlePeekStart = () => {
     if (chartScale !== 1) return; 
     peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
@@ -534,10 +514,6 @@ export default function PersonalDashboard() {
       [id]: { ...prev[id], fontIdx: (prev[id].fontIdx + 1) % fontStyles.length }
     }))
   }
-
-  const activeSetup = todaySetups.find(s => s.id === activeTodayId)
-  
-  const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
 
   const formatTime = (timeStr: string, fontIdx: number) => {
     if (!timeStr) return '--:--:--'
@@ -837,29 +813,28 @@ export default function PersonalDashboard() {
                     </div>
                   ) : (
                     todaySetups.map(setup => {
-                      const canRemove = setup.addedToTodayAt && (Date.now() - setup.addedToTodayAt < 3600000);
                       return (
                         <div 
-                          key={`today-${setup.id}`}
-                          onClick={() => setActiveTodayId(setup.id)}
-                          className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group ${
-                            activeTodayId === setup.id 
-                              ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
-                              : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
-                          }`}
+                          key={`today-${setup.id}`} 
+                          onClick={() => setActiveTodayId(setup.id)} 
+                          className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-md' : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'}`}
                         >
                           <div className="flex justify-between items-center mb-1">
                             <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
                               {setup.symbol}
                             </span>
-                            {canRemove && (
-                              <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity" title="Remove (1hr limit)">
-                                <ArrowLeft size={12} />
-                              </button>
-                            )}
+                            <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                              {activeTodayId === setup.id && (
+                                <button onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} className="lg:hidden p-1 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400" title="View Notes">
+                                  <Info size={14} />
+                                </button>
+                              )}
+                            </div>
                           </div>
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>{setup.direction || 'N/A'}</span>
+                            <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
+                              {setup.direction || 'N/A'}
+                            </span>
                             {setup.playbook && <span className="text-[9px] text-zinc-500 font-bold uppercase truncate">{setup.playbook}</span>}
                           </div>
                         </div>
@@ -870,12 +845,13 @@ export default function PersonalDashboard() {
 
                 <div className={`flex flex-row min-w-0 overflow-hidden transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'flex-1 opacity-100' : 'w-0 opacity-0'}`}>
                   
+                  {/* Interactive Dashboard Canvas */}
                   <div 
                     className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60 group overflow-hidden"
-                    onMouseDown={handlePeekStart}
-                    onMouseUp={handlePeekEnd}
-                    onMouseLeave={handlePeekEnd}
-                    onTouchStart={handlePeekStart}
+                    onMouseDown={handlePeekStart} 
+                    onMouseUp={handlePeekEnd} 
+                    onMouseLeave={handlePeekEnd} 
+                    onTouchStart={handlePeekStart} 
                     onTouchEnd={handlePeekEnd}
                   >
                     {activeSetup?.imageUrl ? (
@@ -889,14 +865,17 @@ export default function PersonalDashboard() {
                           wheel={{ step: 0.1 }}
                           doubleClick={{ mode: 'reset' }}
                           panning={{ disabled: false }}
+                          pinch={{ step: 5 }}
                           onTransformed={(ref) => setChartScale(ref.state.scale)}
                           ref={transformRef}
                         >
                           <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <img 
                               src={activeSetup.imageUrl} 
-                              alt={`${activeSetup.symbol} Chart`} 
-                              className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
+                              alt={activeSetup.symbol} 
+                              loading="eager" 
+                              decoding="async" 
+                              className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
                               draggable={false} 
                             />
                           </TransformComponent>
@@ -913,14 +892,14 @@ export default function PersonalDashboard() {
                         )}
                       </>
                     ) : (
-                      <div className="flex-1 flex items-center justify-center text-zinc-700">
-                        <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Select a pair to view</span>
+                      <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0">
+                        <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Select a pair</span>
                       </div>
                     )}
                   </div>
 
-                  <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
-                    <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
+                  <div className="hidden lg:flex order-3 w-full lg:w-80 shrink-0 flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
+                    <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0">
                       {activeSetup ? (
                         <div 
                           className="w-full h-full overflow-y-auto custom-scrollbar text-xs text-zinc-300 leading-relaxed font-medium"
@@ -941,13 +920,45 @@ export default function PersonalDashboard() {
         )}
       </div>
 
-      {/* Overlays */}
+      {/* 🚨 Mobile Notes Bottom Sheet Popup */}
+      {isMobileNotesOpen && activeSetup && (
+        <div 
+          className="lg:hidden fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200"
+          onClick={() => setIsMobileNotesOpen(false)}
+        >
+          <div 
+            className="w-full h-[50vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-zinc-800/60 flex justify-between items-center bg-zinc-900/40 rounded-t-2xl">
+              <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
+                <BookOpen size={14} className="text-blue-500" />
+                {activeSetup.symbol} Thesis
+              </h3>
+              <button onClick={() => setIsMobileNotesOpen(false)} className="text-zinc-500 hover:text-white p-1">
+                <X size={16}/>
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto custom-scrollbar flex-1 text-sm text-zinc-300 leading-relaxed font-medium">
+               <div dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🚨 Full Screen Overlays */}
       {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
         <div 
           className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`}
           onClick={() => { if (isFullScreen) setIsFullScreen(false); }}
         >
-          <img src={activeSetup.imageUrl} alt="Peek" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+          <img 
+            src={activeSetup.imageUrl} 
+            alt="Peek" 
+            loading="eager" 
+            decoding="async" 
+            className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" 
+          />
         </div>
       )}
     </div>
