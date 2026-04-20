@@ -30,11 +30,11 @@ export default function AssistantWidget() {
     setInput('')
     setIsLoading(true)
 
-    // TODO: Replace this mock data with real user profile data from Supabase/Auth state
-    const userProfile = {
-      assetFocus: "Single-Asset (Gold)", // e.g., "Broad Market (15-20 pairs)", "Selective (2-4 pairs)"
-      executionStyle: "Intraday",        // e.g., "Scalper", "Swing"
-      loggingPreference: "Minimalist"    // e.g., "High-Data Logger"
+    // TODO: Replace with live user session data from Supabase
+    const mockUserProfile = {
+      assetFocus: "Single-Asset (Gold)", 
+      executionStyle: "Intraday",        
+      loggingPreference: "Minimalist"    
     };
 
     try {
@@ -43,7 +43,7 @@ export default function AssistantWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           messages: currentMessages,
-          userProfile: userProfile 
+          userProfile: mockUserProfile 
         })
       })
 
