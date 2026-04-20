@@ -193,18 +193,80 @@ export async function POST(req: Request) {
          return NextResponse.json({ status: 'success' })
       }
 
-      // --- NORMAL USER OTP LOGIC ---
-      const { data: existingProfile } = await supabase.from('profiles').select('username, plan').eq('telegram_user_id', telegramUserId).maybeSingle()
+// --- NORMAL USER OTP LOGIC & MENTOR AI INTERCEPTION ---
+      const { data: existingProfile } = await supabase.from('profiles').select('id, username, plan').eq('telegram_user_id', telegramUserId).maybeSingle()
 
       if (existingProfile) {
         if (text === '/start') {
            await sendMessage(chatId, `Welcome back, *${existingProfile.username || 'Trader'}*.\n\nYour Telegram is already connected to the Sentinel Vortex terminal.\nYour current access level is: *${(existingProfile.plan || 'Free').toUpperCase()}*.`, 'Markdown')
-        } else {
-          await sendMessage(chatId, `System alert: Your Telegram is already securely connected to the terminal. You do not need to submit any further transmission codes.`)
+           return NextResponse.json({ status: 'success' })
+        } 
+        
+        // ⚡ THE AI MENTOR TAKES OVER HERE
+        try {
+          // 1. Show a typing indicator to make it feel responsive
+          await fetch(`https://api.telegram.org/bot${botToken}/sendChatAction`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, action: 'typing' })
+          });
+
+          // 2. Fetch context (What is the trader doing right now?)
+          const startOfDay = new Date();
+          startOfDay.setUTCHours(0, 0, 0, 0);
+          
+          const [setupsRes, logsRes] = await Promise.all([
+            supabase.from('user_desk_setups').select('symbol').eq('user_id', existingProfile.id).eq('is_today', true),
+            supabase.from('user_desk_logs').select('execution_type').eq('user_id', existingProfile.id).gte('created_at', startOfDay.toISOString())
+          ]);
+
+          const activePairs = setupsRes.data?.map(s => s.symbol).join(', ') || '0 pairs';
+          const tradesTaken = logsRes.data?.length || 0;
+
+          // 3. Build the prompt using the dedicated file
+          // Note: In production, import buildSystemPrompt at the top of the file: 
+          // import { buildSystemPrompt } from '@/ai/core/systemPrompt';
+          const { buildSystemPrompt } = require('@/ai/core/systemPrompt');
+          
+          const systemPrompt = buildSystemPrompt({
+            assetFocus: "Adaptive", 
+            executionStyle: "Intraday", 
+            loggingPreference: "Minimalist"
+          });
+
+          const currentContext = `
+            Context: The user has ${activePairs} staged for today and has taken ${tradesTaken} trades. 
+            The user just sent this message via Telegram: "${text}"
+            Respond directly to the user as their Accountability Mentor.
+          `;
+
+          // 4. Hit Gemini
+          const geminiKey = process.env.GEMINI_API_KEY;
+          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              system_instruction: { parts: { text: systemPrompt } },
+              contents: [{ role: 'user', parts: [{ text: currentContext }] }],
+              generationConfig: { temperature: 0.4 }
+            })
+          });
+
+          const geminiData = await geminiResponse.json();
+          if (geminiData.candidates && geminiData.candidates[0].content.parts[0].text) {
+             const aiReply = geminiData.candidates[0].content.parts[0].text;
+             await sendMessage(chatId, aiReply, 'Markdown');
+          } else {
+             await sendMessage(chatId, "I'm currently recalibrating my feed. Check your terminal for active updates.");
+          }
+
+        } catch (aiError) {
+          console.error("Mentor AI Error:", aiError);
+          await sendMessage(chatId, "Comms interference. I'll check back in shortly.");
         }
+        
         return NextResponse.json({ status: 'success' })
       }
-
       if (text === '/start') {
         await sendMessage(chatId, `Welcome to Sentinel Command.\n\nYour Telegram is NOT connected to the terminal. Please enter the 6-digit transmission code from your mytraderdesk.com account settings.`)
         return NextResponse.json({ status: 'success' })
