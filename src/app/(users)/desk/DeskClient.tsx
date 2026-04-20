@@ -1035,13 +1035,29 @@ export default function DeskClient() {
   const pushesToday = setups.filter(s => s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() === now.toDateString()).length;
   const canPushMore = pushesToday < 5;
 
-  const weeklySetups = [...setups].sort((a, b) => {
-    const aExec = executedSymbols.includes(a.symbol);
-    const bExec = executedSymbols.includes(b.symbol);
-    if (aExec && !bExec) return 1; 
-    if (!aExec && bExec) return -1;
-    return 0;
-  });
+  // 🚨 THE FIX: WIPE THE VAULT FOR THE NEW WEEK
+  // This calculates the most recent Saturday 00:00:00.
+  // When Friday rolls over to Saturday, this shifts to the new Saturday,
+  // mathematically eliminating all setups created Mon-Fri from the Vault view.
+  const mostRecentSaturday = useMemo(() => {
+    const d = new Date(now.getTime());
+    const dayOfWk = d.getDay();
+    const daysSinceSat = dayOfWk === 6 ? 0 : dayOfWk + 1;
+    d.setDate(d.getDate() - daysSinceSat);
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  }, [now]);
+
+  // 🚨 THE FIX: Filter the vault to only show setups created ON/AFTER the most recent Saturday
+  const weeklySetups = [...setups]
+    .filter(s => s.createdAt >= mostRecentSaturday) 
+    .sort((a, b) => {
+      const aExec = executedSymbols.includes(a.symbol);
+      const bExec = executedSymbols.includes(b.symbol);
+      if (aExec && !bExec) return 1; 
+      if (!aExec && bExec) return -1;
+      return 0;
+    });
 
   const adjustDbToIST = (utcString: string) => new Date(new Date(utcString).toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
 
@@ -1177,6 +1193,7 @@ export default function DeskClient() {
           expiredSetups.forEach(s => { s.is_today = false; s.added_to_today_at = null; });
         }
 
+        // 🚨 THE FIX: Added createdAt extraction to support the vault temporal wipe
         setSetups(setupsData.map(d => ({ 
           id: d.id, 
           symbol: d.symbol, 
@@ -1185,7 +1202,8 @@ export default function DeskClient() {
           notes: d.notes, 
           imageUrl: d.image_url, 
           isToday: d.is_today, 
-          addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null 
+          addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null,
+          createdAt: adjustDbToIST(d.created_at).getTime()
         })))
       }
     }
@@ -1217,7 +1235,6 @@ export default function DeskClient() {
     }
   }, [todaySetups.length, activeTodayId])
 
-  // 🚨 THE FIX: INCLUDES logSetupId IN THE PAYLOAD
   const handleLockEntry = useCallback(async () => {
     if (tradesTakenToday < 2 && logPair && logDirection && logExecution && user) {
       const newLog = { 
@@ -1413,7 +1430,8 @@ export default function DeskClient() {
         notes: d.notes, 
         imageUrl: d.image_url, 
         isToday: false, 
-        addedToTodayAt: null 
+        addedToTodayAt: null,
+        createdAt: adjustDbToIST(d.created_at).getTime()
       })), ...prev]);
     }
   }
@@ -1542,7 +1560,6 @@ export default function DeskClient() {
                                 <Info size={14} />
                               </button>
                             )}
-                            {/* 🚨 THE FIX: Target button now sets logSetupId to explicitly link to this specific setup */}
                             {!isExecuted && (
                               <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setLogSetupId(setup.id); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
                                 <Target size={12} />
@@ -1650,7 +1667,6 @@ export default function DeskClient() {
                     <div className="bg-black border border-zinc-700 rounded-xl p-4 shadow-inner flex flex-col gap-3">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-[16px] font-black text-white tracking-wider">{logPair}</span>
-                        {/* 🚨 THE FIX: Make sure closing the log modal also clears the setup ID link */}
                         <button onClick={() => { setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); setLogSetupId(null); }} className="text-zinc-500 hover:text-red-400 transition-colors"><X size={14}/></button>
                       </div>
                       
