@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   User, Map, ShieldCheck, Filter, ArrowRight, Activity, 
   ChevronLeft, ChevronRight, Lock, ChevronDown, Globe2, BarChart3, Database,
-  TerminalSquare, BookOpen, Workflow
+  TerminalSquare, BookOpen, Workflow, Target
 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
@@ -141,26 +141,59 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* PLAIN ENGLISH HERO */}
-      <section className="relative z-10 pt-32 md:pt-48 pb-16 px-6 max-w-5xl mx-auto text-center flex flex-col items-center justify-center">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight tracking-tight text-white mb-6">
-          Systematic Trading Terminal & <span className="text-blue-500">Performance Journal.</span>
-        </h1>
-        <p className="text-base md:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
-          A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
-        </p>
-        <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-5">
-          <Link href="/signup" className="px-8 py-3.5 bg-blue-600 text-white rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-colors w-full sm:w-auto">
-            Create Free Account
-          </Link>
-          <Link href="#features" className="px-8 py-3.5 bg-[#111] text-white border border-neutral-800 rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-neutral-800 transition-colors w-full sm:w-auto">
-            See How It Works
-          </Link>
+      {/* FULL SCREEN HERO */}
+      <section className="relative z-10 min-h-screen flex flex-col justify-center pt-24 pb-8">
+        
+        {/* Main Content (Centered Vertically & Horizontally) */}
+        <div className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto text-center px-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight tracking-tight text-white mb-6">
+            Systematic Trading Terminal & <span className="text-blue-500">Performance Journal.</span>
+          </h1>
+          <p className="text-base md:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
+            A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-5 w-full sm:w-auto">
+            <Link href="/signup" className="px-8 py-4 bg-blue-600 text-white rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+              Create Free Account
+            </Link>
+            <Link href="#features" className="px-8 py-4 bg-[#111] text-white border border-neutral-800 rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-neutral-800 transition-colors w-full sm:w-auto">
+              See How It Works
+            </Link>
+          </div>
+        </div>
+
+        {/* Anchor Bottom: Social Proof & Compatibility */}
+        <div className="w-full flex flex-col items-center mt-auto px-6">
+          
+          <div className="flex items-center gap-3 mb-8">
+            <div className="flex -space-x-2">
+              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-800"></div>
+              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-700"></div>
+              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-600"></div>
+            </div>
+            <p className="text-[9px] font-bold text-neutral-500 tracking-widest uppercase">Join active operators validating setups today.</p>
+          </div>
+          
+          <p className="text-center text-[9px] font-black text-neutral-600 uppercase tracking-widest mb-4">Compatible with industry standards</p>
+          <div className="flex flex-wrap justify-center gap-3 opacity-70">
+            <div className="px-5 py-2.5 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
+              <Globe2 className="w-3.5 h-3.5 text-neutral-500" />
+              <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">MetaTrader 4 / 5</span>
+            </div>
+            <div className="px-5 py-2.5 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
+              <BarChart3 className="w-3.5 h-3.5 text-neutral-500" />
+              <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">TradingView Charts</span>
+            </div>
+            <div className="px-5 py-2.5 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
+              <Target className="w-3.5 h-3.5 text-neutral-500" />
+              <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">cTrader</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* NEW: WHAT THE PLATFORM ACTUALLY DOES (Plain Explanation) */}
-      <section id="features" className="relative z-10 py-16 md:py-24 px-6 border-t border-neutral-900">
+      {/* WHAT THE PLATFORM ACTUALLY DOES */}
+      <section id="features" className="relative z-10 py-16 md:py-24 px-6 border-t border-neutral-900 bg-[#020202]">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-2xl font-black text-white uppercase tracking-widest">What The Platform Does</h2>
@@ -168,21 +201,21 @@ export default function Home() {
           </div>
           
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-[#080808] border border-neutral-800 rounded-xl p-8">
+            <div className="bg-[#080808] border border-neutral-800 rounded-xl p-8 hover:border-neutral-700 transition-colors">
               <Workflow className="w-8 h-8 text-blue-500 mb-6" />
               <h3 className="text-lg font-bold text-white mb-3">MT5 Data Sync</h3>
               <p className="text-sm text-neutral-400 leading-relaxed">
                 Connect your broker data via CSV or HTML parsing. The platform matches your live executions to your drafted setups, creating a permanent, frictionless record of your performance.
               </p>
             </div>
-            <div className="bg-[#080808] border border-neutral-800 rounded-xl p-8">
+            <div className="bg-[#080808] border border-neutral-800 rounded-xl p-8 hover:border-neutral-700 transition-colors">
               <BookOpen className="w-8 h-8 text-emerald-500 mb-6" />
               <h3 className="text-lg font-bold text-white mb-3">Behavioral Journaling</h3>
               <p className="text-sm text-neutral-400 leading-relaxed">
                 Go beyond PnL. Our journal tracks your "Discipline Index." Categorize trades as Perfect or Imperfect, and assign an exact dollar cost to your emotional mistakes (like FOMO or overtrading).
               </p>
             </div>
-            <div className="bg-[#080808] border border-neutral-800 rounded-xl p-8">
+            <div className="bg-[#080808] border border-neutral-800 rounded-xl p-8 hover:border-neutral-700 transition-colors">
               <TerminalSquare className="w-8 h-8 text-purple-500 mb-6" />
               <h3 className="text-lg font-bold text-white mb-3">The Live Floor</h3>
               <p className="text-sm text-neutral-400 leading-relaxed">
@@ -193,8 +226,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* RESTORED: THE OPERATOR'S BLUEPRINT */}
-      <section id="blueprint" className="relative z-10 w-full py-16 md:py-24 px-6 overflow-hidden bg-[#020202] border-t border-neutral-900">
+      {/* THE OPERATOR'S BLUEPRINT */}
+      <section id="blueprint" className="relative z-10 w-full py-16 md:py-24 px-6 overflow-hidden border-t border-neutral-900">
         <div className="text-center mb-16 relative z-20">
           <h2 className="text-2xl font-black text-white uppercase tracking-widest">The Operator's Blueprint</h2>
           <p className="text-neutral-500 text-xs mt-2 font-medium tracking-wide">Explore the mechanics of consistency. Follow the logic flow.</p>
@@ -272,7 +305,7 @@ export default function Home() {
       </section>
 
       {/* TERMINAL UI CAROUSEL */}
-      <section className="relative z-10 w-full overflow-hidden py-16 md:py-24 px-6 border-y border-neutral-900">
+      <section className="relative z-10 w-full overflow-hidden py-16 md:py-24 px-6 border-y border-neutral-900 bg-[#020202]">
         <div className="text-center mb-12 max-w-4xl mx-auto">
           <h2 className="text-2xl font-black text-white uppercase tracking-widest">Inside The Terminal</h2>
         </div>
@@ -309,7 +342,7 @@ export default function Home() {
       </section>
 
       {/* FEATURED RESEARCH SKELETON */}
-      <section className="relative z-10 py-16 md:py-24 overflow-hidden bg-[#020202] border-b border-neutral-900">
+      <section className="relative z-10 py-16 md:py-24 overflow-hidden border-b border-neutral-900">
         <div className="max-w-6xl mx-auto px-6 mb-12 flex flex-col md:flex-row items-center md:items-end justify-between text-center md:text-left gap-4">
           <div>
             <h2 className="text-2xl font-black text-neutral-100 tracking-tight mb-2">Live Examples</h2>
@@ -374,7 +407,7 @@ export default function Home() {
       </section>
 
       {/* PLAIN PRICING */}
-      <section id="pricing" className="relative z-10 max-w-5xl mx-auto py-16 md:py-24 px-6">
+      <section id="pricing" className="relative z-10 max-w-5xl mx-auto py-16 md:py-24 px-6 bg-[#020202]">
         <div className="text-center mb-10 md:mb-12">
           <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Terminal Access</h2>
         </div>
@@ -413,7 +446,7 @@ export default function Home() {
       </section>
 
       {/* FAQ & FOOTER */}
-      <section className="relative z-10 max-w-3xl mx-auto pb-16 md:pb-24 px-6">
+      <section className="relative z-10 max-w-3xl mx-auto py-16 md:py-24 px-6 border-t border-neutral-900">
         <h2 className="text-2xl font-black text-white mb-8 md:mb-10 text-center uppercase tracking-tight">FAQ</h2>
         <div className="space-y-2">
           {faqs.map((faq, index) => (
