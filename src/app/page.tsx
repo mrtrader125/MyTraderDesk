@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { 
-  Brain, CheckCircle2, Shield, BarChart3, ArrowRight, 
-  Activity, Zap, ChevronLeft, ChevronRight, Lock, ChevronDown, Globe2, Target, Database,
-  User, Map, ShieldCheck, Filter
+  Brain, ShieldAlert, Target, Zap, ArrowRight, Activity, 
+  ChevronLeft, ChevronRight, Lock, ChevronDown, Globe2, BarChart3, Database,
+  Crosshair, ShieldCheck, Filter
 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
@@ -15,7 +15,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// 🌟 SLEEK HOVER-WIPE BEFORE/AFTER COMPONENT
+// 🌟 SLEEK HOVER-WIPE BEFORE/AFTER COMPONENT (Preserved)
 const HoverRevealSlider = ({ before, after }: { before: string, after: string }) => {
   const [isHovered, setIsHovered] = useState(false)
 
@@ -31,7 +31,7 @@ const HoverRevealSlider = ({ before, after }: { before: string, after: string })
         className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-[800ms]" 
       />
       <div className={`absolute bottom-3 right-3 bg-[#050505]/90 backdrop-blur-md px-3 py-1.5 rounded-lg text-[9px] font-bold text-emerald-400 uppercase tracking-widest transition-all duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)] z-0 ring-1 ring-white/[0.05] ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
-        Result
+        Outcome
       </div>
       <div 
         className="absolute inset-0 z-10 transition-all duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
@@ -43,7 +43,7 @@ const HoverRevealSlider = ({ before, after }: { before: string, after: string })
           className="absolute inset-0 w-full h-full object-cover" 
         />
         <div className={`absolute bottom-3 left-3 bg-[#050505]/90 backdrop-blur-md px-3 py-1.5 rounded-lg text-[9px] font-bold text-neutral-300 uppercase tracking-widest transition-all duration-500 ring-1 ring-white/[0.05] ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
-          Initial Setup
+          Thesis
         </div>
       </div>
       <div 
@@ -64,22 +64,24 @@ export default function Home() {
   const [activeFeaturedSlide, setActiveFeaturedSlide] = useState(0)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
 
+  // 🚨 UPDATED: Terminal Slides with Brutal Truth Messaging
   const terminalSlides = [
-    { id: 'mtd1', title: 'Dashboard', desc: 'Your central intelligence hub for daily market structure and active setups.' },
-    { id: 'mtd2', title: 'Markets', desc: 'Deep, multi-timeframe analysis across Forex, Crypto, Indices, and Commodities.' },
-    { id: 'mtd3', title: 'The Vault', desc: 'Your personal archive. Bookmark and save high-probability setups from the Live Floor.' },
-    { id: 'mtd4', title: 'Live Floor', desc: 'Real-time structural analysis, active setups, and community bias voting.' },
-    { id: 'mtd5', title: 'Account', desc: 'Manage your terminal preferences, secure data, and subscription access.' }
+    { id: 'mtd1', title: 'Performance Mirror', desc: 'Track your Discipline Index and assign an exact dollar cost to your emotional errors.' },
+    { id: 'mtd2', title: 'Operator Desk', desc: 'Draft setups, log your macro bias, and seamlessly reconcile with automated MT5 parsing.' },
+    { id: 'mtd3', title: 'Macro Analytics', desc: 'View statistical proof of your behavioral progression over strict 30, 60, and 90-day cycles.' },
+    { id: 'mtd4', title: 'Live Floor Squawk', desc: 'Real-time structural analysis, premium setup alerts, and organic community sentiment voting.' },
+    { id: 'mtd5', title: 'AI Intervention', desc: 'Your Telegram mentor monitors your Primary Leaks and steps in when you deviate from protocol.' }
   ]
 
+  // 🚨 UPDATED: FAQs designed to repel amateurs and attract operators
   const faqs = [
-    { q: "Is this a signal group?", a: "No. Signal groups create dependency. Sentinel Vortex provides institutional-grade structural analysis so you can validate your own bias and execute with confluence." },
-    { q: "Do I need my own charting software?", a: "You should still execute trades on your preferred broker, but all of our structural mapping is provided in high-resolution directly within our platform." },
-    { q: "What timeframes do you analyze?", a: "We take a top-down approach. Our daily analysis establishes the Weekly/Daily macro bias, identifies the 4H/1H structural framework, and pinpoints 15m execution zones." },
-    { q: "Do I need a new strategy to use this?", a: "No. You bring your strategy. Our platform provides the routine to help you execute it without emotional interference." },
-    { q: "How does the terminal prevent overtrading?", a: "By enforcing our 3-Level Filtration Routine. Selecting specific daily pairs inside the dashboard helps eliminate the distraction of scanning 20 other charts." },
-    { q: "Is this for beginners?", a: "No. This is built for intermediate traders—those who have survived a few years in the market, know how to trade, but want stricter systemic control to reach profitability." },
-    { q: "Am I locked into a contract?", a: "Never. We operate on a strict month-to-month (or annual) basis. You can cancel your subscription instantly with two clicks from your Account Dashboard." }
+    { q: "Why are there no 'Burner Accounts' allowed?", a: "Because sandboxes breed bad habits. If you have a space to scratch the itch of impulsive clicking, you will never master your psychology. Every execution here is synced permanently. You either follow the protocol, or confront your failure." },
+    { q: "Is this a signal group?", a: "Absolutely not. Signal groups create dependency and destroy operators. The Sentinel Vortex provides institutional-grade structural confluence so you can validate your own edge and execute without hesitation." },
+    { q: "What is a 'Primary Leak'?", a: "It is your specific emotional trigger that drains your capital (e.g., FOMO, revenge trading, boredom). Our system forces you to categorize these and assigns a direct monetary cost to them so you stop lying to yourself." },
+    { q: "Do I need to change my strategy?", a: "No. You bring your mathematical edge. MyTraderDesk simply provides the rigid behavioral enforcement and MT5 synchronization to ensure you actually execute that strategy without emotional interference." },
+    { q: "Is this built for beginners?", a: "No. This platform is strictly built for intermediate-to-advanced traders who already know how to trade, but are bleeding capital due to a lack of systemic psychological control." },
+    { q: "How does the AI Mentor work?", a: "A passive journal is just a diary. Our AI connects directly to your Telegram, tracks your live Discipline Index, and proactively holds your feet to the fire when your data shows you are tilting." },
+    { q: "Am I locked into a contract?", a: "Never. We operate on a strict month-to-month (or annual) basis for Pro Operators. You can cancel instantly from your dashboard." }
   ]
 
   useEffect(() => {
@@ -135,8 +137,8 @@ export default function Home() {
 
           <div className="hidden md:flex items-center space-x-8 shrink-0">
             <Link href="/community" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Live Floor</Link>
-            <Link href="/playbook" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Playbook</Link>
-            <Link href="#pricing" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Access</Link>
+            <Link href="/protocol" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Protocol</Link>
+            <Link href="#pricing" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Apply</Link>
           </div>
 
           <div className="flex gap-4 items-center shrink-0">
@@ -148,61 +150,56 @@ export default function Home() {
         </div>
       </nav>
 
+      {/* 🚨 HERO SECTION - The Brutal Truth */}
       <section className="relative z-10 pt-32 md:pt-40 pb-16 px-6 max-w-5xl mx-auto text-center flex flex-col items-center justify-center min-h-[60vh] md:min-h-[70vh]">
         <div className="inline-flex items-center space-x-2 bg-neutral-900/40 border border-neutral-800 rounded-sm px-3 py-1 mb-6">
-          <span className="w-1.5 h-1.5 bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.8)] rounded-full"></span>
-          <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Digital Trading Floor Online</span>
+          <span className="w-1.5 h-1.5 bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)] rounded-full"></span>
+          <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">The Operator's Protocol is Live</span>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black leading-tight tracking-tight text-white uppercase mb-6">
-          Institutional-Grade<br />
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500">
-            Structural Analysis
+        <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-black leading-tight tracking-tight text-white uppercase mb-6 italic">
+          Stop Lying To Yourself.<br />
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-neutral-500">
+            Start Operating.
           </span>
         </h1>
 
-        <p className="text-sm md:text-base text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
-          Stop trading in isolation. Connect to a professional digital desk to validate your directional bias, review multi-timeframe setups, and execute with absolute confluence.
+        <p className="text-sm md:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
+          Amateurs execute constantly and analyze rarely. Professionals analyze deeply and execute selectively. 
+          MyTraderDesk is an institutional-grade behavioral enforcement engine built to eliminate your emotional execution errors.
         </p>
 
         <div className="mt-10 flex flex-col items-center justify-center gap-5">
-          <Link href="/signup" className="flex items-center justify-center px-8 py-3.5 bg-white text-black rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-neutral-200 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.1)] w-full sm:w-auto">
-            Access The Terminal <ArrowRight className="ml-2 w-4 h-4" />
+          <Link href="#pricing" className="flex items-center justify-center px-8 py-3.5 bg-white text-black rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-neutral-200 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.1)] w-full sm:w-auto">
+            Apply For Access <ArrowRight className="ml-2 w-4 h-4" />
           </Link>
           
           <div className="flex items-center gap-3">
-            <div className="flex -space-x-2">
-              <div className="w-5 h-5 rounded-full border-2 border-[#050505] bg-neutral-800"></div>
-              <div className="w-5 h-5 rounded-full border-2 border-[#050505] bg-neutral-700"></div>
-              <div className="w-5 h-5 rounded-full border-2 border-[#050505] bg-neutral-600"></div>
-            </div>
-            <p className="text-[9px] font-bold text-neutral-500 tracking-widest uppercase">Join active operators validating setups today.</p>
+            <Lock className="w-3 h-3 text-neutral-500" />
+            <p className="text-[9px] font-bold text-neutral-500 tracking-widest uppercase">Initial Cohort Strictly Limited to 100 Seats.</p>
           </div>
         </div>
       </section>
 
       <section className="relative z-10 max-w-5xl mx-auto pb-16 md:pb-20 px-6 border-b border-neutral-900/50">
-        <p className="text-center text-[9px] font-black text-neutral-600 uppercase tracking-widest mb-6">Compatible with industry standards</p>
+        <p className="text-center text-[9px] font-black text-neutral-600 uppercase tracking-widest mb-6">Seamless Data Reconciliation</p>
         <div className="flex flex-wrap justify-center gap-3 opacity-70">
            <div className="px-4 py-2 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
              <Globe2 className="w-3 h-3 text-neutral-500" />
-             <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">MetaTrader 4 / 5</span>
+             <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">MetaTrader 4 / 5 Sync</span>
            </div>
            <div className="px-4 py-2 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
              <BarChart3 className="w-3 h-3 text-neutral-500" />
-             <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">TradingView Charts</span>
-           </div>
-           <div className="px-4 py-2 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
-             <Target className="w-3 h-3 text-neutral-500" />
-             <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">cTrader</span>
+             <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">CSV/HTML Parsing</span>
            </div>
         </div>
       </section>
 
+      {/* 🚨 THE BLUEPRINT - Adjusted to "The Uncomfortable Truth" */}
       <section className="relative z-10 w-full py-16 md:py-24 px-6 overflow-hidden">
         <div className="text-center mb-16 relative z-20">
-          <h2 className="text-2xl font-black text-white uppercase tracking-widest">The Operator's Blueprint</h2>
-          <p className="text-neutral-500 text-xs mt-2 font-medium tracking-wide">Explore the mechanics of consistency. Follow the logic flow.</p>
+          <h2 className="text-2xl font-black text-white uppercase tracking-widest italic">The Uncomfortable Truth</h2>
+          <p className="text-neutral-500 text-xs mt-2 font-medium tracking-wide">Your strategy isn't broken. Your discipline is.</p>
         </div>
 
         <div className="relative max-w-4xl mx-auto px-2 sm:px-0">
@@ -212,35 +209,33 @@ export default function Home() {
             
             {/* Node 1 */}
             <div className="relative flex flex-col md:flex-row items-center w-full">
-              <div className="absolute left-[22px] md:hidden w-3 h-3 rounded-full bg-blue-500 ring-4 ring-[#050505] z-10"></div>
-              <div className="hidden md:block absolute left-1/2 w-3 h-3 rounded-full bg-blue-500 ring-4 ring-[#050505] -translate-x-1.5 z-10 shadow-[0_0_15px_rgba(59,130,246,0.6)]"></div>
+              <div className="absolute left-[22px] md:hidden w-3 h-3 rounded-full bg-amber-500 ring-4 ring-[#050505] z-10"></div>
+              <div className="hidden md:block absolute left-1/2 w-3 h-3 rounded-full bg-amber-500 ring-4 ring-[#050505] -translate-x-1.5 z-10 shadow-[0_0_15px_rgba(245,158,11,0.6)]"></div>
               
               <div className="w-full md:w-1/2 pl-14 md:pl-0 md:pr-12 relative">
                 <div className="hidden md:block absolute right-0 top-1/2 w-12 h-px bg-neutral-800 -z-10"></div>
-                <Link href="/protocol/identity" className="block bg-[#080808] p-6 sm:p-8 rounded-sm border border-neutral-900 hover:border-blue-500/50 transition-all hover:-translate-y-1 group">
-                  <User className="w-6 h-6 mb-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">1. The Identity</h3>
-                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">From Learner to Executor. Discover why intermediate traders stay unprofitable and the mindset shift required for consistency.</p>
-                  <div className="mt-4 flex items-center text-[9px] font-bold text-blue-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
-                </Link>
+                <div className="block bg-[#080808] p-6 sm:p-8 rounded-sm border border-neutral-900 hover:border-amber-500/50 transition-all hover:-translate-y-1 group">
+                  <ShieldAlert className="w-6 h-6 mb-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">1. No Burner Accounts</h3>
+                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">We have eliminated the sandbox. There is no place to scratch the itch of impulsive button-clicking. Every MT5 execution is synced permanently.</p>
+                </div>
               </div>
               <div className="hidden md:block w-1/2"></div>
             </div>
 
             {/* Node 2 */}
             <div className="relative flex flex-col md:flex-row items-center w-full">
-              <div className="absolute left-[22px] md:hidden w-3 h-3 rounded-full bg-cyan-500 ring-4 ring-[#050505] z-10"></div>
-              <div className="hidden md:block absolute left-1/2 w-3 h-3 rounded-full bg-cyan-500 ring-4 ring-[#050505] -translate-x-1.5 z-10 shadow-[0_0_15px_rgba(6,182,212,0.6)]"></div>
+              <div className="absolute left-[22px] md:hidden w-3 h-3 rounded-full bg-blue-500 ring-4 ring-[#050505] z-10"></div>
+              <div className="hidden md:block absolute left-1/2 w-3 h-3 rounded-full bg-blue-500 ring-4 ring-[#050505] -translate-x-1.5 z-10 shadow-[0_0_15px_rgba(59,130,246,0.6)]"></div>
               
               <div className="hidden md:block w-1/2"></div>
               <div className="w-full md:w-1/2 pl-14 md:pl-12 relative">
                 <div className="hidden md:block absolute left-0 top-1/2 w-12 h-px bg-neutral-800 -z-10"></div>
-                <Link href="/protocol/strategy" className="block bg-[#080808] p-6 sm:p-8 rounded-sm border border-neutral-900 hover:border-cyan-500/50 transition-all hover:-translate-y-1 group">
-                  <Map className="w-6 h-6 mb-4 text-cyan-500 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">2. The Strategy</h3>
-                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">Market Demystified. Strategy isn't magic; it's simply finding your place in the market's endless journey.</p>
-                  <div className="mt-4 flex items-center text-[9px] font-bold text-cyan-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
-                </Link>
+                <div className="block bg-[#080808] p-6 sm:p-8 rounded-sm border border-neutral-900 hover:border-blue-500/50 transition-all hover:-translate-y-1 group">
+                  <Brain className="w-6 h-6 mb-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">2. Quantify The Leaks</h3>
+                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">Categorize every trade as Perfect or Imperfect. Track your "Primary Leak" (FOMO, Boredom) and put a direct, undeniable monetary cost to your lack of control.</p>
+                </div>
               </div>
             </div>
 
@@ -251,12 +246,11 @@ export default function Home() {
               
               <div className="w-full md:w-1/2 pl-14 md:pl-0 md:pr-12 relative">
                 <div className="hidden md:block absolute right-0 top-1/2 w-12 h-px bg-neutral-800 -z-10"></div>
-                <Link href="/protocol/system" className="block bg-[#080808] p-6 sm:p-8 rounded-sm border border-neutral-900 hover:border-emerald-500/50 transition-all hover:-translate-y-1 group">
-                  <ShieldCheck className="w-6 h-6 mb-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">3. The System</h3>
-                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">Rules of Engagement. Bridging the gap between theory and execution to build an edge you can actually follow.</p>
-                  <div className="mt-4 flex items-center text-[9px] font-bold text-emerald-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
-                </Link>
+                <div className="block bg-[#080808] p-6 sm:p-8 rounded-sm border border-neutral-900 hover:border-emerald-500/50 transition-all hover:-translate-y-1 group">
+                  <Target className="w-6 h-6 mb-4 text-emerald-500 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">3. The AI Risk Officer</h3>
+                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">A passive journal is just a diary. Our Telegram-integrated AI mentor proactively tracks your Discipline Index and holds your feet to the fire when you deviate.</p>
+                </div>
               </div>
               <div className="hidden md:block w-1/2"></div>
             </div>
@@ -269,12 +263,11 @@ export default function Home() {
               <div className="hidden md:block w-1/2"></div>
               <div className="w-full md:w-1/2 pl-14 md:pl-12 relative">
                 <div className="hidden md:block absolute left-0 top-1/2 w-12 h-px bg-neutral-800 -z-10"></div>
-                <Link href="/protocol/routine" className="block bg-[#080808] p-6 sm:p-8 rounded-sm border border-neutral-900 hover:border-purple-500/50 transition-all hover:-translate-y-1 group">
+                <div className="block bg-[#080808] p-6 sm:p-8 rounded-sm border border-neutral-900 hover:border-purple-500/50 transition-all hover:-translate-y-1 group">
                   <Filter className="w-6 h-6 mb-4 text-purple-500 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">4. The Routine</h3>
-                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">The 3-Level Filtration process. Narrow the market down to high-probability executions without the emotional noise.</p>
-                  <div className="mt-4 flex items-center text-[9px] font-bold text-purple-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
-                </Link>
+                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">4. The Live Floor</h3>
+                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">Access the Sentinel Vortex squawk box. Professional setups, organic voting, and elite community confluence to validate your structural thesis.</p>
+                </div>
               </div>
             </div>
 
@@ -282,9 +275,10 @@ export default function Home() {
         </div>
       </section>
 
+      {/* TERMINAL CAROUSEL (Preserved structure, updated data) */}
       <section className="relative z-10 w-full overflow-hidden py-16 md:py-24 px-6 bg-[#020202] border-y border-neutral-900">
         <div className="text-center mb-12 max-w-4xl mx-auto">
-          <h2 className="text-2xl font-black text-white uppercase tracking-widest">Inside The Terminal</h2>
+          <h2 className="text-2xl font-black text-white uppercase tracking-widest">Execution Engineered</h2>
         </div>
 
         <div className="relative w-full h-[220px] sm:h-[350px] md:h-[450px] flex items-center justify-center max-w-6xl mx-auto">
@@ -329,6 +323,7 @@ export default function Home() {
         </div>
       </section>
 
+      {/* FEATURED RESEARCH (Preserved exactly as requested) */}
       <section className="relative z-10 py-16 md:py-24 overflow-hidden bg-[#020202] border-b border-neutral-900">
         <div className="max-w-6xl mx-auto px-6 mb-12 flex flex-col md:flex-row items-center md:items-end justify-between text-center md:text-left gap-4">
           <div>
@@ -397,7 +392,6 @@ export default function Home() {
               );
             })}
 
-            {/* REMOVED: hidden sm:block from these buttons so they work on Mobile */}
             {analyses.length > 1 && (
               <>
                 <button onClick={prevFeatured} className="absolute left-2 md:left-12 top-1/2 -translate-y-1/2 p-2 sm:p-3 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-xl ring-1 ring-white/[0.05] transition-colors z-40 shadow-xl">
@@ -419,6 +413,7 @@ export default function Home() {
         )}
       </section>
 
+      {/* 🚨 THE FILTER - Brutal Desk Requirements */}
       <section className="relative z-10 max-w-5xl mx-auto py-16 md:py-24 px-6">
         <div className="text-center mb-10 md:mb-12">
           <h2 className="text-2xl font-black text-white uppercase tracking-tight">Desk Requirements</h2>
@@ -427,25 +422,27 @@ export default function Home() {
           <div className="bg-[#080808] p-6 sm:p-8 rounded-sm border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.02)]">
             <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-6 border-b border-emerald-500/10 pb-4">Approved Profiles</h3>
             <ul className="space-y-4 text-neutral-400 text-[11px] font-medium">
-              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You treat trading as a precise, risk-managed business.</li>
-              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You seek structural clarity and institutional confluence.</li>
-              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You want to validate your own technical bias.</li>
+              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You treat trading as a rigid, risk-managed financial operation.</li>
+              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You want to explicitly track and quantify your emotional leaks.</li>
+              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You seek structural clarity to execute your own predefined edge.</li>
             </ul>
           </div>
           <div className="bg-[#050505] p-6 sm:p-8 rounded-sm border border-red-500/10">
             <h3 className="text-[10px] font-black text-red-500/70 uppercase tracking-widest mb-6 border-b border-red-500/10 pb-4">Denied Profiles</h3>
             <ul className="space-y-4 text-neutral-600 text-[11px] font-medium">
-              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Traders looking for blind copy-paste signals.</li>
-              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Gamblers seeking to pass challenges in one day.</li>
-              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Beginners refusing to study The Playbook theory.</li>
+              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Retail gamblers looking for magic buy/sell indicators.</li>
+              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Traders looking for a 'sandbox' or burner account to break rules.</li>
+              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Anyone unwilling to confront the monetary cost of their indiscipline.</li>
             </ul>
           </div>
         </div>
       </section>
 
+      {/* 🚨 PRICING - Scaled to the Premium Positioning */}
       <section id="pricing" className="relative z-10 max-w-5xl mx-auto py-16 md:py-24 px-6 border-t border-neutral-900/50">
         <div className="text-center mb-10 md:mb-12">
-          <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Terminal Access</h2>
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Join The Vanguard</h2>
+          <p className="text-neutral-500 text-xs font-medium">We are onboarding an initial cohort of 100 serious operators.</p>
         </div>
 
         <div className="flex justify-center mb-10 md:mb-12">
@@ -454,31 +451,31 @@ export default function Home() {
               Monthly
             </button>
             <button onClick={() => setBillingCycle('annual')} className={`flex-1 sm:flex-none px-6 py-3 sm:py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-colors flex justify-center items-center gap-2 ${billingCycle === 'annual' ? 'bg-blue-600 text-white' : 'text-neutral-600 hover:text-white'}`}>
-              Annually <span className="bg-white text-blue-600 px-1.5 py-0.5 rounded-sm text-[8px] hidden sm:inline-block">SAVE 16%</span>
+              Annually <span className="bg-white text-blue-600 px-1.5 py-0.5 rounded-sm text-[8px] hidden sm:inline-block">SAVE 14%</span>
             </button>
           </div>
         </div>
         
         <div className="grid md:grid-cols-2 gap-5 items-start max-w-4xl mx-auto">
           <div className="bg-[#080808] p-8 md:p-10 rounded-sm border border-neutral-900 text-center">
-            <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Free Access</h3>
+            <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Base Access</h3>
             <p className="text-4xl font-black text-white my-6">$0</p>
-            <p className="text-neutral-500 text-[11px] font-medium mb-8 h-10">7-day delayed analysis and read-only floor access.</p>
+            <p className="text-neutral-500 text-[11px] font-medium mb-8 h-10">Limited terminal features. Delayed analytics and read-only floor access.</p>
             <Link href="/signup" className="block w-full py-3.5 sm:py-3 px-4 bg-[#111] text-white font-black rounded-sm border border-neutral-800 hover:bg-neutral-800 transition-colors uppercase tracking-widest text-[9px]">
               Create Free Account
             </Link>
           </div>
 
           <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] p-8 md:p-10 rounded-sm border border-blue-500/30 relative text-center shadow-[0_0_20px_rgba(59,130,246,0.05)] md:-mt-2 md:mb-[-0.5rem]">
-            <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-sm shadow-md">All Access</span>
-            <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-2">Professional</h3>
+            <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-sm shadow-md">Limited Capacity</span>
+            <h3 className="text-[10px] font-black text-cyan-400 uppercase tracking-widest mb-2">Pro Operator</h3>
             <p className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 my-6">
               ${billingCycle === 'monthly' ? '29' : '299'}
               <span className="text-xs text-neutral-600 font-medium tracking-normal">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
             </p>
-            <p className="text-neutral-400 text-[11px] font-medium mb-8 h-10">Instant real-time setups, Live Floor, Telegram alerts & voting.</p>
+            <p className="text-neutral-400 text-[11px] font-medium mb-8 h-10">Full MT5 Sync, Live Floor access, AI Risk Officer & complete Analytics.</p>
             <Link href="/signup" className="block w-full py-3.5 sm:py-3 px-4 bg-white text-black font-black rounded-sm hover:bg-neutral-200 transition-colors uppercase tracking-widest text-[9px]">
-              Get Pro Access
+              Claim Your Seat
             </Link>
             <p className="text-[8px] text-neutral-600 mt-4 font-bold tracking-widest uppercase">Cancel Anytime</p>
           </div>
@@ -509,25 +506,24 @@ export default function Home() {
 
       <section className="relative z-10 bg-gradient-to-t from-[#050505] to-[#0a0a0a] py-24 md:py-32 px-6 border-t border-neutral-900/50 text-center">
         <div className="max-w-3xl mx-auto">
-          <div className="inline-flex items-center space-x-2 bg-emerald-500/10 border border-emerald-500/20 rounded-sm px-4 py-1.5 mb-8">
-            <span className="w-1.5 h-1.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)] rounded-full"></span>
-            <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">System Ready</span>
+          <div className="inline-flex items-center space-x-2 bg-blue-500/10 border border-blue-500/20 rounded-sm px-4 py-1.5 mb-8">
+            <span className="w-1.5 h-1.5 bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.8)] rounded-full"></span>
+            <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Protocol Active</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white uppercase tracking-tight mb-6">The Terminal is Online</h2>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black text-white uppercase tracking-tight mb-6">Execution, Engineered.</h2>
           <p className="text-neutral-500 text-sm mb-10 max-w-xl mx-auto font-medium leading-relaxed px-2">
-            Stop guessing. Start executing with institutional structural confluence. Your professional edge is one click away.
+            The foundation is set. Stop trading in a vacuum and join a community that forces you to adhere to your edge.
           </p>
-          <Link href="/signup" className="inline-flex items-center justify-center px-10 py-4 bg-white text-black rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-neutral-200 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.1)] w-full sm:w-auto">
-            Create Free Account <ArrowRight className="ml-2 w-4 h-4" />
+          <Link href="#pricing" className="inline-flex items-center justify-center px-10 py-4 bg-white text-black rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-neutral-200 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.1)] w-full sm:w-auto">
+            Apply For Access <ArrowRight className="ml-2 w-4 h-4" />
           </Link>
         </div>
       </section>
 
-      {/* 🚀 UPDATED 5-COLUMN FOOTER */}
+      {/* FOOTER (Preserved completely) */}
       <footer className="bg-[#020202] border-t border-neutral-900 pt-16 pb-8 px-6">
         <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-10 mb-12">
           
-          {/* Logo / Tagline */}
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center shrink-0 group mb-6 relative w-28 h-8">
               <Image 
@@ -539,11 +535,10 @@ export default function Home() {
               />
             </Link>
             <p className="text-[10px] font-medium text-neutral-600 leading-relaxed pr-4">
-              Institutional-grade structural analysis and crowdsourced market confluence.
+              Institutional-grade structural analysis and behavioral performance enforcement.
             </p>
           </div>
 
-          {/* New Mindmap Links */}
           <div>
             <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">The Blueprint</h4>
             <ul className="space-y-3">
@@ -554,7 +549,6 @@ export default function Home() {
             </ul>
           </div>
 
-          {/* Restored Old Links */}
           <div>
             <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">Live Markets</h4>
             <ul className="space-y-3">
