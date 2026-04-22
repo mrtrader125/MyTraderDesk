@@ -5,10 +5,21 @@ export async function generateMentorResponse(messages: any[], systemPrompt: stri
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("API key is missing");
 
-  const formattedMessages = messages.map((m: any) => ({
-    role: m.role === 'assistant' ? 'model' : 'user',
-    parts: [{ text: m.content }]
-  }));
+  // Format the history securely, preserving function calls and responses
+  const formattedMessages = messages.map((m: any) => {
+    const role = m.role === 'assistant' || m.role === 'model' ? 'model' : 'user';
+
+    // If this message contains a tool request or database result, pass it exactly as-is
+    if (m.parts && (m.parts[0].functionCall || m.parts[0].functionResponse)) {
+      return { role, parts: m.parts };
+    }
+
+    // Otherwise, treat it as standard text communication
+    return {
+      role,
+      parts: [{ text: m.content || '' }]
+    };
+  });
 
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
     method: 'POST',
@@ -16,8 +27,7 @@ export async function generateMentorResponse(messages: any[], systemPrompt: stri
     body: JSON.stringify({
       system_instruction: { parts: { text: systemPrompt } },
       contents: formattedMessages,
-      // 👇 We add the tools right here so Gemini knows what it can do
-      tools: [{ functionDeclarations: mentorTools }],
+      tools: [{ functionDeclarations: mentorTools }], // The Menu
       generationConfig: { temperature: 0.4 } 
     })
   });
@@ -25,7 +35,6 @@ export async function generateMentorResponse(messages: any[], systemPrompt: stri
   const data = await response.json();
   if (!response.ok) throw new Error(data.error?.message || 'Error communicating with AI');
 
-  // The AI might return a regular text message, OR it might return a function call request.
-  // We return the raw parts so our Next.js API route can decide what to do next.
+  // Return the raw parts array so the Next.js API route can intercept function calls
   return data.candidates[0].content.parts;
 }
