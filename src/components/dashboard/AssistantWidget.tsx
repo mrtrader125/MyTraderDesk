@@ -21,6 +21,27 @@ export default function AssistantWidget() {
     if (isOpen) scrollToBottom()
   }, [messages, isOpen])
 
+  // Fetch chat history on mount
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const res = await fetch('/api/chat');
+        const data = await res.json();
+        if (data.messages && data.messages.length > 0) {
+          // Map DB 'model' role to frontend 'assistant' role
+          const formatted = data.messages.map((m: any) => ({
+             role: m.role === 'model' ? 'assistant' : 'user',
+             content: m.content
+          }));
+          setMessages(formatted);
+        }
+      } catch (e) { 
+        console.error("Failed to load history"); 
+      }
+    };
+    fetchHistory();
+  }, []);
+
   const customSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!input.trim() || isLoading) return
@@ -30,21 +51,12 @@ export default function AssistantWidget() {
     setInput('')
     setIsLoading(true)
 
-    // TODO: Replace with live user session data from Supabase
-    const mockUserProfile = {
-      assetFocus: "Single-Asset (Gold)", 
-      executionStyle: "Intraday",        
-      loggingPreference: "Minimalist"    
-    };
-
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: currentMessages,
-          userProfile: mockUserProfile 
-        })
+        // Only sending messages. The backend securely fetches the user profile and daily context!
+        body: JSON.stringify({ messages: currentMessages }) 
       })
 
       const data = await res.json()

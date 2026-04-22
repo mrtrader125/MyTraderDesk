@@ -28,9 +28,7 @@ export async function middleware(request: NextRequest) {
 
     const isAuthRoute = path === '/login' || path === '/signup'
     const isAdminRoute = path.startsWith('/admin')
-    
-    // 🚨 ADDED /desk right here
-    const isUserRoute = path.startsWith('/floor') || path.startsWith('/dashboard') || path.startsWith('/markets') || path.startsWith('/settings') || path.startsWith('/profile') || path.startsWith('/vault') || path.startsWith('/desk')
+    const isUserRoute = path.startsWith('/floor') || path.startsWith('/dashboard') || path.startsWith('/markets') || path.startsWith('/settings') || path.startsWith('/profile') || path.startsWith('/vault')
 
     // 1. Not logged in? Kick to login
     if (!user && (isUserRoute || isAdminRoute)) {
@@ -53,6 +51,14 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // 4. THE AI GATEKEEPER: Enforce Pro Tier for specific API actions
+    if (user && path.startsWith('/api/chat')) {
+      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single()
+      if (!profile || profile.plan !== 'pro') {
+        return NextResponse.json({ error: 'Pro subscription required for AI Operations Partner.' }, { status: 403 })
+      }
+    }
+
     return response
   } catch (err) {
     return response;
@@ -70,7 +76,7 @@ export const config = {
      * - api/telegram (Let Telegram bots pass through!)
      * - api/webhook (Let Lemon Squeezy pass through!)
      * - update-password (Let Supabase read the reset token!)
-     * - auth/callback (Protect old reset links)
+     * - auth/callback (Supabase auth flow)
      */
     '/((?!_next/static|_next/image|favicon.ico|api/telegram|api/webhook|update-password|auth/callback).*)',
   ],
