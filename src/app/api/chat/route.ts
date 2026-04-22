@@ -1,53 +1,70 @@
 // src/app/api/chat/route.ts
 import { NextResponse } from 'next/server';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 import { buildSystemPrompt } from '@/ai/core/systemPrompt';
+import { getDailyTraderContext } from '@/ai/services/contextBuilder';
+import { generateMentorResponse } from '@/ai/services/geminiClient';
 
+// --- FETCH CHAT HISTORY ON MOUNT ---
+export async function GET(req: Request) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { cookies: { getAll() { return cookieStore.getAll() } } }
+  );
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { data: logs } = await supabase
+    .from('mentor_chat_logs')
+    .select('role, content')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(20); // Get last 20 messages
+
+  return NextResponse.json({ messages: logs?.reverse() || [] });
+}
+
+// --- HANDLE NEW MESSAGES ---
 export async function POST(req: Request) {
   try {
-    const { messages, userProfile } = await req.json();
-    const apiKey = process.env.GEMINI_API_KEY;
+    const { messages } = await req.json();
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { cookies: { getAll() { return cookieStore.getAll() } } }
+    );
 
-    if (!apiKey) {
-      return NextResponse.json({ error: "API key is missing" }, { status: 500 });
-    }
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const formattedMessages = messages.map((m: any) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    }));
+    const userMessage = messages[messages.length - 1];
 
-    // Generate the dynamic prompt using our new dedicated file
-    const systemPrompt = buildSystemPrompt(userProfile);
+    // 1. Log the user's message immediately
+    await supabase.from('mentor_chat_logs').insert([
+      { user_id: user.id, role: 'user', content: userMessage.content }
+    ]);
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: { text: systemPrompt }
-        },
-        contents: formattedMessages,
-        generationConfig: {
-          temperature: 0.4, // Slightly higher temperature (0.4) allows the mentor to sound more conversational and human
-        }
-      })
-    });
+    // 2. Fetch reality context & build prompt
+    const { userProfile, liveContext } = await getDailyTraderContext(supabase, user.id);
+    const unifiedSystemPrompt = `${buildSystemPrompt(userProfile)}\n\n${liveContext}`;
 
-    const data = await response.json();
+    // 3. Generate Response
+    const aiReply = await generateMentorResponse(messages, unifiedSystemPrompt);
 
-    if (!response.ok) {
-      console.error("Google API Error:", data);
-      return NextResponse.json({ error: data.error.message || 'Error communicating with AI' }, { status: 500 });
-    }
-
-    const aiReply = data.candidates[0].content.parts[0].text;
+    // 4. Log the AI's response
+    await supabase.from('mentor_chat_logs').insert([
+      { user_id: user.id, role: 'model', content: aiReply }
+    ]);
 
     return NextResponse.json({ text: aiReply });
 
   } catch (error) {
-    console.error('Webhook Error:', error);
+    console.error('Chat API Error:', error);
     return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
   }
 }

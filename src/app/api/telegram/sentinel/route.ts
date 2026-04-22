@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { buildSystemPrompt } from '@/ai/core/systemPrompt'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -94,7 +95,6 @@ export async function POST(req: Request) {
       const text = rawText.trim()
       let finalMediaUrl = null
 
-      // Ignore automated bot posts to prevent infinite duplicate loops
       if (text.includes("Today's analysis is live") || text.includes("Quick Setup Released!")) {
          return NextResponse.json({ status: 'success' })
       }
@@ -119,7 +119,6 @@ export async function POST(req: Request) {
 
       if (!text && !finalMediaUrl) return NextResponse.json({ status: 'success' })
 
-      // Supabase column safety check (using image_url instead of media_url)
       const mirrorPayload: any = {
         author_username: 'Sentinel Admin', 
         message: text || '', 
@@ -137,7 +136,7 @@ export async function POST(req: Request) {
     }
 
     // ==========================================
-    // ROUTE C: PRIVATE DMs (OTP & ADMIN REMOTE TO LEFT PANE)
+    // ROUTE C: PRIVATE DMs (OTP & AI MENTOR)
     // ==========================================
     const message = body.message
     if (message && message.chat.type === 'private') {
@@ -193,7 +192,7 @@ export async function POST(req: Request) {
          return NextResponse.json({ status: 'success' })
       }
 
-// --- NORMAL USER OTP LOGIC & MENTOR AI INTERCEPTION ---
+      // --- NORMAL USER OTP LOGIC & MENTOR AI INTERCEPTION ---
       const { data: existingProfile } = await supabase.from('profiles').select('id, username, plan').eq('telegram_user_id', telegramUserId).maybeSingle()
 
       if (existingProfile) {
@@ -202,7 +201,7 @@ export async function POST(req: Request) {
            return NextResponse.json({ status: 'success' })
         } 
         
-        // ⚡ THE AI MENTOR TAKES OVER HERE
+// ⚡ THE AI MENTOR TAKES OVER HERE ⚡
         try {
           // 1. Show a typing indicator to make it feel responsive
           await fetch(`https://api.telegram.org/bot${botToken}/sendChatAction`, {
@@ -211,50 +210,84 @@ export async function POST(req: Request) {
             body: JSON.stringify({ chat_id: chatId, action: 'typing' })
           });
 
-          // 2. Fetch context (What is the trader doing right now?)
+          // 2. Fetch context & CHAT HISTORY concurrently
           const startOfDay = new Date();
           startOfDay.setUTCHours(0, 0, 0, 0);
           
-          const [setupsRes, logsRes] = await Promise.all([
-            supabase.from('user_desk_setups').select('symbol').eq('user_id', existingProfile.id).eq('is_today', true),
-            supabase.from('user_desk_logs').select('execution_type').eq('user_id', existingProfile.id).gte('created_at', startOfDay.toISOString())
+          const [setupsRes, logsRes, historyRes] = await Promise.all([
+            // Grabbing ALL setups for the user to separate Today vs Vault
+            supabase.from('user_desk_setups').select('symbol, is_today').eq('user_id', existingProfile.id),
+            supabase.from('user_desk_logs').select('execution_type').eq('user_id', existingProfile.id).gte('created_at', startOfDay.toISOString()),
+            supabase.from('mentor_chat_logs').select('role, content').eq('user_id', existingProfile.id).order('created_at', { ascending: false }).limit(6)
           ]);
 
-          const activePairs = setupsRes.data?.map(s => s.symbol).join(', ') || '0 pairs';
+          const todayPairs = setupsRes.data?.filter(s => s.is_today).map(s => s.symbol).join(', ') || 'None';
+          const vaultPairs = setupsRes.data?.filter(s => !s.is_today).map(s => s.symbol).join(', ') || 'None';
           const tradesTaken = logsRes.data?.length || 0;
 
+          // Format history for Gemini (Needs to be oldest first)
+          const pastMessages = (historyRes.data || []).reverse().map(msg => ({
+            role: msg.role === 'model' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+          }));
+
           // 3. Build the prompt using the dedicated file
-          // Note: In production, import buildSystemPrompt at the top of the file: 
-          // import { buildSystemPrompt } from '@/ai/core/systemPrompt';
-          const { buildSystemPrompt } = require('@/ai/core/systemPrompt');
-          
           const systemPrompt = buildSystemPrompt({
             assetFocus: "Adaptive", 
             executionStyle: "Intraday", 
             loggingPreference: "Minimalist"
           });
 
+          // ⚡ THE FIX: INJECTING REAL-TIME CONTEXT ⚡
           const currentContext = `
-            Context: The user has ${activePairs} staged for today and has taken ${tradesTaken} trades. 
-            The user just sent this message via Telegram: "${text}"
-            Respond directly to the user as their Accountability Mentor.
+            [SYSTEM DATA FEED]
+            Trader Name: ${existingProfile.username || 'Trader'}
+            Current Time: ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}
+            Today's Staged Pairs: ${todayPairs}
+            Weekly Vault Pairs: ${vaultPairs}
+            Trades Taken Today: ${tradesTaken}
+            
+            User message: "${text}"
           `;
 
-          // 4. Hit Gemini
+          // Append the current message to the payload
+          pastMessages.push({ role: 'user', parts: [{ text: currentContext }] });
+
+          // 4. Hit Gemini with memory, full context, and disabled safety filters
           const geminiKey = process.env.GEMINI_API_KEY;
           const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               system_instruction: { parts: { text: systemPrompt } },
-              contents: [{ role: 'user', parts: [{ text: currentContext }] }],
-              generationConfig: { temperature: 0.4 }
+              contents: pastMessages,
+              generationConfig: { temperature: 0.4 },
+              // ⚡ THE FIX: REMOVING THE PROFANITY FILTERS ⚡
+              safetySettings: [
+                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+              ]
             })
           });
 
           const geminiData = await geminiResponse.json();
           if (geminiData.candidates && geminiData.candidates[0].content.parts[0].text) {
-             const aiReply = geminiData.candidates[0].content.parts[0].text;
+             const aiReply = geminiData.candidates[0].content.parts[0].text.trim();
+             
+             // The Silence Interceptor
+             if (aiReply.includes('[SILENCE]')) {
+                 console.log("Mentor chose to remain silent. No message sent.");
+                 return NextResponse.json({ status: 'success' });
+             }
+
+             // SAVE THE CONVERSATION TO THE DATABASE
+             await supabase.from('mentor_chat_logs').insert([
+               { user_id: existingProfile.id, role: 'user', content: text },
+               { user_id: existingProfile.id, role: 'model', content: aiReply }
+             ]);
+
              await sendMessage(chatId, aiReply, 'Markdown');
           } else {
              await sendMessage(chatId, "I'm currently recalibrating my feed. Check your terminal for active updates.");
@@ -267,8 +300,9 @@ export async function POST(req: Request) {
         
         return NextResponse.json({ status: 'success' })
       }
+
       if (text === '/start') {
-        await sendMessage(chatId, `Welcome to Sentinel Command.\n\nYour Telegram is NOT connected to the terminal. Please enter the 6-digit transmission code from your mytraderdesk.com account settings.`)
+        await sendMessage(chatId, `Welcome to Sentinel Command.\n\nYour Telegram is NOT connected to the terminal. Please enter the 6-digit transmission code from your account settings.`)
         return NextResponse.json({ status: 'success' })
       }
 
