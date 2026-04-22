@@ -144,13 +144,11 @@ export default function Home() {
       {/* FULL SCREEN HERO */}
       <section className="relative z-10 min-h-screen flex flex-col justify-center pt-24 pb-8">
         <div className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto text-center px-6 w-full">
-          
           {/* BULLETPROOF TWO-LINE HEADER */}
           <h1 className="text-[6vw] sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tighter text-white mb-6 flex flex-col items-center justify-center w-full">
             <span className="whitespace-nowrap">Systematic Trading Terminal &</span>
             <span className="text-blue-500 whitespace-nowrap">Performance Journal.</span>
           </h1>
-          
           <p className="text-base md:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
             A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
           </p>
@@ -480,8 +478,33 @@ export default function Home() {
         </div>
       </section>
 
+      {/* DESK REQUIREMENTS (RESTORED) */}
+      <section className="relative z-10 max-w-5xl mx-auto py-16 md:py-24 px-6">
+        <div className="text-center mb-10 md:mb-12">
+          <h2 className="text-2xl font-black text-white uppercase tracking-tight">Desk Requirements</h2>
+        </div>
+        <div className="grid md:grid-cols-2 gap-5">
+          <div className="bg-[#080808] p-6 sm:p-8 rounded-sm border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.02)]">
+            <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-6 border-b border-emerald-500/10 pb-4">Approved Profiles</h3>
+            <ul className="space-y-4 text-neutral-400 text-[11px] font-medium">
+              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You treat trading as a rigid, risk-managed financial operation.</li>
+              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You want to explicitly track and quantify your emotional leaks.</li>
+              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You seek structural clarity to execute your own predefined edge.</li>
+            </ul>
+          </div>
+          <div className="bg-[#050505] p-6 sm:p-8 rounded-sm border border-red-500/10">
+            <h3 className="text-[10px] font-black text-red-500/70 uppercase tracking-widest mb-6 border-b border-red-500/10 pb-4">Denied Profiles</h3>
+            <ul className="space-y-4 text-neutral-600 text-[11px] font-medium">
+              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Retail gamblers looking for magic buy/sell indicators.</li>
+              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Traders looking for a 'sandbox' or burner account to break rules.</li>
+              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Anyone unwilling to confront the monetary cost of their indiscipline.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* PLAIN PRICING */}
-      <section id="pricing" className="relative z-10 max-w-5xl mx-auto py-16 md:py-24 px-6 bg-[#020202]">
+      <section id="pricing" className="relative z-10 max-w-5xl mx-auto py-16 md:py-24 px-6 bg-[#020202] border-t border-neutral-900">
         <div className="text-center mb-10 md:mb-12">
           <h2 className="text-2xl font-black text-white uppercase tracking-tight mb-2">Terminal Access</h2>
         </div>
@@ -537,11 +560,67 @@ export default function Home() {
         </div>
       </section>
 
-      {/* LEFT/RIGHT ALIGNED FOOTER (Logo Removed) */}
-      <footer className="bg-[#020202] border-t border-neutral-900 py-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      {/* FULL RESTORED FOOTER WITH UPDATED ALIGNMENT */}
+      <footer className="bg-[#020202] border-t border-neutral-900 pt-16 pb-8 px-6">
+        {/* The 5 Columns Restored */}
+        <div className="max-w-6xl mx-auto grid grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-10 mb-12">
+          <div className="col-span-2 lg:col-span-1">
+            <Link href="/" className="flex items-center shrink-0 group mb-6 relative w-28 h-8">
+              <Image 
+                src="/logo.png" 
+                alt="MyTraderDesk" 
+                fill
+                className="object-contain object-left opacity-50 group-hover:opacity-100 transition-opacity" 
+                sizes="112px"
+              />
+            </Link>
+            <p className="text-[10px] font-medium text-neutral-600 leading-relaxed pr-4">
+              Institutional-grade structural analysis and behavioral performance enforcement.
+            </p>
+          </div>
+
+          <div>
+            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">The Blueprint</h4>
+            <ul className="space-y-3">
+              <li><Link href="/protocol/identity" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Trader vs Operator</Link></li>
+              <li><Link href="/protocol/strategy" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Strategy Simplification</Link></li>
+              <li><Link href="/protocol/system" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">System Building</Link></li>
+              <li><Link href="/protocol/routine" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">The 3-Level Routine</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">Live Markets</h4>
+            <ul className="space-y-3">
+              <li><Link href="/analysis/eurusd" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">EUR/USD Analysis</Link></li>
+              <li><Link href="/analysis/xauusd" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Gold (XAUUSD) Setups</Link></li>
+              <li><Link href="/analysis/btcusd" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Bitcoin (BTC) Structure</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">Resources</h4>
+            <ul className="space-y-3">
+              <li><Link href="/playbook" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">The Playbook</Link></li>
+              <li><Link href="/faq" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">FAQ</Link></li>
+              <li><Link href="/about" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">About Us</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">Legal</h4>
+            <ul className="space-y-3">
+              <li><Link href="/terms" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link href="/privacy" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/disclaimer" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">Risk Disclaimer</Link></li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Updated Bottom Left/Right Alignment */}
+        <div className="max-w-6xl mx-auto border-t border-neutral-900 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[10px] font-bold text-neutral-700 uppercase tracking-widest text-center sm:text-left">
-            &copy; 2026 Sentinel Vortex. All rights reserved.
+            &copy; {new Date().getFullYear()} Sentinel Vortex. All rights reserved.
           </p>
           <p className="text-[9px] font-bold text-neutral-700 uppercase tracking-widest text-center sm:text-right">
             Trading involves significant risk of loss.
