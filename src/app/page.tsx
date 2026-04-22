@@ -107,7 +107,7 @@ export default function Home() {
   const nextSlide = () => setActiveSlide((prev) => (prev + 1) % terminalSlides.length)
   const prevSlide = () => setActiveSlide((prev) => (prev - 1 + terminalSlides.length) % terminalSlides.length)
   const nextFeatured = () => setActiveFeaturedSlide((prev) => (prev + 1) % analyses.length)
-  const prevFeatured = () => setActiveFeaturedSlide((prev) => (prev - 1 + analyses.length) % analyses.length)
+  const nextFeatured = () => setActiveFeaturedSlide((prev) => (prev - 1 + analyses.length) % analyses.length)
 
   return (
     <div className="bg-[#0C0A09] text-stone-200 min-h-screen font-sans selection:bg-amber-500/30 selection:text-white relative overflow-x-hidden">
@@ -143,7 +143,6 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* INCREASED HEIGHT: min-h-screen to push the next section completely down */}
       <section className="relative z-10 min-h-screen flex flex-col justify-center pt-32 pb-24 lg:pb-32">
         <div className="flex-1 flex flex-col items-center justify-center max-w-[1100px] mx-auto text-center px-6 w-full">
           <h1 className="text-[6vw] md:text-[5rem] lg:text-[6rem] font-extrabold leading-[1.05] tracking-tight text-stone-100 mb-6 flex flex-col items-center justify-center w-full">
@@ -293,12 +292,10 @@ export default function Home() {
       </section>
 
       <section className="relative z-10 w-full overflow-hidden py-24 px-6 border-y border-stone-800/30 bg-[#0F0D0C]">
-        {/* TIGHTENED TITLE GAP */}
         <div className="text-center mb-8 max-w-5xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-stone-100 tracking-tight">Inside The Terminal</h2>
         </div>
         
-        {/* TIGHTENED CONTAINER HEIGHT */}
         <div className="relative w-full h-[240px] sm:h-[350px] md:h-[450px] lg:h-[550px] xl:h-[650px] flex items-center justify-center max-w-[1600px] 2xl:max-w-[1920px] mx-auto">
           {terminalSlides.map((slide, index) => {
             const len = terminalSlides.length;
@@ -326,7 +323,6 @@ export default function Home() {
           <button onClick={nextSlide} className="absolute right-2 md:right-12 top-1/2 -translate-y-1/2 p-3 md:p-4 bg-[#141210] hover:bg-[#1C1A18] text-stone-200 rounded-xl border border-stone-800/60 transition-colors z-40 shadow-2xl"><ChevronRight className="w-6 h-6" /></button>
         </div>
         
-        {/* TIGHTENED CAPTION GAP */}
         <div className="mt-8 text-center relative z-10 max-w-xl mx-auto px-4">
            <h3 className="text-sm font-bold uppercase tracking-widest text-stone-200 mb-2">{terminalSlides[activeSlide].title}</h3>
            <p className="text-stone-500 text-sm font-medium leading-relaxed">{terminalSlides[activeSlide].desc}</p>
@@ -336,7 +332,6 @@ export default function Home() {
       <section className="relative z-10 w-full py-24 px-6 overflow-hidden border-b border-stone-800/30">
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto mb-8 flex flex-col md:flex-row items-center md:items-end justify-between text-center md:text-left gap-4">
           <div>
-            {/* RENAMED TO FEATURED ANALYSIS */}
             <h2 className="text-2xl lg:text-3xl font-extrabold text-stone-100 tracking-tight mb-2">Featured Analysis</h2>
             <p className="text-stone-500 text-sm font-medium">Real setups logged by our community</p>
           </div>
@@ -351,7 +346,6 @@ export default function Home() {
             <p className="font-medium text-sm">Loading Data...</p>
           </div>
         ) : analyses.length > 0 ? (
-          {/* TIGHTENED CONTAINER HEIGHT */}
           <div className="relative w-full h-[240px] sm:h-[350px] md:h-[450px] lg:h-[550px] xl:h-[650px] flex items-center justify-center max-w-[1600px] 2xl:max-w-[1920px] mx-auto">
             {analyses.map((item, index) => {
               const len = analyses.length;
