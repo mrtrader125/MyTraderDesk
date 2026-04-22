@@ -516,7 +516,7 @@ export default function Home() {
           <div className="bg-[#080808] p-8 lg:p-12 rounded-3xl border border-blue-500/30 relative text-center shadow-lg shadow-blue-900/5">
             <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-3">Pro Operator</h3>
             <p className="text-4xl lg:text-5xl font-black text-white my-6">
-              ${billingCycle === 'monthly' ? '29' : '299'}
+              ${billingCycle === 'monthly' ? '50' : '500'}
               <span className="text-sm text-neutral-500 font-medium tracking-normal">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
             </p>
             <p className="text-neutral-400 text-sm font-medium mb-10 h-10">Full MT5 Sync, Live Floor analysis, and behavioral analytics.</p>
