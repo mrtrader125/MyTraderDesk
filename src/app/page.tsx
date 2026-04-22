@@ -107,7 +107,7 @@ export default function Home() {
   const nextSlide = () => setActiveSlide((prev) => (prev + 1) % terminalSlides.length)
   const prevSlide = () => setActiveSlide((prev) => (prev - 1 + terminalSlides.length) % terminalSlides.length)
   const nextFeatured = () => setActiveFeaturedSlide((prev) => (prev + 1) % analyses.length)
-  const nextFeatured = () => setActiveFeaturedSlide((prev) => (prev - 1 + analyses.length) % analyses.length)
+  const prevFeatured = () => setActiveFeaturedSlide((prev) => (prev - 1 + analyses.length) % analyses.length)
 
   return (
     <div className="bg-[#0C0A09] text-stone-200 min-h-screen font-sans selection:bg-amber-500/30 selection:text-white relative overflow-x-hidden">
