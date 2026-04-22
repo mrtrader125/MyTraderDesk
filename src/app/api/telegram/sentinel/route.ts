@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { buildSystemPrompt } from '@/ai/core/systemPrompt'
+import { getDailyTraderContext } from '@/ai/services/contextBuilder'
+import { generateMentorResponse } from '@/ai/services/geminiClient'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -201,7 +203,7 @@ export async function POST(req: Request) {
            return NextResponse.json({ status: 'success' })
         } 
         
-// ⚡ THE AI MENTOR TAKES OVER HERE ⚡
+        // ⚡ THE AI MENTOR TAKES OVER HERE ⚡
         try {
           // 1. Show a typing indicator to make it feel responsive
           await fetch(`https://api.telegram.org/bot${botToken}/sendChatAction`, {
@@ -210,88 +212,94 @@ export async function POST(req: Request) {
             body: JSON.stringify({ chat_id: chatId, action: 'typing' })
           });
 
-          // 2. Fetch context & CHAT HISTORY concurrently
-          const startOfDay = new Date();
-          startOfDay.setUTCHours(0, 0, 0, 0);
-          
-          const [setupsRes, logsRes, historyRes] = await Promise.all([
-            // Grabbing ALL setups for the user to separate Today vs Vault
-            supabase.from('user_desk_setups').select('symbol, is_today').eq('user_id', existingProfile.id),
-            supabase.from('user_desk_logs').select('execution_type').eq('user_id', existingProfile.id).gte('created_at', startOfDay.toISOString()),
-            supabase.from('mentor_chat_logs').select('role, content').eq('user_id', existingProfile.id).order('created_at', { ascending: false }).limit(6)
-          ]);
+          // 2. Fetch recent chat history
+          const { data: historyData } = await supabase
+            .from('mentor_chat_logs')
+            .select('role, content')
+            .eq('user_id', existingProfile.id)
+            .order('created_at', { ascending: false })
+            .limit(10);
 
-          const todayPairs = setupsRes.data?.filter(s => s.is_today).map(s => s.symbol).join(', ') || 'None';
-          const vaultPairs = setupsRes.data?.filter(s => !s.is_today).map(s => s.symbol).join(', ') || 'None';
-          const tradesTaken = logsRes.data?.length || 0;
-
-          // Format history for Gemini (Needs to be oldest first)
-          const pastMessages = (historyRes.data || []).reverse().map(msg => ({
-            role: msg.role === 'model' ? 'model' : 'user',
-            parts: [{ text: msg.content }]
+          const pastMessages = (historyData || []).reverse().map(msg => ({
+            role: msg.role === 'model' ? 'assistant' : 'user',
+            content: msg.content
           }));
 
-          // 3. Build the prompt using the dedicated file
-          const systemPrompt = buildSystemPrompt({
-            assetFocus: "Adaptive", 
-            executionStyle: "Intraday", 
-            loggingPreference: "Minimalist"
-          });
+          // Append the current message
+          pastMessages.push({ role: 'user', content: text });
 
-          // ⚡ THE FIX: INJECTING REAL-TIME CONTEXT ⚡
-          const currentContext = `
-            [SYSTEM DATA FEED]
-            Trader Name: ${existingProfile.username || 'Trader'}
-            Current Time: ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}
-            Today's Staged Pairs: ${todayPairs}
-            Weekly Vault Pairs: ${vaultPairs}
-            Trades Taken Today: ${tradesTaken}
+          // 3. Fetch centralized reality context & build prompt
+          const { userProfile, liveContext } = await getDailyTraderContext(supabase, existingProfile.id);
+          const unifiedSystemPrompt = `${buildSystemPrompt(userProfile)}\n\n${liveContext}`;
+
+          // 4. Generate Initial Response from Gemini
+          const aiParts = await generateMentorResponse(pastMessages, unifiedSystemPrompt);
+          const firstPart = aiParts[0];
+
+          let finalAiText = "";
+
+          // 5. THE INTERCEPTOR: Check if Telegram AI requested a Tool
+          if (firstPart.functionCall) {
+            const toolName = firstPart.functionCall.name;
+            const toolArgs = firstPart.functionCall.args;
+            let toolData: any = {};
             
-            User message: "${text}"
-          `;
+            if (toolName === 'get_daily_status') {
+              toolData = { live_stats: liveContext };
+            } else if (toolName === 'get_trade_autopsy') {
+              const { data } = await supabase
+                .from('user_desk_logs')
+                .select('*, user_desk_setups(notes)')
+                .eq('user_id', existingProfile.id)
+                .ilike('symbol', `%${toolArgs.symbol}%`)
+                .order('created_at', { ascending: false })
+                .limit(1);
+              toolData = data ? data[0] : { error: "No recent trades found for this asset." };
+            } else if (toolName === 'get_discipline_and_leaks' || toolName === 'get_playbook_performance') {
+              let dateFilter = new Date();
+              if (toolArgs.timeframe === 'WEEK') dateFilter.setDate(dateFilter.getDate() - 7);
+              else if (toolArgs.timeframe === 'MONTH') dateFilter.setDate(dateFilter.getDate() - 30);
+              else dateFilter = new Date(0);
+              
+              const { data } = await supabase
+                .from('user_desk_logs')
+                .select('playbook, execution_type, outcome, rr, reason')
+                .eq('user_id', existingProfile.id)
+                .gte('created_at', dateFilter.toISOString());
+              toolData = data || [];
+            }
 
-          // Append the current message to the payload
-          pastMessages.push({ role: 'user', parts: [{ text: currentContext }] });
+            // Map standard messages for the client format
+            const formattedMessagesForTool = pastMessages.map(m => ({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: m.content }]
+            }));
 
-          // 4. Hit Gemini with memory, full context, and disabled safety filters
-          const geminiKey = process.env.GEMINI_API_KEY;
-          const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              system_instruction: { parts: { text: systemPrompt } },
-              contents: pastMessages,
-              generationConfig: { temperature: 0.4 },
-              // ⚡ THE FIX: REMOVING THE PROFANITY FILTERS ⚡
-              safetySettings: [
-                { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-              ]
-            })
-          });
+            // Handoff data back to Gemini
+            formattedMessagesForTool.push({ role: 'model', parts: [{ functionCall: firstPart.functionCall }] });
+            formattedMessagesForTool.push({ role: 'user', parts: [{ functionResponse: { name: toolName, response: { content: toolData } } }] });
 
-          const geminiData = await geminiResponse.json();
-          if (geminiData.candidates && geminiData.candidates[0].content.parts[0].text) {
-             const aiReply = geminiData.candidates[0].content.parts[0].text.trim();
-             
-             // The Silence Interceptor
-             if (aiReply.includes('[SILENCE]')) {
-                 console.log("Mentor chose to remain silent. No message sent.");
-                 return NextResponse.json({ status: 'success' });
-             }
-
-             // SAVE THE CONVERSATION TO THE DATABASE
-             await supabase.from('mentor_chat_logs').insert([
-               { user_id: existingProfile.id, role: 'user', content: text },
-               { user_id: existingProfile.id, role: 'model', content: aiReply }
-             ]);
-
-             await sendMessage(chatId, aiReply, 'Markdown');
+            const finalReplyParts = await generateMentorResponse(formattedMessagesForTool, unifiedSystemPrompt);
+            finalAiText = finalReplyParts[0].text;
+            
           } else {
-             await sendMessage(chatId, "I'm currently recalibrating my feed. Check your terminal for active updates.");
+             // No tools requested, just standard text
+             finalAiText = firstPart.text;
           }
+
+          // 6. The Silence Interceptor & Delivery
+          if (finalAiText.includes('[SILENCE]')) {
+             console.log("Mentor chose to remain silent.");
+             return NextResponse.json({ status: 'success' });
+          }
+
+          // Save the conversation so the Web Widget sees it too
+          await supabase.from('mentor_chat_logs').insert([
+            { user_id: existingProfile.id, role: 'user', content: text },
+            { user_id: existingProfile.id, role: 'model', content: finalAiText }
+          ]);
+
+          await sendMessage(chatId, finalAiText, 'Markdown');
 
         } catch (aiError) {
           console.error("Mentor AI Error:", aiError);
