@@ -144,8 +144,10 @@ export default function Home() {
       {/* FULL SCREEN HERO */}
       <section className="relative z-10 min-h-screen flex flex-col justify-center pt-24 pb-8">
         <div className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto text-center px-6">
+          {/* FORCED TWO-LINE HEADER */}
           <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight tracking-tight text-white mb-6">
-            Systematic Trading Terminal & <span className="text-blue-500">Performance Journal.</span>
+            Systematic Trading Terminal & <br className="hidden sm:block" /> 
+            <span className="text-blue-500">Performance Journal.</span>
           </h1>
           <p className="text-base md:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
             A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
@@ -403,7 +405,7 @@ export default function Home() {
         )}
       </section>
 
-      {/* NEW: OPERATOR FEEDBACK SECTION */}
+      {/* OPERATOR FEEDBACK SECTION */}
       <section className="relative z-10 py-16 md:py-24 px-6 border-b border-neutral-900 bg-[#050505]">
         <div className="text-center mb-16 max-w-3xl mx-auto">
           <h2 className="text-2xl font-black text-white uppercase tracking-widest">Field Reports</h2>
@@ -411,7 +413,6 @@ export default function Home() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-          {/* Feedback Card 1 */}
           <div className="bg-[#080808] border border-neutral-800 rounded-xl p-8 relative flex flex-col justify-between">
             <Quote className="absolute top-6 right-6 w-8 h-8 text-neutral-800/50" />
             <div>
@@ -433,7 +434,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Feedback Card 2 */}
           <div className="bg-[#080808] border border-neutral-800 rounded-xl p-8 relative flex flex-col justify-between">
             <Quote className="absolute top-6 right-6 w-8 h-8 text-neutral-800/50" />
             <div>
@@ -455,7 +455,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Feedback Card 3 */}
           <div className="bg-[#080808] border border-neutral-800 rounded-xl p-8 relative flex flex-col justify-between">
             <Quote className="absolute top-6 right-6 w-8 h-8 text-neutral-800/50" />
             <div>
@@ -518,7 +517,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FAQ & FOOTER */}
+      {/* FAQ */}
       <section className="relative z-10 max-w-3xl mx-auto py-16 md:py-24 px-6 border-t border-neutral-900">
         <h2 className="text-2xl font-black text-white mb-8 md:mb-10 text-center uppercase tracking-tight">FAQ</h2>
         <div className="space-y-2">
@@ -536,15 +535,13 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="bg-[#020202] border-t border-neutral-900 pt-16 pb-8 px-6">
-        <div className="max-w-6xl mx-auto flex flex-col items-center justify-center text-center">
-          <Link href="/" className="relative w-28 h-8 mb-6">
-            <Image src="/logo.png" alt="MyTraderDesk" fill className="object-contain opacity-50" sizes="112px" />
-          </Link>
-          <p className="text-[10px] font-bold text-neutral-700 uppercase tracking-widest mb-2">
-            &copy; {new Date().getFullYear()} MyTraderDesk. All rights reserved.
+      {/* UPDATED FOOTER */}
+      <footer className="bg-[#020202] border-t border-neutral-900 py-8 px-6">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-[10px] font-bold text-neutral-700 uppercase tracking-widest text-center sm:text-left">
+            &copy; {new Date().getFullYear()} Sentinel Vortex. All rights reserved.
           </p>
-          <p className="text-[9px] font-bold text-neutral-700 uppercase tracking-widest">
+          <p className="text-[9px] font-bold text-neutral-700 uppercase tracking-widest text-center sm:text-right">
             Trading involves significant risk of loss.
           </p>
         </div>
