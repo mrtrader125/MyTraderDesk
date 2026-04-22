@@ -116,14 +116,14 @@ export default function Home() {
       </div>
 
       <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/95 border-b border-neutral-900 py-3 backdrop-blur-md' : 'bg-transparent py-4 md:py-5'}`}>
-        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto px-6 md:px-12 lg:px-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center shrink-0 group relative w-24 md:w-32 h-8">
+        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto px-6 md:px-12 flex items-center justify-between">
+          <Link href="/" className="flex items-center shrink-0 group relative w-24 md:w-28 h-7">
             <Image 
               src="/logo.png" 
               alt="MyTraderDesk" 
               fill
               className="object-contain object-left transition-opacity hover:opacity-80" 
-              sizes="(max-width: 768px) 96px, 128px"
+              sizes="(max-width: 768px) 96px, 112px"
               priority
             />
           </Link>
@@ -134,25 +134,25 @@ export default function Home() {
           </div>
           <div className="flex gap-4 items-center shrink-0">
             <Link href="/login" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors hidden sm:block">Log In</Link>
-            <Link href="/signup" className="px-6 py-2 text-[9px] uppercase tracking-widest font-black bg-white text-black rounded-sm hover:bg-neutral-200 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            <Link href="/signup" className="px-5 py-2 text-[9px] uppercase tracking-widest font-black bg-white text-black rounded-sm hover:bg-neutral-200 transition-colors shadow-[0_0_15px_rgba(255,255,255,0.1)]">
               Access Terminal
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* HERO - Capped height so it doesn't look barren on 4k */}
-      <section className="relative z-10 min-h-screen max-h-[900px] flex flex-col justify-center pt-24 pb-8">
-        <div className="flex-1 flex flex-col items-center justify-center max-w-[1200px] mx-auto text-center px-6 w-full">
-          <h1 className="text-[7vw] md:text-[5.5rem] lg:text-[6.5rem] font-black leading-[1.05] tracking-tighter text-white mb-6 flex flex-col items-center justify-center w-full">
+      {/* SLEEK, SHARP HERO */}
+      <section className="relative z-10 min-h-[90vh] flex flex-col justify-center pt-24 pb-8">
+        <div className="flex-1 flex flex-col items-center justify-center max-w-[1000px] mx-auto text-center px-6 w-full">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-[1.1] tracking-tighter text-white mb-6 flex flex-col items-center justify-center w-full">
             <span className="whitespace-nowrap">Systematic Trading Terminal &</span>
             <span className="text-blue-500 whitespace-nowrap">Performance Journal.</span>
           </h1>
-          <p className="text-base md:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
+          <p className="text-sm md:text-base text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
             A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-            <Link href="/signup" className="px-8 py-3.5 bg-blue-600 text-white rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.2)]">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+            <Link href="/signup" className="px-8 py-3.5 bg-blue-600 text-white rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_20px_rgba(59,130,246,0.2)]">
               Create Free Account
             </Link>
             <Link href="#features" className="px-8 py-3.5 bg-[#111] text-white border border-neutral-800 rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-neutral-800 transition-colors w-full sm:w-auto">
@@ -161,61 +161,61 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="w-full flex flex-col items-center mt-auto px-6 max-w-[1600px] mx-auto">
-          <div className="flex items-center gap-3 mb-6">
+        <div className="w-full flex flex-col items-center mt-auto px-6">
+          <div className="flex items-center gap-3 mb-5">
             <div className="flex -space-x-2">
-              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-800"></div>
-              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-700"></div>
-              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-600"></div>
+              <div className="w-5 h-5 rounded-full border-2 border-[#050505] bg-neutral-800"></div>
+              <div className="w-5 h-5 rounded-full border-2 border-[#050505] bg-neutral-700"></div>
+              <div className="w-5 h-5 rounded-full border-2 border-[#050505] bg-neutral-600"></div>
             </div>
             <p className="text-[9px] font-bold text-neutral-500 tracking-widest uppercase">Join active operators validating setups today.</p>
           </div>
           
-          <div className="flex flex-wrap justify-center gap-4 opacity-70">
-            <div className="px-5 py-2 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
-              <Globe2 className="w-3.5 h-3.5 text-neutral-500" />
+          <div className="flex flex-wrap justify-center gap-3 opacity-70">
+            <div className="px-4 py-2 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
+              <Globe2 className="w-3 h-3 text-neutral-500" />
               <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">MetaTrader 4 / 5</span>
             </div>
-            <div className="px-5 py-2 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
-              <BarChart3 className="w-3.5 h-3.5 text-neutral-500" />
+            <div className="px-4 py-2 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
+              <BarChart3 className="w-3 h-3 text-neutral-500" />
               <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">TradingView Charts</span>
             </div>
-            <div className="px-5 py-2 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
-              <Target className="w-3.5 h-3.5 text-neutral-500" />
+            <div className="px-4 py-2 border border-neutral-800/50 rounded-sm bg-[#080808] flex items-center gap-2">
+              <Target className="w-3 h-3 text-neutral-500" />
               <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">cTrader</span>
             </div>
           </div>
         </div>
       </section>
 
-      {/* COMPACT FEATURES */}
-      <section id="features" className="relative z-10 w-full py-16 md:py-20 px-6 border-t border-neutral-900 bg-[#020202]">
-        <div className="max-w-[1400px] mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest">What The Platform Does</h2>
-            <p className="text-neutral-500 text-xs mt-2 font-medium">The core tools built into the terminal.</p>
+      {/* COMPACT FEATURES GRID */}
+      <section id="features" className="relative z-10 w-full py-16 px-6 border-t border-neutral-900 bg-[#020202]">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-lg md:text-xl font-black text-white uppercase tracking-widest">What The Platform Does</h2>
+            <p className="text-neutral-500 text-xs mt-1 font-medium">The core tools built into the terminal.</p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-5 lg:gap-6">
-            <div className="bg-[#080808] border border-neutral-800 rounded-xl p-6 lg:p-8 hover:border-neutral-700 transition-colors">
-              <Workflow className="w-6 h-6 text-blue-500 mb-5" />
-              <h3 className="text-sm md:text-base font-bold text-white mb-2">MT5 Data Sync</h3>
+          <div className="grid md:grid-cols-3 gap-4 lg:gap-5">
+            <div className="bg-[#080808] border border-neutral-800 rounded-lg p-5 lg:p-6 hover:border-neutral-700 transition-colors">
+              <Workflow className="w-5 h-5 text-blue-500 mb-4" />
+              <h3 className="text-sm font-bold text-white mb-2">MT5 Data Sync</h3>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Connect your broker data via CSV or HTML parsing. The platform matches your live executions to your drafted setups, creating a permanent, frictionless record of your performance.
+                Connect your broker data via CSV or HTML parsing. Matches live executions to drafted setups, creating a frictionless record.
               </p>
             </div>
-            <div className="bg-[#080808] border border-neutral-800 rounded-xl p-6 lg:p-8 hover:border-neutral-700 transition-colors">
-              <BookOpen className="w-6 h-6 text-emerald-500 mb-5" />
-              <h3 className="text-sm md:text-base font-bold text-white mb-2">Behavioral Journaling</h3>
+            <div className="bg-[#080808] border border-neutral-800 rounded-lg p-5 lg:p-6 hover:border-neutral-700 transition-colors">
+              <BookOpen className="w-5 h-5 text-emerald-500 mb-4" />
+              <h3 className="text-sm font-bold text-white mb-2">Behavioral Journaling</h3>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                Go beyond PnL. Our journal tracks your "Discipline Index." Categorize trades as Perfect or Imperfect, and assign an exact dollar cost to your emotional mistakes.
+                Go beyond PnL. Tracks your "Discipline Index." Categorize trades as Perfect/Imperfect, assigning dollar costs to mistakes.
               </p>
             </div>
-            <div className="bg-[#080808] border border-neutral-800 rounded-xl p-6 lg:p-8 hover:border-neutral-700 transition-colors">
-              <TerminalSquare className="w-6 h-6 text-purple-500 mb-5" />
-              <h3 className="text-sm md:text-base font-bold text-white mb-2">The Live Floor</h3>
+            <div className="bg-[#080808] border border-neutral-800 rounded-lg p-5 lg:p-6 hover:border-neutral-700 transition-colors">
+              <TerminalSquare className="w-5 h-5 text-purple-500 mb-4" />
+              <h3 className="text-sm font-bold text-white mb-2">The Live Floor</h3>
               <p className="text-xs text-neutral-400 leading-relaxed">
-                A real-time squawk box for Pro members. Access institutional-grade structural analysis, validate your own bias, and interact with the community voting engine before you take a trade.
+                Real-time squawk box for Pro members. Access structural analysis, validate bias, and interact with community voting.
               </p>
             </div>
           </div>
@@ -223,76 +223,68 @@ export default function Home() {
       </section>
 
       {/* COMPACT BLUEPRINT */}
-      <section id="blueprint" className="relative z-10 w-full py-16 md:py-20 px-6 overflow-hidden border-t border-neutral-900">
-        <div className="text-center mb-12 relative z-20 max-w-[1400px] mx-auto">
-          <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest">The Operator's Blueprint</h2>
-          <p className="text-neutral-500 text-xs mt-2 font-medium tracking-wide">Explore the mechanics of consistency. Follow the logic flow.</p>
+      <section id="blueprint" className="relative z-10 w-full py-16 px-6 overflow-hidden border-t border-neutral-900">
+        <div className="text-center mb-10 relative z-20 max-w-3xl mx-auto">
+          <h2 className="text-lg md:text-xl font-black text-white uppercase tracking-widest">The Operator's Blueprint</h2>
+          <p className="text-neutral-500 text-xs mt-1 font-medium tracking-wide">Explore the mechanics of consistency.</p>
         </div>
 
-        <div className="relative max-w-4xl mx-auto px-2 sm:px-0">
+        <div className="relative max-w-3xl mx-auto px-2 sm:px-0">
           <div className="absolute top-4 bottom-4 left-[27px] md:left-1/2 w-px bg-neutral-800 md:-translate-x-[0.5px] z-0"></div>
 
-          <div className="space-y-8 md:space-y-12 relative z-10">
-            {/* Node 1 */}
+          <div className="space-y-8 relative z-10">
             <div className="relative flex flex-col md:flex-row items-center w-full">
               <div className="absolute left-[22px] md:hidden w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-[#050505] z-10"></div>
               <div className="hidden md:block absolute left-1/2 w-2.5 h-2.5 rounded-full bg-blue-500 ring-4 ring-[#050505] -translate-x-1 z-10 shadow-[0_0_10px_rgba(59,130,246,0.6)]"></div>
               <div className="w-full md:w-1/2 pl-12 md:pl-0 md:pr-10 relative">
-                <div className="hidden md:block absolute right-0 top-1/2 w-10 h-px bg-neutral-800 -z-10"></div>
-                <Link href="/protocol/identity" className="block bg-[#080808] p-6 lg:p-8 rounded-sm border border-neutral-900 hover:border-blue-500/50 transition-all hover:-translate-y-1 group">
-                  <User className="w-6 h-6 mb-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">1. The Identity</h3>
-                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">From Learner to Executor. Discover why intermediate traders stay unprofitable and the mindset shift required for consistency.</p>
-                  <div className="mt-4 flex items-center text-[9px] font-bold text-blue-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
+                <div className="hidden md:block absolute right-0 top-1/2 w-8 h-px bg-neutral-800 -z-10"></div>
+                <Link href="/protocol/identity" className="block bg-[#080808] p-5 rounded-md border border-neutral-900 hover:border-blue-500/50 transition-all hover:-translate-y-1 group">
+                  <User className="w-5 h-5 mb-3 text-blue-500 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-[11px] font-black mb-1.5 text-white uppercase tracking-widest">1. The Identity</h3>
+                  <p className="text-neutral-500 text-[10px] leading-relaxed font-medium">Discover why intermediate traders stay unprofitable and the required mindset shift.</p>
                 </Link>
               </div>
               <div className="hidden md:block w-1/2"></div>
             </div>
 
-            {/* Node 2 */}
             <div className="relative flex flex-col md:flex-row items-center w-full">
               <div className="absolute left-[22px] md:hidden w-2.5 h-2.5 rounded-full bg-cyan-500 ring-4 ring-[#050505] z-10"></div>
               <div className="hidden md:block absolute left-1/2 w-2.5 h-2.5 rounded-full bg-cyan-500 ring-4 ring-[#050505] -translate-x-1 z-10 shadow-[0_0_10px_rgba(6,182,212,0.6)]"></div>
               <div className="hidden md:block w-1/2"></div>
               <div className="w-full md:w-1/2 pl-12 md:pl-10 relative">
-                <div className="hidden md:block absolute left-0 top-1/2 w-10 h-px bg-neutral-800 -z-10"></div>
-                <Link href="/protocol/strategy" className="block bg-[#080808] p-6 lg:p-8 rounded-sm border border-neutral-900 hover:border-cyan-500/50 transition-all hover:-translate-y-1 group">
-                  <Map className="w-6 h-6 mb-4 text-cyan-500 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">2. The Strategy</h3>
-                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">Market Demystified. Strategy isn't magic; it's simply finding your place in the market's endless journey.</p>
-                  <div className="mt-4 flex items-center text-[9px] font-bold text-cyan-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
+                <div className="hidden md:block absolute left-0 top-1/2 w-8 h-px bg-neutral-800 -z-10"></div>
+                <Link href="/protocol/strategy" className="block bg-[#080808] p-5 rounded-md border border-neutral-900 hover:border-cyan-500/50 transition-all hover:-translate-y-1 group">
+                  <Map className="w-5 h-5 mb-3 text-cyan-500 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-[11px] font-black mb-1.5 text-white uppercase tracking-widest">2. The Strategy</h3>
+                  <p className="text-neutral-500 text-[10px] leading-relaxed font-medium">Strategy isn't magic; it's finding your place in the market's endless journey.</p>
                 </Link>
               </div>
             </div>
 
-            {/* Node 3 */}
             <div className="relative flex flex-col md:flex-row items-center w-full">
               <div className="absolute left-[22px] md:hidden w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-[#050505] z-10"></div>
               <div className="hidden md:block absolute left-1/2 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-[#050505] -translate-x-1 z-10 shadow-[0_0_10px_rgba(16,185,129,0.6)]"></div>
               <div className="w-full md:w-1/2 pl-12 md:pl-0 md:pr-10 relative">
-                <div className="hidden md:block absolute right-0 top-1/2 w-10 h-px bg-neutral-800 -z-10"></div>
-                <Link href="/protocol/system" className="block bg-[#080808] p-6 lg:p-8 rounded-sm border border-neutral-900 hover:border-emerald-500/50 transition-all hover:-translate-y-1 group">
-                  <ShieldCheck className="w-6 h-6 mb-4 text-emerald-500 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">3. The System</h3>
-                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">Rules of Engagement. Bridging the gap between theory and execution to build an edge you can actually follow.</p>
-                  <div className="mt-4 flex items-center text-[9px] font-bold text-emerald-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
+                <div className="hidden md:block absolute right-0 top-1/2 w-8 h-px bg-neutral-800 -z-10"></div>
+                <Link href="/protocol/system" className="block bg-[#080808] p-5 rounded-md border border-neutral-900 hover:border-emerald-500/50 transition-all hover:-translate-y-1 group">
+                  <ShieldCheck className="w-5 h-5 mb-3 text-emerald-500 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-[11px] font-black mb-1.5 text-white uppercase tracking-widest">3. The System</h3>
+                  <p className="text-neutral-500 text-[10px] leading-relaxed font-medium">Bridging the gap between theory and execution to build an edge you can actually follow.</p>
                 </Link>
               </div>
               <div className="hidden md:block w-1/2"></div>
             </div>
 
-            {/* Node 4 */}
             <div className="relative flex flex-col md:flex-row items-center w-full">
               <div className="absolute left-[22px] md:hidden w-2.5 h-2.5 rounded-full bg-purple-500 ring-4 ring-[#050505] z-10"></div>
               <div className="hidden md:block absolute left-1/2 w-2.5 h-2.5 rounded-full bg-purple-500 ring-4 ring-[#050505] -translate-x-1 z-10 shadow-[0_0_10px_rgba(168,85,247,0.6)]"></div>
               <div className="hidden md:block w-1/2"></div>
               <div className="w-full md:w-1/2 pl-12 md:pl-10 relative">
-                <div className="hidden md:block absolute left-0 top-1/2 w-10 h-px bg-neutral-800 -z-10"></div>
-                <Link href="/protocol/routine" className="block bg-[#080808] p-6 lg:p-8 rounded-sm border border-neutral-900 hover:border-purple-500/50 transition-all hover:-translate-y-1 group">
-                  <Filter className="w-6 h-6 mb-4 text-purple-500 group-hover:scale-110 transition-transform" />
-                  <h3 className="text-xs font-black mb-2 text-white uppercase tracking-widest">4. The Routine</h3>
-                  <p className="text-neutral-500 text-[11px] leading-relaxed font-medium">The 3-Level Filtration process. Narrow the market down to high-probability executions without the emotional noise.</p>
-                  <div className="mt-4 flex items-center text-[9px] font-bold text-purple-400 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Read Protocol <ArrowRight className="ml-1 w-3 h-3" /></div>
+                <div className="hidden md:block absolute left-0 top-1/2 w-8 h-px bg-neutral-800 -z-10"></div>
+                <Link href="/protocol/routine" className="block bg-[#080808] p-5 rounded-md border border-neutral-900 hover:border-purple-500/50 transition-all hover:-translate-y-1 group">
+                  <Filter className="w-5 h-5 mb-3 text-purple-500 group-hover:scale-110 transition-transform" />
+                  <h3 className="text-[11px] font-black mb-1.5 text-white uppercase tracking-widest">4. The Routine</h3>
+                  <p className="text-neutral-500 text-[10px] leading-relaxed font-medium">The 3-Level Filtration process. Narrow the market down to high-probability executions.</p>
                 </Link>
               </div>
             </div>
@@ -300,13 +292,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* COMPACT TERMINAL UI CAROUSEL */}
-      <section className="relative z-10 w-full overflow-hidden py-16 md:py-20 px-6 border-y border-neutral-900 bg-[#020202]">
-        <div className="text-center mb-10 max-w-[1400px] mx-auto">
-          <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest">Inside The Terminal</h2>
+      {/* 🚀 MASSIVE TERMINAL UI CAROUSEL 🚀 */}
+      <section className="relative z-10 w-full overflow-hidden py-16 md:py-24 px-6 border-y border-neutral-900 bg-[#020202]">
+        <div className="text-center mb-10 max-w-5xl mx-auto">
+          <h2 className="text-lg md:text-xl font-black text-white uppercase tracking-widest">Inside The Terminal</h2>
         </div>
-        {/* SHRUNK THE HEIGHT DRASTICALLY */}
-        <div className="relative w-full h-[220px] sm:h-[300px] md:h-[400px] lg:h-[480px] flex items-center justify-center max-w-[1400px] mx-auto">
+        
+        {/* HUGE SIZING ALLOWED HERE */}
+        <div className="relative w-full h-[280px] sm:h-[450px] md:h-[600px] lg:h-[750px] flex items-center justify-center max-w-[1600px] 2xl:max-w-[1920px] mx-auto">
           {terminalSlides.map((slide, index) => {
             const len = terminalSlides.length;
             let offset = (index - activeSlide) % len;
@@ -315,35 +308,35 @@ export default function Home() {
 
             let styleClass = "";
             if (offset === 0) {
-              styleClass = "translate-x-0 scale-100 opacity-100 z-30 shadow-[0_0_40px_rgba(0,0,0,0.5)] border-neutral-700";
+              styleClass = "translate-x-0 scale-100 opacity-100 z-30 shadow-[0_0_80px_rgba(0,0,0,0.8)] border-neutral-700";
             } else if (offset === 1 || offset === -1) { 
               const direction = offset === 1 ? "" : "-";
-              styleClass = `${direction}translate-x-[30%] sm:${direction}translate-x-[40%] md:${direction}translate-x-[45%] scale-[0.85] opacity-40 z-20 cursor-pointer hover:opacity-70 border-neutral-900`;
+              styleClass = `${direction}translate-x-[35%] sm:${direction}translate-x-[45%] md:${direction}translate-x-[50%] scale-[0.85] opacity-40 z-20 cursor-pointer hover:opacity-60 border-neutral-900`;
             } else { 
-              styleClass = offset > 0 ? "translate-x-[60%] scale-[0.70] opacity-0 z-10" : "-translate-x-[60%] scale-[0.70] opacity-0 z-10";
+              styleClass = offset > 0 ? "translate-x-[70%] scale-[0.70] opacity-0 z-10" : "-translate-x-[70%] scale-[0.70] opacity-0 z-10";
             }
 
             return (
-              // TIGHTENED WIDTHS
-              <div key={slide.id} onClick={() => setActiveSlide(index)} className={`absolute w-[80%] sm:w-[60%] md:w-[50%] lg:w-[45%] xl:w-[40%] aspect-video transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-xl border bg-[#050505] overflow-hidden ${styleClass}`}>
+              // VERY WIDE WIDTHS
+              <div key={slide.id} onClick={() => setActiveSlide(index)} className={`absolute w-[95%] sm:w-[80%] md:w-[70%] lg:w-[65%] xl:w-[60%] aspect-video transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-xl border bg-[#050505] overflow-hidden ${styleClass}`}>
                 <Image src={`/${slide.id}.png`} alt={slide.title} fill className="object-contain" />
               </div>
             );
           })}
-          <button onClick={prevSlide} className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 p-2 md:p-3 bg-[#050505] hover:bg-neutral-900 text-white rounded-lg border border-neutral-800 transition-colors z-40 shadow-xl"><ChevronLeft className="w-4 h-4 md:w-5 md:h-5" /></button>
-          <button onClick={nextSlide} className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 p-2 md:p-3 bg-[#050505] hover:bg-neutral-900 text-white rounded-lg border border-neutral-800 transition-colors z-40 shadow-lg"><ChevronRight className="w-4 h-4 md:w-5 md:h-5" /></button>
+          <button onClick={prevSlide} className="absolute left-2 md:left-12 top-1/2 -translate-y-1/2 p-3 md:p-4 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-lg border border-neutral-800 transition-colors z-40 shadow-2xl"><ChevronLeft className="w-5 h-5" /></button>
+          <button onClick={nextSlide} className="absolute right-2 md:right-12 top-1/2 -translate-y-1/2 p-3 md:p-4 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-lg border border-neutral-800 transition-colors z-40 shadow-2xl"><ChevronRight className="w-5 h-5" /></button>
         </div>
-        <div className="mt-8 text-center relative z-10 max-w-xl mx-auto px-4">
+        <div className="mt-10 text-center relative z-10 max-w-xl mx-auto px-4">
            <h3 className="text-xs font-black uppercase tracking-widest text-white mb-2">{terminalSlides[activeSlide].title}</h3>
            <p className="text-neutral-500 text-xs font-medium leading-relaxed">{terminalSlides[activeSlide].desc}</p>
         </div>
       </section>
 
-      {/* COMPACT FEATURED RESEARCH SKELETON */}
-      <section className="relative z-10 w-full py-16 md:py-20 px-6 overflow-hidden border-b border-neutral-900">
-        <div className="max-w-[1400px] mx-auto mb-10 flex flex-col md:flex-row items-center md:items-end justify-between text-center md:text-left gap-4">
+      {/* 🚀 MASSIVE LIVE EXAMPLES SKELETON 🚀 */}
+      <section className="relative z-10 w-full py-16 md:py-24 px-6 overflow-hidden border-b border-neutral-900">
+        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto mb-10 flex flex-col md:flex-row items-center md:items-end justify-between text-center md:text-left gap-4">
           <div>
-            <h2 className="text-xl md:text-2xl font-black text-neutral-100 tracking-tight mb-2">Live Examples</h2>
+            <h2 className="text-lg md:text-xl font-black text-neutral-100 tracking-tight mb-2">Live Examples</h2>
             <p className="text-neutral-500 text-xs font-medium tracking-wide">Real setups logged by our community</p>
           </div>
           <Link href="/community" className="flex items-center text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors bg-[#111] md:bg-transparent px-4 py-2 md:p-0 rounded-sm">
@@ -352,13 +345,13 @@ export default function Home() {
         </div>
 
         {loading ? (
-          <div className="max-w-[1400px] mx-auto flex flex-col items-center justify-center py-16 text-neutral-500 border border-neutral-900/50 bg-[#050505] rounded-xl">
+          <div className="max-w-5xl mx-auto flex flex-col items-center justify-center py-16 text-neutral-500 border border-neutral-900/50 bg-[#050505] rounded-xl">
             <Activity className="w-6 h-6 animate-pulse mb-3" />
             <p className="font-medium text-xs">Loading Data...</p>
           </div>
         ) : analyses.length > 0 ? (
-          // SHRUNK HEIGHT DRASTICALLY
-          <div className="relative w-full h-[250px] sm:h-[350px] md:h-[400px] lg:h-[480px] flex items-center justify-center max-w-[1400px] mx-auto">
+          // HUGE SIZING ALLOWED HERE
+          <div className="relative w-full h-[280px] sm:h-[450px] md:h-[600px] lg:h-[700px] flex items-center justify-center max-w-[1600px] 2xl:max-w-[1920px] mx-auto">
             {analyses.map((item, index) => {
               const len = analyses.length;
               let offset = (index - activeFeaturedSlide) % len;
@@ -371,10 +364,10 @@ export default function Home() {
                                `${offset > 0 ? "" : "-"}translate-x-[70%] scale-[0.70] opacity-0 z-10 pointer-events-none`;
 
               return (
-                // TIGHTENED WIDTHS
-                <div key={item.id} onClick={() => { if(!isActive) setActiveFeaturedSlide(index) }} className={`absolute w-[85%] sm:w-[60%] md:w-[50%] lg:w-[40%] xl:w-[35%] p-4 sm:p-5 transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-xl overflow-hidden flex flex-col ${styleClass}`}>
+                // VERY WIDE WIDTHS
+                <div key={item.id} onClick={() => { if(!isActive) setActiveFeaturedSlide(index) }} className={`absolute w-[95%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-[55%] p-4 sm:p-5 transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-xl overflow-hidden flex flex-col ${styleClass}`}>
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-bold font-mono tracking-tight text-neutral-200">{item.asset_symbol}</h3>
+                    <h3 className="text-base sm:text-xl font-bold font-mono tracking-tight text-neutral-200">{item.asset_symbol}</h3>
                     <span className="text-[9px] text-neutral-500 font-medium tracking-widest uppercase bg-[#111] px-2 py-1 rounded-md ring-1 ring-white/[0.04]">{new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                   {item.after_image_url && item.image_url ? (
@@ -391,13 +384,13 @@ export default function Home() {
             })}
             {analyses.length > 1 && (
               <>
-                <button onClick={prevFeatured} className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 p-2 lg:p-3 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-lg ring-1 ring-white/[0.05] transition-colors z-40 shadow-xl"><ChevronLeft className="w-4 h-4 text-neutral-400" /></button>
-                <button onClick={nextFeatured} className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 p-2 lg:p-3 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-lg ring-1 ring-white/[0.05] transition-colors z-40 shadow-xl"><ChevronRight className="w-4 h-4 text-neutral-400" /></button>
+                <button onClick={prevFeatured} className="absolute left-2 md:left-12 top-1/2 -translate-y-1/2 p-3 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-lg ring-1 ring-white/[0.05] transition-colors z-40 shadow-2xl"><ChevronLeft className="w-5 h-5 text-neutral-400" /></button>
+                <button onClick={nextFeatured} className="absolute right-2 md:right-12 top-1/2 -translate-y-1/2 p-3 bg-[#0a0a0a] hover:bg-[#151515] text-white rounded-lg ring-1 ring-white/[0.05] transition-colors z-40 shadow-2xl"><ChevronRight className="w-5 h-5 text-neutral-400" /></button>
               </>
             )}
           </div>
         ) : (
-            <div className="max-w-[1400px] mx-auto">
+            <div className="max-w-5xl mx-auto">
               <div className="bg-[#0a0a0a] py-16 rounded-xl ring-1 ring-white/[0.05] text-center w-full">
                 <Database className="w-6 h-6 mx-auto text-neutral-700 mb-4 stroke-1" />
                 <p className="text-neutral-500 text-xs font-medium tracking-wide">No data available.</p>
@@ -407,72 +400,71 @@ export default function Home() {
       </section>
 
       {/* COMPACT OPERATOR FEEDBACK SECTION */}
-      <section className="relative z-10 w-full py-16 md:py-20 px-6 border-b border-neutral-900 bg-[#050505]">
-        <div className="text-center mb-12 max-w-[1400px] mx-auto">
-          <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest">Field Reports</h2>
-          <p className="text-neutral-500 text-xs mt-2 font-medium tracking-wide">Feedback from operators actively using the terminal.</p>
+      <section className="relative z-10 w-full py-16 px-6 border-b border-neutral-900 bg-[#050505]">
+        <div className="text-center mb-10 max-w-5xl mx-auto">
+          <h2 className="text-lg md:text-xl font-black text-white uppercase tracking-widest">Field Reports</h2>
+          <p className="text-neutral-500 text-xs mt-1 font-medium tracking-wide">Feedback from operators actively using the terminal.</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-5 max-w-[1400px] mx-auto">
-          {/* TIGHTENED PADDING & ICON SIZES */}
-          <div className="bg-[#080808] border border-neutral-800 rounded-xl p-6 lg:p-8 relative flex flex-col justify-between">
-            <Quote className="absolute top-6 right-6 w-6 h-6 text-neutral-800/50" />
+        <div className="grid md:grid-cols-3 gap-4 max-w-5xl mx-auto">
+          <div className="bg-[#080808] border border-neutral-800 rounded-lg p-5 relative flex flex-col justify-between">
+            <Quote className="absolute top-4 right-4 w-5 h-5 text-neutral-800/50" />
             <div>
-              <div className="flex text-amber-500 mb-6 space-x-1">
-                <Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" />
+              <div className="flex text-amber-500 mb-4 space-x-0.5">
+                <Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" />
               </div>
-              <p className="text-xs lg:text-sm text-neutral-300 leading-relaxed font-medium mb-8">
-                "[Insert your feedback here. Example: Tracking my Primary Leaks completely changed my profitability. I finally put a dollar value to my FOMO and stopped doing it.]"
+              <p className="text-xs text-neutral-300 leading-relaxed font-medium mb-6">
+                "[Insert your feedback here. Example: Tracking my Primary Leaks completely changed my profitability. I finally put a dollar value to my FOMO.]"
               </p>
             </div>
             <div className="flex items-center gap-3 mt-auto">
-              <div className="w-10 h-10 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center shrink-0">
-                 <User className="w-5 h-5 text-neutral-600" />
+              <div className="w-8 h-8 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center shrink-0">
+                 <User className="w-4 h-4 text-neutral-600" />
               </div>
               <div>
-                <h4 className="text-[10px] lg:text-xs font-black text-white uppercase tracking-widest">Operator Name 1</h4>
+                <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Operator Name 1</h4>
                 <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">Systematic Trader</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-[#080808] border border-neutral-800 rounded-xl p-6 lg:p-8 relative flex flex-col justify-between">
-            <Quote className="absolute top-6 right-6 w-6 h-6 text-neutral-800/50" />
+          <div className="bg-[#080808] border border-neutral-800 rounded-lg p-5 relative flex flex-col justify-between">
+            <Quote className="absolute top-4 right-4 w-5 h-5 text-neutral-800/50" />
             <div>
-              <div className="flex text-amber-500 mb-6 space-x-1">
-                <Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" />
+              <div className="flex text-amber-500 mb-4 space-x-0.5">
+                <Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" />
               </div>
-              <p className="text-xs lg:text-sm text-neutral-300 leading-relaxed font-medium mb-8">
-                "[Insert your feedback here. Example: The MT5 sync eliminates the busywork of journaling. The Live Floor gives me the exact confluence I need before executing a setup.]"
+              <p className="text-xs text-neutral-300 leading-relaxed font-medium mb-6">
+                "[Insert your feedback here. Example: The MT5 sync eliminates the busywork of journaling. The Live Floor gives me exact confluence.]"
               </p>
             </div>
             <div className="flex items-center gap-3 mt-auto">
-              <div className="w-10 h-10 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center shrink-0">
-                 <User className="w-5 h-5 text-neutral-600" />
+              <div className="w-8 h-8 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center shrink-0">
+                 <User className="w-4 h-4 text-neutral-600" />
               </div>
               <div>
-                <h4 className="text-[10px] lg:text-xs font-black text-white uppercase tracking-widest">Operator Name 2</h4>
+                <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Operator Name 2</h4>
                 <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">Prop Firm Funded</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-[#080808] border border-neutral-800 rounded-xl p-6 lg:p-8 relative flex flex-col justify-between">
-            <Quote className="absolute top-6 right-6 w-6 h-6 text-neutral-800/50" />
+          <div className="bg-[#080808] border border-neutral-800 rounded-lg p-5 relative flex flex-col justify-between">
+            <Quote className="absolute top-4 right-4 w-5 h-5 text-neutral-800/50" />
             <div>
-              <div className="flex text-amber-500 mb-6 space-x-1">
-                <Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" /><Star className="w-3.5 h-3.5 fill-current" />
+              <div className="flex text-amber-500 mb-4 space-x-0.5">
+                <Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" /><Star className="w-3 h-3 fill-current" />
               </div>
-              <p className="text-xs lg:text-sm text-neutral-300 leading-relaxed font-medium mb-8">
-                "[Insert your feedback here. Example: I've traded for 3 years, but this is the first tool that holds me accountable. The Discipline Index is the ultimate reality check.]"
+              <p className="text-xs text-neutral-300 leading-relaxed font-medium mb-6">
+                "[Insert your feedback here. Example: I've traded for 3 years, but this holds me accountable. The Discipline Index is a reality check.]"
               </p>
             </div>
             <div className="flex items-center gap-3 mt-auto">
-              <div className="w-10 h-10 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center shrink-0">
-                 <User className="w-5 h-5 text-neutral-600" />
+              <div className="w-8 h-8 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center shrink-0">
+                 <User className="w-4 h-4 text-neutral-600" />
               </div>
               <div>
-                <h4 className="text-[10px] lg:text-xs font-black text-white uppercase tracking-widest">Operator Name 3</h4>
+                <h4 className="text-[10px] font-black text-white uppercase tracking-widest">Operator Name 3</h4>
                 <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">Quantitative Analyst</span>
               </div>
             </div>
@@ -481,63 +473,63 @@ export default function Home() {
       </section>
 
       {/* COMPACT DESK REQUIREMENTS */}
-      <section className="relative z-10 w-full py-16 md:py-20 px-6">
-        <div className="text-center mb-12 max-w-[1400px] mx-auto">
-          <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">Desk Requirements</h2>
+      <section className="relative z-10 w-full py-16 px-6">
+        <div className="text-center mb-10 max-w-5xl mx-auto">
+          <h2 className="text-lg md:text-xl font-black text-white uppercase tracking-tight">Desk Requirements</h2>
         </div>
-        <div className="grid md:grid-cols-2 gap-5 lg:gap-8 max-w-[1200px] mx-auto">
-          <div className="bg-[#080808] p-6 lg:p-10 rounded-xl border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.02)]">
-            <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-6 border-b border-emerald-500/10 pb-4">Approved Profiles</h3>
-            <ul className="space-y-4 text-neutral-400 text-xs lg:text-sm font-medium">
-              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You treat trading as a rigid, risk-managed financial operation.</li>
-              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You want to explicitly track and quantify your emotional leaks.</li>
-              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-base leading-none">✓</span> You seek structural clarity to execute your own predefined edge.</li>
+        <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+          <div className="bg-[#080808] p-6 rounded-lg border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.02)]">
+            <h3 className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-4 border-b border-emerald-500/10 pb-3">Approved Profiles</h3>
+            <ul className="space-y-3 text-neutral-400 text-xs font-medium">
+              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-sm leading-none">✓</span> You treat trading as a rigid, risk-managed operation.</li>
+              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-sm leading-none">✓</span> You want to explicitly track and quantify your emotional leaks.</li>
+              <li className="flex items-start"><span className="text-emerald-500 mr-3 font-bold text-sm leading-none">✓</span> You seek structural clarity to execute your predefined edge.</li>
             </ul>
           </div>
-          <div className="bg-[#050505] p-6 lg:p-10 rounded-xl border border-red-500/10">
-            <h3 className="text-[10px] font-black text-red-500/70 uppercase tracking-widest mb-6 border-b border-red-500/10 pb-4">Denied Profiles</h3>
-            <ul className="space-y-4 text-neutral-600 text-xs lg:text-sm font-medium">
-              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Retail gamblers looking for magic buy/sell indicators.</li>
-              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Traders looking for a 'sandbox' or burner account to break rules.</li>
-              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-base leading-none">✕</span> Anyone unwilling to confront the monetary cost of their indiscipline.</li>
+          <div className="bg-[#050505] p-6 rounded-lg border border-red-500/10">
+            <h3 className="text-[10px] font-black text-red-500/70 uppercase tracking-widest mb-4 border-b border-red-500/10 pb-3">Denied Profiles</h3>
+            <ul className="space-y-3 text-neutral-600 text-xs font-medium">
+              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-sm leading-none">✕</span> Retail gamblers looking for magic buy/sell indicators.</li>
+              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-sm leading-none">✕</span> Traders looking for a 'sandbox' or burner account.</li>
+              <li className="flex items-start"><span className="text-red-500/50 mr-3 font-bold text-sm leading-none">✕</span> Anyone unwilling to confront the cost of indiscipline.</li>
             </ul>
           </div>
         </div>
       </section>
 
       {/* COMPACT PRICING */}
-      <section id="pricing" className="relative z-10 w-full py-16 md:py-20 px-6 bg-[#020202] border-t border-neutral-900">
-        <div className="text-center mb-10 max-w-[1200px] mx-auto">
-          <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight mb-3">Terminal Access</h2>
+      <section id="pricing" className="relative z-10 w-full py-16 px-6 bg-[#020202] border-t border-neutral-900">
+        <div className="text-center mb-8 max-w-5xl mx-auto">
+          <h2 className="text-lg md:text-xl font-black text-white uppercase tracking-tight mb-2">Terminal Access</h2>
         </div>
 
-        <div className="flex justify-center mb-10">
-          <div className="bg-[#080808] p-1.5 rounded-lg border border-neutral-900 inline-flex shadow-lg w-full sm:w-auto overflow-hidden">
-            <button onClick={() => setBillingCycle('monthly')} className={`flex-1 sm:flex-none px-6 py-3 rounded-md text-[9px] font-black uppercase tracking-widest transition-colors ${billingCycle === 'monthly' ? 'bg-[#1a1a1a] text-white' : 'text-neutral-600 hover:text-white'}`}>Monthly</button>
-            <button onClick={() => setBillingCycle('annual')} className={`flex-1 sm:flex-none px-6 py-3 rounded-md text-[9px] font-black uppercase tracking-widest transition-colors flex justify-center items-center gap-2 ${billingCycle === 'annual' ? 'bg-blue-600 text-white' : 'text-neutral-600 hover:text-white'}`}>
+        <div className="flex justify-center mb-8">
+          <div className="bg-[#080808] p-1.5 rounded-md border border-neutral-900 inline-flex shadow-lg w-full sm:w-auto overflow-hidden">
+            <button onClick={() => setBillingCycle('monthly')} className={`flex-1 sm:flex-none px-6 py-2.5 rounded text-[9px] font-black uppercase tracking-widest transition-colors ${billingCycle === 'monthly' ? 'bg-[#1a1a1a] text-white' : 'text-neutral-600 hover:text-white'}`}>Monthly</button>
+            <button onClick={() => setBillingCycle('annual')} className={`flex-1 sm:flex-none px-6 py-2.5 rounded text-[9px] font-black uppercase tracking-widest transition-colors flex justify-center items-center gap-2 ${billingCycle === 'annual' ? 'bg-blue-600 text-white' : 'text-neutral-600 hover:text-white'}`}>
               Annually <span className="bg-white text-blue-600 px-1.5 py-0.5 rounded-sm text-[8px] hidden sm:inline-block">SAVE</span>
             </button>
           </div>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-5 items-start max-w-4xl mx-auto">
-          <div className="bg-[#080808] p-8 lg:p-10 rounded-2xl border border-neutral-900 text-center">
-            <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-2">Free Account</h3>
-            <p className="text-4xl lg:text-5xl font-black text-white my-6">$0</p>
-            <p className="text-neutral-500 text-xs font-medium mb-8 h-10">Basic trade logging and delayed floor access.</p>
-            <Link href="/signup" className="block w-full py-3.5 px-6 bg-[#111] text-white font-black rounded-lg border border-neutral-800 hover:bg-neutral-800 transition-colors uppercase tracking-widest text-[9px]">
+        <div className="grid md:grid-cols-2 gap-4 items-start max-w-3xl mx-auto">
+          <div className="bg-[#080808] p-6 lg:p-8 rounded-xl border border-neutral-900 text-center">
+            <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Free Account</h3>
+            <p className="text-3xl font-black text-white my-4">$0</p>
+            <p className="text-neutral-500 text-xs font-medium mb-6 h-8">Basic trade logging and delayed floor access.</p>
+            <Link href="/signup" className="block w-full py-3 px-6 bg-[#111] text-white font-black rounded-md border border-neutral-800 hover:bg-neutral-800 transition-colors uppercase tracking-widest text-[9px]">
               Sign Up Free
             </Link>
           </div>
 
-          <div className="bg-[#0a0a0a] p-8 lg:p-10 rounded-2xl border border-blue-500/30 relative text-center">
-            <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Pro Operator</h3>
-            <p className="text-4xl lg:text-5xl font-black text-white my-6">
+          <div className="bg-[#0a0a0a] p-6 lg:p-8 rounded-xl border border-blue-500/30 relative text-center">
+            <h3 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Pro Operator</h3>
+            <p className="text-3xl font-black text-white my-4">
               ${billingCycle === 'monthly' ? '29' : '299'}
               <span className="text-xs text-neutral-600 font-medium tracking-normal">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
             </p>
-            <p className="text-neutral-400 text-xs font-medium mb-8 h-10">Full MT5 Sync, Live Floor analysis, and complete behavioral analytics.</p>
-            <Link href="/signup" className="block w-full py-3.5 px-6 bg-blue-600 text-white font-black rounded-lg hover:bg-blue-500 transition-colors uppercase tracking-widest text-[9px]">
+            <p className="text-neutral-400 text-xs font-medium mb-6 h-8">Full MT5 Sync, Live Floor analysis, and behavioral analytics.</p>
+            <Link href="/signup" className="block w-full py-3 px-6 bg-blue-600 text-white font-black rounded-md hover:bg-blue-500 transition-colors uppercase tracking-widest text-[9px]">
               Get Pro Access
             </Link>
           </div>
@@ -545,17 +537,17 @@ export default function Home() {
       </section>
 
       {/* COMPACT FAQ */}
-      <section className="relative z-10 w-full py-16 md:py-20 px-6 border-t border-neutral-900">
-        <div className="max-w-3xl mx-auto">
-          <h2 className="text-xl md:text-2xl font-black text-white mb-8 md:mb-10 text-center uppercase tracking-tight">FAQ</h2>
+      <section className="relative z-10 w-full py-16 px-6 border-t border-neutral-900">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="text-lg md:text-xl font-black text-white mb-6 text-center uppercase tracking-tight">FAQ</h2>
           <div className="space-y-2">
             {faqs.map((faq, index) => (
-              <div key={index} className="bg-[#080808] border border-neutral-900 rounded-lg overflow-hidden">
+              <div key={index} className="bg-[#080808] border border-neutral-900 rounded-md overflow-hidden">
                 <button onClick={() => setOpenFaq(openFaq === index ? null : index)} className="w-full text-left px-5 py-4 flex items-center justify-between focus:outline-none group">
-                  <span className="text-[11px] sm:text-xs font-black text-neutral-400 group-hover:text-white transition-colors uppercase tracking-widest pr-4">{faq.q}</span>
+                  <span className="text-[11px] font-black text-neutral-400 group-hover:text-white transition-colors uppercase tracking-widest pr-4">{faq.q}</span>
                   <ChevronDown className={`w-4 h-4 text-neutral-600 shrink-0 transition-transform duration-300 ${openFaq === index ? 'rotate-180' : ''}`} />
                 </button>
-                <div className={`px-5 text-[11px] sm:text-xs font-medium text-neutral-500 leading-relaxed transition-all duration-300 ${openFaq === index ? 'max-h-60 pb-5 opacity-100' : 'max-h-0 opacity-0'}`}>
+                <div className={`px-5 text-xs font-medium text-neutral-500 leading-relaxed transition-all duration-300 ${openFaq === index ? 'max-h-60 pb-4 opacity-100' : 'max-h-0 opacity-0'}`}>
                   {faq.a}
                 </div>
               </div>
@@ -564,64 +556,63 @@ export default function Home() {
         </div>
       </section>
 
-      {/* EDGE-TO-EDGE FOOTER */}
-      <footer className="w-full bg-[#020202] border-t border-neutral-900 pt-16 pb-8 px-6 md:px-12 lg:px-20">
-        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto grid grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-10 mb-12">
+      {/* FOOTER */}
+      <footer className="w-full bg-[#020202] border-t border-neutral-900 pt-16 pb-8 px-6 md:px-12">
+        <div className="max-w-[1400px] mx-auto grid grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-8 mb-10">
           <div className="col-span-2 lg:col-span-1">
-            <Link href="/" className="flex items-center shrink-0 group mb-5 relative w-28 h-8">
+            <Link href="/" className="flex items-center shrink-0 group mb-4 relative w-24 h-6">
               <Image 
                 src="/logo.png" 
                 alt="MyTraderDesk" 
                 fill
                 className="object-contain object-left opacity-50 group-hover:opacity-100 transition-opacity" 
-                sizes="112px"
+                sizes="96px"
               />
             </Link>
-            <p className="text-[11px] font-medium text-neutral-600 leading-relaxed pr-4">
+            <p className="text-[10px] font-medium text-neutral-600 leading-relaxed pr-4">
               Institutional-grade structural analysis and behavioral performance enforcement.
             </p>
           </div>
 
           <div>
-            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">The Blueprint</h4>
+            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-3">The Blueprint</h4>
             <ul className="space-y-3">
-              <li><Link href="/protocol/identity" className="text-[11px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Trader vs Operator</Link></li>
-              <li><Link href="/protocol/strategy" className="text-[11px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Strategy Simplification</Link></li>
-              <li><Link href="/protocol/system" className="text-[11px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">System Building</Link></li>
-              <li><Link href="/protocol/routine" className="text-[11px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">The 3-Level Routine</Link></li>
+              <li><Link href="/protocol/identity" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Trader vs Operator</Link></li>
+              <li><Link href="/protocol/strategy" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Strategy Simplification</Link></li>
+              <li><Link href="/protocol/system" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">System Building</Link></li>
+              <li><Link href="/protocol/routine" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">The 3-Level Routine</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">Live Markets</h4>
+            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-3">Live Markets</h4>
             <ul className="space-y-3">
-              <li><Link href="/analysis/eurusd" className="text-[11px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">EUR/USD Analysis</Link></li>
-              <li><Link href="/analysis/xauusd" className="text-[11px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Gold (XAUUSD) Setups</Link></li>
-              <li><Link href="/analysis/btcusd" className="text-[11px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Bitcoin (BTC) Structure</Link></li>
+              <li><Link href="/analysis/eurusd" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">EUR/USD Analysis</Link></li>
+              <li><Link href="/analysis/xauusd" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Gold (XAUUSD) Setups</Link></li>
+              <li><Link href="/analysis/btcusd" className="text-[10px] font-bold text-neutral-600 hover:text-blue-500 transition-colors">Bitcoin (BTC) Structure</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">Resources</h4>
+            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-3">Resources</h4>
             <ul className="space-y-3">
-              <li><Link href="/playbook" className="text-[11px] font-bold text-neutral-600 hover:text-white transition-colors">The Playbook</Link></li>
-              <li><Link href="/faq" className="text-[11px] font-bold text-neutral-600 hover:text-white transition-colors">FAQ</Link></li>
-              <li><Link href="/about" className="text-[11px] font-bold text-neutral-600 hover:text-white transition-colors">About Us</Link></li>
+              <li><Link href="/playbook" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">The Playbook</Link></li>
+              <li><Link href="/faq" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">FAQ</Link></li>
+              <li><Link href="/about" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">About Us</Link></li>
             </ul>
           </div>
 
           <div>
-            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-4">Legal</h4>
+            <h4 className="text-neutral-300 text-[9px] font-black uppercase tracking-widest mb-3">Legal</h4>
             <ul className="space-y-3">
-              <li><Link href="/terms" className="text-[11px] font-bold text-neutral-600 hover:text-white transition-colors">Terms of Service</Link></li>
-              <li><Link href="/privacy" className="text-[11px] font-bold text-neutral-600 hover:text-white transition-colors">Privacy Policy</Link></li>
-              <li><Link href="/disclaimer" className="text-[11px] font-bold text-neutral-600 hover:text-white transition-colors">Risk Disclaimer</Link></li>
+              <li><Link href="/terms" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">Terms of Service</Link></li>
+              <li><Link href="/privacy" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/disclaimer" className="text-[10px] font-bold text-neutral-600 hover:text-white transition-colors">Risk Disclaimer</Link></li>
             </ul>
           </div>
         </div>
 
-        {/* BOTTOM ALIGNMENT: Left / Right */}
-        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto border-t border-neutral-900 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="max-w-[1600px] mx-auto border-t border-neutral-900 pt-5 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-[9px] font-bold text-neutral-700 uppercase tracking-widest text-center sm:text-left">
             &copy; {new Date().getFullYear()} Sentinel Vortex. All rights reserved.
           </p>
