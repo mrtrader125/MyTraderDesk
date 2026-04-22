@@ -143,12 +143,14 @@ export default function Home() {
 
       {/* FULL SCREEN HERO */}
       <section className="relative z-10 min-h-screen flex flex-col justify-center pt-24 pb-8">
-        <div className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto text-center px-6">
-          {/* FORCED TWO-LINE HEADER */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight tracking-tight text-white mb-6">
-            Systematic Trading Terminal & <br className="hidden sm:block" /> 
-            <span className="text-blue-500">Performance Journal.</span>
+        <div className="flex-1 flex flex-col items-center justify-center max-w-5xl mx-auto text-center px-6 w-full">
+          
+          {/* BULLETPROOF TWO-LINE HEADER */}
+          <h1 className="text-[6vw] sm:text-5xl md:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tighter text-white mb-6 flex flex-col items-center justify-center w-full">
+            <span className="whitespace-nowrap">Systematic Trading Terminal &</span>
+            <span className="text-blue-500 whitespace-nowrap">Performance Journal.</span>
           </h1>
+          
           <p className="text-base md:text-lg text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
             A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
           </p>
@@ -535,11 +537,11 @@ export default function Home() {
         </div>
       </section>
 
-      {/* UPDATED FOOTER */}
+      {/* LEFT/RIGHT ALIGNED FOOTER (Logo Removed) */}
       <footer className="bg-[#020202] border-t border-neutral-900 py-8 px-6">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-[10px] font-bold text-neutral-700 uppercase tracking-widest text-center sm:text-left">
-            &copy; {new Date().getFullYear()} Sentinel Vortex. All rights reserved.
+            &copy; 2026 Sentinel Vortex. All rights reserved.
           </p>
           <p className="text-[9px] font-bold text-neutral-700 uppercase tracking-widest text-center sm:text-right">
             Trading involves significant risk of loss.
