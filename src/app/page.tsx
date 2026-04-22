@@ -147,13 +147,13 @@ export default function Home() {
         <div className="flex-1 flex flex-col items-center justify-center max-w-[1100px] mx-auto text-center px-6 w-full">
           <h1 className="text-[6vw] md:text-[5rem] lg:text-[6rem] font-extrabold leading-[1.05] tracking-tight text-stone-100 mb-6 flex flex-col items-center justify-center w-full">
             <span className="whitespace-nowrap">Systematic Trading Terminal &</span>
-            <span className="text-amber-500 whitespace-nowrap">Performance Journal.</span>
+            <span className="text-blue-500 whitespace-nowrap">Performance Journal.</span>
           </h1>
           <p className="text-base md:text-lg lg:text-xl text-stone-400 max-w-3xl mx-auto leading-relaxed font-medium">
             A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-            <Link href="/signup" className="px-8 py-4 lg:py-4 bg-amber-500 text-stone-950 rounded-xl font-bold uppercase tracking-widest text-[11px] hover:bg-amber-400 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(245,158,11,0.15)]">
+            <Link href="/signup" className="px-8 py-4 lg:py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[11px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.15)]">
               Create Free Account
             </Link>
             <Link href="#features" className="px-8 py-4 lg:py-4 bg-[#171514] text-stone-200 border border-stone-800/60 rounded-xl font-bold uppercase tracking-widest text-[11px] hover:bg-[#201D1C] transition-colors w-full sm:w-auto">
