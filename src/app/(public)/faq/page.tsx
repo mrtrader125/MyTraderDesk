@@ -1,21 +1,13 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { HelpCircle } from 'lucide-react'
+import { ArrowUpRight } from 'lucide-react'
 
-// 🚨 SEO: Metadata and OpenGraph tags
+// SEO: Metadata and OpenGraph tags
 export const metadata: Metadata = {
-  title: 'Frequently Asked Questions | MyTraderDesk',
-  description: 'Everything you need to know about Sentinel Vortex, our trading philosophy, and how our terminal enforces discipline.',
-  openGraph: {
-    title: 'FAQ | MyTraderDesk',
-    description: 'Learn how the MyTraderDesk platform operates and how it helps intermediate traders build systemic consistency.',
-    url: 'https://mytraderdesk.com/faq',
-    siteName: 'Sentinel Vortex',
-    type: 'website',
-  }
+  title: 'FAQ | MyTraderDesk',
+  description: 'Everything you need to know about our trading philosophy and how our terminal enforces discipline.',
 }
 
-// 🚨 UPDATED: Removed old tiers, added Protocol & Terminal mechanics
 const FAQS = [
   {
     q: "Is this a signal group?",
@@ -47,12 +39,12 @@ const FAQS = [
   },
   {
     q: "Am I locked into a contract?",
-    a: "Never. We operate on a strict month-to-month (or annual) basis. You can manage, pause, or cancel your subscription instantly through our secure billing portal (powered by Lemon Squeezy) inside your Account Dashboard."
+    a: "Never. We operate on a strict month-to-month (or annual) basis. You can manage, pause, or cancel your subscription instantly through our secure billing portal inside your Account Dashboard."
   }
 ]
 
 export default function FAQPage() {
-  // 🚨 SEO: Dynamic Schema Generation for Google's rich snippets
+  // SEO: Dynamic Schema Generation for Google's rich snippets
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -67,45 +59,61 @@ export default function FAQPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans pt-24 pb-20 px-6 selection:bg-blue-500/30 selection:text-white">
+    <div className="min-h-screen bg-[#050505] text-neutral-400 font-sans selection:bg-white selection:text-black">
       {/* Injecting the Schema directly into the HTML */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="max-w-3xl mx-auto space-y-12">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-500/10 rounded-full mb-6 border border-blue-500/20">
-            <HelpCircle className="text-blue-400 w-8 h-8" />
-          </div>
-          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter mb-4">
-            Frequently Asked <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Questions</span>
+      <div className="max-w-4xl mx-auto pt-24 pb-32 px-6 lg:px-8">
+        
+        {/* Clean Header */}
+        <div className="mb-16 border-b border-neutral-800/60 pb-12">
+          <h1 className="text-white text-4xl md:text-5xl font-semibold tracking-tight mb-4">
+            Common Inquiries
           </h1>
-          <p className="text-neutral-500 text-sm font-bold uppercase tracking-widest">
-            Everything you need to know about the desk.
+          <p className="text-neutral-500 text-lg leading-relaxed max-w-2xl">
+            Everything you need to know about the operational mechanics of the MyTraderDesk terminal.
           </p>
         </div>
 
-        <div className="space-y-4">
+        {/* FAQ Grid/List */}
+        <div className="space-y-6">
           {FAQS.map((faq, i) => (
-            <div key={i} className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-700 transition-colors rounded-2xl p-6 sm:p-8">
-              <h3 className="text-lg font-black text-white mb-3 leading-tight uppercase tracking-tight">{faq.q}</h3>
-              <p className="text-sm font-medium text-neutral-400 leading-relaxed">{faq.a}</p>
+            <div 
+              key={i} 
+              className="bg-[#0A0A0A] border border-neutral-800/60 hover:border-neutral-700 transition-colors rounded-2xl p-8"
+            >
+              <h3 className="text-lg font-medium text-white mb-3 tracking-tight">
+                {faq.q}
+              </h3>
+              <p className="text-[15px] font-normal text-neutral-400 leading-relaxed">
+                {faq.a}
+              </p>
             </div>
           ))}
         </div>
 
-        <div className="bg-gradient-to-b from-[#0a0a0a] to-[#050505] border border-neutral-800 rounded-3xl p-8 sm:p-10 text-center mt-12 shadow-2xl">
-          <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Still have questions?</h3>
-          <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest mb-8">Create a free account to explore the platform risk-free.</p>
-          <Link 
-            href="/signup" 
-            className="px-8 py-4 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-all shadow-[0_0_30px_rgba(255,255,255,0.1)] inline-block"
-          >
-            Access The Terminal
-          </Link>
+        {/* Professional CTA Block */}
+        <div className="mt-20 p-8 md:p-10 bg-[#0A0A0A] border border-neutral-800/60 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+           <div>
+             <h3 className="text-xl font-medium text-white mb-2 tracking-tight">
+               Ready to execute systematically?
+             </h3>
+             <p className="text-neutral-500 text-sm leading-relaxed max-w-md">
+               Stop relying on discretion. Lock in your daily edges and execute flawlessly within a structured environment.
+             </p>
+           </div>
+           
+           <Link 
+             href="/signup" 
+             className="shrink-0 px-6 py-3.5 bg-white text-black text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-neutral-200 transition-colors text-center w-full md:w-auto flex items-center justify-center gap-2"
+           >
+             Access The Floor <ArrowUpRight size={16} />
+           </Link>
         </div>
+
       </div>
     </div>
   )
