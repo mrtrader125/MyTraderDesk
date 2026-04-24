@@ -8,14 +8,16 @@ export const metadata: Metadata = {
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-neutral-400 font-sans selection:bg-white selection:text-black">
-      <div className="max-w-3xl mx-auto pt-24 pb-32 px-6 lg:px-8">
+      
+      {/* 🚨 Expanded width to max-w-5xl to reduce side margins 🚨 */}
+      <div className="max-w-5xl mx-auto pt-24 pb-32 px-6 md:px-10 lg:px-12">
         
         {/* Header Section */}
         <div className="mb-16 border-b border-neutral-800/60 pb-12">
           <h1 className="text-white text-4xl md:text-5xl font-semibold tracking-tight mb-4">
             The Origin
           </h1>
-          <p className="text-neutral-500 text-lg leading-relaxed">
+          <p className="text-neutral-500 text-lg leading-relaxed max-w-3xl">
             Why we built MyTraderDesk, and the structural shift required to move from discretionary guessing to a systematic operation.
           </p>
         </div>
