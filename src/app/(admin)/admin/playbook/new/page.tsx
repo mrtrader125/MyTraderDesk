@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@supabase/supabase-js'
-import { Send, FileText, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Send, FileText, AlertCircle, CheckCircle2, Plus, ChevronRight, Save } from 'lucide-react'
 
 // Initialize client
 const supabase = createClient(
@@ -10,125 +10,245 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export default function AdminPlaybookPublish() {
+type Playbook = {
+  id: string
+  title: string
+  slug: string
+  category: string
+  content: string
+}
+
+export default function AdminPlaybookTerminal() {
+  const [playbooks, setPlaybooks] = useState<Playbook[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+
   const [title, setTitle] = useState('')
   const [slug, setSlug] = useState('')
   const [category, setCategory] = useState('Strategy')
   const [content, setContent] = useState('')
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
-  // Auto-generate a clean SEO slug when the title changes
+  // Fetch existing articles on load
+  useEffect(() => {
+    fetchPlaybooks()
+  }, [])
+
+  const fetchPlaybooks = async () => {
+    const { data, error } = await supabase
+      .from('playbook')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (data) setPlaybooks(data)
+  }
+
+  // Load an existing article into the editor
+  const handleSelectArticle = (article: Playbook) => {
+    setSelectedId(article.id)
+    setTitle(article.title)
+    setSlug(article.slug)
+    setCategory(article.category)
+    setContent(article.content)
+    setStatus('idle')
+  }
+
+  // Clear the editor for a new article
+  const handleCreateNew = () => {
+    setSelectedId(null)
+    setTitle('')
+    setSlug('')
+    setCategory('Strategy')
+    setContent('')
+    setStatus('idle')
+  }
+
+  // Auto-generate a clean SEO slug only if it's a new article
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newTitle = e.target.value
     setTitle(newTitle)
-    setSlug(newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''))
+    if (!selectedId) {
+      setSlug(newTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''))
+    }
   }
 
-  const handlePublish = async (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setStatus('loading')
 
-    const { error } = await supabase
-      .from('playbook')
-      .insert([{ title, slug, category, content }])
+    let dbError;
 
-    if (error) {
-      console.error(error)
+    if (selectedId) {
+      // Update existing
+      const { error } = await supabase
+        .from('playbook')
+        .update({ title, slug, category, content })
+        .eq('id', selectedId)
+      dbError = error
+    } else {
+      // Insert new
+      const { error } = await supabase
+        .from('playbook')
+        .insert([{ title, slug, category, content }])
+      dbError = error
+    }
+
+    if (dbError) {
+      console.error(dbError)
       setStatus('error')
     } else {
       setStatus('success')
-      setTitle('')
-      setSlug('')
-      setContent('')
+      fetchPlaybooks() // Refresh the sidebar list
+      
+      // If it was a new article, clear the form. If updating, keep it loaded.
+      if (!selectedId) {
+        handleCreateNew()
+      }
+      
       setTimeout(() => setStatus('idle'), 3000)
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-8 md:p-12 font-sans">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex items-center space-x-4 mb-10 border-b border-neutral-800 pb-6">
-          <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center border border-brand-primary/20">
-            <FileText className="text-brand-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-black uppercase tracking-tight">Publish Playbook Article</h1>
-            <p className="text-neutral-500 font-bold uppercase tracking-widest text-xs mt-1">Push evergreen content to the live site</p>
-          </div>
-        </div>
-
-        <form onSubmit={handlePublish} className="space-y-6">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Article Title</label>
-              <input 
-                required
-                type="text" 
-                value={title}
-                onChange={handleTitleChange}
-                className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-                placeholder="e.g., How to spot retail liquidity traps"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">URL Slug (Auto-generated)</label>
-              <input 
-                required
-                type="text" 
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-4 py-3 text-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Category</label>
-            <select 
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors appearance-none"
-            >
-              <option value="Strategy">Strategy</option>
-              <option value="Sentiment">Sentiment</option>
-              <option value="Market Structure">Market Structure</option>
-              <option value="Psychology">Psychology</option>
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Article Body</label>
-            <textarea 
-              required
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={15}
-              className="w-full bg-[#111] border border-neutral-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors leading-relaxed"
-              placeholder="Write your article here..."
-            />
-          </div>
-
+    <div className="flex h-screen bg-[#050505] text-white font-sans overflow-hidden">
+      
+      {/* Sidebar List (Left Side) */}
+      <aside className="w-72 bg-[#0A0A0A] border-r border-neutral-900 flex flex-col h-full shrink-0">
+        <div className="p-6 border-b border-neutral-900">
           <button 
-            type="submit" 
-            disabled={status === 'loading'}
-            className="w-full py-4 bg-white text-black font-black uppercase tracking-widest text-sm rounded-xl hover:bg-neutral-200 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_30px_rgba(255,255,255,0.1)]"
+            onClick={handleCreateNew}
+            className="w-full py-3 bg-neutral-900 hover:bg-neutral-800 text-white font-black uppercase tracking-widest text-[10px] rounded-sm transition-colors flex items-center justify-center border border-neutral-800"
           >
-            {status === 'loading' ? 'Publishing...' : <><Send size={18} className="mr-2" /> Publish to Playbook</>}
+            <Plus size={14} className="mr-2" /> New Protocol
           </button>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+          <p className="text-[9px] font-black uppercase tracking-widest text-neutral-600 mb-4 px-2">Published Data</p>
+          {playbooks.map((article) => (
+            <button
+              key={article.id}
+              onClick={() => handleSelectArticle(article)}
+              className={`w-full text-left p-3 rounded-sm transition-colors flex items-center justify-between group ${
+                selectedId === article.id 
+                  ? 'bg-neutral-800 border-l-2 border-white' 
+                  : 'hover:bg-neutral-900/50 border-l-2 border-transparent'
+              }`}
+            >
+              <div className="truncate pr-4">
+                <p className={`text-xs font-semibold truncate ${selectedId === article.id ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-300'}`}>
+                  {article.title}
+                </p>
+                <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-600 mt-1">
+                  {article.category}
+                </p>
+              </div>
+              <ChevronRight size={14} className={selectedId === article.id ? 'text-white' : 'text-neutral-700'} />
+            </button>
+          ))}
+        </div>
+      </aside>
 
-          {status === 'success' && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 p-4 rounded-xl flex items-center text-sm font-bold">
-              <CheckCircle2 className="mr-3" size={20} /> Article published successfully!
+      {/* Main Editor (Right Side) */}
+      <main className="flex-1 overflow-y-auto p-8 md:p-12">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center space-x-4 mb-10 border-b border-neutral-900/50 pb-6">
+            <div className="w-12 h-12 bg-neutral-900 rounded-sm flex items-center justify-center border border-neutral-800">
+              <FileText className="text-neutral-400" />
             </div>
-          )}
-          {status === 'error' && (
-            <div className="bg-red-500/10 border border-red-500/20 text-red-500 p-4 rounded-xl flex items-center text-sm font-bold">
-              <AlertCircle className="mr-3" size={20} /> Error publishing article. Check console.
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight text-white">
+                {selectedId ? 'Edit Protocol' : 'Publish New Protocol'}
+              </h1>
+              <p className="text-neutral-500 font-medium text-sm mt-1">
+                {selectedId ? 'Updating database record.' : 'Pushing evergreen content to the live terminal.'}
+              </p>
             </div>
-          )}
-        </form>
-      </div>
+          </div>
+
+          <form onSubmit={handleSave} className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Protocol Title</label>
+                <input 
+                  required
+                  type="text" 
+                  value={title}
+                  onChange={handleTitleChange}
+                  className="w-full bg-[#0A0A0A] border border-neutral-800/50 rounded-sm px-4 py-3 text-white focus:outline-none focus:border-neutral-600 focus:bg-[#111] transition-colors"
+                  placeholder="e.g., Identifying the Trap"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500">URL Slug (System)</label>
+                <input 
+                  required
+                  type="text" 
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value)}
+                  className="w-full bg-[#050505] border border-neutral-900 rounded-sm px-4 py-3 text-neutral-600 focus:outline-none focus:border-neutral-700 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Category Tag</label>
+              <select 
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full bg-[#0A0A0A] border border-neutral-800/50 rounded-sm px-4 py-3 text-white focus:outline-none focus:border-neutral-600 focus:bg-[#111] transition-colors appearance-none"
+              >
+                <option value="Strategy">Strategy</option>
+                <option value="Sentiment">Sentiment</option>
+                <option value="Market Structure">Market Structure</option>
+                <option value="Psychology">Psychology</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-neutral-500 flex justify-between">
+                <span>Markdown Body</span>
+                <span className="text-neutral-700">Supports ## Headers and * Lists</span>
+              </label>
+              <textarea 
+                required
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={20}
+                className="w-full bg-[#0A0A0A] border border-neutral-800/50 rounded-sm px-4 py-4 text-neutral-300 focus:outline-none focus:border-neutral-600 focus:bg-[#111] transition-colors leading-relaxed font-mono text-sm"
+                placeholder="## Enter the logic here..."
+              />
+            </div>
+
+            <button 
+              type="submit" 
+              disabled={status === 'loading'}
+              className="w-full py-4 bg-white text-black font-black uppercase tracking-widest text-[11px] rounded-sm hover:bg-neutral-200 transition-colors flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {status === 'loading' ? (
+                'Executing...'
+              ) : (
+                <>
+                  {selectedId ? <Save size={16} className="mr-2" /> : <Send size={16} className="mr-2" />} 
+                  {selectedId ? 'Update Record' : 'Deploy to Terminal'}
+                </>
+              )}
+            </button>
+
+            {status === 'success' && (
+              <div className="bg-[#0A0A0A] border-l-2 border-white text-white p-4 rounded-sm flex items-center text-sm font-medium">
+                <CheckCircle2 className="mr-3 text-neutral-400" size={18} /> 
+                {selectedId ? 'Record updated successfully.' : 'Protocol deployed successfully.'}
+              </div>
+            )}
+            {status === 'error' && (
+              <div className="bg-[#0A0A0A] border-l-2 border-red-500 text-neutral-300 p-4 rounded-sm flex items-center text-sm font-medium">
+                <AlertCircle className="mr-3 text-red-500" size={18} /> Database execution failed. Check console.
+              </div>
+            )}
+          </form>
+        </div>
+      </main>
     </div>
   )
 }
