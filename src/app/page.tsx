@@ -396,7 +396,7 @@ export default function Home() {
                 <button onClick={nextFeatured} className="absolute right-2 md:right-8 lg:right-[10%] xl:right-[15%] top-1/2 -translate-y-1/2 p-3 bg-[#080808] hover:bg-[#111] border border-neutral-800/60 text-neutral-200 rounded-xl transition-colors z-40 shadow-2xl">
                   <ChevronRight className="w-5 h-5" />
                 </button>
-              </<>
+              </>
             )}
           </div>
         ) : (
