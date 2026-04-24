@@ -117,74 +117,73 @@ export default function Home() {
         <div className="absolute bottom-0 right-0 w-[50%] h-[50%] bg-neutral-600/5 blur-[150px]"></div>
       </div>
 
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 border-b border-neutral-800/50 backdrop-blur-md' : 'bg-transparent py-6'}`}>
+<nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 border-b border-neutral-800/50 backdrop-blur-md' : 'bg-transparent py-4'}`}>
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto px-6 md:px-12 flex items-center justify-between">
-          <Link href="/" className="flex items-center shrink-0 group relative w-24 md:w-32 h-8">
+          <Link href="/" className="flex items-center shrink-0 group relative w-20 md:w-28 h-7">
             <Image 
               src="/logo.png" 
               alt="MyTraderDesk" 
               fill
               className="object-contain object-left transition-opacity hover:opacity-80" 
-              sizes="(max-width: 768px) 96px, 128px"
+              sizes="(max-width: 768px) 80px, 112px"
               priority
             />
           </Link>
-          <div className="hidden md:flex items-center space-x-10 shrink-0">
-            <Link href="#features" className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Features</Link>
-            <Link href="#blueprint" className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Blueprint</Link>
-            <Link href="#pricing" className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Pricing</Link>
+          <div className="hidden md:flex items-center space-x-8 shrink-0">
+            <Link href="#features" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Features</Link>
+            <Link href="#blueprint" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Blueprint</Link>
+            <Link href="#pricing" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Pricing</Link>
           </div>
-          <div className="flex gap-5 items-center shrink-0">
-            <Link href="/login" className="text-[11px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors hidden sm:block">Log In</Link>
-            <Link href="/signup" className="px-6 py-2.5 text-[10px] uppercase tracking-widest font-extrabold bg-white text-black rounded-lg hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+          <div className="flex gap-4 items-center shrink-0">
+            <Link href="/login" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors hidden sm:block">Log In</Link>
+            <Link href="/signup" className="px-5 py-2 text-[9px] uppercase tracking-widest font-extrabold bg-white text-black rounded-lg hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.05)]">
               Access Terminal
             </Link>
           </div>
         </div>
       </nav>
 
-<section className="relative z-10 min-h-screen flex flex-col justify-center pt-32 pb-24 lg:pb-32">
-        <div className="flex-1 flex flex-col items-center justify-center max-w-[1100px] mx-auto text-center px-6 w-full">
-          {/* Adjusted the text sizes here from text-[6vw] md:text-[5rem] lg:text-[6rem] to more balanced sizes */}
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight text-white mb-6 flex flex-col items-center justify-center w-full">
+      <section className="relative z-10 min-h-screen flex flex-col justify-center pt-28 pb-20">
+        <div className="flex-1 flex flex-col items-center justify-center max-w-[900px] mx-auto text-center px-6 w-full">
+          <h1 className="text-4xl md:text-5xl lg:text-[4rem] font-extrabold leading-[1.1] tracking-tight text-white mb-5 flex flex-col items-center justify-center w-full">
             <span className="whitespace-nowrap">Systematic Trading Terminal &</span>
             <span className="text-blue-500 whitespace-nowrap">Performance Journal.</span>
           </h1>
-          <p className="text-base md:text-lg lg:text-xl text-neutral-400 max-w-3xl mx-auto leading-relaxed font-medium">
+          <p className="text-sm md:text-base text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
             A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-            <Link href="/signup" className="px-8 py-4 lg:py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[11px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.15)]">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
+            <Link href="/signup" className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.15)]">
               Create Free Account
             </Link>
-            <Link href="#features" className="px-8 py-4 lg:py-4 bg-[#111] text-white border border-neutral-800/60 rounded-xl font-bold uppercase tracking-widest text-[11px] hover:bg-[#1a1a1a] transition-colors w-full sm:w-auto">
+            <Link href="#features" className="px-6 py-3 bg-[#111] text-white border border-neutral-800/60 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-[#1a1a1a] transition-colors w-full sm:w-auto">
               See How It Works
             </Link>
           </div>
         </div>
 
-        <div className="w-full flex flex-col items-center mt-auto pt-10 px-6">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex -space-x-3">
-              <div className="w-8 h-8 rounded-full border-2 border-[#050505] bg-neutral-800"></div>
-              <div className="w-8 h-8 rounded-full border-2 border-[#050505] bg-neutral-700"></div>
-              <div className="w-8 h-8 rounded-full border-2 border-[#050505] bg-neutral-600"></div>
+        <div className="w-full flex flex-col items-center mt-auto pt-8 px-6">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex -space-x-2">
+              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-800"></div>
+              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-700"></div>
+              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-600"></div>
             </div>
-            <p className="text-[10px] font-bold text-neutral-500 tracking-widest uppercase">Join active operators validating setups today.</p>
+            <p className="text-[9px] font-bold text-neutral-500 tracking-widest uppercase">Join active operators validating setups today.</p>
           </div>
           
-          <div className="flex flex-wrap justify-center gap-3 opacity-80">
-            <div className="px-5 py-2.5 border border-neutral-800/50 rounded-lg bg-[#080808] flex items-center gap-2">
-              <Globe2 className="w-4 h-4 text-neutral-500" />
-              <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-400">MetaTrader 4 / 5</span>
+          <div className="flex flex-wrap justify-center gap-2.5 opacity-80">
+            <div className="px-4 py-2 border border-neutral-800/50 rounded-lg bg-[#080808] flex items-center gap-2">
+              <Globe2 className="w-3.5 h-3.5 text-neutral-500" />
+              <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">MetaTrader 4 / 5</span>
             </div>
-            <div className="px-5 py-2.5 border border-neutral-800/50 rounded-lg bg-[#080808] flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-neutral-500" />
-              <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-400">TradingView Charts</span>
+            <div className="px-4 py-2 border border-neutral-800/50 rounded-lg bg-[#080808] flex items-center gap-2">
+              <BarChart3 className="w-3.5 h-3.5 text-neutral-500" />
+              <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">TradingView Charts</span>
             </div>
-            <div className="px-5 py-2.5 border border-neutral-800/50 rounded-lg bg-[#080808] flex items-center gap-2">
-              <Target className="w-4 h-4 text-neutral-500" />
-              <span className="text-[10px] font-bold tracking-widest uppercase text-neutral-400">cTrader</span>
+            <div className="px-4 py-2 border border-neutral-800/50 rounded-lg bg-[#080808] flex items-center gap-2">
+              <Target className="w-3.5 h-3.5 text-neutral-500" />
+              <span className="text-[9px] font-bold tracking-widest uppercase text-neutral-400">cTrader</span>
             </div>
           </div>
         </div>
