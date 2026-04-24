@@ -1,10 +1,11 @@
 import { Metadata, ResolvingMetadata } from 'next'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { Calendar, Tag, TerminalSquare, ChevronRight, Menu } from 'lucide-react'
+import { Clock, Menu, ArrowLeft } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
-export const revalidate = 3600; // Cache for 1 hour
+// Force Next.js to skip the cache and fetch live data on every request
+export const dynamic = 'force-dynamic';
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -22,16 +23,11 @@ export async function generateMetadata(
     .eq('slug', resolvedParams.slug)
     .single()
 
-  if (!article) return { title: 'Article Not Found | MyTraderDesk' }
+  if (!article) return { title: 'Protocol Not Found | MyTraderDesk' }
 
   return {
-    title: `${article.title} | Sentinel Vortex Playbook`,
-    description: `Read the latest ${article.category} trading protocols and systems.`,
-    openGraph: {
-      title: article.title,
-      description: `Read the latest ${article.category} trading protocols.`,
-      type: 'article',
-    }
+    title: `${article.title} | MyTraderDesk Playbook`,
+    description: `Read the latest ${article.category} protocols.`,
   }
 }
 
@@ -45,123 +41,123 @@ export default async function PlaybookArticlePage({ params }: Props) {
     .eq('slug', resolvedParams.slug)
     .single()
 
-  // Fetch ALL articles for the sidebar index
+  // Fetch ALL articles for the sidebar index (Oldest first to match the roadmap)
   const { data: allArticles } = await supabase
     .from('playbook')
     .select('id, title, slug, category')
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true })
 
   if (error || !article) {
     return (
       <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white font-sans">
-        <TerminalSquare size={32} className="text-neutral-700 mb-4" />
-        <h1 className="text-xl font-medium tracking-tight">Protocol Not Found</h1>
-        <Link href="/playbook" className="text-neutral-500 hover:text-white mt-4 text-xs font-black uppercase tracking-widest transition-colors">
-          Return to Playbook Index
+        <h1 className="text-xl font-medium tracking-tight mb-4">Protocol Not Found</h1>
+        <Link href="/playbook" className="text-neutral-500 hover:text-white text-xs font-semibold uppercase tracking-widest transition-colors">
+          Return to Archive
         </Link>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen bg-[#050505] text-neutral-200 font-sans">
+    <div className="flex min-h-screen bg-[#050505] text-neutral-400 font-sans selection:bg-white selection:text-black">
       
-      {/* Desktop Sidebar (Left 25% approx) */}
-      <aside className="hidden lg:flex w-72 bg-[#0A0A0A] border-r border-neutral-900/80 flex-col h-screen sticky top-0 shrink-0">
-        <div className="p-6 border-b border-neutral-900/80">
-          <Link href="/playbook" className="flex items-center text-white hover:text-neutral-300 transition-colors">
-            <TerminalSquare size={18} className="mr-3 text-neutral-500" />
-            <span className="font-semibold tracking-tight text-sm">Playbook Index</span>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-72 bg-[#080808] border-r border-neutral-800/60 flex-col h-screen sticky top-0 shrink-0">
+        <div className="p-6 border-b border-neutral-800/60">
+          <Link href="/playbook" className="flex items-center text-neutral-400 hover:text-white transition-colors group">
+            <ArrowLeft size={16} className="mr-3 group-hover:-translate-x-1 transition-transform" />
+            <span className="font-medium tracking-tight text-sm">Back to Archive</span>
           </Link>
         </div>
         
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
-          <p className="text-[9px] font-black uppercase tracking-widest text-neutral-600 mb-4 px-2 mt-2">Available Protocols</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-600 mb-4 px-3 mt-2">
+            Sequential Roadmap
+          </p>
           
-          {allArticles?.map((item) => {
+          {allArticles?.map((item, index) => {
             const isActive = item.slug === resolvedParams.slug;
             return (
               <Link
                 key={item.id}
                 href={`/playbook/${item.slug}`}
-                className={`w-full text-left p-3 rounded-sm transition-colors flex items-center justify-between group ${
+                className={`w-full text-left py-2.5 px-3 rounded-xl transition-all duration-200 flex flex-col group ${
                   isActive 
-                    ? 'bg-neutral-800 border-l-2 border-white' 
-                    : 'hover:bg-neutral-900/50 border-l-2 border-transparent'
+                    ? 'bg-neutral-900/80' 
+                    : 'hover:bg-neutral-900/40'
                 }`}
               >
-                <div className="truncate pr-4">
-                  <p className={`text-xs font-medium truncate ${isActive ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
-                    {item.title}
-                  </p>
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-neutral-600 mt-1">
-                    {item.category}
-                  </p>
-                </div>
-                {isActive && <ChevronRight size={14} className="text-white" />}
+                <span className={`text-xs font-medium leading-snug mb-1 ${isActive ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
+                  {index + 1}. {item.title}
+                </span>
+                <span className="text-[9px] font-semibold uppercase tracking-wider text-neutral-600">
+                  {item.category}
+                </span>
               </Link>
             )
           })}
         </nav>
       </aside>
 
-      {/* Main Reading Area (Right 75%) */}
+      {/* Main Reading Area */}
       <main className="flex-1 min-w-0 flex flex-col h-screen overflow-y-auto">
         
         {/* Mobile Header (Only visible on small screens) */}
-        <div className="lg:hidden p-4 border-b border-neutral-900 flex items-center justify-between bg-[#0A0A0A] sticky top-0 z-20">
-           <Link href="/playbook" className="flex items-center text-xs font-black uppercase tracking-widest text-neutral-400">
+        <div className="lg:hidden p-4 border-b border-neutral-800/60 flex items-center justify-between bg-[#080808] sticky top-0 z-20">
+           <Link href="/playbook" className="flex items-center text-xs font-semibold uppercase tracking-wider text-neutral-400">
              <Menu size={16} className="mr-2" /> Index
            </Link>
-           <span className="text-[10px] font-black uppercase tracking-widest text-neutral-600">Sentinel Vortex</span>
+           <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-600">MyTraderDesk</span>
         </div>
 
-        <div className="p-8 md:p-16 lg:p-20 max-w-4xl mx-auto w-full">
+        <div className="p-8 md:p-12 lg:p-20 max-w-3xl mx-auto w-full">
+          
           {/* Article Header */}
-          <header className="mb-12 pb-10 border-b border-neutral-900/50">
-            <div className="flex flex-wrap gap-4 mb-6">
-              <span className="flex items-center text-[10px] font-black uppercase tracking-widest text-neutral-300 bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-sm">
-                <Tag size={12} className="mr-2 text-neutral-500" /> {article.category}
+          <header className="mb-12 pb-8 border-b border-neutral-800/60">
+            <div className="flex flex-wrap items-center gap-4 mb-6">
+              <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider bg-neutral-900 px-2.5 py-1 rounded-md">
+                {article.category}
               </span>
-              <span className="flex items-center text-[10px] font-medium uppercase tracking-widest text-neutral-500">
-                <Calendar size={12} className="mr-2" /> 
+              <span className="flex items-center text-xs font-medium text-neutral-600">
+                <Clock size={12} className="mr-1.5" /> 
                 {new Date(article.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             </div>
             
-            <h1 className="text-3xl md:text-5xl font-semibold tracking-tight text-white leading-[1.1]">
+            <h1 className="text-3xl md:text-5xl font-semibold tracking-tight text-white leading-[1.15]">
               {article.title}
             </h1>
           </header>
 
-          {/* Article Content */}
+          {/* Article Content - Styled for maximum readability */}
           <article className="prose prose-invert prose-neutral max-w-none 
-            prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-white
-            prose-p:text-neutral-400 prose-p:leading-relaxed prose-p:font-normal
+            prose-headings:font-medium prose-headings:tracking-tight prose-headings:text-white prose-headings:mt-10
+            prose-p:text-neutral-400 prose-p:leading-relaxed prose-p:text-[15px]
             prose-a:text-white prose-a:underline-offset-4 hover:prose-a:text-neutral-300
-            prose-strong:text-white prose-strong:font-semibold
-            prose-li:text-neutral-400 marker:text-neutral-600">
+            prose-strong:text-white prose-strong:font-medium
+            prose-li:text-neutral-400 marker:text-neutral-700
+            prose-blockquote:border-l-neutral-700 prose-blockquote:text-neutral-300 prose-blockquote:font-normal prose-blockquote:not-italic">
             <ReactMarkdown>
               {article.content}
             </ReactMarkdown>
           </article>
 
-          {/* Systematic Conversion CTA */}
-          <div className="mt-24 p-10 bg-[#0A0A0A] border border-neutral-800/50 rounded-lg text-center relative overflow-hidden group">
-             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 blur-[100px] rounded-full"></div>
+          {/* Clean Systematic CTA Box */}
+          <div className="mt-24 p-8 md:p-10 bg-[#0A0A0A] border border-neutral-800/60 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+             <div>
+               <h3 className="text-xl font-medium text-white mb-2 tracking-tight">
+                 Access the Live Execution Floor
+               </h3>
+               <p className="text-neutral-500 text-sm leading-relaxed max-w-md">
+                 Execute these protocols in real-time. Join the Sentinel Vortex desk. Founding membership is strictly limited to 150 active operators.
+               </p>
+             </div>
              
-             <h3 className="text-xl font-medium tracking-tight text-white mb-3 relative z-10">
-               Ready to deploy the Operator's Protocol?
-             </h3>
-             
-             <p className="text-neutral-500 text-sm font-normal max-w-md mx-auto mb-8 relative z-10 leading-relaxed">
-               Stop relying on discretion. Lock in your daily edges, track your discipline index, and execute flawlessly within a systematic environment. 
-             </p>
-             
-             <Link href="/signup" className="relative z-10 px-8 py-3.5 bg-white text-black text-[11px] font-black uppercase tracking-widest rounded-sm hover:bg-neutral-200 transition-colors inline-block">
-               Apply for Founding Membership (150 Limit)
+             <Link href="/signup" className="shrink-0 px-6 py-3.5 bg-white text-black text-xs font-bold uppercase tracking-wider rounded-xl hover:bg-neutral-200 transition-colors text-center w-full md:w-auto">
+               Apply for Membership
              </Link>
           </div>
+          
         </div>
       </main>
     </div>
