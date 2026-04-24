@@ -482,7 +482,7 @@ export default function Home() {
             </div>
             <div className="flex items-center gap-4 mt-auto">
               <div className="relative w-10 h-10 rounded-full bg-[#111] border border-neutral-800 overflow-hidden shrink-0">
-                 <Image src="/profile5.png" alt="Operator Name 3" fill className="object-cover" />
+                 <Image src="/profile4.png" alt="Operator Name 3" fill className="object-cover" />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white uppercase tracking-widest">Operator Name 3</h4>
