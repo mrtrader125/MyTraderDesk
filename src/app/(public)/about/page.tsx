@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Our Story | MyTraderDesk',
-  description: 'The origin of Sentinel Vortex and the transition to a systematic trading floor.',
+  description: 'The origin of MyTraderDesk and the transition to a systematic trading desk.',
 }
 
 export default function AboutPage() {
@@ -15,7 +15,7 @@ export default function AboutPage() {
         {/* Header Section */}
         <div className="mb-16 border-b border-neutral-800/60 pb-12">
           <h1 className="text-white text-4xl md:text-5xl font-semibold tracking-tight mb-4">
-            The Origin
+            About Ourself
           </h1>
           <p className="text-neutral-500 text-lg leading-relaxed max-w-3xl">
             Why we built MyTraderDesk, and the structural shift required to move from discretionary guessing to a systematic operation.
