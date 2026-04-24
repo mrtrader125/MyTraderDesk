@@ -117,7 +117,7 @@ export default function Home() {
         <div className="absolute bottom-0 right-0 w-[50%] h-[50%] bg-neutral-600/5 blur-[150px]"></div>
       </div>
 
-<nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 border-b border-neutral-800/50 backdrop-blur-md py-3' : 'bg-transparent py-5'}`}>
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 border-b border-neutral-800/50 backdrop-blur-md py-3' : 'bg-transparent py-5'}`}>
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto px-6 md:px-12 flex items-center justify-between">
           <Link href="/" className="flex items-center shrink-0 group relative w-20 md:w-28 h-7">
             <Image 
@@ -189,7 +189,7 @@ export default function Home() {
         </div>
       </section>
       
-      <section id="features" className="relative z-10 w-full py-20 px-6 border-t border-neutral-900 bg-[#050505]">
+      <section id="features" className="relative z-10 w-full py-24 lg:py-32 px-6 border-t border-neutral-900 bg-[#020202]">
         <div className="max-w-[1200px] mx-auto">
           <div className="text-center mb-14">
             <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">What The Platform Does</h2>
@@ -222,7 +222,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="blueprint" className="relative z-10 w-full py-20 px-6 overflow-hidden border-t border-neutral-900">
+      <section id="blueprint" className="relative z-10 w-full py-24 lg:py-32 px-6 overflow-hidden border-t border-neutral-900 bg-[#050505]">
         <div className="text-center mb-14 relative z-20 max-w-3xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">The Operator's Blueprint</h2>
           <p className="text-neutral-500 text-sm mt-3 font-medium">Explore the mechanics of consistency.</p>
@@ -291,12 +291,11 @@ export default function Home() {
         </div>
       </section>
 
-<section className="relative z-10 w-full overflow-hidden py-16 px-6 border-y border-neutral-900 bg-[#020202]">
+      <section className="relative z-10 w-full overflow-hidden py-24 lg:py-32 px-6 border-t border-neutral-900 bg-[#020202]">
         <div className="text-center mb-6 max-w-5xl mx-auto">
           <h2 className="text-xl lg:text-2xl font-extrabold text-white tracking-tight">Inside The Terminal</h2>
         </div>
         
-        {/* Adjusted Heights: Reduced significantly so the whole component fits on one screen */}
         <div className="relative w-full h-[200px] sm:h-[280px] md:h-[380px] lg:h-[450px] xl:h-[500px] flex items-center justify-center max-w-[1600px] 2xl:max-w-[1920px] mx-auto">
           {terminalSlides.map((slide, index) => {
             const len = terminalSlides.length;
@@ -315,14 +314,12 @@ export default function Home() {
             }
 
             return (
-              /* Adjusted Widths: Shrunk from lg:w-[65%] xl:w-[60%] down to lg:w-[55%] xl:w-[50%] */
               <div key={slide.id} onClick={() => setActiveSlide(index)} className={`absolute w-[95%] sm:w-[80%] md:w-[70%] lg:w-[55%] xl:w-[50%] aspect-video transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-2xl border bg-[#050505] overflow-hidden ${styleClass}`}>
                 <Image src={`/${slide.id}.png`} alt={slide.title} fill className="object-contain" />
               </div>
             );
           })}
           
-          {/* Brought the navigation arrows slightly closer to the center images */}
           <button onClick={prevSlide} className="absolute left-2 md:left-8 lg:left-[10%] xl:left-[15%] top-1/2 -translate-y-1/2 p-3 bg-[#080808] hover:bg-[#111] text-neutral-200 rounded-xl border border-neutral-800/60 transition-colors z-40 shadow-2xl">
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -331,14 +328,13 @@ export default function Home() {
           </button>
         </div>
         
-        {/* Tightened the margin and text size so it hugs the bottom of the carousel */}
         <div className="mt-6 text-center relative z-10 max-w-xl mx-auto px-4">
            <h3 className="text-xs font-bold uppercase tracking-widest text-white mb-2">{terminalSlides[activeSlide].title}</h3>
            <p className="text-neutral-500 text-xs font-medium leading-relaxed">{terminalSlides[activeSlide].desc}</p>
         </div>
       </section>
 
-<section className="relative z-10 w-full py-16 px-6 overflow-hidden border-b border-neutral-800/30">
+      <section className="relative z-10 w-full py-24 lg:py-32 px-6 overflow-hidden border-t border-neutral-900 bg-[#050505]">
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto mb-6 flex flex-col md:flex-row items-center md:items-end justify-between text-center md:text-left gap-4">
           <div>
             <h2 className="text-xl lg:text-2xl font-extrabold text-white tracking-tight mb-2">Featured Analysis</h2>
@@ -355,7 +351,6 @@ export default function Home() {
             <p className="font-medium text-xs">Loading Data...</p>
           </div>
         ) : analyses.length > 0 ? (
-          /* Adjusted Container Heights: Significantly reduced values to scale down the entire stack */
           <div className="relative w-full h-[200px] sm:h-[280px] md:h-[380px] lg:h-[450px] xl:h-[500px] flex items-center justify-center max-w-[1600px] 2xl:max-w-[1920px] mx-auto">
             {analyses.map((item, index) => {
               const len = analyses.length;
@@ -369,7 +364,6 @@ export default function Home() {
                                `${offset > 0 ? "" : "-"}translate-x-[70%] scale-[0.70] opacity-0 z-10 pointer-events-none`;
 
               return (
-                /* Adjusted Widths, Padding, and Internal Spacing for the Card itself */
                 <div key={item.id} onClick={() => { if(!isActive) setActiveFeaturedSlide(index) }} className={`absolute w-[90%] sm:w-[75%] md:w-[65%] lg:w-[55%] xl:w-[48%] p-4 sm:p-5 bg-[#080808] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-3xl overflow-hidden flex flex-col ${styleClass}`}>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg sm:text-xl font-bold font-mono tracking-tight text-neutral-200">{item.asset_symbol}</h3>
@@ -389,7 +383,6 @@ export default function Home() {
             })}
             {analyses.length > 1 && (
               <>
-                {/* Repositioned Arrows closer to the cards, matching the previous successful positioning */}
                 <button onClick={prevFeatured} className="absolute left-2 md:left-8 lg:left-[10%] xl:left-[15%] top-1/2 -translate-y-1/2 p-3 bg-[#080808] hover:bg-[#111] border border-neutral-800/60 text-neutral-200 rounded-xl transition-colors z-40 shadow-2xl">
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -409,7 +402,7 @@ export default function Home() {
         )}
       </section>
       
-      <section className="relative z-10 w-full py-20 px-6 border-b border-neutral-900 bg-[#050505]">
+      <section className="relative z-10 w-full py-24 lg:py-32 px-6 border-t border-neutral-900 bg-[#020202]">
         <div className="text-center mb-14 max-w-5xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Field Reports</h2>
           <p className="text-neutral-500 text-sm mt-3 font-medium">Feedback from operators actively using the terminal.</p>
@@ -481,7 +474,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative z-10 w-full py-20 px-6 bg-[#050505]">
+      <section className="relative z-10 w-full py-24 lg:py-32 px-6 border-t border-neutral-900 bg-[#050505]">
         <div className="text-center mb-14 max-w-5xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Desk Requirements</h2>
         </div>
@@ -505,7 +498,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="pricing" className="relative z-10 w-full py-20 px-6 bg-[#020202] border-t border-neutral-800/30">
+      <section id="pricing" className="relative z-10 w-full py-24 lg:py-32 px-6 bg-[#020202] border-t border-neutral-900">
         <div className="text-center mb-10 max-w-5xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight mb-3">Terminal Access</h2>
         </div>
@@ -543,7 +536,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative z-10 w-full py-20 px-6 border-t border-neutral-800/30 bg-[#050505]">
+      <section className="relative z-10 w-full py-24 lg:py-32 px-6 border-t border-neutral-900 bg-[#050505]">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-10 text-center tracking-tight">FAQ</h2>
           <div className="space-y-3">
@@ -562,7 +555,7 @@ export default function Home() {
         </div>
       </section>
 
-      <footer className="w-full bg-[#020202] border-t border-neutral-800/50 pt-20 pb-10 px-6 md:px-12">
+      <footer className="w-full bg-[#020202] border-t border-neutral-900 pt-20 pb-10 px-6 md:px-12">
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto grid grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-12 mb-16">
           <div className="col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center shrink-0 group mb-6 relative w-32 h-8">
