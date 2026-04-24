@@ -338,24 +338,25 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative z-10 w-full py-24 px-6 overflow-hidden border-b border-neutral-900">
-        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto mb-8 flex flex-col md:flex-row items-center md:items-end justify-between text-center md:text-left gap-4">
+<section className="relative z-10 w-full py-16 px-6 overflow-hidden border-b border-neutral-800/30">
+        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto mb-6 flex flex-col md:flex-row items-center md:items-end justify-between text-center md:text-left gap-4">
           <div>
-            <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight mb-2">Featured Analysis</h2>
-            <p className="text-neutral-500 text-sm font-medium">Real setups logged by our community</p>
+            <h2 className="text-xl lg:text-2xl font-extrabold text-white tracking-tight mb-2">Featured Analysis</h2>
+            <p className="text-neutral-500 text-xs font-medium">Real setups logged by our community</p>
           </div>
-          <Link href="/community" className="flex items-center text-xs font-bold text-neutral-400 hover:text-white transition-colors bg-[#080808] md:bg-transparent px-5 py-3 md:p-0 rounded-lg">
-            View All <ArrowRight className="ml-2 w-4 h-4" />
+          <Link href="/community" className="flex items-center text-[11px] font-bold text-neutral-400 hover:text-white transition-colors bg-[#080808] md:bg-transparent px-4 py-2.5 md:p-0 rounded-lg">
+            View All <ArrowRight className="ml-1.5 w-3.5 h-3.5" />
           </Link>
         </div>
 
         {loading ? (
           <div className="max-w-5xl mx-auto flex flex-col items-center justify-center py-20 text-neutral-500 border border-neutral-800/50 bg-[#080808] rounded-2xl">
             <Activity className="w-8 h-8 animate-pulse mb-4" />
-            <p className="font-medium text-sm">Loading Data...</p>
+            <p className="font-medium text-xs">Loading Data...</p>
           </div>
         ) : analyses.length > 0 ? (
-          <div className="relative w-full h-[240px] sm:h-[350px] md:h-[450px] lg:h-[550px] xl:h-[650px] flex items-center justify-center max-w-[1600px] 2xl:max-w-[1920px] mx-auto">
+          /* Adjusted Container Heights: Significantly reduced values to scale down the entire stack */
+          <div className="relative w-full h-[200px] sm:h-[280px] md:h-[380px] lg:h-[450px] xl:h-[500px] flex items-center justify-center max-w-[1600px] 2xl:max-w-[1920px] mx-auto">
             {analyses.map((item, index) => {
               const len = analyses.length;
               let offset = (index - activeFeaturedSlide) % len;
@@ -368,10 +369,11 @@ export default function Home() {
                                `${offset > 0 ? "" : "-"}translate-x-[70%] scale-[0.70] opacity-0 z-10 pointer-events-none`;
 
               return (
-                <div key={item.id} onClick={() => { if(!isActive) setActiveFeaturedSlide(index) }} className={`absolute w-[95%] sm:w-[80%] md:w-[70%] lg:w-[60%] xl:w-[55%] p-5 sm:p-6 bg-[#080808] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-3xl overflow-hidden flex flex-col ${styleClass}`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xl sm:text-2xl font-bold font-mono tracking-tight text-neutral-200">{item.asset_symbol}</h3>
-                    <span className="text-[10px] text-neutral-500 font-bold tracking-widest uppercase bg-[#050505] px-3 py-1.5 rounded-lg border border-neutral-800/60">{new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                /* Adjusted Widths, Padding, and Internal Spacing for the Card itself */
+                <div key={item.id} onClick={() => { if(!isActive) setActiveFeaturedSlide(index) }} className={`absolute w-[90%] sm:w-[75%] md:w-[65%] lg:w-[55%] xl:w-[48%] p-4 sm:p-5 bg-[#080808] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-3xl overflow-hidden flex flex-col ${styleClass}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg sm:text-xl font-bold font-mono tracking-tight text-neutral-200">{item.asset_symbol}</h3>
+                    <span className="text-[9px] text-neutral-500 font-bold tracking-widest uppercase bg-[#050505] px-2.5 py-1 rounded-lg border border-neutral-800/60">{new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                   {item.after_image_url && item.image_url ? (
                     <HoverRevealSlider before={item.image_url} after={item.after_image_url} />
@@ -387,21 +389,26 @@ export default function Home() {
             })}
             {analyses.length > 1 && (
               <>
-                <button onClick={prevFeatured} className="absolute left-2 md:left-12 top-1/2 -translate-y-1/2 p-3 lg:p-4 bg-[#080808] hover:bg-[#111] border border-neutral-800/60 text-neutral-200 rounded-xl transition-colors z-40 shadow-2xl"><ChevronLeft className="w-6 h-6" /></button>
-                <button onClick={nextFeatured} className="absolute right-2 md:right-12 top-1/2 -translate-y-1/2 p-3 lg:p-4 bg-[#080808] hover:bg-[#111] border border-neutral-800/60 text-neutral-200 rounded-xl transition-colors z-40 shadow-2xl"><ChevronRight className="w-6 h-6" /></button>
-              </>
+                {/* Repositioned Arrows closer to the cards, matching the previous successful positioning */}
+                <button onClick={prevFeatured} className="absolute left-2 md:left-8 lg:left-[10%] xl:left-[15%] top-1/2 -translate-y-1/2 p-3 bg-[#080808] hover:bg-[#111] border border-neutral-800/60 text-neutral-200 rounded-xl transition-colors z-40 shadow-2xl">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button onClick={nextFeatured} className="absolute right-2 md:right-8 lg:right-[10%] xl:right-[15%] top-1/2 -translate-y-1/2 p-3 bg-[#080808] hover:bg-[#111] border border-neutral-800/60 text-neutral-200 rounded-xl transition-colors z-40 shadow-2xl">
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </<>
             )}
           </div>
         ) : (
             <div className="max-w-5xl mx-auto">
-              <div className="bg-[#080808] py-20 rounded-2xl border border-neutral-800/50 text-center w-full">
+              <div className="bg-[#080808] py-16 rounded-2xl border border-neutral-800/50 text-center w-full">
                 <Database className="w-8 h-8 mx-auto text-neutral-700 mb-4 stroke-1" />
-                <p className="text-neutral-500 text-sm font-medium tracking-wide">No data available.</p>
+                <p className="text-neutral-500 text-xs font-medium tracking-wide">No data available.</p>
               </div>
             </div>
         )}
       </section>
-
+      
       <section className="relative z-10 w-full py-20 px-6 border-b border-neutral-900 bg-[#050505]">
         <div className="text-center mb-14 max-w-5xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Field Reports</h2>
