@@ -117,7 +117,7 @@ export default function Home() {
         <div className="absolute bottom-0 right-0 w-[50%] h-[50%] bg-neutral-600/5 blur-[150px]"></div>
       </div>
 
-<nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 border-b border-neutral-800/50 backdrop-blur-md' : 'bg-transparent py-4'}`}>
+<nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 border-b border-neutral-800/50 backdrop-blur-md py-3' : 'bg-transparent py-5'}`}>
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto px-6 md:px-12 flex items-center justify-between">
           <Link href="/" className="flex items-center shrink-0 group relative w-20 md:w-28 h-7">
             <Image 
@@ -142,7 +142,7 @@ export default function Home() {
           </div>
         </div>
       </nav>
-
+      
       <section className="relative z-10 min-h-screen flex flex-col justify-center pt-28 pb-20">
         <div className="flex-1 flex flex-col items-center justify-center max-w-[900px] mx-auto text-center px-6 w-full">
           <h1 className="text-4xl md:text-5xl lg:text-[4rem] font-extrabold leading-[1.1] tracking-tight text-white mb-5 flex flex-col items-center justify-center w-full">
