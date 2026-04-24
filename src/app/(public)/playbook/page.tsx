@@ -1,93 +1,110 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { BookOpen, ArrowRight, Zap, Database } from 'lucide-react'
-import { supabase } from '@/lib/supabase' // Make sure you have your server supabase client here
+import { BookOpen, ArrowRight, Activity, Terminal, ShieldCheck } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
-// 🚨 Cache the playbook archive for 1 hour to keep it incredibly fast
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'The Playbook | Trading Strategies & Confluence',
-  description: 'Master multi-timeframe analysis, liquidity concepts, and market sentiment with the official Sentinel Vortex trading playbook.',
-  openGraph: {
-    title: 'The Playbook | MyTraderDesk',
-    description: 'Master multi-timeframe analysis, liquidity concepts, and market sentiment.',
-    url: 'https://mytraderdesk.com/playbook',
-    siteName: 'Sentinel Vortex',
-    type: 'website',
-  }
+  title: 'The Playbook | Institutional Trading Protocols',
+  description: 'Access the standardized execution protocols and market mechanics used by the Sentinel Vortex desk.',
 }
 
 export default async function PlaybookPage() {
-  // Fetch live articles from Supabase
   const { data: articles, error } = await supabase
     .from('playbook')
     .select('title, slug, category, created_at')
     .order('created_at', { ascending: false })
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans pt-24 pb-20 px-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-[#050505] text-neutral-200 font-sans pt-32 pb-32 px-6">
+      <div className="max-w-6xl mx-auto">
         
-        <div className="mb-16">
-          <h1 className="text-4xl md:text-6xl font-black uppercase tracking-tighter italic mb-4">
-            The <span className="text-blue-500">Playbook</span>
+        {/* Institutional Header */}
+        <div className="mb-20 border-l border-neutral-800 pl-8">
+          <div className="flex items-center gap-2 mb-4 text-neutral-500 uppercase tracking-[0.3em] text-[10px] font-black">
+            <Terminal size={12} />
+            <span>Operational Knowledge Base</span>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-medium tracking-tighter text-white mb-6">
+            The <span className="text-neutral-500 font-light">Playbook</span>
           </h1>
-          <p className="text-neutral-400 text-lg max-w-2xl">
-            Advanced market mechanics, execution strategies, and structural concepts used by the Sentinel Vortex trading desk.
+          <p className="text-neutral-500 text-base md:text-lg max-w-xl leading-relaxed font-normal">
+            A centralized repository of market mechanics, risk protocols, and execution strategies. These are not suggestions; they are the standardized operating procedures of the desk.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          {/* THE INLINE CONVERSION TRAP */}
-          <div className="col-span-1 md:col-span-2 bg-gradient-to-br from-[#111] to-[#050505] border border-blue-500/30 rounded-[2rem] p-8 md:p-12 mb-4 flex flex-col md:flex-row items-center justify-between group overflow-hidden relative shadow-2xl">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[100px] rounded-full pointer-events-none"></div>
-            
-            <div className="relative z-10 mb-8 md:mb-0 md:pr-8 text-center md:text-left">
-              <h3 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight flex items-center justify-center md:justify-start">
-                <Zap className="text-blue-500 mr-3 hidden sm:block" size={28} />
-                Stop reading theory.
-              </h3>
-              <p className="text-neutral-400 mt-3 text-sm md:text-base font-medium max-w-lg">
-                Create a free account to access our live digital trading floor and see how we apply these exact concepts to today's live markets.
+        {/* Operational Notice (Replacement for the "Trap") */}
+        <div className="mb-16 p-8 bg-[#0A0A0A] border border-neutral-900 rounded-sm flex flex-col md:flex-row items-center justify-between gap-8">
+          <div className="flex items-start gap-6">
+            <div className="w-12 h-12 bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0">
+              <ShieldCheck className="text-white" size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-medium text-white tracking-tight">Active Execution Floor</h3>
+              <p className="text-neutral-500 text-sm mt-1 max-w-md">
+                Theoretical knowledge is a liability without execution. Access the live digital floor to observe these protocols in real-time market conditions.
               </p>
             </div>
-            
-            <Link href="/signup" className="relative z-10 px-8 py-5 bg-white text-black text-xs font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform shadow-[0_0_30px_rgba(255,255,255,0.2)] shrink-0 w-full md:w-auto text-center">
-              Join The Floor Free
-            </Link>
           </div>
+          <Link href="/signup" className="px-8 py-3.5 bg-white text-black text-[11px] font-black uppercase tracking-widest rounded-sm hover:bg-neutral-200 transition-colors w-full md:w-auto text-center">
+            Enter Live Floor
+          </Link>
+        </div>
 
-          {/* DYNAMIC ARTICLES FROM DATABASE */}
+        {/* Article Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-neutral-900 border border-neutral-900 overflow-hidden">
           {error || !articles?.length ? (
-            <div className="col-span-1 md:col-span-2 py-20 text-center border border-neutral-800 rounded-3xl bg-[#0a0a0a]">
-              <Database className="mx-auto text-neutral-700 mb-4" size={48} />
-              <p className="text-neutral-500 font-bold uppercase tracking-widest text-sm">Playbook is currently being updated.<br/>Check back soon for new strategies.</p>
+            <div className="col-span-full py-32 text-center bg-[#050505]">
+              <Activity className="mx-auto text-neutral-800 mb-4 animate-pulse" size={32} />
+              <p className="text-neutral-600 font-medium uppercase tracking-widest text-[10px]">
+                Syncing Database... No Protocols Found
+              </p>
             </div>
           ) : (
             articles.map((article) => (
-              <Link key={article.slug} href={`/playbook/${article.slug}`} className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8 hover:border-blue-500/30 transition-colors group flex flex-col justify-between min-h-[250px]">
+              <Link 
+                key={article.slug} 
+                href={`/playbook/${article.slug}`} 
+                className="bg-[#050505] p-8 hover:bg-[#080808] transition-all group flex flex-col justify-between min-h-[280px]"
+              >
                 <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full">
+                  <div className="flex items-center justify-between mb-8">
+                    <span className="text-[9px] font-black text-neutral-400 uppercase tracking-[0.2em] bg-neutral-900 border border-neutral-800 px-3 py-1.5 rounded-sm">
                       {article.category}
                     </span>
-                    <BookOpen size={16} className="text-neutral-600" />
+                    <BookOpen size={14} className="text-neutral-700 group-hover:text-white transition-colors" />
                   </div>
-                  <h2 className="text-2xl font-black text-white leading-tight group-hover:text-blue-400 transition-colors">
+                  <h2 className="text-xl font-medium text-white leading-snug tracking-tight group-hover:translate-x-1 transition-transform">
                     {article.title}
                   </h2>
                 </div>
-                <div className="mt-8 flex items-center justify-between border-t border-neutral-800 pt-4 text-[10px] font-bold uppercase tracking-widest text-neutral-500">
-                  <span>{new Date(article.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
-                  <span className="flex items-center group-hover:text-white transition-colors">
-                    Read Article <ArrowRight size={12} className="ml-2" />
+                
+                <div className="mt-12 flex items-center justify-between text-[10px] font-bold uppercase tracking-widest text-neutral-600">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-neutral-700 font-medium">Updated</span>
+                    <span className="text-neutral-500">{new Date(article.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+                  </div>
+                  <span className="flex items-center group-hover:text-white transition-colors gap-2">
+                    Open File <ArrowRight size={12} />
                   </span>
                 </div>
               </Link>
             ))
           )}
+        </div>
+
+        {/* Footer Technical Note */}
+        <div className="mt-20 pt-10 border-t border-neutral-900 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <p className="text-neutral-700 text-[10px] uppercase font-black tracking-widest">
+            © 2026 Sentinel Vortex // All Protocols Encrypted
+          </p>
+          <div className="flex gap-6">
+             <div className="flex items-center gap-2 text-neutral-700 text-[10px] uppercase font-black tracking-widest">
+               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div>
+               System Status: Online
+             </div>
+          </div>
         </div>
       </div>
     </div>
