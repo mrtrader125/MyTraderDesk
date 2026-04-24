@@ -143,9 +143,10 @@ export default function Home() {
         </div>
       </nav>
 
-      <section className="relative z-10 min-h-screen flex flex-col justify-center pt-32 pb-24 lg:pb-32">
+<section className="relative z-10 min-h-screen flex flex-col justify-center pt-32 pb-24 lg:pb-32">
         <div className="flex-1 flex flex-col items-center justify-center max-w-[1100px] mx-auto text-center px-6 w-full">
-          <h1 className="text-[6vw] md:text-[5rem] lg:text-[6rem] font-extrabold leading-[1.05] tracking-tight text-white mb-6 flex flex-col items-center justify-center w-full">
+          {/* Adjusted the text sizes here from text-[6vw] md:text-[5rem] lg:text-[6rem] to more balanced sizes */}
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold leading-[1.1] tracking-tight text-white mb-6 flex flex-col items-center justify-center w-full">
             <span className="whitespace-nowrap">Systematic Trading Terminal &</span>
             <span className="text-blue-500 whitespace-nowrap">Performance Journal.</span>
           </h1>
@@ -188,7 +189,7 @@ export default function Home() {
           </div>
         </div>
       </section>
-
+      
       <section id="features" className="relative z-10 w-full py-20 px-6 border-t border-neutral-900 bg-[#050505]">
         <div className="max-w-[1200px] mx-auto">
           <div className="text-center mb-14">
