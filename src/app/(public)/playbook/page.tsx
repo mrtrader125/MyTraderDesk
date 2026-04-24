@@ -1,9 +1,14 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { BookOpen, ArrowRight, Terminal, ShieldCheck, Clock } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { FileText, ChevronRight, BarChart3, Clock } from 'lucide-react'
 
 export const revalidate = 3600;
+
+export const metadata: Metadata = {
+  title: 'Protocol Archive | MyTraderDesk',
+  description: 'Technical execution standards and systematic trading protocols.',
+}
 
 export default async function PlaybookPage() {
   const { data: articles, error } = await supabase
@@ -12,104 +17,99 @@ export default async function PlaybookPage() {
     .order('created_at', { ascending: false })
 
   return (
-    <div className="min-h-screen bg-[#050505] text-neutral-200 font-sans pt-32 pb-32 px-6">
-      <div className="max-w-6xl mx-auto">
-        
-        {/* Header Section: Better Spacing & Hierarchy */}
-        <div className="mb-24">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-px w-8 bg-neutral-800"></div>
-            <span className="text-neutral-500 uppercase tracking-[0.4em] text-[9px] font-black">
-              Institutional Knowledge Base
-            </span>
+    <div className="min-h-screen bg-[#050505] text-neutral-300 font-sans antialiased">
+      {/* Top Utility Bar */}
+      <div className="border-b border-neutral-900 bg-[#080808] px-6 py-3 flex justify-between items-center sticky top-0 z-50">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 px-2 py-1 bg-neutral-900 border border-neutral-800">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]"></div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">System Live</span>
           </div>
-          <h1 className="text-5xl md:text-7xl font-semibold tracking-tighter text-white mb-8">
-            The <span className="text-neutral-600 font-light italic">Playbook</span>
+          <span className="text-neutral-700 text-[10px] font-black uppercase tracking-[0.2em] hidden md:block">
+            Terminal // Playbook Archive
+          </span>
+        </div>
+        <div className="text-neutral-600 text-[10px] font-medium uppercase tracking-widest">
+          {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+        </div>
+      </div>
+
+      <div className="w-full max-w-[1600px] mx-auto p-6 md:p-10 lg:p-12">
+        
+        {/* Simplified Header: No Fluff */}
+        <div className="mb-12 border-l-2 border-neutral-800 pl-6">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white uppercase mb-2">
+            Protocol Archive
           </h1>
-          <p className="text-neutral-500 text-base md:text-lg max-w-2xl leading-relaxed">
-            Standardized execution protocols for the Sentinel Vortex trading desk. 
-            Designed for systematic operators, not discretionary speculators.
+          <p className="text-neutral-500 text-sm font-medium uppercase tracking-widest">
+            Standardized execution logic and risk parameters.
           </p>
         </div>
 
-        {/* Feature Banner: High Contrast Separation */}
-        <div className="mb-20 p-1 bg-gradient-to-r from-neutral-800 to-transparent rounded-lg">
-          <div className="bg-[#0A0A0A] p-8 md:p-10 rounded-lg flex flex-col md:flex-row items-center justify-between gap-10">
-            <div className="flex items-center gap-8">
-              <div className="w-14 h-14 bg-neutral-900 border border-neutral-800 flex items-center justify-center shrink-0 shadow-2xl">
-                <ShieldCheck className="text-white" size={24} />
-              </div>
-              <div>
-                <h3 className="text-xl font-medium text-white tracking-tight">Active Trading Floor</h3>
-                <p className="text-neutral-500 text-sm mt-1 max-w-md leading-relaxed">
-                  Theory is useless without live application. Join 150 founding members on the digital floor.
-                </p>
-              </div>
-            </div>
-            <Link href="/signup" className="px-10 py-4 bg-white text-black text-[11px] font-black uppercase tracking-widest rounded-sm hover:bg-neutral-200 transition-all w-full md:w-auto text-center shrink-0 shadow-xl">
-              Apply for Access
-            </Link>
-          </div>
-        </div>
-
-        {/* Article Grid: Real Borders & Card Backgrounds */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* High-Density Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-neutral-900 border border-neutral-900 shadow-2xl">
           {error || !articles?.length ? (
-            <div className="col-span-full py-32 text-center border border-dashed border-neutral-900 rounded-lg">
-              <p className="text-neutral-600 font-medium uppercase tracking-widest text-[10px]">
-                Syncing Protocol Database...
-              </p>
+            <div className="col-span-full py-32 text-center bg-[#050505] border border-neutral-900">
+              <span className="text-neutral-700 text-[10px] font-black uppercase tracking-widest animate-pulse">
+                Establishing Database Connection...
+              </span>
             </div>
           ) : (
             articles.map((article) => (
               <Link 
                 key={article.slug} 
                 href={`/playbook/${article.slug}`} 
-                className="group relative bg-[#0A0A0A] border border-neutral-900 p-8 rounded-lg hover:border-neutral-700 transition-all flex flex-col justify-between min-h-[300px] hover:-translate-y-1"
+                className="group bg-[#080808] p-6 hover:bg-[#0c0c0c] transition-colors flex flex-col justify-between min-h-[220px]"
               >
-                {/* Subtle Card Accent */}
-                <div className="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                   <ArrowRight size={16} className="text-neutral-500" />
-                </div>
-
                 <div>
-                  <div className="flex items-center gap-3 mb-8">
-                    <span className="text-[9px] font-black text-neutral-400 uppercase tracking-widest bg-black border border-neutral-800 px-3 py-1.5 rounded-sm">
-                      {article.category}
-                    </span>
-                    <Clock size={12} className="text-neutral-700" />
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-2">
+                      <FileText size={12} className="text-neutral-600 group-hover:text-white transition-colors" />
+                      <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">
+                        {article.category}
+                      </span>
+                    </div>
+                    <ChevronRight size={14} className="text-neutral-800 group-hover:text-white group-hover:translate-x-1 transition-all" />
                   </div>
                   
-                  <h2 className="text-xl font-medium text-white leading-tight tracking-tight group-hover:text-blue-400 transition-colors">
+                  <h2 className="text-lg font-bold text-white leading-tight tracking-tight group-hover:text-neutral-200">
                     {article.title}
                   </h2>
                 </div>
                 
-                <div className="mt-12 pt-6 border-t border-neutral-900/50 flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-[9px] uppercase font-black tracking-widest text-neutral-700">Revision</span>
-                    <span className="text-[10px] font-medium text-neutral-500">
-                      {new Date(article.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-                    </span>
+                <div className="mt-8 flex items-end justify-between border-t border-neutral-900/50 pt-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[8px] font-black uppercase text-neutral-700 tracking-widest">Modified</span>
+                    <div className="flex items-center gap-1 text-neutral-500 font-medium text-[10px]">
+                      <Clock size={10} />
+                      {new Date(article.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </div>
                   </div>
-                  <BookOpen size={16} className="text-neutral-800 group-hover:text-white transition-colors" />
+                  <div className="h-6 w-px bg-neutral-900"></div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="text-[8px] font-black uppercase text-neutral-700 tracking-widest">Status</span>
+                    <span className="text-[10px] font-bold text-emerald-900/80 uppercase">Verified</span>
+                  </div>
                 </div>
               </Link>
             ))
           )}
         </div>
 
-        {/* Footer Hardware Status */}
-        <div className="mt-32 pt-10 border-t border-neutral-900 flex flex-col md:flex-row justify-between items-center gap-6">
-          <p className="text-neutral-800 text-[9px] uppercase font-black tracking-[0.3em]">
-            Sentinel Vortex // SV-CORE-PRTC-2026
-          </p>
+        {/* Bottom Data Summary */}
+        <div className="mt-12 flex flex-col md:flex-row justify-between items-center gap-4 text-neutral-700 border-t border-neutral-900 pt-8">
           <div className="flex items-center gap-6">
-             <div className="flex items-center gap-2 text-neutral-700 text-[10px] uppercase font-black tracking-widest">
-               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
-               Terminal: Online
-             </div>
+            <div className="flex items-center gap-2">
+              <BarChart3 size={14} />
+              <span className="text-[9px] font-bold uppercase tracking-widest">Coverage: Multi-Asset</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-bold uppercase tracking-widest">Total Protocols: {articles?.length || 0}</span>
+            </div>
           </div>
+          <p className="text-[9px] font-bold uppercase tracking-[0.3em]">
+            SYSTEM_MTD_VER_01.26
+          </p>
         </div>
       </div>
     </div>
