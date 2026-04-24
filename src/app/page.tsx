@@ -62,6 +62,9 @@ export default function Home() {
   const [activeSlide, setActiveSlide] = useState(0)
   const [activeFeaturedSlide, setActiveFeaturedSlide] = useState(0)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
+  
+  // State to hold the rotating profile images
+  const [heroProfiles, setHeroProfiles] = useState<string[]>([])
 
   const terminalSlides = [
     { id: 'mtd1', title: 'Dashboard', desc: 'Your central hub for daily market structure and active setups.' },
@@ -83,6 +86,12 @@ export default function Home() {
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll)
+    
+    // Logic to shuffle and select 3 random images on page refresh
+    const allProfiles = ['/profile1.png', '/profile2.png', '/profile3.png', '/profile4.png', '/profile5.png']
+    const shuffledProfiles = [...allProfiles].sort(() => 0.5 - Math.random())
+    setHeroProfiles(shuffledProfiles.slice(0, 3))
+
     fetchAnalyses()
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -165,9 +174,19 @@ export default function Home() {
         <div className="w-full flex flex-col items-center mt-auto pt-8 px-6">
           <div className="flex items-center gap-3 mb-5">
             <div className="flex -space-x-2">
-              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-800"></div>
-              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-700"></div>
-              <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-600"></div>
+              {heroProfiles.length > 0 ? (
+                heroProfiles.map((src, index) => (
+                  <div key={index} className="relative w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-800 overflow-hidden">
+                    <Image src={src} alt="Active Operator" fill className="object-cover" />
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-800"></div>
+                  <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-700"></div>
+                  <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-600"></div>
+                </>
+              )}
             </div>
             <p className="text-[9px] font-bold text-neutral-500 tracking-widest uppercase">Join active operators validating setups today.</p>
           </div>
@@ -420,8 +439,8 @@ export default function Home() {
               </p>
             </div>
             <div className="flex items-center gap-4 mt-auto">
-              <div className="w-10 h-10 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center shrink-0">
-                 <User className="w-5 h-5 text-neutral-500" />
+              <div className="relative w-10 h-10 rounded-full bg-[#111] border border-neutral-800 overflow-hidden shrink-0">
+                 <Image src="/profile1.png" alt="Operator Name 1" fill className="object-cover" />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white uppercase tracking-widest">Operator Name 1</h4>
@@ -441,8 +460,8 @@ export default function Home() {
               </p>
             </div>
             <div className="flex items-center gap-4 mt-auto">
-              <div className="w-10 h-10 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center shrink-0">
-                 <User className="w-5 h-5 text-neutral-500" />
+              <div className="relative w-10 h-10 rounded-full bg-[#111] border border-neutral-800 overflow-hidden shrink-0">
+                 <Image src="/profile3.png" alt="Operator Name 2" fill className="object-cover" />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white uppercase tracking-widest">Operator Name 2</h4>
@@ -462,8 +481,8 @@ export default function Home() {
               </p>
             </div>
             <div className="flex items-center gap-4 mt-auto">
-              <div className="w-10 h-10 rounded-full bg-[#111] border border-neutral-800 flex items-center justify-center shrink-0">
-                 <User className="w-5 h-5 text-neutral-500" />
+              <div className="relative w-10 h-10 rounded-full bg-[#111] border border-neutral-800 overflow-hidden shrink-0">
+                 <Image src="/profile5.png" alt="Operator Name 3" fill className="object-cover" />
               </div>
               <div>
                 <h4 className="text-xs font-bold text-white uppercase tracking-widest">Operator Name 3</h4>
