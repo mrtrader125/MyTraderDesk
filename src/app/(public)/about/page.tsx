@@ -21,15 +21,29 @@ export default function AboutPage() {
           </p>
         </div>
 
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden">
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8 md:p-12 shadow-2xl relative overflow-hidden space-y-10">
           <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[100px] rounded-full pointer-events-none"></div>
-          <h2 className="text-2xl font-black uppercase tracking-tight mb-4 text-white relative z-10">Why we built MyTraderDesk</h2>
-          <p className="text-neutral-400 leading-relaxed relative z-10 mb-6">
-            Trading in isolation is a psychological trap. You know market structure, and you know how to manage risk. But when you are staring at the charts alone, hesitation creeps in. You second-guess your setups. You over-trade to compensate.
-          </p>
-          <p className="text-neutral-400 leading-relaxed relative z-10">
-            <strong>Sentinel Vortex</strong> was created to solve the isolation problem. We built a digital trading floor where intermediate and professional operators can validate their ideas against structured, institutional-grade analysis. It is your second opinion. Your ultimate confluence.
-          </p>
+          
+          <div className="relative z-10">
+            <h2 className="text-xl font-black uppercase tracking-tight mb-4 text-white">Our Story</h2>
+            <p className="text-neutral-400 leading-relaxed">
+              We spent years mastering the markets. We learned the strategies, understood the technicals, and knew exactly what we were supposed to do. But despite having the knowledge, we were still struggling to stay consistent. The problem wasn't a lack of skill; it was human nature. We would get overconfident. As the weeks dragged on, the strict rules we set for ourselves would slowly slip from our minds. We couldn't actively notice it happening, but those small lapses in discipline were destroying our profitability. We realized that knowing everything wasn't enough if we couldn't execute it perfectly every single day.
+            </p>
+          </div>
+
+          <div className="relative z-10">
+            <h2 className="text-xl font-black uppercase tracking-tight mb-4 text-white">The Shift to a Systematic Floor</h2>
+            <p className="text-neutral-400 leading-relaxed">
+              We decided to completely change how we operated. We looked at how institutional professionals work—they don't rely on willpower; they have risk managers, weekly psychological cohorts, and strict accountability. We built that environment for ourselves. We set up systems to train us psychologically every week and enforce our daily routines. We created our own internal "trading floor" to keep us in check. Once we put that relentless accountability in place, we got our consistency back. The boom-and-bust cycle finally stopped.
+            </p>
+          </div>
+
+          <div className="relative z-10">
+            <h2 className="text-xl font-black uppercase tracking-tight mb-4 text-white">Why we built MyTraderDesk</h2>
+            <p className="text-neutral-400 leading-relaxed">
+              After seeing how well this system worked for our own floor members, we realized there was a massive gap in the retail space. There are thousands of traders stuck exactly where we were—armed with strategies but lacking consistency because they don't have the resources to build their own professional trading floor or accountability team. We decided to take the exact system that finally made us profitable and make it accessible to the public. We built <strong>Sentinel Vortex</strong> and <strong>MyTraderDesk</strong> to give retail traders the same structural advantage that saved us.
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
