@@ -1,5 +1,7 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
+/* The rest of your custom CSS goes below */
 /* --- 1. TAILWIND V4 THEME DEFINITION --- */
 @theme inline {
   /* Institutional Fonts - Linked to layout.tsx variables */
