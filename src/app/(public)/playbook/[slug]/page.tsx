@@ -110,7 +110,8 @@ export default async function PlaybookArticlePage({ params }: Props) {
            <span className="text-[10px] font-semibold uppercase tracking-wider text-neutral-600">MyTraderDesk</span>
         </div>
 
-        <div className="p-8 md:p-12 lg:p-20 max-w-3xl mx-auto w-full">
+        {/* 🚨 UPDATED WIDTH AND PADDING HERE 🚨 */}
+        <div className="px-6 py-10 md:px-10 md:py-16 lg:px-12 lg:py-16 max-w-5xl mx-auto w-full">
           
           {/* Article Header */}
           <header className="mb-12 pb-8 border-b border-neutral-800/60">
