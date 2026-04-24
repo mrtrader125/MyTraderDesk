@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { FileText, ChevronRight, BarChart3, Clock } from 'lucide-react'
 
-export const revalidate = 3600;
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Protocol Archive | MyTraderDesk',
