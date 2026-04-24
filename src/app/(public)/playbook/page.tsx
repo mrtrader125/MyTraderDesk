@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { ChevronRight } from 'lucide-react'
 
+// Force fresh data on every load
 export const dynamic = 'force-dynamic'; 
 
 export const metadata: Metadata = {
@@ -10,37 +11,38 @@ export const metadata: Metadata = {
 }
 
 export default async function PlaybookPage() {
+  // We change 'ascending' to true to show oldest first
   const { data: articles, error } = await supabase
     .from('playbook')
     .select('title, slug, category, created_at')
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: true })
 
   return (
     <div className="min-h-screen bg-[#050505] text-neutral-400 font-sans antialiased selection:bg-white selection:text-black">
       
-      {/* Ultra-Minimal Header */}
       <div className="w-full max-w-5xl mx-auto pt-32 pb-20 px-8">
-        <div className="border-l border-neutral-800 pl-8 mb-16">
+        {/* Header */}
+        <div className="border-l border-neutral-800 pl-8 mb-20">
           <h1 className="text-white text-4xl font-semibold tracking-tight uppercase mb-2">
             Archive
           </h1>
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-600">
-            Systematic Execution Protocols
+            Systematic Roadmap // Step-by-Step
           </p>
         </div>
 
-        {/* Simplified 2-Column List Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12">
+        {/* 2-Column List Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-16">
           {error || !articles?.length ? (
             <div className="col-span-full py-20 border border-dashed border-neutral-900 text-center">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-700">No records found.</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-700">Database empty.</span>
             </div>
           ) : (
             articles.map((article) => (
               <Link 
                 key={article.slug} 
                 href={`/playbook/${article.slug}`} 
-                className="group flex flex-col justify-between border-b border-neutral-900 pb-8 hover:border-white transition-colors"
+                className="group flex flex-col justify-between border-b border-neutral-900 pb-10 hover:border-white transition-colors"
               >
                 <div className="flex flex-col gap-6">
                   <div className="flex items-center justify-between">
@@ -56,21 +58,21 @@ export default async function PlaybookPage() {
                 </div>
                 
                 <div className="mt-8 flex items-center gap-4 text-[9px] font-bold uppercase tracking-widest text-neutral-700">
-                  <span>{new Date(article.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
+                  <span className="text-neutral-500">Record #{articles.indexOf(article) + 1}</span>
                   <span className="w-1 h-1 rounded-full bg-neutral-900"></span>
-                  <span>MTD-PRTC-01</span>
+                  <span>{new Date(article.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}</span>
                 </div>
               </Link>
             ))
           )}
         </div>
 
-        {/* Minimalist Footer */}
-        <div className="mt-32 pt-8 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase tracking-[0.4em] text-neutral-800">
-          <span>System v1.26</span>
+        {/* Footer */}
+        <div className="mt-40 pt-8 border-t border-neutral-900 flex justify-between items-center text-[9px] font-bold uppercase tracking-[0.4em] text-neutral-800">
+          <span>Sequential Archive // End of File</span>
           <div className="flex items-center gap-2">
             <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse"></div>
-            <span>Operational</span>
+            <span>System Active</span>
           </div>
         </div>
       </div>
