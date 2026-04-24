@@ -291,12 +291,13 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative z-10 w-full overflow-hidden py-24 px-6 border-y border-neutral-900 bg-[#020202]">
-        <div className="text-center mb-8 max-w-5xl mx-auto">
-          <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Inside The Terminal</h2>
+<section className="relative z-10 w-full overflow-hidden py-16 px-6 border-y border-neutral-900 bg-[#020202]">
+        <div className="text-center mb-6 max-w-5xl mx-auto">
+          <h2 className="text-xl lg:text-2xl font-extrabold text-white tracking-tight">Inside The Terminal</h2>
         </div>
         
-        <div className="relative w-full h-[240px] sm:h-[350px] md:h-[450px] lg:h-[550px] xl:h-[650px] flex items-center justify-center max-w-[1600px] 2xl:max-w-[1920px] mx-auto">
+        {/* Adjusted Heights: Reduced significantly so the whole component fits on one screen */}
+        <div className="relative w-full h-[200px] sm:h-[280px] md:h-[380px] lg:h-[450px] xl:h-[500px] flex items-center justify-center max-w-[1600px] 2xl:max-w-[1920px] mx-auto">
           {terminalSlides.map((slide, index) => {
             const len = terminalSlides.length;
             let offset = (index - activeSlide) % len;
@@ -308,24 +309,32 @@ export default function Home() {
               styleClass = "translate-x-0 scale-100 opacity-100 z-30 shadow-[0_0_80px_rgba(0,0,0,0.8)] border-neutral-700";
             } else if (offset === 1 || offset === -1) { 
               const direction = offset === 1 ? "" : "-";
-              styleClass = `${direction}translate-x-[35%] sm:${direction}translate-x-[45%] md:${direction}translate-x-[50%] scale-[0.85] opacity-40 z-20 cursor-pointer hover:opacity-60 border-neutral-800/50`;
+              styleClass = `${direction}translate-x-[40%] sm:${direction}translate-x-[45%] md:${direction}translate-x-[50%] scale-[0.85] opacity-40 z-20 cursor-pointer hover:opacity-60 border-neutral-800/50`;
             } else { 
               styleClass = offset > 0 ? "translate-x-[70%] scale-[0.70] opacity-0 z-10" : "-translate-x-[70%] scale-[0.70] opacity-0 z-10";
             }
 
             return (
-              <div key={slide.id} onClick={() => setActiveSlide(index)} className={`absolute w-[95%] sm:w-[80%] md:w-[70%] lg:w-[65%] xl:w-[60%] aspect-video transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-2xl border bg-[#050505] overflow-hidden ${styleClass}`}>
+              /* Adjusted Widths: Shrunk from lg:w-[65%] xl:w-[60%] down to lg:w-[55%] xl:w-[50%] */
+              <div key={slide.id} onClick={() => setActiveSlide(index)} className={`absolute w-[95%] sm:w-[80%] md:w-[70%] lg:w-[55%] xl:w-[50%] aspect-video transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-2xl border bg-[#050505] overflow-hidden ${styleClass}`}>
                 <Image src={`/${slide.id}.png`} alt={slide.title} fill className="object-contain" />
               </div>
             );
           })}
-          <button onClick={prevSlide} className="absolute left-2 md:left-12 top-1/2 -translate-y-1/2 p-3 md:p-4 bg-[#080808] hover:bg-[#111] text-neutral-200 rounded-xl border border-neutral-800/60 transition-colors z-40 shadow-2xl"><ChevronLeft className="w-6 h-6" /></button>
-          <button onClick={nextSlide} className="absolute right-2 md:right-12 top-1/2 -translate-y-1/2 p-3 md:p-4 bg-[#080808] hover:bg-[#111] text-neutral-200 rounded-xl border border-neutral-800/60 transition-colors z-40 shadow-2xl"><ChevronRight className="w-6 h-6" /></button>
+          
+          {/* Brought the navigation arrows slightly closer to the center images */}
+          <button onClick={prevSlide} className="absolute left-2 md:left-8 lg:left-[10%] xl:left-[15%] top-1/2 -translate-y-1/2 p-3 bg-[#080808] hover:bg-[#111] text-neutral-200 rounded-xl border border-neutral-800/60 transition-colors z-40 shadow-2xl">
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          <button onClick={nextSlide} className="absolute right-2 md:right-8 lg:right-[10%] xl:right-[15%] top-1/2 -translate-y-1/2 p-3 bg-[#080808] hover:bg-[#111] text-neutral-200 rounded-xl border border-neutral-800/60 transition-colors z-40 shadow-2xl">
+            <ChevronRight className="w-5 h-5" />
+          </button>
         </div>
         
-        <div className="mt-8 text-center relative z-10 max-w-xl mx-auto px-4">
-           <h3 className="text-sm font-bold uppercase tracking-widest text-white mb-2">{terminalSlides[activeSlide].title}</h3>
-           <p className="text-neutral-500 text-sm font-medium leading-relaxed">{terminalSlides[activeSlide].desc}</p>
+        {/* Tightened the margin and text size so it hugs the bottom of the carousel */}
+        <div className="mt-6 text-center relative z-10 max-w-xl mx-auto px-4">
+           <h3 className="text-xs font-bold uppercase tracking-widest text-white mb-2">{terminalSlides[activeSlide].title}</h3>
+           <p className="text-neutral-500 text-xs font-medium leading-relaxed">{terminalSlides[activeSlide].desc}</p>
         </div>
       </section>
 
