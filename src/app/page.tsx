@@ -435,15 +435,15 @@ export default function Home() {
                 <Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" />
               </div>
               <p className="text-sm text-neutral-300 leading-relaxed font-medium mb-8">
-                "[Insert your feedback here. Example: Tracking my Primary Leaks completely changed my profitability. I finally put a dollar value to my FOMO.]"
+                "Tracking my Primary Leaks completely changed my profitability. I finally put a dollar value to my FOMO"
               </p>
             </div>
             <div className="flex items-center gap-4 mt-auto">
               <div className="relative w-10 h-10 rounded-full bg-[#111] border border-neutral-800 overflow-hidden shrink-0">
-                 <Image src="/profile1.png" alt="Operator Name 1" fill className="object-cover" />
+                 <Image src="/profile1.png" alt="Christopher" fill className="object-cover" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-white uppercase tracking-widest">Operator Name 1</h4>
+                <h4 className="text-xs font-bold text-white uppercase tracking-widest">Christopher</h4>
                 <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Systematic Trader</span>
               </div>
             </div>
@@ -456,15 +456,15 @@ export default function Home() {
                 <Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" />
               </div>
               <p className="text-sm text-neutral-300 leading-relaxed font-medium mb-8">
-                "[Insert your feedback here. Example: The MT5 sync eliminates the busywork of journaling. The Live Floor gives me exact confluence.]"
+                "The MT5 sync eliminates the busywork of journaling. The Live Floor gives me exact confluence."
               </p>
             </div>
             <div className="flex items-center gap-4 mt-auto">
               <div className="relative w-10 h-10 rounded-full bg-[#111] border border-neutral-800 overflow-hidden shrink-0">
-                 <Image src="/profile3.png" alt="Operator Name 2" fill className="object-cover" />
+                 <Image src="/profile3.png" alt="Katherine" fill className="object-cover" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-white uppercase tracking-widest">Operator Name 2</h4>
+                <h4 className="text-xs font-bold text-white uppercase tracking-widest">Katherine</h4>
                 <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Prop Firm Funded</span>
               </div>
             </div>
@@ -477,15 +477,15 @@ export default function Home() {
                 <Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" /><Star className="w-4 h-4 fill-current" />
               </div>
               <p className="text-sm text-neutral-300 leading-relaxed font-medium mb-8">
-                "[Insert your feedback here. Example: I've traded for 3 years, but this holds me accountable. The Discipline Index is a reality check.]"
+                "I've traded for 3 years, but this holds me accountable. The Discipline Index is a reality check."
               </p>
             </div>
             <div className="flex items-center gap-4 mt-auto">
               <div className="relative w-10 h-10 rounded-full bg-[#111] border border-neutral-800 overflow-hidden shrink-0">
-                 <Image src="/profile4.png" alt="Operator Name 3" fill className="object-cover" />
+                 <Image src="/profile4.png" alt="Rayner" fill className="object-cover" />
               </div>
               <div>
-                <h4 className="text-xs font-bold text-white uppercase tracking-widest">Operator Name 3</h4>
+                <h4 className="text-xs font-bold text-white uppercase tracking-widest">Rayner</h4>
                 <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Quantitative Analyst</span>
               </div>
             </div>
