@@ -145,8 +145,8 @@ export default function Home() {
           </div>
           <div className="flex gap-4 items-center shrink-0">
             <Link href="/login" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors hidden sm:block">Log In</Link>
-            <Link href="/signup" className="px-5 py-2 text-[9px] uppercase tracking-widest font-extrabold bg-white text-black rounded-lg hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-              Access Terminal
+            <Link href="/apply" className="px-5 py-2 text-[9px] uppercase tracking-widest font-extrabold bg-white text-black rounded-lg hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+              Apply For Access
             </Link>
           </div>
         </div>
@@ -162,8 +162,8 @@ export default function Home() {
             A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
-            <Link href="/signup" className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.15)]">
-              Create Free Account
+            <Link href="/apply" className="px-6 py-3 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.15)]">
+              Apply For Founding Cohort
             </Link>
             <Link href="#features" className="px-6 py-3 bg-[#111] text-white border border-neutral-800/60 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-[#1a1a1a] transition-colors w-full sm:w-auto">
               See How It Works
@@ -536,8 +536,8 @@ export default function Home() {
             <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-3">Free Account</h3>
             <p className="text-4xl lg:text-5xl font-black text-white my-6">$0</p>
             <p className="text-neutral-400 text-sm font-medium mb-10 h-10">Basic trade logging and delayed floor access.</p>
-            <Link href="/signup" className="block w-full py-4 px-6 bg-[#111] text-neutral-200 font-bold rounded-xl border border-neutral-800 hover:bg-[#1a1a1a] transition-colors uppercase tracking-widest text-[10px]">
-              Sign Up Free
+            <Link href="/apply" className="block w-full py-4 px-6 bg-[#111] text-neutral-200 font-bold rounded-xl border border-neutral-800 hover:bg-[#1a1a1a] transition-colors uppercase tracking-widest text-[10px]">
+              Apply For Access
             </Link>
           </div>
 
@@ -548,8 +548,8 @@ export default function Home() {
               <span className="text-sm text-neutral-500 font-medium tracking-normal">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
             </p>
             <p className="text-neutral-400 text-sm font-medium mb-10 h-10">Full MT5 Sync, Live Floor analysis, and behavioral analytics.</p>
-            <Link href="/signup" className="block w-full py-4 px-6 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors uppercase tracking-widest text-[10px]">
-              Get Pro Access
+            <Link href="/apply" className="block w-full py-4 px-6 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors uppercase tracking-widest text-[10px]">
+              Apply For Pro Access
             </Link>
           </div>
         </div>
