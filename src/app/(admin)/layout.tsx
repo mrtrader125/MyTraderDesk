@@ -14,7 +14,8 @@ import {
   Radio,
   BookOpen,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Inbox // <-- Added this icon for the applicants page
 } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -76,6 +77,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navLinks = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
+    { name: 'Applicants', path: '/admin/applications', icon: Inbox }, // <-- Added Applicants link
     { name: 'Publish Setup', path: '/admin/analysis', icon: Send },
     { name: 'Publish Playbook', path: '/admin/playbook/new', icon: BookOpen }, 
     { name: 'Manage Floor', path: '/admin/floor/new', icon: Activity }, 
