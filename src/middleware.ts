@@ -1,3 +1,4 @@
+// src/middleware.ts
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -65,7 +66,7 @@ export async function middleware(request: NextRequest) {
   }
 }
 
-// 🚨 THE FIX: Added update-password and auth/callback to the secure tunnel!
+// 🚨 THE FIX: Bypassing the middleware for Webhooks and Auth callbacks
 export const config = {
   matcher: [
     /*
