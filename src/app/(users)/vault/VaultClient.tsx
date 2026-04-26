@@ -22,7 +22,8 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
   const searchParams = useSearchParams()
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
   
-  const [vaultItems, setVaultItems] = useState<any[]>(initialItems || [])
+  const [isProUser, setIsProUser] = useState<boolean>(true)
+  const [vaultItems, setVaultItems] = useState<any[]>([])
   const [userPlan] = useState<string>(initialPlan || 'free')
   
   const [activeTab, setActiveTab] = useState('ALL')
@@ -37,14 +38,30 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
     return () => window.removeEventListener('globalSearch', handleSearch)
   }, [])
 
+  // 🚨 TIER CHECK & DATA INITIALIZATION
+  useEffect(() => {
+    const isPro = initialPlan === 'pro' || initialPlan === 'premium';
+    setIsProUser(isPro);
+
+    if (isPro) {
+      setVaultItems(initialItems || []);
+    } else {
+      // Demo users get an empty vault to start, but if they navigated here 
+      // directly from clicking a mock bookmark, we simulate an empty state 
+      // instead of pulling real data.
+      setVaultItems([]);
+    }
+  }, [initialItems, initialPlan])
+
   const removeFromVault = async (e: React.MouseEvent, vaultIdToRemove: string) => {
     e.preventDefault() 
     e.stopPropagation()
     setVaultItems(prev => prev.filter(item => item.vault_id !== vaultIdToRemove))
-    if (userId) await supabase.from('user_vault').delete().eq('id', vaultIdToRemove)
+    if (userId && isProUser) await supabase.from('user_vault').delete().eq('id', vaultIdToRemove)
   }
 
   const handleOpenNote = (e: React.MouseEvent, vaultId: string, currentNote: string) => {
+    if (!isProUser) return;
     e.preventDefault()
     e.stopPropagation()
     setTempNote(currentNote || '')
@@ -52,7 +69,7 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
   }
 
   const handleSaveNote = async () => {
-    if (!editingNoteId || !userId) return
+    if (!editingNoteId || !userId || !isProUser) return
     const { error } = await supabase.from('user_vault').update({ note: tempNote }).eq('id', editingNoteId)
     if (!error) {
       setVaultItems(prev => prev.map(item => item.vault_id === editingNoteId ? { ...item, saved_note: tempNote } : item))
@@ -81,7 +98,8 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
   })
 
   const VaultCard = ({ setup }: { setup: any }) => {
-    const { hasAccess, requiredTier } = getSetupAccess(setup, userPlan)
+    // Inject pseudo-locking for demo users
+    const { hasAccess, requiredTier } = isProUser ? getSetupAccess(setup, userPlan) : { hasAccess: false, requiredTier: 'pro' };
     const isBull = setup.bias?.toUpperCase() === 'BULLISH'
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
     const hasNote = setup.saved_note && setup.saved_note.trim() !== ''
@@ -94,8 +112,11 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
 
     return (
       <Link 
-        href={`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=vault`}
-        className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group hover:border-neutral-600 hover:bg-white/[0.02] transition-all duration-300 min-h-[180px] shadow-sm relative block"
+        href={isProUser ? `/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=vault` : '#'}
+        className={`bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group transition-all duration-300 min-h-[180px] shadow-sm relative block ${!isProUser ? 'opacity-80 cursor-default' : 'hover:border-neutral-600 hover:bg-white/[0.02]'}`}
+        onClick={(e) => {
+           if (!isProUser) e.preventDefault();
+        }}
       >
         <div className="h-28 w-full bg-black relative overflow-hidden border-b border-neutral-800/50 shrink-0">
           
@@ -109,7 +130,7 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
           {!hasAccess && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
               <Lock size={16} className="text-blue-500 mb-1.5" />
-              <span className="text-[8px] font-black text-white uppercase tracking-widest bg-blue-600/20 px-2 py-0.5 rounded border border-blue-500/30 shadow-lg">PRO</span>
+              <span className="text-[8px] font-black text-white uppercase tracking-widest bg-blue-600/20 px-2 py-0.5 rounded border border-blue-500/30 shadow-lg">{requiredTier}</span>
             </div>
           )}
 
@@ -117,10 +138,12 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
             <div className="absolute top-2 left-2 bg-[#0a0a0a]/90 backdrop-blur-md px-2 py-0.5 rounded-md text-[9px] font-black text-white uppercase tracking-widest border border-white/10">{setup.timeframe || '-'}</div>
           )}
 
-          <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 z-20">
-            <button onClick={(e) => handleOpenNote(e, setup.vault_id, setup.saved_note)} className="p-1.5 bg-amber-500/80 backdrop-blur-md text-white rounded-md hover:bg-amber-500 transition-colors shadow-lg"><Edit3 size={12} /></button>
-            <button onClick={(e) => removeFromVault(e, setup.vault_id)} className="p-1.5 bg-red-500/80 backdrop-blur-md text-white rounded-md hover:bg-red-500 transition-colors shadow-lg"><Trash2 size={12} /></button>
-          </div>
+          {isProUser && (
+            <div className="absolute top-2 right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-1 group-hover:translate-y-0 z-20">
+              <button onClick={(e) => handleOpenNote(e, setup.vault_id, setup.saved_note)} className="p-1.5 bg-amber-500/80 backdrop-blur-md text-white rounded-md hover:bg-amber-500 transition-colors shadow-lg"><Edit3 size={12} /></button>
+              <button onClick={(e) => removeFromVault(e, setup.vault_id)} className="p-1.5 bg-red-500/80 backdrop-blur-md text-white rounded-md hover:bg-red-500 transition-colors shadow-lg"><Trash2 size={12} /></button>
+            </div>
+          )}
         </div>
 
         <div className="relative p-4 pr-5 flex flex-col flex-1 justify-between bg-gradient-to-b from-[#0a0a0a] to-[#050505]">
@@ -157,6 +180,13 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
 
   return (
     <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden relative">
+      
+      {!isProUser && (
+        <div className="absolute top-4 right-4 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">
+          Sandbox Mode <Lock size={12} className="stroke-[3]" />
+        </div>
+      )}
+
       <div className="flex flex-col items-center mb-8 mt-1">
         
         {/* UNRESTRICTED CATEGORY TABS */}
@@ -178,10 +208,21 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
 
       {vaultItems.length === 0 ? (
         <div className="w-full max-w-xl mx-auto mt-6 border border-dashed border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
-          <FolderOpen size={40} className="text-neutral-700 mb-4" />
-          <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2">Vault is Empty</h3>
-          <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-relaxed mb-6">No saved analysis yet, start bookmarking to build your vault.</p>
-          <Link href="/dashboard" className="px-6 py-2.5 bg-blue-600/10 text-blue-500 border border-blue-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-600 hover:text-white transition-colors">Go to Dashboard</Link>
+          {!isProUser ? (
+             <>
+               <Lock size={40} className="text-amber-500/40 mb-4 stroke-1" />
+               <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2">Vault Locked</h3>
+               <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-relaxed mb-6 max-w-[280px]">Upgrade to Professional to permanently save, organize, and annotate your favorite setups.</p>
+               <Link href="/account/subscription" className="px-6 py-2.5 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 transition-colors shadow-lg">Upgrade Now</Link>
+             </>
+          ) : (
+             <>
+               <FolderOpen size={40} className="text-neutral-700 mb-4" />
+               <h3 className="text-lg font-black text-white uppercase tracking-tight mb-2">Vault is Empty</h3>
+               <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest leading-relaxed mb-6">No saved analysis yet, start bookmarking to build your vault.</p>
+               <Link href="/dashboard" className="px-6 py-2.5 bg-blue-600/10 text-blue-500 border border-blue-500/20 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-600 hover:text-white transition-colors">Go to Dashboard</Link>
+             </>
+          )}
         </div>
       ) : filteredItems.length === 0 ? (
         <div className="py-16 text-center flex flex-col items-center">
