@@ -1,22 +1,25 @@
 import { createClient } from '@/lib/supabaseServer'
 import MarketsClient from './MarketsClient'
+import { redirect } from 'next/navigation'
 
 export const runtime = 'edge'
 
 export default async function MarketsPage() {
   const supabase = await createClient()
-  
-  // Fetch user data and market data at the exact same time
   const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
   const [
     { data: profile },
     { data: analyses }
   ] = await Promise.all([
-    user ? supabase.from('profiles').select('plan').eq('id', user.id).single() : Promise.resolve({ data: null }),
+    supabase.from('profiles').select('plan').eq('id', user.id).single(),
     supabase.from('analyses').select('*').order('created_at', { ascending: false })
   ])
 
-  // 🚨 OPTIMIZATION: Do the heavy grouping math on the server
   let groupedArray: any[] = []
   if (analyses) {
     const grouped = analyses.reduce((acc: any, curr: any) => {
@@ -56,8 +59,9 @@ export default async function MarketsPage() {
 
   return (
     <MarketsClient 
-      initialPlan={profile?.plan?.toLowerCase()} 
+      initialPlan={profile?.plan?.toLowerCase() || 'demo'} 
       initialGroupedAnalyses={groupedArray} 
+      userId={user.id}
     />
   )
 }
