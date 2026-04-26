@@ -61,6 +61,8 @@ export default function LiveFloorClient({
   const floorEndRef = useRef<HTMLDivElement>(null)
   const noteInputRef = useRef<HTMLTextAreaElement>(null)
 
+  const isProUser = userPlan === 'pro' || userPlan === 'premium'
+
   // 1. FETCH USER'S SAVED DATA ON LOAD
   useEffect(() => {
     const fetchUserInteractions = async () => {
@@ -103,19 +105,23 @@ export default function LiveFloorClient({
   useEffect(() => {
     const channel = supabase.channel('public:desk_feed')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'live_squawk' }, (p) => {
-        setSquawks((c) => [...c, p.new])
-        // Silently increment badge if panel is closed
-        if (!isCommsOpenRef.current) {
-          setUnreadCount((prev) => prev + 1)
+        // Only append real data if Pro, otherwise rely strictly on server gating
+        if (isProUser) {
+          setSquawks((c) => [...c, p.new])
+          if (!isCommsOpenRef.current) {
+            setUnreadCount((prev) => prev + 1)
+          }
         }
       })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'live_squawk' }, (p) => setSquawks((c) => c.filter(s => s.id !== p.old.id)))
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'terminal_posts' }, (p) => setPosts((c) => [...c, p.new]))
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'terminal_posts' }, (p) => {
+        if (isProUser) setPosts((c) => [...c, p.new])
+      })
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'terminal_posts' }, (p) => setPosts((c) => c.filter(post => post.id !== p.old.id)))
       .subscribe()
       
     return () => { supabase.removeChannel(channel) }
-  }, [supabase])
+  }, [supabase, isProUser])
 
   // Auto-focus the note textarea when it opens
   useEffect(() => {
@@ -124,8 +130,6 @@ export default function LiveFloorClient({
       noteInputRef.current.setSelectionRange(noteInputRef.current.value.length, noteInputRef.current.value.length)
     }
   }, [editingNoteId])
-
-  const isProUser = userPlan === 'pro' || userPlan === 'premium'
 
   // THE OPTIMISTIC DATABASE SAVE FUNCTION
   const handleInteractionUpdate = async (postId: string, updates: Partial<PostInteraction>) => {
@@ -218,31 +222,6 @@ export default function LiveFloorClient({
     }
   }
 
-  if (!isProUser) {
-    return (
-      <div className="w-full h-[calc(100dvh-65px)] bg-[#050505] flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-[#0a0a0a] border border-white/[0.04] rounded-3xl p-8 md:p-10 text-center shadow-2xl animate-in zoom-in-95 duration-500">
-          <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 border border-blue-500/20">
-            <Lock className="w-8 h-8 text-blue-400" />
-          </div>
-          <h2 className="text-2xl font-bold text-white mb-3">Live Floor Locked</h2>
-          <p className="text-sm text-neutral-400 leading-relaxed mb-8">
-            The Live Floor is strictly reserved for Professional members. Upgrade to get real-time setups, direct desk updates, and global sentiment voting.
-          </p>
-          <a 
-            href="/account/subscription" 
-            className="block w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white text-sm font-bold uppercase tracking-wider rounded-xl transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] hover:shadow-[0_0_30px_rgba(37,99,235,0.4)]"
-          >
-            Upgrade to Professional
-          </a>
-          <p className="text-[10px] text-neutral-500 font-medium uppercase tracking-widest mt-6">
-            Instant Activation
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <>
       {/* FULLSCREEN IMAGE MODAL */}
@@ -307,7 +286,13 @@ export default function LiveFloorClient({
               {/* TAB 1: DESK FEED */}
               {activeFloorTab === 'feed' && (
                 <div key="tab-feed" className="flex-1 overflow-y-auto pb-8 custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out px-1">
-                  {posts.length === 0 ? (
+                  {!isProUser ? (
+                    <div className="h-full flex flex-col items-center justify-center p-8 opacity-70">
+                      <Lock className="w-10 h-10 text-neutral-600 mb-4 stroke-1" />
+                      <h3 className="text-sm font-bold tracking-widest uppercase text-neutral-300 mb-2">Live Feed Locked</h3>
+                      <p className="text-xs text-neutral-500 max-w-sm text-center mb-6 leading-relaxed">Upgrade to Professional to access real-time desk updates, proprietary setups, and global sentiment voting.</p>
+                    </div>
+                  ) : posts.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center opacity-40">
                       <Target className="w-12 h-12 text-neutral-600 mb-4 stroke-1" />
                       <h3 className="text-sm font-medium tracking-wide text-neutral-400">Awaiting Transmissions</h3>
@@ -525,8 +510,20 @@ export default function LiveFloorClient({
 
               {/* TAB 2: REFLECTION DASHBOARD */}
               {activeFloorTab === 'reflection' && (
-                <div key="tab-reflection" className="flex-1 overflow-y-auto pt-4 pb-8 custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out px-1">
-                  <div className="max-w-6xl mx-auto h-full flex flex-col lg:flex-row gap-8">
+                <div key="tab-reflection" className="flex-1 overflow-y-auto pt-4 pb-8 custom-scrollbar animate-in fade-in slide-in-from-bottom-4 duration-500 ease-out px-1 relative">
+                  
+                  {/* INLINE LOCKED STATE FOR DEMO USERS */}
+                  {!isProUser && (
+                     <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#030303]/80 backdrop-blur-[3px] rounded-2xl mx-1 mb-8 border border-white/[0.02]">
+                       <div className="flex flex-col items-center text-center p-8 bg-[#0a0a0a] rounded-2xl border border-white/[0.04] shadow-2xl">
+                          <Lock className="w-10 h-10 text-emerald-500/40 mb-4 stroke-1" />
+                          <h3 className="text-sm font-bold tracking-widest text-white uppercase mb-2">Reflection Locked</h3>
+                          <p className="text-xs text-neutral-400 max-w-[260px] leading-relaxed">Professional members get advanced execution metrics and organic alignment scoring.</p>
+                       </div>
+                     </div>
+                  )}
+
+                  <div className={`max-w-6xl mx-auto h-full flex flex-col lg:flex-row gap-8 transition-all ${!isProUser ? 'opacity-30 pointer-events-none filter blur-[2px]' : ''}`}>
                     
                     {/* LEFT HALF: STATS */}
                     <div className="w-full lg:w-[40%] flex flex-col gap-6 animate-in slide-in-from-left-8 fade-in duration-500">
@@ -665,7 +662,15 @@ export default function LiveFloorClient({
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar w-full bg-[#050505] rounded-b-2xl">
-                  {squawks.length === 0 ? (
+                  
+                  {/* INLINE LOCKED STATE FOR SQUAWK */}
+                  {!isProUser ? (
+                    <div className="flex flex-col items-center justify-center h-full opacity-60 p-6 text-center">
+                       <Lock className="w-8 h-8 text-[#2AABEE]/50 mb-3 stroke-1" />
+                       <h3 className="text-xs font-bold tracking-widest uppercase text-white mb-2">Squawk Locked</h3>
+                       <p className="text-[10px] text-neutral-500 leading-relaxed max-w-[200px]">The live desk audio and text channel is strictly for Professional members.</p>
+                    </div>
+                  ) : squawks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full opacity-40">
                       <Send className="w-8 h-8 text-neutral-600 mb-3 stroke-1" />
                       <p className="text-xs font-medium text-neutral-500">Awaiting Channel Broadcasts</p>
