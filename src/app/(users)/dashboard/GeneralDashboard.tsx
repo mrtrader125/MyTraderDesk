@@ -1,4 +1,3 @@
-// src/app/(users)/dashboard/GeneralDashboard.tsx
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
@@ -7,6 +6,28 @@ import { Lock, Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, 
 import { supabase } from '@/lib/supabase'
 import { ASSET_CATEGORIES, PLAN_CONFIG } from '@/lib/platformConfig'
 import Image from 'next/image'
+
+// --- DUMMY DATA FOR DEMO TIER ---
+const DEMO_SETUPS = [
+  {
+    id: 'demo-1', asset_symbol: 'BTCUSD', direction: 'LONG', category: 'Crypto', timeframe: '4H', bias: 'BULLISH',
+    status: 'ACTIVE', notes: '<p><b>Macro:</b> Bullish market structure. Price swept Asian session lows.</p>',
+    image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'demo-2', asset_symbol: 'EURUSD', direction: 'SHORT', category: 'Forex', timeframe: '15M', bias: 'BEARISH',
+    status: 'WAITING', notes: '<p>Standard premium supply mitigation. DXY is strong.</p>',
+    image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
+    created_at: new Date(Date.now() - 86400000).toISOString()
+  },
+  {
+    id: 'demo-3', asset_symbol: 'XAUUSD', direction: 'LONG', category: 'Commodities', timeframe: '1D', bias: 'BULLISH',
+    status: 'WAITING', notes: '<p>Gold ranging between 2300 and 2350. Buying the discount.</p>',
+    image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+    created_at: new Date(Date.now() - 172800000).toISOString()
+  }
+];
 
 export default function GeneralDashboard({ 
   userId, 
@@ -34,6 +55,8 @@ export default function GeneralDashboard({
   const [showThisWeek, setShowThisWeek] = useState(false)
   const [showOlder, setShowOlder] = useState(false)
 
+  const isProUser = userPlan === 'pro' || userPlan === 'premium';
+
   const FILTERS = useMemo(() => {
     return [
       { name: 'All', req: 'free' },
@@ -53,6 +76,13 @@ export default function GeneralDashboard({
 
   useEffect(() => {
     setMounted(true)
+    if (!isProUser) {
+       // Inject Demo Data
+       setSetups(DEMO_SETUPS);
+       setWatchlist([]);
+       return;
+    }
+
     if (userId) {
       const localFilters = localStorage.getItem(`mtd_filters_${userId}`)
       if (localFilters) {
@@ -67,7 +97,7 @@ export default function GeneralDashboard({
         } catch(e) { console.error("Filter parse error", e) }
       }
     }
-  }, [userId])
+  }, [userId, isProUser])
 
   const groupedSetups = useMemo(() => {
     const hasPermanentFilters = savedCategories.length > 0 || savedSymbols.length > 0
@@ -158,7 +188,10 @@ export default function GeneralDashboard({
 
   const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
     e.stopPropagation() 
-    if (!setup || !userId) return
+    if (!setup || !userId || !isProUser) {
+        if (!isProUser) alert("Upgrade to Pro to save setups to the Vault.");
+        return;
+    }
 
     const exists = watchlist.find(item => item.id === setup.id)
     let updated = [...watchlist]
@@ -229,10 +262,11 @@ export default function GeneralDashboard({
                   key={setup.id} 
                   title={`Status: ${status}`}
                   onClick={async () => {
+                    if (!isProUser) return;
                     if (userId) supabase.from('activity_logs').insert([{ user_id: userId, action: 'FEED_CLICK', asset_symbol: setup.asset_symbol, timeframe: setup.timeframe }]).then()
                     router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=dashboard`)
                   }}
-                  className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] transition-all rounded-xl p-3 md:p-2.5 cursor-pointer group flex items-center justify-between shadow-sm overflow-hidden relative"
+                  className={`bg-[#0a0a0a] border border-neutral-800 transition-all rounded-xl p-3 md:p-2.5 group flex items-center justify-between shadow-sm overflow-hidden relative ${isProUser ? 'hover:border-neutral-600 hover:bg-white/[0.02] cursor-pointer' : 'opacity-80'}`}
                 >
                   <div className="flex flex-col min-w-0 pr-2 z-10">
                     <span className="text-sm font-black text-white tracking-tight truncate">{setup.asset_symbol || 'UNKNOWN'}</span>
@@ -242,10 +276,10 @@ export default function GeneralDashboard({
                   </div>
                   
                   <div className="flex items-center space-x-1.5 shrink-0 z-10 pr-2">
-                    <button onClick={(e) => toggleBookmark(e, setup)} className="text-neutral-600 hover:text-white transition-colors p-2 md:p-1">
+                    <button onClick={(e) => toggleBookmark(e, setup)} className={`transition-colors p-2 md:p-1 ${isProUser ? 'text-neutral-600 hover:text-white' : 'text-neutral-700 cursor-not-allowed'}`}>
                       <Bookmark size={16} className={isBookmarked ? 'fill-amber-500 text-amber-500' : ''} />
                     </button>
-                    <div className="p-2 md:p-1.5 rounded-lg shrink-0 bg-[#111] border border-neutral-800 text-neutral-500 group-hover:text-white transition-colors">
+                    <div className={`p-2 md:p-1.5 rounded-lg shrink-0 bg-[#111] border border-neutral-800 transition-colors ${isProUser ? 'text-neutral-500 group-hover:text-white' : 'text-neutral-600'}`}>
                       {isBull ? <TrendingUp size={16} strokeWidth={2.5} /> : isBear ? <TrendingDown size={16} strokeWidth={2.5} /> : <Minus size={16} strokeWidth={2.5} />}
                     </div>
                   </div>
@@ -290,17 +324,23 @@ export default function GeneralDashboard({
             
             <div className="col-span-1 md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-4 md:p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden shadow-sm">
               <div className="text-neutral-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">Current Tier</div>
-              <div className={`text-sm md:text-xl font-black uppercase tracking-widest truncate ${userPlan === 'pro' ? 'text-blue-500' : 'text-neutral-400'}`}>
-                {userPlan === 'pro' ? 'Professional' : 'Free Tier'}
+              <div className={`text-sm md:text-xl font-black uppercase tracking-widest truncate ${isProUser ? 'text-blue-500' : 'text-neutral-400'}`}>
+                {isProUser ? 'Professional' : 'Free Tier'}
               </div>
             </div>
           </div>
 
-          <div className="shrink-0 flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800">
+          <div className="shrink-0 flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800 relative">
+            {!isProUser && (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl border border-white/[0.02]">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5"><Lock size={12}/> Global Feed Active</span>
+              </div>
+            )}
             {FILTERS.map(f => (
               <button 
                 key={f.name}
                 onClick={async () => {
+                  if (!isProUser) return;
                   setActiveFilter(f.name)
                   if (userId) supabase.from('activity_logs').insert([{ user_id: userId, action: 'FILTER_CLICK', search_query: f.name }]).then()
                 }}
@@ -319,10 +359,16 @@ export default function GeneralDashboard({
                 <Target size={14} className="text-blue-500" /> Analysis Feed
               </h3>
               <button 
-                onClick={() => setShowFilterModal(true)}
-                className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded transition-all border ${!noFiltersApplied ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]' : 'bg-[#111] text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600'}`}
+                onClick={() => {
+                   if (!isProUser) {
+                      alert("Upgrade to Pro to personalize your feed filters.");
+                      return;
+                   }
+                   setShowFilterModal(true);
+                }}
+                className={`flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded transition-all border ${!isProUser ? 'bg-neutral-900 border-neutral-800 text-neutral-600' : !noFiltersApplied ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]' : 'bg-[#111] text-neutral-500 border-neutral-800 hover:text-white hover:border-neutral-600'}`}
               >
-                <Filter size={12} /> Prefs {!noFiltersApplied && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full ml-1"></div>}
+                {!isProUser ? <Lock size={12} /> : <Filter size={12} />} Prefs {isProUser && !noFiltersApplied && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full ml-1"></div>}
               </button>
             </div>
 
@@ -342,7 +388,7 @@ export default function GeneralDashboard({
                   {renderSetupGrid(groupedSetups.older, "Older History", { isOpen: showOlder, toggle: () => setShowOlder(!showOlder) })}
                   
                   <div className="lg:hidden mt-8 pt-8 border-t border-neutral-800 space-y-6 pb-6">
-                     <MobileWidgets activeBroadcast={activeBroadcast} watchlist={watchlist} router={router} />
+                     <MobileWidgets activeBroadcast={activeBroadcast} watchlist={watchlist} router={router} isPro={isProUser} />
                   </div>
                 </>
               )}
@@ -352,11 +398,11 @@ export default function GeneralDashboard({
 
         {/* --- RIGHT COLUMN: DESKTOP WIDGETS --- */}
         <div className="hidden lg:flex lg:col-span-4 xl:col-span-3 flex-col h-full min-h-0 overflow-y-auto custom-scrollbar space-y-5 pb-6">
-          <MobileWidgets activeBroadcast={activeBroadcast} watchlist={watchlist} router={router} />
+          <MobileWidgets activeBroadcast={activeBroadcast} watchlist={watchlist} router={router} isPro={isProUser} />
         </div>
       </div>
 
-      {showFilterModal && (
+      {showFilterModal && isProUser && (
         <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
           <div className="w-full max-w-md bg-[#0a0a0a] rounded-t-3xl sm:rounded-2xl border-t sm:border border-neutral-800 shadow-[0_-10px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[85vh]">
             
@@ -463,7 +509,7 @@ export default function GeneralDashboard({
   )
 }
 
-function MobileWidgets({ activeBroadcast, watchlist, router }: any) {
+function MobileWidgets({ activeBroadcast, watchlist, router, isPro }: any) {
   return (
     <>
       <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shadow-sm">
@@ -498,7 +544,13 @@ function MobileWidgets({ activeBroadcast, watchlist, router }: any) {
         </div>
       </div>
 
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shadow-sm">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shadow-sm relative">
+        {!isPro && (
+           <div className="absolute inset-0 bg-black/80 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center rounded-2xl border border-white/[0.02]">
+             <Lock size={20} className="mb-2 text-amber-500/50 stroke-1" />
+             <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Vault Access Locked</span>
+           </div>
+        )}
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
           <div className="flex items-center">
             <Bookmark size={16} className="text-amber-500 mr-2" />
