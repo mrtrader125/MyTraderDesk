@@ -8,7 +8,7 @@ import Papa from 'papaparse'
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, CheckCircle2, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, CheckCircle2, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen
 } from 'lucide-react'
 
 // 🚨 CONSTANTS MUST BE AT THE TOP
@@ -134,96 +134,60 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm, displayDi
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
       <div className="bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-3xl flex flex-col h-[80vh]">
-        
         <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
           <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
-            <DownloadCloud size={16} className="text-blue-500" /> 
-            MT5 Data Staging
+            <DownloadCloud size={16} className="text-blue-500" /> MT5 Data Staging
           </h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white">
-            <X size={18}/>
-          </button>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white"><X size={18}/></button>
         </div>
-        
         <div className="p-4 border-b border-zinc-800 bg-black flex items-center justify-between sm:justify-start gap-4">
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">
-              Broker Timezone Offset
-            </span>
-            <span className="text-[9px] text-zinc-600 hidden sm:block">
-              Adjust to align MT5 time with your local time.
-            </span>
+            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Broker Timezone Offset</span>
+            <span className="text-[9px] text-zinc-600 hidden sm:block">Adjust to align MT5 time with your local time.</span>
           </div>
           <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
             <button onClick={() => setOffsetHours(p => p - 1)} className="px-3 py-1 hover:bg-zinc-800 rounded text-zinc-300 font-mono">-</button>
-            <span className="font-mono text-sm font-bold w-8 text-center text-white">
-              {offsetHours > 0 ? `+${offsetHours}` : offsetHours}
-            </span>
+            <span className="font-mono text-sm font-bold w-8 text-center text-white">{offsetHours > 0 ? `+${offsetHours}` : offsetHours}</span>
             <button onClick={() => setOffsetHours(p => p + 1)} className="px-3 py-1 hover:bg-zinc-800 rounded text-zinc-300 font-mono">+</button>
           </div>
         </div>
-
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-black">
           {isParsing ? (
-            <div className="flex items-center justify-center h-full text-zinc-500 text-sm uppercase tracking-widest font-bold">
-              Parsing MT5 History...
-            </div>
+            <div className="flex items-center justify-center h-full text-zinc-500 text-sm uppercase tracking-widest font-bold">Parsing MT5 History...</div>
           ) : (
             <div className="flex flex-col gap-3">
               {matches.map((m, i) => (
                 <div key={i} className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-center bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                  
                   <div className="flex-1 w-full flex flex-col p-3 bg-zinc-900/30 rounded-lg border border-zinc-800/50">
-                    <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">
-                      Logged Reality
-                    </span>
+                    <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">Logged Reality</span>
                     <div className="flex items-center gap-2">
                       <span className="font-black text-white">{m.log.symbol}</span>
-                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${m.log.direction === 'LONG' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-                        {displayDirection(m.log.direction)}
-                      </span>
+                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${m.log.direction === 'LONG' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{displayDirection(m.log.direction)}</span>
                     </div>
-                    <span className="text-[10px] text-zinc-400 mt-1">
-                      {new Date(m.log.created_at).toLocaleTimeString()}
-                    </span>
+                    <span className="text-[10px] text-zinc-400 mt-1">{new Date(m.log.created_at).toLocaleTimeString()}</span>
                   </div>
-                  
                   <ArrowRight size={16} className="text-zinc-600 hidden sm:block rotate-90 sm:rotate-0" />
-                  
                   <div className={`flex-1 w-full flex flex-col p-3 rounded-lg border ${m.match ? 'bg-blue-500/5 border-blue-500/30' : 'bg-zinc-900/30 border-dashed border-zinc-800'}`}>
-                    <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">
-                      MT5 Broker Data
-                    </span>
+                    <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">MT5 Broker Data</span>
                     {m.match ? (
                       <>
                         <div className="flex items-center justify-between">
                           <span className="font-black text-white">{m.match.symbol}</span>
-                          <span className={`text-xs font-mono font-bold ${m.match.profit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                            ${m.match.profit.toFixed(2)}
-                          </span>
+                          <span className={`text-xs font-mono font-bold ${m.match.profit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>${m.match.profit.toFixed(2)}</span>
                         </div>
-                        <span className="text-[10px] text-zinc-400 mt-1">
-                          Ticket: {m.match.ticket} • Auto: {m.match.outcome}
-                        </span>
+                        <span className="text-[10px] text-zinc-400 mt-1">Ticket: {m.match.ticket} • Auto: {m.match.outcome}</span>
                       </>
                     ) : (
                       <span className="text-xs font-bold text-zinc-600 mt-1">No Match Found</span>
                     )}
                   </div>
-
                 </div>
               ))}
             </div>
           )}
         </div>
-        
         <div className="p-4 border-t border-zinc-800 bg-zinc-900/50 flex justify-end">
-          <button 
-            onClick={() => { onConfirm(matches); onClose(); }} 
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-colors flex items-center gap-2"
-          >
-            <Check size={14} /> Sync Matches
-          </button>
+          <button onClick={() => { onConfirm(matches); onClose(); }} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-colors flex items-center gap-2"><Check size={14} /> Sync Matches</button>
         </div>
       </div>
     </div>
@@ -260,15 +224,7 @@ function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpe
         }
       }
       if (files.length > 0) {
-        const newDrafts = files.map(file => ({ 
-          id: Math.random().toString(36).substr(2, 9), 
-          imageSource: URL.createObjectURL(file), 
-          file, 
-          instrument: extractInstrument(file.name), 
-          direction: '' as '', 
-          playbook: '', 
-          notes: '' 
-        }));
+        const newDrafts = files.map(file => ({ id: Math.random().toString(36).substr(2, 9), imageSource: URL.createObjectURL(file), file, instrument: extractInstrument(file.name), direction: '' as '', playbook: '', notes: '' }));
         setDrafts(prev => [...prev, ...newDrafts]);
         if (drafts.length === 0) setActiveIndex(0);
       }
@@ -281,15 +237,7 @@ function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpe
     const files = e.target.files
     if (files && files.length > 0) {
       const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-      const newDrafts: DraftSetup[] = imageFiles.map(file => ({ 
-        id: Math.random().toString(36).substr(2, 9), 
-        imageSource: URL.createObjectURL(file), 
-        file, 
-        instrument: extractInstrument(file.name), 
-        direction: '', 
-        playbook: '', 
-        notes: '' 
-      }))
+      const newDrafts: DraftSetup[] = imageFiles.map(file => ({ id: Math.random().toString(36).substr(2, 9), imageSource: URL.createObjectURL(file), file, instrument: extractInstrument(file.name), direction: '', playbook: '', notes: '' }))
       setDrafts(prev => [...prev, ...newDrafts])
       if (drafts.length === 0) setActiveIndex(0)
     }
@@ -299,86 +247,47 @@ function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpe
   const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); };
   
   const handleDrop = (e: React.DragEvent) => { 
-    e.preventDefault(); 
-    setIsDragging(false); 
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileChange({ target: { files: e.dataTransfer.files } });
-    }
+    e.preventDefault(); setIsDragging(false); 
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) handleFileChange({ target: { files: e.dataTransfer.files } });
   };
 
   const handlePasteClick = async () => {
     try {
       const text = await navigator.clipboard.readText();
       if (text) setLinkInput(text);
-    } catch (err) {
-      alert('Clipboard access blocked. Please use Ctrl+V to paste.');
-    }
+    } catch (err) { alert('Clipboard access blocked. Please use Ctrl+V to paste.'); }
   };
 
   const handleAddLink = () => {
     if (!linkInput) return
-    const newDraft: DraftSetup = { 
-      id: Math.random().toString(36).substr(2, 9), 
-      imageSource: linkInput, 
-      file: null, 
-      instrument: extractInstrument(linkInput), 
-      direction: '', 
-      playbook: '', 
-      notes: '' 
-    }
+    const newDraft: DraftSetup = { id: Math.random().toString(36).substr(2, 9), imageSource: linkInput, file: null, instrument: extractInstrument(linkInput), direction: '', playbook: '', notes: '' }
     setDrafts(prev => [...prev, newDraft])
     setLinkInput('')
     if (drafts.length === 0) setActiveIndex(0)
   }
 
-  const updateActiveDraft = (field: keyof DraftSetup, value: string) => {
-    setDrafts(prev => prev.map((d, i) => i === activeIndex ? { ...d, [field]: value } : d))
-  }
-  
-  const removeDraft = (index: number) => { 
-    setDrafts(prev => prev.filter((_, i) => i !== index)); 
-    if (activeIndex >= index && activeIndex > 0) {
-      setActiveIndex(activeIndex - 1)
-    } 
-  }
+  const updateActiveDraft = (field: keyof DraftSetup, value: string) => setDrafts(prev => prev.map((d, i) => i === activeIndex ? { ...d, [field]: value } : d))
+  const removeDraft = (index: number) => { setDrafts(prev => prev.filter((_, i) => i !== index)); if (activeIndex >= index && activeIndex > 0) setActiveIndex(activeIndex - 1) }
 
   const handleSaveAll = async () => {
     setIsUploading(true)
     const validDrafts = drafts.filter(d => d.instrument.trim() !== '' && d.direction !== '')
     await onSave(validDrafts)
-    
-    drafts.forEach(d => {
-      if (d.imageSource && d.imageSource.startsWith('blob:')) {
-        URL.revokeObjectURL(d.imageSource);
-      }
-    });
-
+    drafts.forEach(d => { if (d.imageSource && d.imageSource.startsWith('blob:')) URL.revokeObjectURL(d.imageSource); });
     setIsUploading(false)
     onClose()
   }
 
   const handlePeekStart = () => { peekTimer.current = setTimeout(() => setIsPeeking(true), 400); };
   const handlePeekEnd = () => { if (peekTimer.current) clearTimeout(peekTimer.current); setIsPeeking(false); };
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget && drafts.length === 0 && !linkInput) {
-      onClose();
-    }
-  };
+  const handleBackdropClick = (e: React.MouseEvent) => { if (e.target === e.currentTarget && drafts.length === 0 && !linkInput) onClose(); };
 
   if (!isOpen) return null
 
   return (
     <>
-      <div 
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200"
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={handleBackdropClick}
-      >
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleBackdropClick}>
         <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px] relative" onClick={e => e.stopPropagation()}>
-          
           {isDragging && (
             <div className="absolute inset-0 z-50 bg-purple-500/10 border-4 border-purple-500/50 border-dashed rounded-xl flex items-center justify-center pointer-events-none backdrop-blur-sm m-2">
               <div className="bg-black/90 px-8 py-6 rounded-2xl flex flex-col items-center shadow-2xl">
@@ -387,222 +296,73 @@ function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpe
               </div>
             </div>
           )}
-
           <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
-            <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2">
-              <UploadCloud size={16} className="text-purple-500" /> Vault Upload
-            </h2>
-            <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}>
-              <X size={18} />
-            </button>
+            <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2"><UploadCloud size={16} className="text-purple-500" /> Vault Upload</h2>
+            <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}><X size={18} /></button>
           </div>
-          
           <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
             <div className="w-full lg:w-[200px] border-b lg:border-b-0 lg:border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
-              
               <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
-                <button 
-                  onClick={() => fileInputRef.current?.click()} 
-                  className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5" 
-                  disabled={isUploading}
-                >
-                  <Plus size={14} /> Add Images
-                </button>
-                
+                <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5" disabled={isUploading}><Plus size={14} /> Add Images</button>
                 <div className="flex gap-1">
-                  <input 
-                    type="text" 
-                    value={linkInput} 
-                    onChange={(e) => setLinkInput(e.target.value)} 
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddLink()}
-                    placeholder="Paste URL..." 
-                    className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-purple-500 transition-colors" 
-                    disabled={isUploading} 
-                  />
-                  <button 
-                    onClick={handlePasteClick} 
-                    className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded transition-colors" 
-                    disabled={isUploading} 
-                    title="Paste Text"
-                  >
-                    <Clipboard size={12}/>
-                  </button>
-                  <button 
-                    onClick={handleAddLink} 
-                    className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors" 
-                    disabled={isUploading} 
-                    title="Add"
-                  >
-                    <Plus size={12}/>
-                  </button>
+                  <input type="text" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddLink()} placeholder="Paste URL..." className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-purple-500 transition-colors" disabled={isUploading} />
+                  <button onClick={handlePasteClick} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded transition-colors" disabled={isUploading} title="Paste Text"><Clipboard size={12}/></button>
+                  <button onClick={handleAddLink} className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors" disabled={isUploading} title="Add"><Plus size={12}/></button>
                 </div>
                 <input type="file" multiple ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
               </div>
-
               <div className="flex-1 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-2 flex flex-row lg:flex-col gap-2 text-white">
                 {drafts.map((draft, idx) => (
-                  <div 
-                    key={draft.id} 
-                    onClick={() => setActiveIndex(idx)} 
-                    className={`min-w-[150px] lg:min-w-0 p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-zinc-800 border-zinc-600' : 'bg-zinc-950 border-zinc-800/50 hover:bg-zinc-900'}`}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold truncate">
-                        {draft.instrument || 'UNKNOWN'}
-                      </p>
-                      <p className="text-[9px] text-zinc-500 truncate">
-                        {draft.direction ? displayDirection(draft.direction) : 'Incomplete'}
-                      </p>
-                    </div>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} 
-                      className="text-zinc-600 hover:text-red-400 p-1" 
-                      disabled={isUploading}
-                    >
-                      <X size={12}/>
-                    </button>
+                  <div key={draft.id} onClick={() => setActiveIndex(idx)} className={`min-w-[150px] lg:min-w-0 p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-zinc-800 border-zinc-600' : 'bg-zinc-950 border-zinc-800/50 hover:bg-zinc-900'}`}>
+                    <div className="flex-1 min-w-0"><p className="text-xs font-bold truncate">{draft.instrument || 'UNKNOWN'}</p><p className="text-[9px] text-zinc-500 truncate">{draft.direction ? displayDirection(draft.direction) : 'Incomplete'}</p></div>
+                    <button onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} className="text-zinc-600 hover:text-red-400 p-1" disabled={isUploading}><X size={12}/></button>
                   </div>
                 ))}
               </div>
             </div>
-            
             <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
               {drafts.length > 0 && drafts[activeIndex] ? (
                 <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full text-white">
-                  
-                  <div 
-                    className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center mb-2 relative"
-                    onMouseDown={handlePeekStart} 
-                    onMouseUp={handlePeekEnd} 
-                    onMouseLeave={handlePeekEnd} 
-                    onTouchStart={handlePeekStart} 
-                    onTouchEnd={handlePeekEnd}
-                  >
-                    {drafts[activeIndex].imageSource ? (
-                      <img 
-                        src={drafts[activeIndex].imageSource!} 
-                        alt="Preview" 
-                        loading="eager" 
-                        decoding="async"
-                        className="w-full h-full object-contain p-2 cursor-pointer" 
-                        draggable={false} 
-                      />
-                    ) : (
-                      <ImageIcon className="w-10 h-10 text-zinc-700" />
-                    )}
+                  <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center mb-2 relative" onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}>
+                    {drafts[activeIndex].imageSource ? <img src={drafts[activeIndex].imageSource!} alt="Preview" loading="eager" decoding="async" className="w-full h-full object-contain p-2 cursor-pointer" draggable={false} /> : <ImageIcon className="w-10 h-10 text-zinc-700" />}
                   </div>
-                  
                   <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label><input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" disabled={isUploading}/></div>
                     <div className="flex flex-col gap-2">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
-                        Instrument Ticker
-                      </label>
-                      <input 
-                        type="text" 
-                        value={drafts[activeIndex].instrument} 
-                        onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} 
-                        placeholder="e.g. GBPUSD" 
-                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" 
-                        disabled={isUploading}
-                      />
-                    </div>
-                    
-                    <div className="flex flex-col gap-2">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
-                        Macro Bias
-                      </label>
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Macro Bias</label>
                       <div className="flex gap-2">
-                        <button 
-                          onClick={() => updateActiveDraft('direction', 'LONG')} 
-                          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}
-                        >
-                          {displayDirection('LONG')}
-                        </button>
-                        <button 
-                          onClick={() => updateActiveDraft('direction', 'SHORT')} 
-                          className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}
-                        >
-                          {displayDirection('SHORT')}
-                        </button>
+                        <button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>{displayDirection('LONG')}</button>
+                        <button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>{displayDirection('SHORT')}</button>
                       </div>
                     </div>
                   </div>
-                  
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
-                      Playbook & Catalysts
-                    </label>
-                    <select 
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          const currentNotes = drafts[activeIndex].notes;
-                          updateActiveDraft('notes', currentNotes ? `${currentNotes}\n[${e.target.value}]` : `[${e.target.value}]`);
-                          e.target.value = "";
-                        }
-                      }} 
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" 
-                      disabled={isUploading}
-                    >
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Playbook & Catalysts</label>
+                    <select onChange={(e) => { if (e.target.value) { const currentNotes = drafts[activeIndex].notes; updateActiveDraft('notes', currentNotes ? `${currentNotes}\n[${e.target.value}]` : `[${e.target.value}]`); e.target.value = ""; } }} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" disabled={isUploading}>
                       <option value="">Insert Tag...</option>
-                      <optgroup label="Playbooks">
-                        {PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}
-                      </optgroup>
-                      <optgroup label="Perfect Catalysts">
-                        {DEFAULT_PERFECT_CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}
-                      </optgroup>
+                      <optgroup label="Playbooks">{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</optgroup>
+                      <optgroup label="Perfect Catalysts">{DEFAULT_PERFECT_CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}</optgroup>
                     </select>
                   </div>
-                  
                   <div className="flex flex-col gap-2 flex-1 mt-2">
-                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
-                      Structural Thesis
-                    </label>
-                    <textarea 
-                      value={drafts[activeIndex].notes} 
-                      onChange={(e) => updateActiveDraft('notes', e.target.value)} 
-                      placeholder="Log structural bias, liquidity sweeps, or entry triggers..." 
-                      className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500 transition-colors resize-none custom-scrollbar" 
-                      disabled={isUploading}
-                    />
+                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label>
+                    <textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500 transition-colors resize-none custom-scrollbar" disabled={isUploading}/>
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 p-6">
-                  <UploadCloud size={40} className="mb-4 opacity-50" />
-                  <p className="text-sm font-medium text-center">
-                    Drag & Drop images anywhere<br/>
-                    <span className="text-[10px] opacity-70">or use Ctrl+V to paste a screenshot</span>
-                  </p>
-                </div>
+                <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 p-6"><UploadCloud size={40} className="mb-4 opacity-50" /><p className="text-sm font-medium text-center">Drag & Drop images anywhere<br/><span className="text-[10px] opacity-70">or use Ctrl+V to paste a screenshot</span></p></div>
               )}
             </div>
           </div>
-          
           <div className="p-4 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center shrink-0">
-            <span className="text-xs font-medium text-zinc-500">
-              {drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged
-            </span>
-            <button 
-              onClick={handleSaveAll} 
-              disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction) || isUploading} 
-              className="px-6 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500"
-            >
-              {isUploading ? 'Saving...' : 'Save to Vault'}
-            </button>
+            <span className="text-xs font-medium text-zinc-500">{drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged</span>
+            <button onClick={handleSaveAll} disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction) || isUploading} className="px-6 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500">{isUploading ? 'Saving...' : 'Save to Vault'}</button>
           </div>
         </div>
       </div>
-      
-      {/* 🚨 Peek Overlay for Upload Modal */}
       {isPeeking && drafts.length > 0 && drafts[activeIndex]?.imageSource && (
         <div className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 pointer-events-none animate-in fade-in duration-150">
-          <img 
-            src={drafts[activeIndex].imageSource!} 
-            alt="Peek" 
-            loading="eager" 
-            decoding="async"
-            className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" 
-          />
+          <img src={drafts[activeIndex].imageSource!} alt="Peek" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
         </div>
       )}
     </>
@@ -614,55 +374,22 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   const editor = useEditor({
     extensions: [StarterKit],
     content: activeSetup?.notes || '',
-    editorProps: { 
-      attributes: { 
-        class: 'flex-1 w-full bg-transparent border-none focus:outline-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar overflow-y-auto min-h-0' 
-      } 
-    },
-    onUpdate: ({ editor }) => { 
-      if (activeSetup) onUpdate(activeSetup.id, editor.getHTML()) 
-    },
+    editorProps: { attributes: { class: 'flex-1 w-full bg-transparent border-none focus:outline-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar overflow-y-auto min-h-0' } },
+    onUpdate: ({ editor }) => { if (activeSetup) onUpdate(activeSetup.id, editor.getHTML()) },
   })
 
-  useEffect(() => { 
-    if (editor && activeSetup && editor.getHTML() !== activeSetup.notes) {
-      editor.commands.setContent(activeSetup.notes || '') 
-    }
-  }, [activeSetup?.id, editor])
+  useEffect(() => { if (editor && activeSetup && editor.getHTML() !== activeSetup.notes) editor.commands.setContent(activeSetup.notes || '') }, [activeSetup?.id, editor])
 
-  if (!activeSetup) {
-    return (
-      <div className="w-full h-full flex items-center justify-center text-center">
-        <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
-          No active notes
-        </p>
-      </div>
-    );
-  }
+  if (!activeSetup) return <div className="w-full h-full flex items-center justify-center text-center"><p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p></div>;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden tiptap-wrapper">
       <div className="flex items-center gap-1 pb-2 mb-2 border-b border-zinc-800/60 shrink-0">
-        <button 
-          onClick={() => editor?.chain().focus().toggleBold().run()} 
-          className={`p-1.5 rounded transition-colors ${editor?.isActive('bold') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
-        >
-          <Bold size={14} />
-        </button>
-        <button 
-          onClick={() => editor?.chain().focus().toggleBulletList().run()} 
-          className={`p-1.5 rounded transition-colors ${editor?.isActive('bulletList') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}
-        >
-          <List size={14} />
-        </button>
+        <button onClick={() => editor?.chain().focus().toggleBold().run()} className={`p-1.5 rounded transition-colors ${editor?.isActive('bold') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}><Bold size={14} /></button>
+        <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={`p-1.5 rounded transition-colors ${editor?.isActive('bulletList') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}><List size={14} /></button>
       </div>
       <EditorContent editor={editor} className="flex-1 flex flex-col min-h-0 overflow-hidden" />
-      <style dangerouslySetInnerHTML={{__html: `
-        .tiptap-wrapper .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; } 
-        .tiptap-wrapper .ProseMirror li { margin-bottom: 0.25rem; } 
-        .tiptap-wrapper .ProseMirror b, .tiptap-wrapper .ProseMirror strong { color: #f4f4f5; font-weight: 800; } 
-        .tiptap-wrapper .ProseMirror p.is-editor-empty:first-child::before { content: "Type structural notes here..."; color: #52525b; float: left; height: 0; pointer-events: none; }
-      `}} />
+      <style dangerouslySetInnerHTML={{__html: `.tiptap-wrapper .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; } .tiptap-wrapper .ProseMirror li { margin-bottom: 0.25rem; } .tiptap-wrapper .ProseMirror b, .tiptap-wrapper .ProseMirror strong { color: #f4f4f5; font-weight: 800; } .tiptap-wrapper .ProseMirror p.is-editor-empty:first-child::before { content: "Type structural notes here..."; color: #52525b; float: left; height: 0; pointer-events: none; }`}} />
     </div>
   )
 }
@@ -671,23 +398,15 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
 function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: any, onSave: (id: string, outcome: string, rr: string, afterImageUrl: string, afterFile?: File | null) => void, user: any, displayDirection: (d: string | null | undefined) => string }) {
   const [outcome, setOutcome] = useState(trade.outcome || '')
   const [rr, setRr] = useState(trade.rr ? trade.rr.toString() : '')
-  
   const [afterInput, setAfterInput] = useState('') 
   const [afterFile, setAfterFile] = useState<File | null>(null)
   const [afterPreview, setAfterPreview] = useState<string | null>(null)
-  
   const [isSaving, setIsSaving] = useState(false)
   const [showHoldConfirm, setShowHoldConfirm] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => { 
-    setOutcome(trade.outcome || ''); 
-    setRr(trade.rr ? trade.rr.toString() : ''); 
-  }, [trade.outcome, trade.rr])
-
-  useEffect(() => {
-    setShowHoldConfirm(false);
-  }, [outcome])
+  useEffect(() => { setOutcome(trade.outcome || ''); setRr(trade.rr ? trade.rr.toString() : ''); }, [trade.outcome, trade.rr])
+  useEffect(() => { setShowHoldConfirm(false); }, [outcome])
 
   const handleWheel = (e: React.WheelEvent<HTMLSelectElement>) => {
     const outcomes = ['', 'TP', 'SL', 'BE', 'HOLD'];
@@ -699,10 +418,7 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setAfterFile(e.target.files[0]);
-      setAfterPreview(URL.createObjectURL(e.target.files[0]));
-    }
+    if (e.target.files && e.target.files[0]) { setAfterFile(e.target.files[0]); setAfterPreview(URL.createObjectURL(e.target.files[0])); }
   }
 
   const handlePaste = async () => {
@@ -712,9 +428,7 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
         if (item.types.includes('image/png') || item.types.includes('image/jpeg')) {
           const blob = await item.getType(item.types.find(t => t.startsWith('image/'))!);
           const file = new File([blob], "pasted-image.png", { type: blob.type });
-          setAfterFile(file);
-          setAfterPreview(URL.createObjectURL(blob));
-          return;
+          setAfterFile(file); setAfterPreview(URL.createObjectURL(blob)); return;
         }
       }
       const text = await navigator.clipboard.readText();
@@ -725,13 +439,7 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
     }
   }
 
-  const executeSave = async () => { 
-    setIsSaving(true); 
-    await onSave(trade.id, outcome, rr, afterInput, afterFile); 
-    setIsSaving(false); 
-    setShowHoldConfirm(false);
-  }
-  
+  const executeSave = async () => { setIsSaving(true); await onSave(trade.id, outcome, rr, afterInput, afterFile); setIsSaving(false); setShowHoldConfirm(false); }
   const isMt5Synced = trade.outcome && trade.rr !== undefined
 
   return (
@@ -739,96 +447,40 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
       <div className="flex justify-between items-center border-b border-zinc-800/50 pb-3">
         <div className="flex items-center gap-3">
           <span className="text-[13px] font-black text-white">{trade.symbol}</span>
-          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>
-            {displayDirection(trade.direction)}
-          </span>
-          {trade.reason && (
-            <span className="text-[10px] text-zinc-400 font-medium">• {trade.reason.replace(/\n/g, ', ')}</span>
-          )}
-          {isMt5Synced && (
-            <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded ml-2 flex items-center gap-1">
-              <DownloadCloud size={10}/> MT5 Synced
-            </span>
-          )}
+          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>{displayDirection(trade.direction)}</span>
+          {trade.reason && <span className="text-[10px] text-zinc-400 font-medium">• {trade.reason.replace(/\n/g, ', ')}</span>}
+          {isMt5Synced && <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded ml-2 flex items-center gap-1"><DownloadCloud size={10}/> MT5 Synced</span>}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-bold text-zinc-500 hidden sm:block">{trade.day}</span>
-          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
-            {trade.execution}
-          </span>
+          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{trade.execution}</span>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <select 
-          value={outcome} 
-          onChange={e => setOutcome(e.target.value)} 
-          onWheel={handleWheel}
-          className={`w-full sm:w-28 bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-blue-500 cursor-ns-resize`}
-          title="Scroll to change"
-        >
-          <option value="">Outcome</option>
-          <option value="TP">Hit TP</option>
-          <option value="SL">Hit SL</option>
-          <option value="BE">Break Even</option>
-          <option value="HOLD">Hold (Carry)</option>
+        <select value={outcome} onChange={e => setOutcome(e.target.value)} onWheel={handleWheel} className={`w-full sm:w-28 bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-blue-500 cursor-ns-resize`} title="Scroll to change">
+          <option value="">Outcome</option><option value="TP">Hit TP</option><option value="SL">Hit SL</option><option value="BE">Break Even</option><option value="HOLD">Hold (Carry)</option>
         </select>
         
-        {/* 🚨 This hides the RR and Image inputs if the HOLD warning is active */}
         {!showHoldConfirm && (
           <>
             <div className="relative w-full sm:w-24 shrink-0">
-              <input 
-                type="number" 
-                value={rr} 
-                onChange={e => setRr(e.target.value)} 
-                placeholder="0.0" 
-                className={`w-full bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-blue-500`} 
-              />
+              <input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className={`w-full bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-blue-500`} />
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase">RR</span>
             </div>
-
             <div className="relative flex-1 flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1 pr-2 focus-within:border-blue-500 transition-all min-w-0">
                {afterPreview ? (
                  <div className="flex-1 flex items-center gap-2 pl-2 overflow-hidden">
-                   <img 
-                     src={afterPreview} 
-                     loading="eager" 
-                     decoding="async"
-                     className="h-6 w-6 object-cover rounded border border-zinc-700 shrink-0" 
-                   />
+                   <img src={afterPreview} loading="eager" decoding="async" className="h-6 w-6 object-cover rounded border border-zinc-700 shrink-0" />
                    <span className="text-[10px] font-bold text-zinc-400 truncate tracking-widest uppercase">Image Attached</span>
-                   <button 
-                     onClick={() => { setAfterFile(null); setAfterPreview(null); }} 
-                     className="ml-auto text-zinc-500 hover:text-red-400 p-1"
-                   >
-                     <X size={12}/>
-                   </button>
+                   <button onClick={() => { setAfterFile(null); setAfterPreview(null); }} className="ml-auto text-zinc-500 hover:text-red-400 p-1"><X size={12}/></button>
                  </div>
                ) : (
                  <>
                    <LinkIcon size={12} className="text-zinc-500 ml-2 shrink-0" />
-                   <input 
-                     type="text" 
-                     value={afterInput} 
-                     onChange={e => setAfterInput(e.target.value)} 
-                     placeholder="TV URL or Paste Image..." 
-                     className="w-full bg-transparent border-none text-[10px] font-bold text-zinc-300 outline-none placeholder:text-zinc-600 px-2" 
-                   />
-                   <button 
-                     onClick={handlePaste} 
-                     className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" 
-                     title="Paste URL or Image"
-                   >
-                     <Clipboard size={12}/>
-                   </button>
-                   <button 
-                     onClick={() => fileInputRef.current?.click()} 
-                     className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" 
-                     title="Upload Image"
-                   >
-                     <ImageIcon size={12}/>
-                   </button>
+                   <input type="text" value={afterInput} onChange={e => setAfterInput(e.target.value)} placeholder="TV URL or Paste Image..." className="w-full bg-transparent border-none text-[10px] font-bold text-zinc-300 outline-none placeholder:text-zinc-600 px-2" />
+                   <button onClick={handlePaste} className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" title="Paste URL or Image"><Clipboard size={12}/></button>
+                   <button onClick={() => fileInputRef.current?.click()} className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" title="Upload Image"><ImageIcon size={12}/></button>
                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                  </>
                )}
@@ -836,28 +488,15 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
           </>
         )}
 
-        {/* 🚨 HOLD CONFIRMATION UI - FIXED FLEXBOX COLLAPSE */}
         {showHoldConfirm ? (
           <div className="flex items-center justify-end gap-2 w-full sm:w-auto flex-1 animate-in fade-in zoom-in-95 duration-200">
-            <span className="text-[10px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden lg:block truncate">
-              Holding or avoiding loss?
-            </span>
-            <button onClick={() => setShowHoldConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors whitespace-nowrap shrink-0">
-              Cancel
-            </button>
-            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)] whitespace-nowrap shrink-0">
-              {isSaving ? '...' : 'Confirm'}
-            </button>
+            <span className="text-[10px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden lg:block truncate">Holding or avoiding loss?</span>
+            <button onClick={() => setShowHoldConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors whitespace-nowrap shrink-0">Cancel</button>
+            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)] whitespace-nowrap shrink-0">{isSaving ? '...' : 'Confirm'}</button>
           </div>
         ) : (
           <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
-            <button 
-              disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} 
-              onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} 
-              className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors shrink-0 whitespace-nowrap"
-            >
-              {isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}
-            </button>
+            <button disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors shrink-0 whitespace-nowrap">{isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}</button>
           </div>
         )}
       </div>
@@ -872,98 +511,78 @@ function CatalystSettingsModal({ isOpen, onClose, perfect, setPerfect, imperfect
 
   if (!isOpen) return null
 
-  const addPerfect = () => {
-    if (newPerfect.trim() && !perfect.includes(newPerfect.trim())) {
-      setPerfect([...perfect, newPerfect.trim()]);
-      setNewPerfect('');
-    }
-  }
-  
-  const addImperfect = () => {
-    if (newImperfect.trim() && !imperfect.includes(newImperfect.trim())) {
-      setImperfect([...imperfect, newImperfect.trim()]);
-      setNewImperfect('');
-    }
-  }
+  const addPerfect = () => { if (newPerfect.trim() && !perfect.includes(newPerfect.trim())) { setPerfect([...perfect, newPerfect.trim()]); setNewPerfect(''); } }
+  const addImperfect = () => { if (newImperfect.trim() && !imperfect.includes(newImperfect.trim())) { setImperfect([...imperfect, newImperfect.trim()]); setNewImperfect(''); } }
 
   return (
     <div className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-zinc-950 border border-zinc-800 rounded-xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-          <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
-            <Settings size={16} className="text-zinc-400" /> Catalyst Settings
-          </h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white">
-            <X size={18} />
-          </button>
+          <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2"><Settings size={16} className="text-zinc-400" /> Catalyst Settings</h2>
+          <button onClick={onClose} className="text-zinc-500 hover:text-white"><X size={18} /></button>
         </div>
         <div className="p-6 flex flex-col gap-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
-          
           <div>
-            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3 border-b border-emerald-500/20 pb-1">
-              Perfect Execution Catalysts
-            </h3>
+            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3 border-b border-emerald-500/20 pb-1">Perfect Execution Catalysts</h3>
             <div className="flex gap-2 mb-3">
-              <input 
-                type="text" 
-                value={newPerfect} 
-                onChange={e => setNewPerfect(e.target.value)} 
-                onKeyDown={e => e.key === 'Enter' && addPerfect()} 
-                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-emerald-500 transition-colors" 
-                placeholder="Add new catalyst..." 
-              />
-              <button onClick={addPerfect} className="px-3 bg-emerald-600 hover:bg-emerald-500 rounded text-white transition-colors">
-                <Plus size={14}/>
-              </button>
+              <input type="text" value={newPerfect} onChange={e => setNewPerfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPerfect()} className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-emerald-500 transition-colors" placeholder="Add new catalyst..." />
+              <button onClick={addPerfect} className="px-3 bg-emerald-600 hover:bg-emerald-500 rounded text-white transition-colors"><Plus size={14}/></button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {perfect.map((c: string) => (
-                <span key={c} className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded flex items-center gap-1.5">
-                  {c} 
-                  <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setPerfect(perfect.filter((item: string) => item !== c))}/>
-                </span>
-              ))}
-            </div>
+            <div className="flex flex-wrap gap-2">{perfect.map((c: string) => (<span key={c} className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded flex items-center gap-1.5">{c} <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setPerfect(perfect.filter((item: string) => item !== c))}/></span>))}</div>
           </div>
-          
           <div>
-            <h3 className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3 border-b border-red-500/20 pb-1">
-              Imperfect Execution Catalysts
-            </h3>
+            <h3 className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3 border-b border-red-500/20 pb-1">Imperfect Execution Catalysts</h3>
             <div className="flex gap-2 mb-3">
-              <input 
-                type="text" 
-                value={newImperfect} 
-                onChange={e => setNewImperfect(e.target.value)} 
-                onKeyDown={e => e.key === 'Enter' && addImperfect()} 
-                className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-red-500 transition-colors" 
-                placeholder="Add new catalyst..." 
-              />
-              <button onClick={addImperfect} className="px-3 bg-red-600 hover:bg-red-500 rounded text-white transition-colors">
-                <Plus size={14}/>
-              </button>
+              <input type="text" value={newImperfect} onChange={e => setNewImperfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addImperfect()} className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-red-500 transition-colors" placeholder="Add new catalyst..." />
+              <button onClick={addImperfect} className="px-3 bg-red-600 hover:bg-red-500 rounded text-white transition-colors"><Plus size={14}/></button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {imperfect.map((c: string) => (
-                <span key={c} className="text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded flex items-center gap-1.5">
-                  {c} 
-                  <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setImperfect(imperfect.filter((item: string) => item !== c))}/>
-                </span>
-              ))}
-            </div>
+            <div className="flex flex-wrap gap-2">{imperfect.map((c: string) => (<span key={c} className="text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded flex items-center gap-1.5">{c} <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setImperfect(imperfect.filter((item: string) => item !== c))}/></span>))}</div>
           </div>
-
         </div>
       </div>
     </div>
   )
 }
 
+// --- DUMMY DATA FOR DEMO TIER ---
+const DEMO_SETUPS = [
+  {
+    id: 'demo-1', symbol: 'BTCUSD', direction: 'LONG', playbook: 'Liquidity Sweep',
+    notes: '<p><b>Macro:</b> Bullish market structure. Price swept Asian session lows.</p><p><b>Trigger:</b> Waiting for 15m CHoCH.</p>',
+    imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+    isToday: true
+  },
+  {
+    id: 'demo-2', symbol: 'EURUSD', direction: 'SHORT', playbook: 'Trend Continuation',
+    notes: '<p>Standard premium supply mitigation. DXY is strong.</p>',
+    imageUrl: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
+    isToday: true
+  },
+  {
+    id: 'demo-3', symbol: 'XAUUSD', direction: 'LONG', playbook: 'Range Play',
+    notes: '<p>Gold ranging between 2300 and 2350. Buying the discount.</p>',
+    imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+    isToday: false
+  }
+];
+
+const DEMO_LOGS = [
+  {
+    id: 'log-1',
+    symbol: 'GBPUSD',
+    direction: 'SHORT',
+    reason: '[Perfect Risk Management]\nFollowed all rules.',
+    execution_type: 'Perfect',
+    rr: '', outcome: ''
+  }
+];
+
+
 // --- MAIN DESK CLIENT ---
 export default function DeskClient() {
   
   // 🚨 1. ALL USESTATE HOOKS FIRST
-  const [isPro, setIsPro] = useState<boolean>(true) // Assume pro until tier check confirms demo
+  const [isPro, setIsPro] = useState<boolean>(true) 
   const [user, setUser] = useState<any>(null)
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
@@ -1082,9 +701,7 @@ export default function DeskClient() {
     fetchTime();
   }, []);
 
-  useEffect(() => {
-    setWeeklyDebrief(localStorage.getItem(debriefKey) || ''); 
-  }, [debriefKey]);
+  useEffect(() => { setWeeklyDebrief(localStorage.getItem(debriefKey) || ''); }, [debriefKey]);
 
   useEffect(() => {
     const handleResize = () => setIsVaultOpen(window.innerWidth >= 1024);
@@ -1106,18 +723,15 @@ export default function DeskClient() {
   useEffect(() => {
     const syncCatalysts = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
+      if (user && isPro) {
         await supabase.auth.updateUser({
-          data: {
-            desk_perfect_catalysts: perfectCatalysts,
-            desk_imperfect_catalysts: imperfectCatalysts
-          }
+          data: { desk_perfect_catalysts: perfectCatalysts, desk_imperfect_catalysts: imperfectCatalysts }
         })
       }
     }
     const timeoutId = setTimeout(syncCatalysts, 2000)
     return () => clearTimeout(timeoutId)
-  }, [perfectCatalysts, imperfectCatalysts])
+  }, [perfectCatalysts, imperfectCatalysts, isPro])
 
   useEffect(() => {
     const initData = async () => {
@@ -1127,47 +741,42 @@ export default function DeskClient() {
       
       setUser(user)
 
-      // 🚨 CLIENT-SIDE PRO TIER GATING
+      // 🚨 TIER CHECK
       const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single();
       const isProUser = profile?.plan === 'pro' || profile?.plan === 'premium';
       setIsPro(isProUser);
 
-      // Halt data fetching entirely if the user is on the demo tier
+      if (user.user_metadata?.trade_terminology) setTerminology(user.user_metadata.trade_terminology);
+      if (user.user_metadata?.desk_perfect_catalysts) setPerfectCatalysts(user.user_metadata.desk_perfect_catalysts);
+      else { const saved = localStorage.getItem('desk_perfect_catalysts'); if (saved) setPerfectCatalysts(JSON.parse(saved)); }
+      if (user.user_metadata?.desk_imperfect_catalysts) setImperfectCatalysts(user.user_metadata.desk_imperfect_catalysts);
+      else { const saved = localStorage.getItem('desk_imperfect_catalysts'); if (saved) setImperfectCatalysts(JSON.parse(saved)); }
+
+      // 🚨 MOCK DATA INJECTION FOR DEMO USERS
       if (!isProUser) {
-         return; 
-      }
-
-      if (user.user_metadata?.trade_terminology) {
-        setTerminology(user.user_metadata.trade_terminology);
-      }
-
-      if (user.user_metadata?.desk_perfect_catalysts) {
-        setPerfectCatalysts(user.user_metadata.desk_perfect_catalysts);
-      } else {
-        const savedPerfect = localStorage.getItem('desk_perfect_catalysts');
-        if (savedPerfect) setPerfectCatalysts(JSON.parse(savedPerfect));
-      }
-      
-      if (user.user_metadata?.desk_imperfect_catalysts) {
-        setImperfectCatalysts(user.user_metadata.desk_imperfect_catalysts);
-      } else {
-        const savedImperfect = localStorage.getItem('desk_imperfect_catalysts');
-        if (savedImperfect) setImperfectCatalysts(JSON.parse(savedImperfect));
+         const demoNow = Date.now();
+         setSetups(DEMO_SETUPS.map(s => ({
+            ...s, 
+            addedToTodayAt: s.isToday ? demoNow - 100000 : null, 
+            createdAt: demoNow 
+         })));
+         
+         const demoDay = new Date(demoNow).toLocaleDateString('en-US', { weekday: 'short' });
+         setPendingReconciliation(DEMO_LOGS.map(l => ({
+            ...l, day: demoDay, created_at: new Date(demoNow).toISOString()
+         })));
+         setExecutedSymbols(['GBPUSD']);
+         setTradesTakenToday(1);
+         return; // Skip real database fetching
       }
 
       const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       
       if (logsData) {
         setPendingReconciliation(logsData.filter(d => !d.is_reconciled || d.outcome === 'HOLD').map(d => ({ 
-          id: d.id, 
-          day: adjustDbToIST(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
-          symbol: d.symbol, 
-          direction: d.direction, 
-          reason: d.reason,
-          execution: d.execution_type, 
-          rr: d.rr, 
-          outcome: d.outcome, 
-          created_at: d.created_at 
+          id: d.id, day: adjustDbToIST(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
+          symbol: d.symbol, direction: d.direction, reason: d.reason, execution: d.execution_type, 
+          rr: d.rr, outcome: d.outcome, created_at: d.created_at 
         })))
         
         const todayStr = getISTDate().toDateString()
@@ -1180,10 +789,7 @@ export default function DeskClient() {
         initStartOfWeek.setDate(initDiffToMon);
         initStartOfWeek.setHours(0, 0, 0, 0);
         
-        const executedThisWeek = logsData
-          .filter(l => adjustDbToIST(l.created_at).getTime() >= initStartOfWeek.getTime())
-          .map(l => l.symbol)
-        
+        const executedThisWeek = logsData.filter(l => adjustDbToIST(l.created_at).getTime() >= initStartOfWeek.getTime()).map(l => l.symbol)
         setExecutedSymbols(executedThisWeek)
       }
 
@@ -1200,14 +806,8 @@ export default function DeskClient() {
         }
 
         setSetups(setupsData.map(d => ({ 
-          id: d.id, 
-          symbol: d.symbol, 
-          direction: d.direction, 
-          playbook: d.playbook, 
-          notes: d.notes, 
-          imageUrl: d.image_url, 
-          isToday: d.is_today, 
-          addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null,
+          id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, 
+          imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null,
           createdAt: adjustDbToIST(d.created_at).getTime()
         })))
       }
@@ -1219,64 +819,47 @@ export default function DeskClient() {
     const checkMidnightWipe = setInterval(() => {
       const todayStr = getTrueUTC().toDateString();
       const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() !== todayStr);
-      
-      if (hasStaleSetups) {
-        window.location.reload();
-      }
+      if (hasStaleSetups) window.location.reload();
     }, 60000); 
-    
     return () => clearInterval(checkMidnightWipe);
   }, [setups, getTrueUTC]);
 
   useEffect(() => {
-    if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
-      setActiveTodayId(todaySetups[0].id)
-    } else if (todaySetups.length === 0) { 
-      setActiveTodayId(null); 
-      if(logPair) {
-        setLogPair(''); 
-        setLogSetupId(null);
-      }
-    }
+    if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) setActiveTodayId(todaySetups[0].id)
+    else if (todaySetups.length === 0) { setActiveTodayId(null); if(logPair) { setLogPair(''); setLogSetupId(null); } }
   }, [todaySetups.length, activeTodayId])
 
   const handleLockEntry = useCallback(async () => {
     if (tradesTakenToday < 2 && logPair && logDirection && logExecution && user) {
-      const newLog = { 
-        user_id: user.id, 
-        symbol: logPair, 
-        direction: logDirection, 
-        reason: logCatalystText || null, 
-        execution_type: logExecution,
-        setup_id: logSetupId 
+      // 🚨 DEMO TIER DB INTERCEPT
+      if (!isPro) {
+        setTradesTakenToday(prev => prev + 1);
+        const spoofedNow = getISTDate();
+        setPendingReconciliation(prev => [{ 
+          id: 'demo-log-' + Date.now(), day: spoofedNow.toLocaleDateString('en-US', { weekday: 'short' }), 
+          symbol: logPair, direction: logDirection, reason: logCatalystText || null, execution: logExecution, 
+          rr: '', outcome: '', created_at: spoofedNow.toISOString() 
+        }, ...prev]);
+        setExecutedSymbols(prev => [...prev, logPair]);
+        setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); setLogSetupId(null); setIsAuditOpen(false); 
+        return;
       }
+
+      const newLog = { user_id: user.id, symbol: logPair, direction: logDirection, reason: logCatalystText || null, execution_type: logExecution, setup_id: logSetupId }
       const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
       if (data && data[0]) {
         setTradesTakenToday(prev => prev + 1);
-        
         const spoofedNow = getISTDate();
         setPendingReconciliation(prev => [{ 
-          id: data[0].id, 
-          day: spoofedNow.toLocaleDateString('en-US', { weekday: 'short' }), 
-          symbol: data[0].symbol, 
-          direction: data[0].direction, 
-          reason: data[0].reason, 
-          execution: data[0].execution_type, 
-          rr: '', 
-          outcome: '', 
-          created_at: data[0].created_at 
+          id: data[0].id, day: spoofedNow.toLocaleDateString('en-US', { weekday: 'short' }), 
+          symbol: data[0].symbol, direction: data[0].direction, reason: data[0].reason, execution: data[0].execution_type, 
+          rr: '', outcome: '', created_at: data[0].created_at 
         }, ...prev]);
-        
         setExecutedSymbols(prev => [...prev, data[0].symbol]);
       }
-      setLogPair(''); 
-      setLogDirection(null); 
-      setLogCatalystText(''); 
-      setLogExecution(null); 
-      setLogSetupId(null);
-      setIsAuditOpen(false); 
+      setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); setLogSetupId(null); setIsAuditOpen(false); 
     }
-  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, logSetupId, user, getISTDate]);
+  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, logSetupId, user, getISTDate, isPro]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -1284,55 +867,23 @@ export default function DeskClient() {
 
       if (e.code === 'Escape') {
         e.preventDefault();
-        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') {
-          target.blur();
-        }
-        setIsFullScreen(false); 
-        setConfirmPushId(null); 
-        setIsUploadModalOpen(false); 
-        setIsMT5ModalOpen(false); 
-        setIsVaultOpen(false); 
-        setIsAuditOpen(false);
-        setIsCatalystSettingsOpen(false);
-        setIsMobileNotesOpen(false);
-        setPreviewSetup(null);
+        if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') target.blur();
+        setIsFullScreen(false); setConfirmPushId(null); setIsUploadModalOpen(false); setIsMT5ModalOpen(false); 
+        setIsVaultOpen(false); setIsAuditOpen(false); setIsCatalystSettingsOpen(false); setIsMobileNotesOpen(false); setPreviewSetup(null);
         return; 
       }
 
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable || target.tagName === 'SELECT') return;
       if (isCatalystSettingsOpen || isMobileNotesOpen || previewSetup) return;
 
-      if (e.code === 'KeyV' && e.altKey) { 
-        e.preventDefault(); 
-        if (isPro && !isVaultLocked) setIsUploadModalOpen(true); 
-        return; 
-      }
-
-      if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) { 
-        e.preventDefault(); 
-        setIsVaultOpen(prev => !prev); 
-      }
-
-      if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) { 
-        e.preventDefault(); 
-        setIsAuditOpen(prev => !prev); 
-      }
+      if (e.code === 'KeyV' && e.altKey) { e.preventDefault(); if (!isVaultLocked) setIsUploadModalOpen(true); return; }
+      if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setIsVaultOpen(prev => !prev); }
+      if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setIsAuditOpen(prev => !prev); }
 
       if (logPair && !isAlreadyLogged && tradesTakenToday < 2) {
-        if (e.code === 'Digit1' || e.code === 'Numpad1') { 
-          e.preventDefault(); 
-          setLogExecution('Perfect'); 
-        }
-        if (e.code === 'Digit2' || e.code === 'Numpad2') { 
-          e.preventDefault(); 
-          setLogExecution('Imperfect'); 
-        }
-        if (e.code === 'Enter' || e.code === 'NumpadEnter') {
-          if (logDirection && logExecution) { 
-            e.preventDefault(); 
-            handleLockEntry();
-          }
-        }
+        if (e.code === 'Digit1' || e.code === 'Numpad1') { e.preventDefault(); setLogExecution('Perfect'); }
+        if (e.code === 'Digit2' || e.code === 'Numpad2') { e.preventDefault(); setLogExecution('Imperfect'); }
+        if (e.code === 'Enter' || e.code === 'NumpadEnter') { if (logDirection && logExecution) { e.preventDefault(); handleLockEntry(); } }
       }
 
       if (todaySetups.length === 0) return;
@@ -1341,40 +892,31 @@ export default function DeskClient() {
         e.preventDefault(); 
         const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
         if (currentIndex === -1) return;
-        if (e.shiftKey) {
-          const prevIndex = (currentIndex - 1 + todaySetups.length) % todaySetups.length;
-          setActiveTodayId(todaySetups[prevIndex].id);
-        } else {
-          const nextIndex = (currentIndex + 1) % todaySetups.length;
-          setActiveTodayId(todaySetups[nextIndex].id);
-        }
+        if (e.shiftKey) { const prevIndex = (currentIndex - 1 + todaySetups.length) % todaySetups.length; setActiveTodayId(todaySetups[prevIndex].id); } 
+        else { const nextIndex = (currentIndex + 1) % todaySetups.length; setActiveTodayId(todaySetups[nextIndex].id); }
       }
     };
-
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, isMobileNotesOpen, isVaultLocked, handleLockEntry, previewSetup, isPro]);
+  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, isMobileNotesOpen, isVaultLocked, handleLockEntry, previewSetup]);
 
   useEffect(() => {
-    if (activeSetup && user) {
+    if (activeSetup && user && isPro) {
       const timeoutId = setTimeout(() => supabase.from('user_desk_setups').update({ notes: activeSetup.notes }).eq('id', activeSetup.id).then(), 1500)
       return () => clearTimeout(timeoutId)
     }
-  }, [setups, activeTodayId, user])
+  }, [setups, activeTodayId, user, isPro])
 
 
   // 🚨 4. EVENT HANDLERS
-  const handleDebriefChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setWeeklyDebrief(e.target.value);
-    localStorage.setItem(debriefKey, e.target.value);
-  };
+  const handleDebriefChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => { setWeeklyDebrief(e.target.value); localStorage.setItem(debriefKey, e.target.value); };
 
   const handleConfirmPush = async () => {
     if(confirmPushId && user) {
       const trueUtcNow = getTrueUTC();
       setSetups(prev => prev.map(s => s.id === confirmPushId ? { ...s, isToday: true, addedToTodayAt: trueUtcNow.getTime() } : s))
       setConfirmPushId(null)
-      await supabase.from('user_desk_setups').update({ is_today: true, added_to_today_at: trueUtcNow.toISOString() }).eq('id', confirmPushId)
+      if (isPro) await supabase.from('user_desk_setups').update({ is_today: true, added_to_today_at: trueUtcNow.toISOString() }).eq('id', confirmPushId)
     }
   }
 
@@ -1383,129 +925,98 @@ export default function DeskClient() {
     const setup = setups.find(s => s.id === id)
     if (!setup) return
     setSetups(prev => prev.map(s => s.id === id ? { ...s, isToday: !s.isToday, addedToTodayAt: null } : s))
-    await supabase.from('user_desk_setups').update({ is_today: !setup.isToday, added_to_today_at: null }).eq('id', id)
+    if (isPro) await supabase.from('user_desk_setups').update({ is_today: !setup.isToday, added_to_today_at: null }).eq('id', id)
   }
 
   const deleteSetup = async (id: string) => {
     if (!user) return
     const setupToDelete = setups.find(s => s.id === id);
-    if (setupToDelete && setupToDelete.imageUrl && setupToDelete.imageUrl.includes('supabase')) {
-        const match = setupToDelete.imageUrl.match(/user-desk-images\/(.+)$/);
-        if (match && match[1]) {
-           const cleanPath = match[1].split('?')[0]; 
-           await supabase.storage.from('user-desk-images').remove([cleanPath]);
-        }
-    }
     setSetups(prev => prev.filter(s => s.id !== id))
-    await supabase.from('user_desk_setups').delete().eq('id', id)
+    
+    if (isPro) {
+      if (setupToDelete && setupToDelete.imageUrl && setupToDelete.imageUrl.includes('supabase')) {
+          const match = setupToDelete.imageUrl.match(/user-desk-images\/(.+)$/);
+          if (match && match[1]) { const cleanPath = match[1].split('?')[0]; await supabase.storage.from('user-desk-images').remove([cleanPath]); }
+      }
+      await supabase.from('user_desk_setups').delete().eq('id', id)
+    }
   }
 
   const handleBulkUpload = async (draftsToSave: any[]) => {
     if (!user) return alert("Authentication Error: No active user session found.")
     
+    // 🚨 DEMO TIER DB INTERCEPT
+    if (!isPro) {
+       const newFakeSetups = draftsToSave.map(draft => ({
+          id: 'demo-' + Math.random(),
+          symbol: draft.instrument,
+          direction: draft.direction,
+          playbook: draft.playbook,
+          notes: draft.notes,
+          imageUrl: draft.imageSource || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+          isToday: false,
+          addedToTodayAt: null,
+          createdAt: Date.now()
+       }));
+       setSetups(prev => [...newFakeSetups, ...prev]);
+       return;
+    }
+
     const uploadPromises = draftsToSave.map(async (draft) => {
       let finalImageUrl = draft.imageSource;
       if (draft.file) {
         const { data } = await supabase.storage.from('user-desk-images').upload(`${user.id}/${Math.random()}.${draft.file.name.split('.').pop()}`, draft.file);
         if (data) finalImageUrl = supabase.storage.from('user-desk-images').getPublicUrl(data.path).data.publicUrl;
-      } else if (finalImageUrl && finalImageUrl.startsWith('blob:')) {
-        finalImageUrl = null;
-      }
+      } else if (finalImageUrl && finalImageUrl.startsWith('blob:')) { finalImageUrl = null; }
       
-      return { 
-        user_id: user.id, 
-        symbol: draft.instrument, 
-        direction: draft.direction, 
-        playbook: draft.playbook, 
-        notes: draft.notes, 
-        image_url: finalImageUrl, 
-        is_today: false 
-      };
+      return { user_id: user.id, symbol: draft.instrument, direction: draft.direction, playbook: draft.playbook, notes: draft.notes, image_url: finalImageUrl, is_today: false };
     });
 
     const newSetupsPayload = await Promise.all(uploadPromises);
-
     const { data } = await supabase.from('user_desk_setups').insert(newSetupsPayload).select();
     if (data) {
       setSetups(prev => [...data.map(d => ({ 
-        id: d.id, 
-        symbol: d.symbol, 
-        direction: d.direction, 
-        playbook: d.playbook, 
-        notes: d.notes, 
-        imageUrl: d.image_url, 
-        isToday: false, 
-        addedToTodayAt: null,
-        createdAt: adjustDbToIST(d.created_at).getTime()
+        id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, 
+        imageUrl: d.image_url, isToday: false, addedToTodayAt: null, createdAt: adjustDbToIST(d.created_at).getTime()
       })), ...prev]);
     }
   }
 
   const handleSaveReconciliation = async (id: string, outcome: string, rr: string, afterUrl: string, afterFile?: File | null) => {
     if (!user) return
-    
-    let finalUrl = afterUrl;
-    if (afterFile) {
-      const { data } = await supabase.storage.from('user-desk-images').upload(`${user.id}/after_${Math.random()}.${afterFile.name.split('.').pop()}`, afterFile)
-      if (data) {
-        finalUrl = supabase.storage.from('user-desk-images').getPublicUrl(data.path).data.publicUrl
-      }
-    }
-
     const isReconciled = outcome !== 'HOLD';
-    const updateData: any = { is_reconciled: isReconciled, outcome, rr: parseFloat(rr) || null, after_image_url: finalUrl || null }
     
-    if (isReconciled) {
-      setPendingReconciliation(prev => prev.filter(p => p.id !== id))
-    } else {
-      setPendingReconciliation(prev => prev.map(p => p.id === id ? { ...p, outcome: 'HOLD' } : p))
+    if (isReconciled) setPendingReconciliation(prev => prev.filter(p => p.id !== id))
+    else setPendingReconciliation(prev => prev.map(p => p.id === id ? { ...p, outcome: 'HOLD' } : p))
+
+    if (isPro) {
+      let finalUrl = afterUrl;
+      if (afterFile) {
+        const { data } = await supabase.storage.from('user-desk-images').upload(`${user.id}/after_${Math.random()}.${afterFile.name.split('.').pop()}`, afterFile)
+        if (data) finalUrl = supabase.storage.from('user-desk-images').getPublicUrl(data.path).data.publicUrl
+      }
+      const updateData: any = { is_reconciled: isReconciled, outcome, rr: parseFloat(rr) || null, after_image_url: finalUrl || null }
+      await supabase.from('user_desk_logs').update(updateData).eq('id', id)
     }
-
-    await supabase.from('user_desk_logs').update(updateData).eq('id', id)
   }
 
-  const handleMT5Drop = (e: React.DragEvent) => { 
-    e.preventDefault(); 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) { 
-      setMt5File(e.dataTransfer.files[0]); 
-      setIsMT5ModalOpen(true); 
-    } 
-  }
-  
-  const handleMT5Select = (e: React.ChangeEvent<HTMLInputElement>) => { 
-    if (e.target.files && e.target.files[0]) { 
-      setMt5File(e.target.files[0]); 
-      setIsMT5ModalOpen(true); 
-    } 
-    if (mt5InputRef.current) mt5InputRef.current.value = '' 
-  }
-
+  const handleMT5Drop = (e: React.DragEvent) => { e.preventDefault(); if (e.dataTransfer.files && e.dataTransfer.files[0]) { setMt5File(e.dataTransfer.files[0]); setIsMT5ModalOpen(true); } }
+  const handleMT5Select = (e: React.ChangeEvent<HTMLInputElement>) => { if (e.target.files && e.target.files[0]) { setMt5File(e.target.files[0]); setIsMT5ModalOpen(true); } if (mt5InputRef.current) mt5InputRef.current.value = '' }
   const handleMT5Confirm = (matches: any[]) => {
     setPendingReconciliation(prev => prev.map(log => {
       const matchObj = matches.find(m => m.log.id === log.id)?.match
       if (matchObj) return { ...log, outcome: matchObj.outcome, rr: matchObj.rr }
       return log
     }))
-    matches.forEach(async m => {
-      if (m.match) {
-        await supabase.from('user_desk_logs').update({ 
-          mt5_position_id: m.match.ticket, 
-          outcome: m.match.outcome, 
-          rr: m.match.rr 
-        }).eq('id', m.log.id)
-      }
-    })
+    if (isPro) {
+      matches.forEach(async m => {
+        if (m.match) await supabase.from('user_desk_logs').update({ mt5_position_id: m.match.ticket, outcome: m.match.outcome, rr: m.match.rr }).eq('id', m.log.id)
+      })
+    }
   }
 
-  const handlePeekStart = () => {
-    if (chartScale !== 1) return; 
-    peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
-  };
-
-  const handlePeekEnd = () => {
-    if (peekTimer.current) clearTimeout(peekTimer.current);
-    setIsPeeking(false);
-  };
+  const handlePeekStart = () => { if (chartScale !== 1) return; peekTimer.current = setTimeout(() => setIsPeeking(true), 400); };
+  const handlePeekEnd = () => { if (peekTimer.current) clearTimeout(peekTimer.current); setIsPeeking(false); };
 
   return (
     <>
@@ -1528,6 +1039,11 @@ export default function DeskClient() {
                 <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-black border border-zinc-800 px-2 py-0.5 rounded shadow-inner">
                   {todaySetups.length} Pairs Locked
                 </span>
+                {!isPro && (
+                  <span className="hidden md:inline-block text-[9px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded tracking-widest uppercase">
+                    Sandbox Mode
+                  </span>
+                )}
               </div>
               <button 
                 onClick={() => setIsVaultOpen(!isVaultOpen)} 
@@ -1540,12 +1056,7 @@ export default function DeskClient() {
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
               
               <div className="order-2 lg:order-1 w-full lg:w-56 shrink-0 flex-1 lg:flex-none border-t lg:border-t-0 lg:border-r border-zinc-800 flex flex-col bg-zinc-950/50 overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white relative">
-                {!isPro ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
-                    <Lock size={20} className="mb-2 opacity-50 stroke-1 text-blue-500/40" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Focus Locked</span>
-                  </div>
-                ) : todaySetups.length === 0 ? (
+                {todaySetups.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
                     <Target size={20} className="mb-2 opacity-50" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
@@ -1598,15 +1109,7 @@ export default function DeskClient() {
                 className="order-1 lg:order-2 w-full flex-[1.5] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group"
                 onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}
               >
-                {!isPro ? (
-                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#030303]/80 backdrop-blur-[3px] m-2 rounded-2xl border border-white/[0.02]">
-                    <div className="flex flex-col items-center text-center p-8 bg-[#0a0a0a] rounded-2xl border border-white/[0.04] shadow-2xl">
-                      <Lock className="w-10 h-10 text-blue-500/40 mb-4 stroke-1" />
-                      <h3 className="text-sm font-bold tracking-widest text-white uppercase mb-2">Operator Desk Locked</h3>
-                      <p className="text-xs text-neutral-400 max-w-[260px] leading-relaxed">Upgrade to Professional to stage setups, write macro thesis, and enforce execution discipline.</p>
-                    </div>
-                  </div>
-                ) : activeSetup?.imageUrl ? (
+                {activeSetup?.imageUrl ? (
                   <>
                     <TransformWrapper
                       key={activeSetup.id}
@@ -1643,12 +1146,6 @@ export default function DeskClient() {
 
               <div className="hidden lg:flex order-3 w-full lg:w-80 shrink-0 flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
                 <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0 relative">
-                  {!isPro && (
-                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm rounded-xl">
-                       <Lock className="w-6 h-6 text-zinc-600 mb-2 stroke-1" />
-                       <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Notes Locked</span>
-                    </div>
-                  )}
                   <RichNotesEditor activeSetup={activeSetup} onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} />
                 </div>
               </div>
@@ -1683,12 +1180,7 @@ export default function DeskClient() {
                     </span>
                   </div>
 
-                  {!isPro ? (
-                    <div className="py-6 border border-dashed border-zinc-800 rounded-xl flex flex-col items-center justify-center bg-black gap-2 w-full mt-2">
-                      <Lock className="w-6 h-6 text-emerald-500/40 stroke-1" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Action Logging Locked</span>
-                    </div>
-                  ) : !logPair ? (
+                  {!logPair ? (
                     <div className="py-2.5 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span>
                     </div>
@@ -1742,12 +1234,7 @@ export default function DeskClient() {
                       )}
                     </div>
                     <div className="flex flex-col gap-2.5">
-                      {!isPro ? (
-                        <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2 flex flex-col items-center justify-center gap-3">
-                          <Lock className="w-6 h-6 text-zinc-600 stroke-1" />
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Post-Trade Queue Locked</span>
-                        </div>
-                      ) : currentWeekPending.length === 0 && isWeekendNow ? (
+                      {currentWeekPending.length === 0 && isWeekendNow ? (
                         <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3">
                            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><CheckCircle2 size={14}/> Week Cleared</h3>
                            <textarea value={weeklyDebrief} onChange={handleDebriefChange} placeholder="Log your main behavioral takeaways for the week..." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none resize-none min-h-[80px] custom-scrollbar focus:border-emerald-500 transition-colors" />
@@ -1761,7 +1248,7 @@ export default function DeskClient() {
                     </div>
                   </div>
 
-                  {heldOverPending.length > 0 && isPro && (
+                  {heldOverPending.length > 0 && (
                     <div className="pt-4 border-t border-zinc-800/50 mt-2">
                       <div className="flex items-center gap-2 mb-4 shrink-0">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Legacy / Carried Over</span>
@@ -1786,13 +1273,7 @@ export default function DeskClient() {
           </div>
           
           <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3 text-white relative">
-            {!isPro ? (
-              <div className="flex flex-col items-center justify-center h-full opacity-60 p-6 text-center">
-                <Lock className="w-8 h-8 text-purple-400/50 mb-3 stroke-1" />
-                <h3 className="text-xs font-bold tracking-widest uppercase text-white mb-2">Vault Locked</h3>
-                <p className="text-[10px] text-neutral-500 leading-relaxed max-w-[200px]">Pro members can stage unlimited weekly setups.</p>
-              </div>
-            ) : weeklySetups.length === 0 ? (
+            {weeklySetups.length === 0 ? (
               <div className="text-center p-6 text-zinc-600"><span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span></div>
             ) : (
               weeklySetups.map((setup) => {
@@ -1841,10 +1322,6 @@ export default function DeskClient() {
           <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4">
             <button 
               onClick={() => {
-                if (!isPro) {
-                  window.location.href = '/account/subscription';
-                  return;
-                }
                 if (isVaultLocked) {
                   alert(!isPrepWindow ? "Vault is locked. Weekly prep is only allowed from Saturday to Monday 5:30 AM." : "You must settle all trades in the Post-Trade Settlement Queue before prepping for the new week.");
                   return;
@@ -1852,16 +1329,12 @@ export default function DeskClient() {
                 setIsUploadModalOpen(true);
               }} 
               className={`w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all shadow-inner hover:shadow-none ${
-                !isPro
-                  ? 'bg-zinc-900 border-purple-500/30 text-purple-400/60 cursor-pointer hover:border-purple-500 hover:text-purple-400' 
-                  : isVaultLocked 
-                    ? 'bg-zinc-900 border-red-500/30 text-red-500/50 cursor-not-allowed' 
-                    : 'bg-black border-zinc-700 text-zinc-400 hover:text-white hover:border-blue-500/50'
+                isVaultLocked 
+                  ? 'bg-zinc-900 border-red-500/30 text-red-500/50 cursor-not-allowed' 
+                  : 'bg-black border-zinc-700 text-zinc-400 hover:text-white hover:border-blue-500/50'
               }`}
             >
-              {!isPro ? (
-                <><Lock size={14} /> Upgrade to Access Vault</>
-              ) : isVaultLocked ? (
+               {isVaultLocked ? (
                 <><Lock size={14} /> {!isPrepWindow ? 'Locked Until Weekend' : 'Settle Trades to Unlock'}</>
               ) : (
                 <><Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></>
