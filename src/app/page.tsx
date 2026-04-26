@@ -88,7 +88,7 @@ export default function Home() {
     window.addEventListener('scroll', handleScroll)
     
     // Logic to shuffle and select 3 random images on page refresh
-    const allProfiles = ['/profile1.png', '/profile2.png', '/profile3.png', '/profile4.png', '/profile5.png']
+    const allProfiles = ['/profile1.png', '/profile2.png', '/profile3.png', '/profile4.png']
     const shuffledProfiles = [...allProfiles].sort(() => 0.5 - Math.random())
     setHeroProfiles(shuffledProfiles.slice(0, 3))
 
@@ -517,7 +517,7 @@ export default function Home() {
         </div>
       </section>
 
-<section id="pricing" className="relative z-10 w-full py-24 lg:py-32 px-6 bg-[#020202] border-t border-neutral-900">
+      <section id="pricing" className="relative z-10 w-full py-24 lg:py-32 px-6 bg-[#020202] border-t border-neutral-900">
         <div className="text-center mb-10 max-w-5xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight mb-3">Terminal Access</h2>
         </div>
@@ -532,53 +532,29 @@ export default function Home() {
         </div>
         
         <div className="grid md:grid-cols-2 gap-6 items-start max-w-[1000px] mx-auto">
-          {/* DEMO CARD */}
-          <div className="bg-[#080808] p-8 lg:p-10 rounded-3xl border border-neutral-800/60 text-left shadow-lg shadow-black/10 flex flex-col h-full">
-            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-3 text-center sm:text-left">Terminal Demo</h3>
-            <p className="text-4xl lg:text-5xl font-black text-white my-6 text-center sm:text-left">$0</p>
-            <p className="text-neutral-400 text-sm font-medium mb-8 text-center sm:text-left">Take a risk-free tour of the terminal interface and see the operational protocol in action.</p>
-            
-            <ul className="space-y-4 text-neutral-500 text-xs font-medium mb-10 flex-1">
-              <li className="flex items-start"><span className="text-neutral-700 mr-3 font-bold text-sm leading-none">✓</span> Platform UI walkthrough</li>
-              <li className="flex items-start"><span className="text-neutral-700 mr-3 font-bold text-sm leading-none">✓</span> Read-only historical setups</li>
-              <li className="flex items-start"><span className="text-neutral-700 mr-3 font-bold text-sm leading-none">✓</span> Journaling mechanism preview</li>
-            </ul>
-
-            <Link href="/apply" className="block w-full py-4 px-6 bg-[#111] text-neutral-200 font-bold rounded-xl border border-neutral-800 hover:bg-[#1a1a1a] transition-colors uppercase tracking-widest text-[10px] text-center mt-auto">
-              Access Demo
+          <div className="bg-[#080808] p-8 lg:p-12 rounded-3xl border border-neutral-800/60 text-center shadow-lg shadow-black/10">
+            <h3 className="text-xs font-bold text-neutral-500 uppercase tracking-widest mb-3">Free Account</h3>
+            <p className="text-4xl lg:text-5xl font-black text-white my-6">$0</p>
+            <p className="text-neutral-400 text-sm font-medium mb-10 h-10">Basic trade logging and delayed floor access.</p>
+            <Link href="/apply" className="block w-full py-4 px-6 bg-[#111] text-neutral-200 font-bold rounded-xl border border-neutral-800 hover:bg-[#1a1a1a] transition-colors uppercase tracking-widest text-[10px]">
+              Apply For Access
             </Link>
           </div>
 
-          {/* PRO CARD */}
-          <div className="bg-[#080808] p-8 lg:p-10 rounded-3xl border border-blue-500/30 relative text-left shadow-lg shadow-blue-900/5 flex flex-col h-full">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
-            
-            <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-3 text-center sm:text-left">Pro Operator</h3>
-            <p className="text-4xl lg:text-5xl font-black text-white my-6 text-center sm:text-left">
+          <div className="bg-[#080808] p-8 lg:p-12 rounded-3xl border border-blue-500/30 relative text-center shadow-lg shadow-blue-900/5">
+            <h3 className="text-xs font-bold text-blue-500 uppercase tracking-widest mb-3">Pro Operator</h3>
+            <p className="text-4xl lg:text-5xl font-black text-white my-6">
               ${billingCycle === 'monthly' ? '50' : '500'}
               <span className="text-sm text-neutral-500 font-medium tracking-normal">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
             </p>
-            <p className="text-neutral-300 text-sm font-medium mb-8 text-center sm:text-left">The complete institutional-grade toolkit and behavioral enforcement system.</p>
-            
-            <ul className="space-y-4 text-neutral-400 text-xs font-medium mb-10 flex-1">
-              <li className="flex items-start"><span className="text-blue-500 mr-3 font-bold text-sm leading-none">✓</span> Guided routine & system setup</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-3 font-bold text-sm leading-none">✓</span> Sunday macro & invalidation levels</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-3 font-bold text-sm leading-none">✓</span> Personal Vault for pair tracking</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-3 font-bold text-sm leading-none">✓</span> Daily 4H & LTF chart updates</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-3 font-bold text-sm leading-none">✓</span> Live Floor trade validation</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-3 font-bold text-sm leading-none">✓</span> Strict mechanical execution rules</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-3 font-bold text-sm leading-none">✓</span> Pre-outcome behavioral journaling</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-3 font-bold text-sm leading-none">✓</span> Saturday data-driven reviews</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-3 font-bold text-sm leading-none">✓</span> Active mentor accountability</li>
-            </ul>
-
-            <Link href="/apply" className="block w-full py-4 px-6 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors uppercase tracking-widest text-[10px] text-center mt-auto shadow-[0_0_20px_rgba(59,130,246,0.15)]">
+            <p className="text-neutral-400 text-sm font-medium mb-10 h-10">Full MT5 Sync, Live Floor analysis, and behavioral analytics.</p>
+            <Link href="/apply" className="block w-full py-4 px-6 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors uppercase tracking-widest text-[10px]">
               Apply For Pro Access
             </Link>
           </div>
         </div>
       </section>
-      
+
       <section className="relative z-10 w-full py-24 lg:py-32 px-6 border-t border-neutral-900 bg-[#050505]">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-10 text-center tracking-tight">FAQ</h2>

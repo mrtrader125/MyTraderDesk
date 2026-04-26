@@ -232,14 +232,14 @@ export async function POST(req: Request) {
           const { userProfile, liveContext } = await getDailyTraderContext(supabase, existingProfile.id);
           const unifiedSystemPrompt = `${buildSystemPrompt(userProfile)}\n\n${liveContext}`;
 
-          // 4. Generate Initial Response from Gemini
+          // 4. Generate Initial Response from AI
           const aiParts = await generateMentorResponse(pastMessages, unifiedSystemPrompt);
           const firstPart = aiParts[0];
 
           let finalAiText = "";
 
           // 5. THE INTERCEPTOR: Check if Telegram AI requested a Tool
-          if (firstPart.functionCall) {
+          if (firstPart?.functionCall) {
             const toolName = firstPart.functionCall.name;
             const toolArgs = firstPart.functionCall.args;
             let toolData: any = {};
@@ -275,31 +275,38 @@ export async function POST(req: Request) {
                 parts: [{ text: m.content }]
             }));
 
-            // Handoff data back to Gemini
+            // Handoff data back to AI
             formattedMessagesForTool.push({ role: 'model', parts: [{ functionCall: firstPart.functionCall }] });
             formattedMessagesForTool.push({ role: 'user', parts: [{ functionResponse: { name: toolName, response: { content: toolData } } }] });
 
             const finalReplyParts = await generateMentorResponse(formattedMessagesForTool, unifiedSystemPrompt);
-            finalAiText = finalReplyParts[0].text;
+            
+            // 🚨 THE FIX: Optional chaining and fallback to empty string
+            finalAiText = finalReplyParts[0]?.text || "";
             
           } else {
              // No tools requested, just standard text
-             finalAiText = firstPart.text;
+             // 🚨 THE FIX: Optional chaining and fallback
+             finalAiText = firstPart?.text || "";
           }
 
           // 6. The Silence Interceptor & Delivery
-          if (finalAiText.includes('[SILENCE]')) {
+          // 🚨 THE FIX: Safely check if finalAiText exists and is a string before calling .includes()
+          if (finalAiText && finalAiText.includes('[SILENCE]')) {
              console.log("Mentor chose to remain silent.");
              return NextResponse.json({ status: 'success' });
           }
 
           // Save the conversation so the Web Widget sees it too
-          await supabase.from('mentor_chat_logs').insert([
-            { user_id: existingProfile.id, role: 'user', content: text },
-            { user_id: existingProfile.id, role: 'model', content: finalAiText }
-          ]);
+          // Only save and send if there's actually text to send
+          if (finalAiText) {
+              await supabase.from('mentor_chat_logs').insert([
+                { user_id: existingProfile.id, role: 'user', content: text },
+                { user_id: existingProfile.id, role: 'model', content: finalAiText }
+              ]);
 
-          await sendMessage(chatId, finalAiText, 'Markdown');
+              await sendMessage(chatId, finalAiText, 'Markdown');
+          }
 
         } catch (aiError) {
           console.error("Mentor AI Error:", aiError);
