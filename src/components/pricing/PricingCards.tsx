@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { CheckCircle2, Zap, Shield, Loader2, Lock } from 'lucide-react'
-import { supabase } from '@/lib/supabase' // 🚨 ADDED: We need Supabase to get the user ID
+import { supabase } from '@/lib/supabase'
 
 export default function PricingCards({ userPlan = 'free' }: { userPlan?: string }) {
   const [isYearly, setIsYearly] = useState(false)
@@ -47,22 +47,22 @@ export default function PricingCards({ userPlan = 'free' }: { userPlan?: string 
   }
 
   return (
-    <div className="w-full max-w-[900px] mx-auto flex flex-col items-center">
+    <div className="w-full max-w-[1000px] mx-auto flex flex-col items-center">
       {/* BILLING TOGGLE */}
       <div className="flex items-center gap-2 mb-10 p-1.5 bg-[#050505] border border-neutral-800 rounded-full shadow-inner">
         <button onClick={() => setIsYearly(false)} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${!isYearly ? 'bg-neutral-800 text-white shadow-md' : 'text-neutral-500 hover:text-neutral-300'}`}>Monthly</button>
         <button onClick={() => setIsYearly(true)} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${isYearly ? 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30 shadow-md' : 'text-neutral-500 hover:text-neutral-300'}`}>
-          Yearly <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] tracking-wider">SAVE 16%</span>
+          Annually <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] tracking-wider">SAVE 16%</span>
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
         
-        {/* FREE TIER CARD */}
+        {/* FREE / DEMO TIER CARD */}
         <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[1.5rem] p-6 md:p-8 flex flex-col relative overflow-hidden shadow-lg">
           <div className="p-3 bg-neutral-800/50 text-neutral-400 rounded-xl w-fit mb-4"><Shield size={20} /></div>
-          <h3 className="text-lg font-black text-white uppercase tracking-wider mb-1.5">Free Tier</h3>
-          <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mb-6 leading-relaxed">Basic delayed access.</p>
+          <h3 className="text-lg font-black text-white uppercase tracking-wider mb-1.5">Terminal Demo</h3>
+          <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mb-6 leading-relaxed">Take a risk-free tour of the terminal interface and see the operational protocol in action.</p>
           <div className="mb-6">
             <span className="text-3xl font-black text-white">$0</span>
             <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1.5">/ forever</span>
@@ -70,22 +70,22 @@ export default function PricingCards({ userPlan = 'free' }: { userPlan?: string 
           
           <ul className="space-y-4 mb-8 flex-1">
             <li className="flex items-center text-[10px] font-bold text-neutral-300 uppercase tracking-widest">
-              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Delayed Analysis (7 Days)
+              <CheckCircle2 size={14} className="text-neutral-500 mr-2.5 shrink-0" /> Platform UI walkthrough
             </li>
             <li className="flex items-center text-[10px] font-bold text-neutral-300 uppercase tracking-widest">
-              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Forex Market Only
+              <CheckCircle2 size={14} className="text-neutral-500 mr-2.5 shrink-0" /> Read-only historical setups
             </li>
             <li className="flex items-center text-[10px] font-bold text-neutral-300 uppercase tracking-widest">
-              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Basic Education Vault
+              <CheckCircle2 size={14} className="text-neutral-500 mr-2.5 shrink-0" /> Journaling mechanism preview
             </li>
             <li className="flex items-center text-[10px] font-bold text-neutral-600 uppercase tracking-widest opacity-60">
-              <Lock size={14} className="text-neutral-600 mr-2.5 shrink-0" /> Live Trading Floor
+              <Lock size={14} className="text-neutral-600 mr-2.5 shrink-0" /> Live Floor trade validation
             </li>
             <li className="flex items-center text-[10px] font-bold text-neutral-600 uppercase tracking-widest opacity-60">
-              <Lock size={14} className="text-neutral-600 mr-2.5 shrink-0" /> Crypto, Indices, Stocks
+              <Lock size={14} className="text-neutral-600 mr-2.5 shrink-0" /> Daily 4H & LTF chart updates
             </li>
             <li className="flex items-center text-[10px] font-bold text-neutral-600 uppercase tracking-widest opacity-60">
-              <Lock size={14} className="text-neutral-600 mr-2.5 shrink-0" /> Real-Time Setup Alerts
+              <Lock size={14} className="text-neutral-600 mr-2.5 shrink-0" /> Pre-outcome behavioral journaling
             </li>
           </ul>
 
@@ -100,29 +100,41 @@ export default function PricingCards({ userPlan = 'free' }: { userPlan?: string 
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 blur-[50px] rounded-full pointer-events-none"></div>
           
           <div className="p-3 bg-blue-500/10 text-blue-500 rounded-xl w-fit mb-4 shadow-[0_0_15px_rgba(37,99,235,0.2)]"><Zap size={20} /></div>
-          <h3 className="text-lg font-black text-white uppercase tracking-wider mb-1.5">Professional</h3>
-          <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mb-6 leading-relaxed">The ultimate institutional terminal.</p>
+          <h3 className="text-lg font-black text-white uppercase tracking-wider mb-1.5">Pro Operator</h3>
+          <p className="text-[9px] text-blue-400 font-bold uppercase tracking-widest mb-6 leading-relaxed">The complete institutional-grade toolkit and behavioral enforcement system.</p>
           
           <div className="mb-6">
-            <span className="text-3xl font-black text-blue-500">${isYearly ? '299.00' : '29.00'}</span>
+            <span className="text-3xl font-black text-blue-500">${isYearly ? '500' : '50'}</span>
             <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest ml-1.5">/ {isYearly ? 'yr' : 'mo'}</span>
           </div>
 
           <ul className="space-y-4 mb-8 flex-1">
             <li className="flex items-center text-[10px] font-bold text-white uppercase tracking-widest">
-              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Real-Time Institutional Setups
+              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Guided routine & system setup
             </li>
             <li className="flex items-center text-[10px] font-bold text-white uppercase tracking-widest">
-              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Live Trading Floor Access
+              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Sunday macro & invalidation levels
             </li>
             <li className="flex items-center text-[10px] font-bold text-white uppercase tracking-widest">
-              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> All Markets (Forex, Crypto, Indices, Stocks)
+              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Personal Vault for pair tracking
             </li>
             <li className="flex items-center text-[10px] font-bold text-white uppercase tracking-widest">
-              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Global Sentiment Engine
+              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Daily 4H & LTF chart updates
             </li>
             <li className="flex items-center text-[10px] font-bold text-white uppercase tracking-widest">
-              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Direct Operator Comms (Telegram)
+              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Live Floor trade validation
+            </li>
+            <li className="flex items-center text-[10px] font-bold text-white uppercase tracking-widest">
+              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Strict mechanical execution rules
+            </li>
+            <li className="flex items-center text-[10px] font-bold text-white uppercase tracking-widest">
+              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Pre-outcome behavioral journaling
+            </li>
+            <li className="flex items-center text-[10px] font-bold text-white uppercase tracking-widest">
+              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Saturday data-driven reviews
+            </li>
+            <li className="flex items-center text-[10px] font-bold text-white uppercase tracking-widest">
+              <CheckCircle2 size={14} className="text-blue-500 mr-2.5 shrink-0" /> Active mentor accountability
             </li>
           </ul>
 
