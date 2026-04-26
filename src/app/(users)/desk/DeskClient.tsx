@@ -963,6 +963,7 @@ function CatalystSettingsModal({ isOpen, onClose, perfect, setPerfect, imperfect
 export default function DeskClient() {
   
   // 🚨 1. ALL USESTATE HOOKS FIRST
+  const [isPro, setIsPro] = useState<boolean>(true) // Assume pro until tier check confirms demo
   const [user, setUser] = useState<any>(null)
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
@@ -979,7 +980,7 @@ export default function DeskClient() {
   const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
   const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
 
-  // 🚨 LOGGING STATES (INCLUDING THE MISSING SETUP ID FIX)
+  // 🚨 LOGGING STATES
   const [logPair, setLogPair] = useState<string>('') 
   const [logDirection, setLogDirection] = useState<'LONG' | 'SHORT' | null>(null)
   const [logSetupId, setLogSetupId] = useState<string | null>(null)
@@ -1035,10 +1036,6 @@ export default function DeskClient() {
   const pushesToday = setups.filter(s => s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() === now.toDateString()).length;
   const canPushMore = pushesToday < 5;
 
-  // 🚨 THE FIX: WIPE THE VAULT FOR THE NEW WEEK
-  // This calculates the most recent Saturday 00:00:00.
-  // When Friday rolls over to Saturday, this shifts to the new Saturday,
-  // mathematically eliminating all setups created Mon-Fri from the Vault view.
   const mostRecentSaturday = useMemo(() => {
     const d = new Date(now.getTime());
     const dayOfWk = d.getDay();
@@ -1048,7 +1045,6 @@ export default function DeskClient() {
     return d.getTime();
   }, [now]);
 
-  // 🚨 THE FIX: Filter the vault to only show setups created ON/AFTER the most recent Saturday
   const weeklySetups = [...setups]
     .filter(s => s.createdAt >= mostRecentSaturday) 
     .sort((a, b) => {
@@ -1131,6 +1127,16 @@ export default function DeskClient() {
       
       setUser(user)
 
+      // 🚨 CLIENT-SIDE PRO TIER GATING
+      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single();
+      const isProUser = profile?.plan === 'pro' || profile?.plan === 'premium';
+      setIsPro(isProUser);
+
+      // Halt data fetching entirely if the user is on the demo tier
+      if (!isProUser) {
+         return; 
+      }
+
       if (user.user_metadata?.trade_terminology) {
         setTerminology(user.user_metadata.trade_terminology);
       }
@@ -1193,7 +1199,6 @@ export default function DeskClient() {
           expiredSetups.forEach(s => { s.is_today = false; s.added_to_today_at = null; });
         }
 
-        // 🚨 THE FIX: Added createdAt extraction to support the vault temporal wipe
         setSetups(setupsData.map(d => ({ 
           id: d.id, 
           symbol: d.symbol, 
@@ -1243,7 +1248,7 @@ export default function DeskClient() {
         direction: logDirection, 
         reason: logCatalystText || null, 
         execution_type: logExecution,
-        setup_id: logSetupId // <-- Database connection established here
+        setup_id: logSetupId 
       }
       const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
       if (data && data[0]) {
@@ -1299,7 +1304,7 @@ export default function DeskClient() {
 
       if (e.code === 'KeyV' && e.altKey) { 
         e.preventDefault(); 
-        if (!isVaultLocked) setIsUploadModalOpen(true); 
+        if (isPro && !isVaultLocked) setIsUploadModalOpen(true); 
         return; 
       }
 
@@ -1348,7 +1353,7 @@ export default function DeskClient() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, isMobileNotesOpen, isVaultLocked, handleLockEntry, previewSetup]);
+  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, isMobileNotesOpen, isVaultLocked, handleLockEntry, previewSetup, isPro]);
 
   useEffect(() => {
     if (activeSetup && user) {
@@ -1534,8 +1539,13 @@ export default function DeskClient() {
 
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
               
-              <div className="order-2 lg:order-1 w-full lg:w-56 shrink-0 flex-1 lg:flex-none border-t lg:border-t-0 lg:border-r border-zinc-800 flex flex-col bg-zinc-950/50 overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white">
-                {todaySetups.length === 0 ? (
+              <div className="order-2 lg:order-1 w-full lg:w-56 shrink-0 flex-1 lg:flex-none border-t lg:border-t-0 lg:border-r border-zinc-800 flex flex-col bg-zinc-950/50 overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white relative">
+                {!isPro ? (
+                  <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
+                    <Lock size={20} className="mb-2 opacity-50 stroke-1 text-blue-500/40" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Focus Locked</span>
+                  </div>
+                ) : todaySetups.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
                     <Target size={20} className="mb-2 opacity-50" />
                     <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
@@ -1588,7 +1598,15 @@ export default function DeskClient() {
                 className="order-1 lg:order-2 w-full flex-[1.5] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group"
                 onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}
               >
-                {activeSetup?.imageUrl ? (
+                {!isPro ? (
+                  <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#030303]/80 backdrop-blur-[3px] m-2 rounded-2xl border border-white/[0.02]">
+                    <div className="flex flex-col items-center text-center p-8 bg-[#0a0a0a] rounded-2xl border border-white/[0.04] shadow-2xl">
+                      <Lock className="w-10 h-10 text-blue-500/40 mb-4 stroke-1" />
+                      <h3 className="text-sm font-bold tracking-widest text-white uppercase mb-2">Operator Desk Locked</h3>
+                      <p className="text-xs text-neutral-400 max-w-[260px] leading-relaxed">Upgrade to Professional to stage setups, write macro thesis, and enforce execution discipline.</p>
+                    </div>
+                  </div>
+                ) : activeSetup?.imageUrl ? (
                   <>
                     <TransformWrapper
                       key={activeSetup.id}
@@ -1624,7 +1642,13 @@ export default function DeskClient() {
               </div>
 
               <div className="hidden lg:flex order-3 w-full lg:w-80 shrink-0 flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
-                <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0">
+                <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0 relative">
+                  {!isPro && (
+                    <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm rounded-xl">
+                       <Lock className="w-6 h-6 text-zinc-600 mb-2 stroke-1" />
+                       <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Notes Locked</span>
+                    </div>
+                  )}
                   <RichNotesEditor activeSetup={activeSetup} onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} />
                 </div>
               </div>
@@ -1659,7 +1683,12 @@ export default function DeskClient() {
                     </span>
                   </div>
 
-                  {!logPair ? (
+                  {!isPro ? (
+                    <div className="py-6 border border-dashed border-zinc-800 rounded-xl flex flex-col items-center justify-center bg-black gap-2 w-full mt-2">
+                      <Lock className="w-6 h-6 text-emerald-500/40 stroke-1" />
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Action Logging Locked</span>
+                    </div>
+                  ) : !logPair ? (
                     <div className="py-2.5 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span>
                     </div>
@@ -1713,7 +1742,12 @@ export default function DeskClient() {
                       )}
                     </div>
                     <div className="flex flex-col gap-2.5">
-                      {currentWeekPending.length === 0 && isWeekendNow ? (
+                      {!isPro ? (
+                        <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2 flex flex-col items-center justify-center gap-3">
+                          <Lock className="w-6 h-6 text-zinc-600 stroke-1" />
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Post-Trade Queue Locked</span>
+                        </div>
+                      ) : currentWeekPending.length === 0 && isWeekendNow ? (
                         <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3">
                            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><CheckCircle2 size={14}/> Week Cleared</h3>
                            <textarea value={weeklyDebrief} onChange={handleDebriefChange} placeholder="Log your main behavioral takeaways for the week..." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none resize-none min-h-[80px] custom-scrollbar focus:border-emerald-500 transition-colors" />
@@ -1727,7 +1761,7 @@ export default function DeskClient() {
                     </div>
                   </div>
 
-                  {heldOverPending.length > 0 && (
+                  {heldOverPending.length > 0 && isPro && (
                     <div className="pt-4 border-t border-zinc-800/50 mt-2">
                       <div className="flex items-center gap-2 mb-4 shrink-0">
                         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Legacy / Carried Over</span>
@@ -1751,8 +1785,14 @@ export default function DeskClient() {
             <button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-zinc-500 hover:text-white p-1"><X size={18} /></button>
           </div>
           
-          <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3 text-white">
-            {weeklySetups.length === 0 ? (
+          <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3 text-white relative">
+            {!isPro ? (
+              <div className="flex flex-col items-center justify-center h-full opacity-60 p-6 text-center">
+                <Lock className="w-8 h-8 text-purple-400/50 mb-3 stroke-1" />
+                <h3 className="text-xs font-bold tracking-widest uppercase text-white mb-2">Vault Locked</h3>
+                <p className="text-[10px] text-neutral-500 leading-relaxed max-w-[200px]">Pro members can stage unlimited weekly setups.</p>
+              </div>
+            ) : weeklySetups.length === 0 ? (
               <div className="text-center p-6 text-zinc-600"><span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span></div>
             ) : (
               weeklySetups.map((setup) => {
@@ -1801,6 +1841,10 @@ export default function DeskClient() {
           <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4">
             <button 
               onClick={() => {
+                if (!isPro) {
+                  window.location.href = '/account/subscription';
+                  return;
+                }
                 if (isVaultLocked) {
                   alert(!isPrepWindow ? "Vault is locked. Weekly prep is only allowed from Saturday to Monday 5:30 AM." : "You must settle all trades in the Post-Trade Settlement Queue before prepping for the new week.");
                   return;
@@ -1808,12 +1852,16 @@ export default function DeskClient() {
                 setIsUploadModalOpen(true);
               }} 
               className={`w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all shadow-inner hover:shadow-none ${
-                isVaultLocked 
-                  ? 'bg-zinc-900 border-red-500/30 text-red-500/50 cursor-not-allowed' 
-                  : 'bg-black border-zinc-700 text-zinc-400 hover:text-white hover:border-blue-500/50'
+                !isPro
+                  ? 'bg-zinc-900 border-purple-500/30 text-purple-400/60 cursor-pointer hover:border-purple-500 hover:text-purple-400' 
+                  : isVaultLocked 
+                    ? 'bg-zinc-900 border-red-500/30 text-red-500/50 cursor-not-allowed' 
+                    : 'bg-black border-zinc-700 text-zinc-400 hover:text-white hover:border-blue-500/50'
               }`}
             >
-              {isVaultLocked ? (
+              {!isPro ? (
+                <><Lock size={14} /> Upgrade to Access Vault</>
+              ) : isVaultLocked ? (
                 <><Lock size={14} /> {!isPrepWindow ? 'Locked Until Weekend' : 'Settle Trades to Unlock'}</>
               ) : (
                 <><Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></>
