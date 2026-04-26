@@ -8,9 +8,7 @@ export default async function LiveFloorPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) {
-    redirect('/login')
-  }
+  if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
@@ -18,17 +16,23 @@ export default async function LiveFloorPage() {
     .eq('id', user.id)
     .single()
 
-  const isProUser = profile?.plan === 'pro'
+  const isPro = profile?.plan === 'pro' || profile?.plan === 'premium'
 
-  // STRICT SEQUENTIAL GATING: Halt and return empty arrays if the tier check fails
-  if (!isProUser) {
-    return <LiveFloorClient initialPosts={[]} initialSquawks={[]} userId={user.id} userPlan={profile?.plan || 'demo'} username={profile?.username} /> 
+  // If Demo: Let them see the page, but give them ZERO real data.
+  if (!isPro) {
+    return (
+      <LiveFloorClient 
+        initialPosts={[]}    // Scrubbed
+        initialSquawks={[]}  // Scrubbed
+        userId={user.id}
+        userPlan="demo"
+        username={profile?.username}
+      />
+    )
   }
 
-  const [
-    { data: postsRes },
-    { data: squawksRes }
-  ] = await Promise.all([
+  // If Pro: Fetch and send the real data.
+  const [ { data: postsRes }, { data: squawksRes } ] = await Promise.all([
     supabase.from('terminal_posts').select('*').order('created_at', { ascending: false }).limit(20),
     supabase.from('live_squawk').select('*').order('created_at', { ascending: false }).limit(50)
   ])
