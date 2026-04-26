@@ -3,7 +3,19 @@
 import { useState, useEffect, useMemo } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, BarChart, Bar, Cell } from 'recharts'
-import { Activity, Target, TrendingUp, Calendar, ArrowRight, Crosshair } from 'lucide-react'
+import { Activity, Target, TrendingUp, Calendar, ArrowRight, Crosshair, Lock } from 'lucide-react'
+
+// --- DUMMY DATA FOR DEMO TIER ---
+const DEMO_LOGS = [
+  { id: '1', created_at: new Date(Date.now() - 30 * 86400000).toISOString(), symbol: 'BTCUSD', playbook: 'Liquidity Sweep', execution_type: 'Perfect', outcome: 'TP', rr: 2.5 },
+  { id: '2', created_at: new Date(Date.now() - 28 * 86400000).toISOString(), symbol: 'EURUSD', playbook: 'Trend Continuation', execution_type: 'Imperfect', outcome: 'SL', rr: -1.0 },
+  { id: '3', created_at: new Date(Date.now() - 25 * 86400000).toISOString(), symbol: 'GBPUSD', playbook: 'News Catalyst', execution_type: 'Perfect', outcome: 'TP', rr: 1.8 },
+  { id: '4', created_at: new Date(Date.now() - 20 * 86400000).toISOString(), symbol: 'XAUUSD', playbook: 'Range Play', execution_type: 'Imperfect', outcome: 'SL', rr: -1.0 },
+  { id: '5', created_at: new Date(Date.now() - 15 * 86400000).toISOString(), symbol: 'NAS100', playbook: 'Breakout / Retest', execution_type: 'Perfect', outcome: 'TP', rr: 3.2 },
+  { id: '6', created_at: new Date(Date.now() - 10 * 86400000).toISOString(), symbol: 'BTCUSD', playbook: 'Liquidity Sweep', execution_type: 'Perfect', outcome: 'BE', rr: 0 },
+  { id: '7', created_at: new Date(Date.now() - 5 * 86400000).toISOString(), symbol: 'EURUSD', playbook: 'Trend Continuation', execution_type: 'Perfect', outcome: 'TP', rr: 1.5 },
+  { id: '8', created_at: new Date(Date.now() - 2 * 86400000).toISOString(), symbol: 'XAUUSD', playbook: 'Liquidity Sweep', execution_type: 'Imperfect', outcome: 'SL', rr: -1.0 }
+];
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,6 +33,7 @@ type TradeLog = {
 }
 
 export default function AnalyticsClient() {
+  const [isPro, setIsPro] = useState<boolean>(true)
   const [logs, setLogs] = useState<TradeLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [timeFilter, setTimeFilter] = useState<30 | 60 | 90>(30)
@@ -30,6 +43,23 @@ export default function AnalyticsClient() {
       setIsLoading(true)
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user) return
+
+      // 🚨 TIER CHECK
+      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', session.user.id).single();
+      const isProUser = profile?.plan === 'pro' || profile?.plan === 'premium';
+      setIsPro(isProUser);
+
+      // 🚨 MOCK DATA INJECTION FOR DEMO USERS
+      if (!isProUser) {
+        // Apply time filtering to the mock data to simulate real behavior
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() - timeFilter);
+        const filteredDemo = DEMO_LOGS.filter(l => new Date(l.created_at) >= targetDate);
+        
+        setLogs(filteredDemo as any);
+        setIsLoading(false);
+        return;
+      }
 
       const targetDate = new Date()
       targetDate.setDate(targetDate.getDate() - timeFilter)
@@ -108,8 +138,14 @@ export default function AnalyticsClient() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden relative">
       
+      {!isPro && (
+        <div className="absolute top-4 right-4 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">
+          Sandbox Mode <Lock size={12} className="stroke-[3]" />
+        </div>
+      )}
+
       {/* HEADER SECTION */}
       <div className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl shrink-0">
         <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5">
@@ -135,8 +171,14 @@ export default function AnalyticsClient() {
           <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">No settled data in this timeframe</span>
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row flex-1 min-h-0 gap-2">
+        <div className="flex flex-col lg:flex-row flex-1 min-h-0 gap-2 relative">
           
+          {!isPro && (
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] z-40 flex items-center justify-center rounded-xl border border-white/[0.02] pointer-events-none">
+               {/* Just a blurred overlay to show it's locked, but still visible */}
+            </div>
+          )}
+
           {/* LEFT: EQUITY CURVE & HEATMAP */}
           <div className="flex-[1.5] flex flex-col min-w-0 gap-2">
             
