@@ -6,8 +6,42 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceL
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
 import { 
   BookOpen, Activity, AlertTriangle, CheckCircle, 
-  TrendingUp, Crosshair, ImageIcon, Target, Maximize2
+  TrendingUp, Crosshair, ImageIcon, Target, Maximize2, Lock
 } from 'lucide-react'
+
+// --- DUMMY DATA FOR DEMO TIER ---
+const DEMO_LOGS = [
+  {
+    id: 'demo-log-1', created_at: new Date(Date.now() - 86400000).toISOString(), symbol: 'BTCUSD', direction: 'LONG',
+    playbook: 'Liquidity Sweep', execution_type: 'Perfect', reason: '[Extreme Patience]', outcome: 'TP', rr: 2.5,
+    after_image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+    setup_id: 'demo-1', user_desk_setups: { image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80', notes: '<p><b>Macro:</b> Bullish market structure. Price swept Asian session lows.</p>' }
+  },
+  {
+    id: 'demo-log-2', created_at: new Date(Date.now() - 172800000).toISOString(), symbol: 'EURUSD', direction: 'SHORT',
+    playbook: 'Trend Continuation', execution_type: 'Imperfect', reason: '[FOMO / Rushed Entry]', outcome: 'SL', rr: -1.0,
+    after_image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
+    setup_id: 'demo-2', user_desk_setups: { image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80', notes: '<p>Standard premium supply mitigation. DXY is strong.</p>' }
+  },
+  {
+    id: 'demo-log-3', created_at: new Date(Date.now() - 259200000).toISOString(), symbol: 'GBPUSD', direction: 'SHORT',
+    playbook: 'News Catalyst', execution_type: 'Perfect', reason: '[Followed Plan]', outcome: 'TP', rr: 1.8,
+    after_image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+    setup_id: 'demo-3', user_desk_setups: { image_url: null, notes: '<p>News driven momentum play.</p>' }
+  },
+  {
+    id: 'demo-log-4', created_at: new Date(Date.now() - 345600000).toISOString(), symbol: 'XAUUSD', direction: 'LONG',
+    playbook: 'Range Play', execution_type: 'Imperfect', reason: '[Revenge Trading]', outcome: 'SL', rr: -1.0,
+    after_image_url: null,
+    setup_id: 'demo-4', user_desk_setups: { image_url: null, notes: '<p>Gold ranging between 2300 and 2350.</p>' }
+  },
+  {
+    id: 'demo-log-5', created_at: new Date(Date.now() - 432000000).toISOString(), symbol: 'NAS100', direction: 'LONG',
+    playbook: 'Breakout / Retest', execution_type: 'Perfect', reason: '[A+ Setup]', outcome: 'TP', rr: 3.2,
+    after_image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
+    setup_id: 'demo-5', user_desk_setups: { image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80', notes: '<p>Clear structural break and retest.</p>' }
+  }
+];
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,6 +67,7 @@ type TradeLog = {
 }
 
 export default function JournalClient() {
+  const [isPro, setIsPro] = useState<boolean>(true)
   const [logs, setLogs] = useState<TradeLog[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeTradeId, setActiveTradeId] = useState<string | null>(null)
@@ -56,6 +91,26 @@ export default function JournalClient() {
       // Load Terminology Preference
       if (session.user.user_metadata?.trade_terminology) {
         setTerminology(session.user.user_metadata.trade_terminology)
+      }
+
+      // 🚨 TIER CHECK
+      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', session.user.id).single();
+      const isProUser = profile?.plan === 'pro' || profile?.plan === 'premium';
+      setIsPro(isProUser);
+
+      // 🚨 MOCK DATA INJECTION FOR DEMO USERS
+      if (!isProUser) {
+        // Apply local time filtering to the mock data to simulate real behavior
+        let filteredDemo = [...DEMO_LOGS];
+        if (timeFilter === 'WEEK') {
+          const sevenDaysAgo = new Date(); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+          filteredDemo = filteredDemo.filter(l => new Date(l.created_at) >= sevenDaysAgo);
+        }
+        
+        setLogs(filteredDemo as any);
+        if (filteredDemo.length > 0) setActiveTradeId(filteredDemo[0].id);
+        setIsLoading(false);
+        return;
       }
 
       // Pulling from both tables simultaneously using the setup_id foreign key
@@ -138,8 +193,14 @@ export default function JournalClient() {
     <div className="flex flex-col lg:flex-row h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans p-2 gap-2 overflow-hidden">
       
       {/* LEFT PANE: Analytics & Blotter */}
-      <div className="flex-[2] flex flex-col min-w-0 min-h-0 gap-2">
+      <div className="flex-[2] flex flex-col min-w-0 min-h-0 gap-2 relative">
         
+        {!isPro && (
+          <div className="absolute top-2 right-2 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">
+            Sandbox Mode <Lock size={12} className="stroke-[3]" />
+          </div>
+        )}
+
         {/* HEADER & METRICS */}
         <div className="bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl shrink-0">
           <div className="h-10 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-4">
@@ -261,7 +322,6 @@ export default function JournalClient() {
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-1.5">
                           <span className="font-bold text-zinc-200">{log.symbol}</span>
-                          {/* 🚨 TERMINOLOGY HELPER APPLIED HERE */}
                           <span className={`text-[8px] font-bold px-1 py-0.5 rounded border ${log.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
                             {displayDirection(log.direction)}
                           </span>
@@ -317,7 +377,6 @@ export default function JournalClient() {
                     <h1 className="text-lg font-black text-white tracking-wider">
                       {activeTrade.symbol}
                     </h1>
-                    {/* 🚨 TERMINOLOGY HELPER APPLIED HERE */}
                     <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border tracking-widest ${activeTrade.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : 'border-red-500/30 text-red-400 bg-red-500/10'}`}>
                       {displayDirection(activeTrade.direction)}
                     </span>
