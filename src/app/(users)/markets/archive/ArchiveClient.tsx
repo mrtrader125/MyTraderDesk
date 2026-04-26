@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Lock, Clock, Shield, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react'
@@ -8,7 +9,7 @@ import { PLAN_CONFIG, getAssetCategory } from '@/lib/platformConfig'
 // 🚨 INLINED ACCESS LOGIC
 const getSetupAccess = (setup: any, userPlan: string) => {
   if (!setup) return { hasAccess: false, requiredTier: 'pro' };
-  if (userPlan === 'pro') return { hasAccess: true, requiredTier: 'free' };
+  if (userPlan === 'pro' || userPlan === 'premium') return { hasAccess: true, requiredTier: 'free' };
 
   const category = getAssetCategory(setup.asset_symbol);
   const isAllowedCategory = PLAN_CONFIG.free.allowedCategories.includes(category);
@@ -54,8 +55,48 @@ const getStatusWeight = (status: string) => {
   return 99;
 }
 
+// --- DUMMY DATA GENERATOR FOR DEMO TIER ---
+const generateDemoHistory = (assetSymbol: string) => {
+  const now = Date.now();
+  return [
+    {
+      id: `demo-hist-1`, asset_symbol: assetSymbol, timeframe: '4H', bias: 'BULLISH', status: 'ACTIVE',
+      image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+      created_at: new Date(now - 100000).toISOString(), tier_access: 'pro', is_prime: true
+    },
+    {
+      id: `demo-hist-2`, asset_symbol: assetSymbol, timeframe: '15M', bias: 'BEARISH', status: 'DONE',
+      image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
+      created_at: new Date(now - 86400000).toISOString(), tier_access: 'pro', is_prime: false
+    },
+    {
+      id: `demo-hist-3`, asset_symbol: assetSymbol, timeframe: '1D', bias: 'BULLISH', status: 'ARCHIVED',
+      image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+      created_at: new Date(now - 432000000).toISOString(), tier_access: 'free', is_prime: false
+    },
+    {
+      id: `demo-hist-4`, asset_symbol: assetSymbol, timeframe: '1H', bias: 'BEARISH', status: 'CANCELED',
+      image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
+      created_at: new Date(now - 864000000).toISOString(), tier_access: 'pro', is_prime: true
+    }
+  ];
+};
+
 export default function ArchiveClient({ asset, initialHistory, userPlan, userId }: { asset: string, initialHistory: any[], userPlan: string, userId?: string }) {
   const router = useRouter()
+  const [history, setHistory] = useState<any[]>([])
+  const [isProUser, setIsProUser] = useState<boolean>(true)
+
+  useEffect(() => {
+    const isPro = userPlan === 'pro' || userPlan === 'premium';
+    setIsProUser(isPro);
+
+    if (!isPro) {
+      setHistory(generateDemoHistory(asset));
+    } else {
+      setHistory(initialHistory);
+    }
+  }, [userPlan, initialHistory, asset]);
   
   // --- GROUPING & SORTING LOGIC ---
   const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0)
@@ -63,7 +104,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
 
   const grouped = { today: [] as any[], yesterday: [] as any[], older: [] as any[] }
 
-  initialHistory.forEach(setup => {
+  history.forEach(setup => {
     const setupDate = new Date(setup.created_at); setupDate.setHours(0, 0, 0, 0)
     if (setupDate.getTime() === todayDate.getTime()) grouped.today.push(setup)
     else if (setupDate.getTime() === yesterdayDate.getTime()) grouped.yesterday.push(setup)
@@ -101,6 +142,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
     const isPrime = setup.is_prime === true;
     
+    // Simulate real locking logic even on demo tier so they see how it works
     const { hasAccess, requiredTier } = getSetupAccess(setup, userPlan)
 
     const status = (setup.status || 'WAITING').toUpperCase()
@@ -116,7 +158,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     const isFaded = status === 'CANCELED' || status === 'ARCHIVED'
 
     const handleCardClick = () => {
-      // 🚨 FIX: Now passing the exact setup ID to the Viewport
+      if (!isProUser) return;
       const tfQuery = setup.timeframe ? `&tf=${encodeURIComponent(setup.timeframe)}` : '';
       const idQuery = setup.id ? `&id=${setup.id}` : '';
       router.push(`/markets/viewport?asset=${asset}${tfQuery}${idQuery}&from=archive`);
@@ -125,8 +167,9 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     return (
       <div 
         onClick={handleCardClick}
-        className={`bg-[#0a0a0a] border rounded-xl overflow-hidden flex flex-col group cursor-pointer transition-all duration-300 relative min-h-[180px] md:min-h-[200px]
-          ${isPrime ? 'border-blue-500/30 hover:border-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.05)]' : 'border-neutral-800 hover:border-neutral-600 shadow-sm'}
+        className={`bg-[#0a0a0a] border rounded-xl overflow-hidden flex flex-col transition-all duration-300 relative min-h-[180px] md:min-h-[200px]
+          ${!isProUser ? 'opacity-80' : 'group cursor-pointer'}
+          ${isPrime && isProUser ? 'border-blue-500/30 hover:border-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.05)]' : 'border-neutral-800 hover:border-neutral-600 shadow-sm'}
           ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
@@ -190,7 +233,14 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
   return (
     <div className="w-full bg-[#050505] font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
       <div className="w-full border-b border-neutral-900 bg-[#0a0a0a]/95 backdrop-blur-md z-20 shadow-sm shrink-0">
-        <div className="max-w-[90rem] mx-auto flex items-center space-x-3 p-3 md:p-5">
+        <div className="max-w-[90rem] mx-auto flex items-center space-x-3 p-3 md:p-5 relative">
+          
+          {!isProUser && (
+            <div className="absolute top-1/2 -translate-y-1/2 right-4 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">
+              Sandbox Mode <Lock size={12} className="stroke-[3]" />
+            </div>
+          )}
+
           <Link 
             href="/markets"
             className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#111] border border-neutral-800 flex items-center justify-center text-neutral-400 hover:bg-neutral-800 hover:text-white hover:border-neutral-600 transition-all shrink-0 shadow-sm"
@@ -204,8 +254,12 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#050505] p-3 md:p-5 lg:p-6">
-        <div className="max-w-[90rem] mx-auto space-y-8 md:space-y-10 pb-20 md:pb-6">
+      <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#050505] p-3 md:p-5 lg:p-6 relative">
+        {!isProUser && (
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-10 pointer-events-none" />
+        )}
+        
+        <div className="max-w-[90rem] mx-auto space-y-8 md:space-y-10 pb-20 md:pb-6 relative z-20">
           {grouped.today.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <h2 className="text-[9px] md:text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">
@@ -239,7 +293,7 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
             </section>
           )}
 
-          {initialHistory.length === 0 && (
+          {history.length === 0 && (
             <div className="py-24 text-center flex flex-col items-center opacity-50">
               <Shield size={28} className="text-neutral-700 mb-3" />
               <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">No Historical Data Found</span>
