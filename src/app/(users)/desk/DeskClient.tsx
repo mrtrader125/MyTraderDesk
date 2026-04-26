@@ -8,7 +8,7 @@ import Papa from 'papaparse'
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, CheckCircle2, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, CheckCircle2, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock
 } from 'lucide-react'
 
 // 🚨 CONSTANTS MUST BE AT THE TOP
@@ -224,7 +224,15 @@ function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpe
         }
       }
       if (files.length > 0) {
-        const newDrafts = files.map(file => ({ id: Math.random().toString(36).substr(2, 9), imageSource: URL.createObjectURL(file), file, instrument: extractInstrument(file.name), direction: '' as '', playbook: '', notes: '' }));
+        const newDrafts = files.map(file => ({ 
+          id: Math.random().toString(36).substr(2, 9), 
+          imageSource: URL.createObjectURL(file), 
+          file, 
+          instrument: extractInstrument(file.name), 
+          direction: '' as '', 
+          playbook: '', 
+          notes: '' 
+        }));
         setDrafts(prev => [...prev, ...newDrafts]);
         if (drafts.length === 0) setActiveIndex(0);
       }
@@ -237,7 +245,15 @@ function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpe
     const files = e.target.files
     if (files && files.length > 0) {
       const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
-      const newDrafts: DraftSetup[] = imageFiles.map(file => ({ id: Math.random().toString(36).substr(2, 9), imageSource: URL.createObjectURL(file), file, instrument: extractInstrument(file.name), direction: '', playbook: '', notes: '' }))
+      const newDrafts: DraftSetup[] = imageFiles.map(file => ({ 
+        id: Math.random().toString(36).substr(2, 9), 
+        imageSource: URL.createObjectURL(file), 
+        file, 
+        instrument: extractInstrument(file.name), 
+        direction: '', 
+        playbook: '', 
+        notes: '' 
+      }))
       setDrafts(prev => [...prev, ...newDrafts])
       if (drafts.length === 0) setActiveIndex(0)
     }
@@ -327,7 +343,10 @@ function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpe
                     {drafts[activeIndex].imageSource ? <img src={drafts[activeIndex].imageSource!} alt="Preview" loading="eager" decoding="async" className="w-full h-full object-contain p-2 cursor-pointer" draggable={false} /> : <ImageIcon className="w-10 h-10 text-zinc-700" />}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-2"><label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label><input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" disabled={isUploading}/></div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label>
+                      <input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" disabled={isUploading}/>
+                    </div>
                     <div className="flex flex-col gap-2">
                       <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Macro Bias</label>
                       <div className="flex gap-2">
@@ -577,7 +596,6 @@ const DEMO_LOGS = [
   }
 ];
 
-
 // --- MAIN DESK CLIENT ---
 export default function DeskClient() {
   
@@ -599,7 +617,6 @@ export default function DeskClient() {
   const [perfectCatalysts, setPerfectCatalysts] = useState<string[]>(DEFAULT_PERFECT_CATALYSTS)
   const [imperfectCatalysts, setImperfectCatalysts] = useState<string[]>(DEFAULT_IMPERFECT_CATALYSTS)
 
-  // 🚨 LOGGING STATES
   const [logPair, setLogPair] = useState<string>('') 
   const [logDirection, setLogDirection] = useState<'LONG' | 'SHORT' | null>(null)
   const [logSetupId, setLogSetupId] = useState<string | null>(null)
@@ -621,7 +638,6 @@ export default function DeskClient() {
   const [weeklyDebrief, setWeeklyDebrief] = useState('');
   const [activeTodayId, setActiveTodayId] = useState<string | null>(null)
   
-  // 🚨 TRADING PREFERENCES STATE
   const [terminology, setTerminology] = useState<'LONG_SHORT' | 'BUY_SELL'>('LONG_SHORT')
 
   const displayDirection = useCallback((dir: string | null | undefined) => {
@@ -630,7 +646,6 @@ export default function DeskClient() {
     return dir;
   }, [terminology])
 
-  // 🚨 2. DERIVED SECURE TIME LOGIC
   const getTrueUTC = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
 
   const getISTDate = useCallback(() => {
@@ -684,8 +699,6 @@ export default function DeskClient() {
   const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair) || executedSymbols.includes(logPair);
   const activeCatalystList = logExecution === 'Perfect' ? perfectCatalysts : logExecution === 'Imperfect' ? imperfectCatalysts : [];
 
-
-  // 🚨 3. ALL USEEFFECTS
   useEffect(() => {
     const fetchTime = async () => {
       try {
@@ -906,7 +919,6 @@ export default function DeskClient() {
       return () => clearTimeout(timeoutId)
     }
   }, [setups, activeTodayId, user, isPro])
-
 
   // 🚨 4. EVENT HANDLERS
   const handleDebriefChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => { setWeeklyDebrief(e.target.value); localStorage.setItem(debriefKey, e.target.value); };
