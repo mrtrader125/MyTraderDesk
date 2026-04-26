@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Activity, ArrowRight, Target, Archive } from 'lucide-react'
+import { Activity, ArrowRight, Target, Archive, Lock } from 'lucide-react'
 import { ASSET_CATEGORIES } from '@/lib/platformConfig'
 import { supabase } from '@/lib/supabase'
 
@@ -13,6 +13,59 @@ const CATEGORIES = [
     label: category.charAt(0) + category.slice(1).toLowerCase(),
   }))
 ]
+
+// --- DUMMY DATA FOR DEMO TIER ---
+const DEMO_SETUPS = [
+  {
+    id: 'demo-1', asset_symbol: 'BTCUSD', direction: 'LONG', category: 'Crypto', timeframe: '4H', bias: 'BULLISH',
+    status: 'ACTIVE', notes: '<p><b>Macro:</b> Bullish market structure. Price swept Asian session lows.</p>',
+    image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 'demo-2', asset_symbol: 'EURUSD', direction: 'SHORT', category: 'Forex', timeframe: '15M', bias: 'BEARISH',
+    status: 'WAITING', notes: '<p>Standard premium supply mitigation. DXY is strong.</p>',
+    image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
+    created_at: new Date(Date.now() - 86400000).toISOString()
+  },
+  {
+    id: 'demo-3', asset_symbol: 'XAUUSD', direction: 'LONG', category: 'Commodities', timeframe: '1D', bias: 'BULLISH',
+    status: 'WAITING', notes: '<p>Gold ranging between 2300 and 2350. Buying the discount.</p>',
+    image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+    created_at: new Date(Date.now() - 172800000).toISOString()
+  }
+];
+
+const buildDemoGroups = () => {
+  const grouped = DEMO_SETUPS.reduce((acc: any, curr: any) => {
+    if (!acc[curr.asset_symbol]) {
+      acc[curr.asset_symbol] = {
+        symbol: curr.asset_symbol,
+        category: (curr.category || 'FOREX').toUpperCase(),
+        latestSetupId: curr.id,
+        isPrime: true, // Make some fake prime
+        lastUpdated: curr.created_at,
+        count: 0,
+        activeCount: 0,
+        waitingCount: 0,
+        archivedCount: 0,
+        timeframes: []
+      }
+    }
+    
+    acc[curr.asset_symbol].count += 1
+    
+    const status = (curr.status || 'WAITING').toUpperCase()
+    if (status === 'ACTIVE') acc[curr.asset_symbol].activeCount += 1
+    else if (status === 'WAITING') acc[curr.asset_symbol].waitingCount += 1
+
+    if (!acc[curr.asset_symbol].timeframes.includes(curr.timeframe)) {
+      acc[curr.asset_symbol].timeframes.push(curr.timeframe)
+    }
+    return acc
+  }, {})
+  return Object.values(grouped)
+}
 
 const AssetIcon = ({ symbol, category }: { symbol: string, category: string }) => {
   const cleanSymbol = symbol.toUpperCase().trim();
@@ -44,12 +97,13 @@ const AssetIcon = ({ symbol, category }: { symbol: string, category: string }) =
   );
 }
 
-export default function MarketsClient({ initialGroupedAnalyses, userId }: any) {
+export default function MarketsClient({ initialPlan, initialGroupedAnalyses, userId }: any) {
   const router = useRouter()
   const searchParams = useSearchParams() 
   
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
-  const [groupedAnalyses] = useState<any[]>(initialGroupedAnalyses || [])
+  const [groupedAnalyses, setGroupedAnalyses] = useState<any[]>(initialGroupedAnalyses || [])
+  const [isProUser, setIsProUser] = useState<boolean>(true)
   
   const [activeTab, setActiveTab] = useState('ALL')
   const [prevIndex, setPrevIndex] = useState(0)
@@ -66,10 +120,20 @@ export default function MarketsClient({ initialGroupedAnalyses, userId }: any) {
     return () => window.removeEventListener('globalSearch', handleSearch)
   }, [])
 
-  // 🚨 NEW: Fetch Unseen Status on Mount
+  // 🚨 TIER CHECK & MOCK DATA INJECTION
+  useEffect(() => {
+    const isPro = initialPlan === 'pro' || initialPlan === 'premium'
+    setIsProUser(isPro)
+    
+    if (!isPro) {
+      setGroupedAnalyses(buildDemoGroups())
+    }
+  }, [initialPlan])
+
+  // 🚨 NEW: Fetch Unseen Status on Mount (Only for Pro users)
   useEffect(() => {
     const fetchUnseenStatus = async () => {
-      if (!userId) return;
+      if (!userId || !isProUser) return;
 
       // 1. Get setups from the last 7 days
       const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -103,7 +167,7 @@ export default function MarketsClient({ initialGroupedAnalyses, userId }: any) {
     };
 
     fetchUnseenStatus();
-  }, [userId]);
+  }, [userId, isProUser]);
 
   const handleTabChange = (id: string, index: number) => {
     setSlideDirection(index > prevIndex ? 'right' : 'left')
@@ -124,14 +188,21 @@ export default function MarketsClient({ initialGroupedAnalyses, userId }: any) {
       <div className="max-w-[90rem] mx-auto w-full h-full flex flex-col min-h-0">
         
         {/* COMPLETELY UNRESTRICTED CATEGORY TABS */}
-        <div className="shrink-0 w-full mb-6 md:mb-8">
-          <div className="flex items-center space-x-1.5 bg-[#0a0a0a] p-1.5 rounded-xl border border-white/[0.05] overflow-x-auto w-full scrollbar-hide shadow-sm">
+        <div className="shrink-0 w-full mb-6 md:mb-8 flex items-center gap-4">
+          <div className="flex items-center space-x-1.5 bg-[#0a0a0a] p-1.5 rounded-xl border border-white/[0.05] overflow-x-auto w-full scrollbar-hide shadow-sm relative">
+            {!isProUser && (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl border border-white/[0.02]">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5"><Lock size={12}/> Global Markets</span>
+              </div>
+            )}
             {CATEGORIES.map((cat, idx) => {
               const active = activeTab === cat.id
               return (
                 <button 
                   key={cat.id}
-                  onClick={() => handleTabChange(cat.id, idx)}
+                  onClick={() => {
+                    if (isProUser) handleTabChange(cat.id, idx);
+                  }}
                   className={`relative flex items-center px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0
                     ${active ? 'bg-white text-black shadow-md scale-[1.02]' : 'text-neutral-500 hover:text-white hover:bg-white/[0.04]'}`}
                 >
@@ -140,6 +211,14 @@ export default function MarketsClient({ initialGroupedAnalyses, userId }: any) {
               )
             })}
           </div>
+          
+          {!isProUser && (
+            <div className="hidden md:flex shrink-0 items-center px-4 py-2 bg-amber-500/10 border border-amber-500/20 text-amber-500 rounded-xl shadow-sm h-full">
+              <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                Sandbox Mode <Lock size={12} className="stroke-[3]" />
+              </span>
+            </div>
+          )}
         </div>
 
         {/* MARKET CARDS GRID */}
@@ -168,11 +247,15 @@ export default function MarketsClient({ initialGroupedAnalyses, userId }: any) {
                   return (
                     <div 
                       key={market.symbol}
-                      onClick={() => router.push(`/markets/viewport?asset=${market.symbol}&from=markets`)}
-                      className={`bg-[#0a0a0a] border rounded-2xl p-5 transition-all duration-300 cursor-pointer group flex flex-col min-h-[140px] relative overflow-hidden
-                        ${hasUnseen ? 'border-blue-500/20 bg-blue-500/[0.02] shadow-[0_0_15px_rgba(59,130,246,0.05)]' : ''}
-                        ${market.isPrime && !hasUnseen ? 'border-blue-500/30 bg-blue-500/[0.02] hover:border-blue-500/60 shadow-[0_0_20px_rgba(37,99,235,0.08)]' : ''}
-                        ${!market.isPrime && !hasUnseen ? 'border-white/[0.04] hover:border-white/10 hover:bg-[#0c0c0c] shadow-sm' : ''}
+                      onClick={() => {
+                        if (isProUser) router.push(`/markets/viewport?asset=${market.symbol}&from=markets`);
+                      }}
+                      className={`bg-[#0a0a0a] border rounded-2xl p-5 transition-all duration-300 flex flex-col min-h-[140px] relative overflow-hidden
+                        ${!isProUser ? 'opacity-80' : 'cursor-pointer group'}
+                        ${hasUnseen && isProUser ? 'border-blue-500/20 bg-blue-500/[0.02] shadow-[0_0_15px_rgba(59,130,246,0.05)]' : ''}
+                        ${market.isPrime && !hasUnseen && isProUser ? 'border-blue-500/30 bg-blue-500/[0.02] hover:border-blue-500/60 shadow-[0_0_20px_rgba(37,99,235,0.08)]' : ''}
+                        ${!market.isPrime && !hasUnseen && isProUser ? 'border-white/[0.04] hover:border-white/10 hover:bg-[#0c0c0c] shadow-sm' : ''}
+                        ${!isProUser ? 'border-white/[0.04] shadow-sm' : ''}
                       `}
                     >
                       <div className="flex justify-between items-start mb-5 z-10">
@@ -187,7 +270,7 @@ export default function MarketsClient({ initialGroupedAnalyses, userId }: any) {
                         {/* Top Right Badges Container */}
                         <div className="flex flex-col items-end gap-1.5">
                           {/* 🚨 NEW: Unseen Glowing Badge */}
-                          {hasUnseen && (
+                          {hasUnseen && isProUser && (
                             <div className="flex items-center px-2 py-1 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
                               <span className="relative flex h-1.5 w-1.5 mr-1.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -232,14 +315,19 @@ export default function MarketsClient({ initialGroupedAnalyses, userId }: any) {
                         </div>
 
                         <button 
-                          onClick={(e) => { e.stopPropagation(); router.push(`/markets/archive?asset=${market.symbol}&from=markets`); }}
-                          className={`w-8 h-8 rounded-lg bg-[#111] border flex items-center justify-center transition-all shrink-0 shadow-sm
-                            ${market.isPrime 
-                              ? 'border-blue-500/30 text-blue-400 hover:bg-blue-600 hover:text-white group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500' 
-                              : 'border-white/[0.05] text-neutral-500 hover:text-white hover:bg-[#222] hover:border-white/10 group-hover:bg-[#151515] group-hover:border-white/10 group-hover:text-white'}
+                          onClick={(e) => { 
+                            e.stopPropagation(); 
+                            if (isProUser) router.push(`/markets/archive?asset=${market.symbol}&from=markets`); 
+                          }}
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all shrink-0 shadow-sm
+                            ${!isProUser
+                              ? 'bg-[#111] border border-white/[0.05] text-neutral-600 cursor-not-allowed'
+                              : market.isPrime 
+                                ? 'bg-[#111] border border-blue-500/30 text-blue-400 hover:bg-blue-600 hover:text-white group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-500' 
+                                : 'bg-[#111] border border-white/[0.05] text-neutral-500 hover:text-white hover:bg-[#222] hover:border-white/10 group-hover:bg-[#151515] group-hover:border-white/10 group-hover:text-white'}
                           `}
                         >
-                          <ArrowRight size={14} />
+                          {isProUser ? <ArrowRight size={14} /> : <Lock size={12} />}
                         </button>
                       </div>
                     </div>
