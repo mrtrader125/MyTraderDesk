@@ -7,7 +7,8 @@ import { usePathname } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { 
   LayoutDashboard, LineChart, Bookmark, 
-  Settings, LogOut, Menu, Users, Briefcase 
+  Settings, LogOut, Menu, Users, Briefcase,
+  BookOpen, Activity // <-- Added new icons
 } from 'lucide-react'
 
 export default function SideNav() {
@@ -26,6 +27,8 @@ export default function SideNav() {
     { name: 'Live Floor', href: '/floor', icon: Users }, 
     { name: 'Markets', href: '/markets', icon: LineChart },
     { name: 'The Vault', href: '/vault', icon: Bookmark }, 
+    { name: 'Journal', href: '/journal', icon: BookOpen },     // <-- Added
+    { name: 'Analytics', href: '/analytics', icon: Activity }, // <-- Added
     { name: 'Account', href: '/account/profile', icon: Settings },
   ]
 
@@ -76,6 +79,7 @@ export default function SideNav() {
                   {isOpen && (
                     <>
                       <span className="ml-3 font-black text-xs uppercase tracking-widest truncate">{item.name}</span>
+                      {/* @ts-ignore - Assuming isPro might be added to some items later */}
                       {item.isPro && (
                         <span className="ml-auto text-[8px] uppercase tracking-wider font-bold bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20">
                           PRO
@@ -104,12 +108,13 @@ export default function SideNav() {
       {/* ========================================= */}
       {/* MOBILE BOTTOM NAV (Hidden on Desktop)       */}
       {/* ========================================= */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[65px] bg-[#050505]/95 backdrop-blur-xl border-t border-neutral-900 z-[100] flex items-center justify-around px-2 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+      {/* 🚨 FIX: Added overflow-x-auto and gap-6 so the 8 items don't squish together */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[65px] bg-[#050505]/95 backdrop-blur-xl border-t border-neutral-900 z-[100] flex items-center justify-start overflow-x-auto custom-scrollbar px-4 gap-6 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href.split('/')[1] ? `/${item.href.split('/')[1]}` : item.href))
           
           return (
-            <Link key={item.name} href={item.href} className="relative flex flex-col items-center justify-center w-full h-full space-y-1.5 group">
+            <Link key={item.name} href={item.href} className="relative flex flex-col items-center justify-center min-w-[64px] shrink-0 h-full space-y-1.5 group">
               {/* Active Indicator Top Bar */}
               {isActive && (
                 <div className="absolute top-0 w-8 h-0.5 bg-blue-500 rounded-b-full shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
