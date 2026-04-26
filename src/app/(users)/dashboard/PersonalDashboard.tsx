@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -10,6 +10,29 @@ import {
   Target, Globe2, Activity, Lock, X, AlertTriangle, Type,
   ChevronLeft, ChevronRight, BookOpen, Maximize, Info
 } from 'lucide-react'
+
+// --- DUMMY DATA FOR DEMO TIER ---
+const DEMO_SETUPS = [
+  {
+    id: 'demo-1', symbol: 'BTCUSD', direction: 'LONG', playbook: 'Liquidity Sweep',
+    notes: '<p><b>Macro:</b> Bullish market structure. Price swept Asian session lows.</p><p><b>Trigger:</b> Waiting for 15m CHoCH.</p>',
+    imageUrl: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
+    isToday: true
+  },
+  {
+    id: 'demo-2', symbol: 'EURUSD', direction: 'SHORT', playbook: 'Trend Continuation',
+    notes: '<p>Standard premium supply mitigation. DXY is strong.</p>',
+    imageUrl: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
+    isToday: true
+  }
+];
+
+const DEMO_LOGS = [
+  {
+    id: 'log-1', symbol: 'GBPUSD', direction: 'SHORT', reason: '[Perfect Risk Management]',
+    execution_type: 'Perfect', outcome: 'TP', rr: 2.5
+  }
+];
 
 const fontStyles = [
   "font-mono font-black tracking-tighter text-zinc-100",   
@@ -49,6 +72,7 @@ export default function PersonalDashboard() {
   const router = useRouter()
   
   // 🚨 1. ALL USESTATE HOOKS FIRST
+  const [isPro, setIsPro] = useState<boolean>(true); // Assume pro until tier check confirms demo
   const [user, setUser] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -65,7 +89,6 @@ export default function PersonalDashboard() {
   const [isTodayFocusExpanded, setIsTodayFocusExpanded] = useState(true)
   const [isMobileNotesOpen, setIsMobileNotesOpen] = useState(false)
 
-  // 🚨 TRADING PREFERENCES STATE
   const [terminology, setTerminology] = useState<'LONG_SHORT' | 'BUY_SELL'>('LONG_SHORT')
 
   const displayDirection = useCallback((dir: string | null | undefined) => {
@@ -99,7 +122,6 @@ export default function PersonalDashboard() {
   const [timeOffset, setTimeOffset] = useState(0);
   const timeOffsetRef = useRef(0);
   
-  // 🚨 FLAW 1 FIX: Dynamic Timezone resolution (Profile > Browser Local)
   const [userTimezone, setUserTimezone] = useState(
     typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC'
   );
@@ -180,7 +202,7 @@ export default function PersonalDashboard() {
   }, [])
 
   useEffect(() => {
-    if (!layoutLoaded) return;
+    if (!layoutLoaded || !isPro) return;
     localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(widgets))
     const timeoutId = setTimeout(async () => {
       try {
@@ -191,7 +213,7 @@ export default function PersonalDashboard() {
       } catch (e) {}
     }, 2000)
     return () => clearTimeout(timeoutId)
-  }, [widgets, layoutLoaded])
+  }, [widgets, layoutLoaded, isPro])
 
   useEffect(() => {
     setMounted(true)
@@ -227,8 +249,26 @@ export default function PersonalDashboard() {
     return () => clearInterval(timer)
   }, [])
 
-  // 🚨 Extracted Data Fetcher for Realtime Hook capability
-  const loadDashboardData = useCallback(async (activeUser: any) => {
+  const loadDashboardData = useCallback(async (activeUser: any, isUserPro: boolean) => {
+    
+    // 🚨 INJECT MOCK DATA FOR DEMO USERS
+    if (!isUserPro) {
+        const demoNow = Date.now();
+        setSetups(DEMO_SETUPS.map(s => ({ ...s, addedToTodayAt: s.isToday ? demoNow - 100000 : null, createdAt: demoNow })));
+        setVaultSetupCount(2);
+
+        const progress = []
+        const daysFull = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+        for (let i = 0; i < 5; i++) {
+           progress.push({ day: daysFull[i], status: i < 2 ? 'perfect' : i === 2 ? 'current' : 'pending', isPast: i < 2, isToday: i === 2 })
+        }
+        setWeekProgress(progress)
+        setTradesTakenToday(1)
+        setPendingReconciliationsCount(0)
+        setIsLoading(false)
+        return;
+    }
+
     const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', activeUser.id).order('added_to_today_at', { ascending: false })
     
     if (setupsData) {
@@ -320,6 +360,10 @@ export default function PersonalDashboard() {
       }
       setUser(session.user)
 
+      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', session.user.id).single();
+      const isProUser = profile?.plan === 'pro' || profile?.plan === 'premium';
+      setIsPro(isProUser);
+
       if (session.user.user_metadata?.desk_timezone) {
         setUserTimezone(session.user.user_metadata.desk_timezone)
       }
@@ -328,35 +372,33 @@ export default function PersonalDashboard() {
         setTerminology(session.user.user_metadata.trade_terminology)
       }
 
-      await loadDashboardData(session.user)
+      await loadDashboardData(session.user, isProUser)
     }
 
     init()
   }, [loadDashboardData])
 
-  // 🚨 FLAW 2 FIX: Realtime State Synchronization Across Tabs
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isPro) return;
 
     const channel = supabase.channel('dashboard-sync')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'user_desk_setups', filter: `user_id=eq.${user.id}` },
-        () => loadDashboardData(user)
+        () => loadDashboardData(user, true)
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'user_desk_logs', filter: `user_id=eq.${user.id}` },
-        () => loadDashboardData(user)
+        () => loadDashboardData(user, true)
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     }
-  }, [user, loadDashboardData]);
+  }, [user, loadDashboardData, isPro]);
 
-  // Midnight Auto-Wipe Interval
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
       const todayStr = getBaseDate().toDateString();
@@ -419,7 +461,6 @@ export default function PersonalDashboard() {
 
       if (todaySetups.length === 0) return;
 
-      // Spacebar Traversal
       if (e.code === 'Space') {
         e.preventDefault(); 
         const currentIndex = todaySetups.findIndex(s => s.id === activeTodayId);
@@ -460,6 +501,7 @@ export default function PersonalDashboard() {
   }
 
   const handleDragStart = (e: React.DragEvent, id: 'local' | 'session') => {
+    if (!isPro) return;
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('widgetId', id)
     
@@ -519,6 +561,7 @@ export default function PersonalDashboard() {
   }
 
   const handleResizePointerDown = (e: React.PointerEvent, id: 'local' | 'session') => {
+    if (!isPro) return;
     e.preventDefault()
     e.stopPropagation()
 
@@ -563,6 +606,7 @@ export default function PersonalDashboard() {
   }
 
   const toggleFont = (e: React.MouseEvent, id: 'local' | 'session') => {
+    if (!isPro) return;
     e.stopPropagation()
     setWidgets(prev => ({
       ...prev,
@@ -602,8 +646,14 @@ export default function PersonalDashboard() {
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
             {/* --- TOP SECTION (Mobile: Stacked, Desktop: Side-by-Side) --- */}
-            <div className="flex flex-col lg:flex-row h-full lg:h-1/2 shrink-0 p-3 sm:p-4 gap-4 min-h-0 overflow-y-auto lg:overflow-hidden">
+            <div className="flex flex-col lg:flex-row h-full lg:h-1/2 shrink-0 p-3 sm:p-4 gap-4 min-h-0 overflow-y-auto lg:overflow-hidden relative">
               
+              {!isPro && (
+                <div className="absolute top-4 right-4 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">
+                  Sandbox Mode <Lock size={12} className="stroke-[3]" />
+                </div>
+              )}
+
               {/* --- WIDGET GRID (Mobile: Bottom, Desktop: Left) --- */}
               <div 
                 ref={gridRef}
@@ -617,12 +667,12 @@ export default function PersonalDashboard() {
 
                 {/* Local Time Widget */}
                 <div 
-                  draggable 
+                  draggable={isPro} 
                   onDragStart={(e) => handleDragStart(e, 'local')}
                   onDragEnd={handleDragEnd}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDropOnGrid}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${draggingId === 'local' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md group overflow-hidden transition-all duration-200 z-10 ${draggingId === 'local' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''} ${isPro ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
@@ -634,15 +684,17 @@ export default function PersonalDashboard() {
                     <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none pointer-events-none">
                       <Clock size={10} className="opacity-50"/> Local Time
                     </div>
-                    <button 
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                      onClick={(e) => toggleFont(e, 'local')}
-                      className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
-                      title="Cycle Typography"
-                    >
-                      <Type size={12} />
-                    </button>
+                    {isPro && (
+                      <button 
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={(e) => toggleFont(e, 'local')}
+                        className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
+                        title="Cycle Typography"
+                      >
+                        <Type size={12} />
+                      </button>
+                    )}
                   </div>
                   
                   <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-0 pointer-events-none" style={{ containerType: 'size' }}>
@@ -651,24 +703,26 @@ export default function PersonalDashboard() {
                       : formatTime('--:--:--', widgets.local.fontIdx)}
                   </div>
 
-                  <div 
-                    draggable={false}
-                    onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    onPointerDown={(e) => handleResizePointerDown(e, 'local')}
-                    className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2.5 touch-none"
-                  >
-                    <div className="w-2.5 h-2.5 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
-                  </div>
+                  {isPro && (
+                    <div 
+                      draggable={false}
+                      onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onPointerDown={(e) => handleResizePointerDown(e, 'local')}
+                      className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2.5 touch-none"
+                    >
+                      <div className="w-2.5 h-2.5 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
+                    </div>
+                  )}
                 </div>
 
                 {/* Session Widget */}
                 <div 
-                  draggable 
+                  draggable={isPro} 
                   onDragStart={(e) => handleDragStart(e, 'session')}
                   onDragEnd={handleDragEnd}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDropOnGrid}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md cursor-grab active:cursor-grabbing group overflow-hidden transition-all duration-200 z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md group overflow-hidden transition-all duration-200 z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''} ${isPro ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
@@ -682,15 +736,17 @@ export default function PersonalDashboard() {
                     <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none pointer-events-none">
                       <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
                     </div>
-                    <button 
-                      onPointerDown={(e) => e.stopPropagation()}
-                      onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                      onClick={(e) => toggleFont(e, 'session')}
-                      className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
-                      title="Cycle Typography"
-                    >
-                      <Type size={12} />
-                    </button>
+                    {isPro && (
+                      <button 
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                        onClick={(e) => toggleFont(e, 'session')}
+                        className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
+                        title="Cycle Typography"
+                      >
+                        <Type size={12} />
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-10 pointer-events-none" style={{ containerType: 'size' }}>
@@ -701,14 +757,16 @@ export default function PersonalDashboard() {
                     <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent animate-pulse" />
                   )}
 
-                  <div 
-                    draggable={false}
-                    onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    onPointerDown={(e) => handleResizePointerDown(e, 'session')}
-                    className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2.5 touch-none"
-                  >
-                    <div className="w-2.5 h-2.5 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
-                  </div>
+                  {isPro && (
+                    <div 
+                      draggable={false}
+                      onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onPointerDown={(e) => handleResizePointerDown(e, 'session')}
+                      className="absolute bottom-0 right-0 w-8 h-8 cursor-nwse-resize opacity-0 group-hover:opacity-100 transition-opacity z-20 flex items-end justify-end p-2.5 touch-none"
+                    >
+                      <div className="w-2.5 h-2.5 border-r-[1.5px] border-b-[1.5px] border-zinc-500 rounded-[1px] pointer-events-none" />
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -739,20 +797,20 @@ export default function PersonalDashboard() {
                   {/* Vertical Connecting Line */}
                   <div className="absolute left-[13px] top-2 bottom-6 w-px bg-zinc-800/60 z-0" />
 
-                  {/* 🚨 Phase 1: Macro Prep (Accountability Gated) */}
-                  <div className={`flex items-start gap-4 relative z-10 mb-6 ${isVaultLocked ? 'opacity-60' : ''}`}>
+                  {/* Phase 1: Macro Prep */}
+                  <div className={`flex items-start gap-4 relative z-10 mb-6 ${isVaultLocked && isPro ? 'opacity-60' : ''}`}>
                     <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${vaultSetupCount > 0 ? 'border-emerald-500 text-emerald-400' : isVaultLocked ? 'border-red-500/50 text-red-500/50' : 'border-zinc-700 text-transparent'}`}>
-                      {vaultSetupCount > 0 ? <CheckCircle2 size={12} /> : isVaultLocked ? <Lock size={10} /> : null}
+                      {vaultSetupCount > 0 ? <CheckCircle2 size={12} /> : isVaultLocked && isPro ? <Lock size={10} /> : null}
                     </div>
                     <div className="flex flex-col">
                       <span className={`text-xs font-bold tracking-wide ${vaultSetupCount > 0 ? 'text-zinc-500' : 'text-zinc-200'}`}>Weekly Macro Prep</span>
-                      <span className={`text-[9px] font-medium uppercase tracking-widest mt-0.5 ${isVaultLocked ? 'text-red-400' : 'text-zinc-500'}`}>
-                        {isVaultLocked ? (!isPrepWindow ? 'Locked Until Weekend' : 'Locked: Complete Wind-up First') : 'Sunday Filter (Max 15-20)'}
+                      <span className={`text-[9px] font-medium uppercase tracking-widest mt-0.5 ${isVaultLocked && isPro ? 'text-red-400' : 'text-zinc-500'}`}>
+                        {isVaultLocked && isPro ? (!isPrepWindow ? 'Locked Until Weekend' : 'Locked: Complete Wind-up First') : 'Sunday Filter (Max 15-20)'}
                       </span>
                     </div>
                   </div>
 
-                  {/* Phase 2: Today Filtering (Daily Sniper) */}
+                  {/* Phase 2: Today Filtering */}
                   <div className="flex items-start gap-4 relative z-10 mb-6">
                     <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${
                       pushesToday > 0 && pushesToday <= 5 ? 'border-emerald-500 text-emerald-400' : 
@@ -889,7 +947,6 @@ export default function PersonalDashboard() {
                             )}
                           </div>
                           <div className="flex items-center gap-1.5">
-                            {/* 🚨 TERMINOLOGY HELPER APPLIED HERE */}
                             <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'border-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
                               {displayDirection(setup.direction)}
                             </span>
