@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { buildSystemPrompt } from '@/ai/core/systemPrompt'
-import { getDailyTraderContext } from '@/ai/services/contextBuilder'
-import { generateMentorResponse } from '@/ai/services/geminiClient'
+import { handleUserMessage } from '@/ingestion'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -195,7 +193,11 @@ export async function POST(req: Request) {
       }
 
       // --- NORMAL USER OTP LOGIC & MENTOR AI INTERCEPTION ---
-      const { data: existingProfile } = await supabase.from('profiles').select('id, username, plan').eq('telegram_user_id', telegramUserId).maybeSingle()
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id, username, plan, user_trading_modules(*)')
+        .eq('telegram_user_id', telegramUserId)
+        .maybeSingle()
 
       if (existingProfile) {
         if (text === '/start') {
@@ -205,111 +207,32 @@ export async function POST(req: Request) {
         
         // ⚡ THE AI MENTOR TAKES OVER HERE ⚡
         try {
-          // 1. Show a typing indicator to make it feel responsive
+          const userModule = existingProfile.user_trading_modules?.[0]
+          
+          if (!userModule) {
+             await sendMessage(chatId, "Sentinel module initializing. Please complete your setup in the web terminal.", 'Markdown')
+             return NextResponse.json({ status: 'success' })
+          }
+
+          // Show typing indicator
           await fetch(`https://api.telegram.org/bot${botToken}/sendChatAction`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: chatId, action: 'typing' })
           });
 
-          // 2. Fetch recent chat history
-          const { data: historyData } = await supabase
-            .from('mentor_chat_logs')
-            .select('role, content')
-            .eq('user_id', existingProfile.id)
-            .order('created_at', { ascending: false })
-            .limit(10);
+          // Update last interaction timestamp
+          await supabase.from('user_trading_modules').update({ last_user_interaction_at: new Date().toISOString() }).eq('id', userModule.id)
 
-          const pastMessages = (historyData || []).reverse().map(msg => ({
-            role: msg.role === 'model' ? 'assistant' : 'user',
-            content: msg.content
-          }));
-
-          // Append the current message
-          pastMessages.push({ role: 'user', content: text });
-
-          // 3. Fetch centralized reality context & build prompt
-          const { userProfile, liveContext } = await getDailyTraderContext(supabase, existingProfile.id);
-          const unifiedSystemPrompt = `${buildSystemPrompt(userProfile)}\n\n${liveContext}`;
-
-          // 4. Generate Initial Response from AI
-          const aiParts = await generateMentorResponse(pastMessages, unifiedSystemPrompt);
-          const firstPart = aiParts[0];
-
-          let finalAiText = "";
-
-          // 5. THE INTERCEPTOR: Check if Telegram AI requested a Tool
-          if (firstPart?.functionCall) {
-            const toolName = firstPart.functionCall.name;
-            const toolArgs = firstPart.functionCall.args;
-            let toolData: any = {};
-            
-            if (toolName === 'get_daily_status') {
-              toolData = { live_stats: liveContext };
-            } else if (toolName === 'get_trade_autopsy') {
-              const { data } = await supabase
-                .from('user_desk_logs')
-                .select('*, user_desk_setups(notes)')
-                .eq('user_id', existingProfile.id)
-                .ilike('symbol', `%${toolArgs.symbol}%`)
-                .order('created_at', { ascending: false })
-                .limit(1);
-              toolData = data ? data[0] : { error: "No recent trades found for this asset." };
-            } else if (toolName === 'get_discipline_and_leaks' || toolName === 'get_playbook_performance') {
-              let dateFilter = new Date();
-              if (toolArgs.timeframe === 'WEEK') dateFilter.setDate(dateFilter.getDate() - 7);
-              else if (toolArgs.timeframe === 'MONTH') dateFilter.setDate(dateFilter.getDate() - 30);
-              else dateFilter = new Date(0);
-              
-              const { data } = await supabase
-                .from('user_desk_logs')
-                .select('playbook, execution_type, outcome, rr, reason')
-                .eq('user_id', existingProfile.id)
-                .gte('created_at', dateFilter.toISOString());
-              toolData = data || [];
-            }
-
-            // Map standard messages for the client format
-            const formattedMessagesForTool = pastMessages.map(m => ({
-                role: m.role === 'assistant' ? 'model' : 'user',
-                parts: [{ text: m.content }]
-            }));
-
-            // Handoff data back to AI
-            formattedMessagesForTool.push({ role: 'model', parts: [{ functionCall: firstPart.functionCall }] });
-            formattedMessagesForTool.push({ role: 'user', parts: [{ functionResponse: { name: toolName, response: { content: toolData } } }] });
-
-            const finalReplyParts = await generateMentorResponse(formattedMessagesForTool, unifiedSystemPrompt);
-            
-            // 🚨 THE FIX: Optional chaining and fallback to empty string
-            finalAiText = finalReplyParts[0]?.text || "";
-            
-          } else {
-             // No tools requested, just standard text
-             // 🚨 THE FIX: Optional chaining and fallback
-             finalAiText = firstPart?.text || "";
+          // Route through the new ingestion layer
+          const replyText = await handleUserMessage(userModule, text)
+          
+          if (replyText && replyText !== '[SILENCE]') {
+            await sendMessage(chatId, replyText, 'Markdown')
           }
 
-          // 6. The Silence Interceptor & Delivery
-          // 🚨 THE FIX: Safely check if finalAiText exists and is a string before calling .includes()
-          if (finalAiText && finalAiText.includes('[SILENCE]')) {
-             console.log("Mentor chose to remain silent.");
-             return NextResponse.json({ status: 'success' });
-          }
-
-          // Save the conversation so the Web Widget sees it too
-          // Only save and send if there's actually text to send
-          if (finalAiText) {
-              await supabase.from('mentor_chat_logs').insert([
-                { user_id: existingProfile.id, role: 'user', content: text },
-                { user_id: existingProfile.id, role: 'model', content: finalAiText }
-              ]);
-
-              await sendMessage(chatId, finalAiText, 'Markdown');
-          }
-
-        } catch (aiError) {
-          console.error("Mentor AI Error:", aiError);
+        } catch (error) {
+          console.error("Mentor Kernel Error:", error);
           await sendMessage(chatId, "Comms interference. I'll check back in shortly.");
         }
         
