@@ -15,14 +15,57 @@ type Applicant = {
   psychological_hurdles: string;
   target_objective: string;
   status: string;
+  directional_bias?: string;
+  risk_management?: string;
 };
 
-export default function ApplicantViewer({ applicants }: { applicants: Applicant[] }) {
+export default function ApplicantViewer({ applicants: initialApplicants }: { applicants: Applicant[] }) {
+  const [applicants, setApplicants] = useState<Applicant[]>(initialApplicants);
   const [selectedId, setSelectedId] = useState<string | null>(
     applicants.length > 0 ? applicants[0].id : null
   );
+  
+  // New state to prevent double-clicks while sending the email
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const selectedApplicant = applicants.find((a) => a.id === selectedId);
+
+  // THE TRIGGER: This talks to your secure Next.js API route
+  const handleAction = async (action: 'approve' | 'reject') => {
+    if (!selectedApplicant) return;
+    
+    setIsProcessing(true);
+
+    try {
+      const response = await fetch('/api/admin/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          applicantId: selectedApplicant.id,
+          email: selectedApplicant.email,
+          name: selectedApplicant.full_name,
+          action: action
+        })
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) throw new Error(result.error || 'Failed to process action');
+
+      // Update the local state so the UI changes immediately
+      setApplicants(prev => prev.map(app => 
+        app.id === selectedApplicant.id ? { ...app, status: action === 'approve' ? 'approved' : 'rejected' } : app
+      ));
+
+      alert(`Operator successfully ${action}d.`);
+
+    } catch (error: any) {
+      alert(`System Error: ${error.message}`);
+      console.error(error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   if (applicants.length === 0) {
     return (
@@ -33,7 +76,7 @@ export default function ApplicantViewer({ applicants }: { applicants: Applicant[
   }
 
   return (
-    <div className="bg-[#0a0a0a] border border-zinc-800 rounded-xl overflow-hidden flex flex-col md:flex-row min-h-[700px] shadow-2xl">
+    <div className="bg-[#0a0a0a] border border-zinc-800 rounded-xl overflow-hidden flex flex-col md:flex-row min-h-[700px] shadow-2xl font-sans">
       
       {/* Left Pane: Applicant List */}
       <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-zinc-800 bg-zinc-900/30 flex flex-col max-h-[400px] md:max-h-[800px] overflow-hidden">
@@ -60,7 +103,9 @@ export default function ApplicantViewer({ applicants }: { applicants: Applicant[
               <div className="flex justify-between items-center mt-2">
                 <span className="text-xs text-zinc-500 truncate pr-2">{applicant.email}</span>
                 <span className={`text-[9px] px-2 py-0.5 rounded-sm uppercase tracking-widest font-bold ${
-                  applicant.status === 'pending' ? 'bg-amber-900/30 text-amber-500' : 'bg-zinc-800 text-zinc-400'
+                  applicant.status === 'pending' ? 'bg-amber-900/30 text-amber-500' : 
+                  applicant.status === 'approved' ? 'bg-emerald-900/30 text-emerald-500' :
+                  'bg-red-900/30 text-red-500'
                 }`}>
                   {applicant.status}
                 </span>
@@ -101,6 +146,21 @@ export default function ApplicantViewer({ applicants }: { applicants: Applicant[
                     <p className="text-zinc-200 text-sm font-medium">{selectedApplicant.strategy_duration}</p>
                   </div>
                 </div>
+                
+                {/* System Mechanics */}
+                {(selectedApplicant.directional_bias || selectedApplicant.risk_management) && (
+                  <div className="grid grid-cols-2 gap-6 pt-2">
+                    <div>
+                      <h4 className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5">Directional Bias</h4>
+                      <p className="text-zinc-200 text-sm font-medium">{selectedApplicant.directional_bias || 'N/A'}</p>
+                    </div>
+                    <div>
+                      <h4 className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5">Risk Management</h4>
+                      <p className="text-zinc-200 text-sm font-medium">{selectedApplicant.risk_management || 'N/A'}</p>
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <h4 className="text-[10px] text-zinc-500 uppercase tracking-widest mb-1.5">Current Strategy</h4>
                   <p className="text-zinc-300 text-sm leading-relaxed whitespace-pre-wrap bg-zinc-900/30 p-4 rounded-md border border-zinc-800/50">
@@ -135,12 +195,29 @@ export default function ApplicantViewer({ applicants }: { applicants: Applicant[
 
             {/* Admin Actions Footer */}
             <div className="mt-auto px-8 py-5 border-t border-zinc-800 bg-zinc-900/50 flex justify-end gap-4 shrink-0">
-              <button className="text-xs font-bold text-red-500 hover:text-red-400 uppercase tracking-widest px-4 py-2 transition-colors">
-                Reject
-              </button>
-              <button className="text-xs font-bold bg-zinc-100 text-zinc-900 hover:bg-white uppercase tracking-widest px-6 py-2 rounded transition-colors shadow-lg">
-                Approve Access
-              </button>
+              {/* If they are already approved/rejected, just show the status instead of buttons */}
+              {selectedApplicant.status !== 'pending' ? (
+                <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest py-2">
+                  Status: {selectedApplicant.status}
+                </div>
+              ) : (
+                <>
+                  <button 
+                    onClick={() => handleAction('reject')}
+                    disabled={isProcessing}
+                    className="text-xs font-bold text-red-500 hover:text-red-400 uppercase tracking-widest px-4 py-2 transition-colors disabled:opacity-50"
+                  >
+                    Reject
+                  </button>
+                  <button 
+                    onClick={() => handleAction('approve')}
+                    disabled={isProcessing}
+                    className="text-xs font-bold bg-zinc-100 text-zinc-900 hover:bg-white uppercase tracking-widest px-6 py-2 rounded transition-colors shadow-lg disabled:opacity-50 min-w-[160px] flex items-center justify-center"
+                  >
+                    {isProcessing ? 'Transmitting...' : 'Approve Access'}
+                  </button>
+                </>
+              )}
             </div>
           </div>
         ) : (
@@ -149,7 +226,6 @@ export default function ApplicantViewer({ applicants }: { applicants: Applicant[
           </div>
         )}
       </div>
-
     </div>
   );
 }
