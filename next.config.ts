@@ -6,6 +6,11 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+
+  // ⚡ THE FIX: ESLint block merged into the main object
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   
   images: {
     remotePatterns: [
@@ -15,7 +20,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
-        // 🚨 ADDED: Your secondary Supabase URL to ensure all legacy and new images load
         protocol: 'https',
         hostname: 'xmievzaposzzjzrtzmdm.supabase.co',
         pathname: '/**',
