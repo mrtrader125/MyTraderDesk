@@ -24,14 +24,12 @@ export default function Signup() {
     setLoading(true)
     setError('')
 
-    // 1. THE BOUNCER: Verify if the email is cleared for access
-    const { data: applicant, error: checkError } = await supabase
-      .from('applicants')
-      .select('status')
-      .eq('email', email)
-      .single()
+    // 1. THE BOUNCER: Call the secure Postgres function
+    const { data: isCleared, error: checkError } = await supabase
+      .rpc('check_applicant_clearance', { check_email: email })
 
-    if (checkError || !applicant || applicant.status !== 'approved') {
+    // If there is an error, or the function returns false, lock them out.
+    if (checkError || !isCleared) {
       setError("Access Denied: This email has not been cleared for terminal access.")
       setLoading(false)
       return
