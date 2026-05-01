@@ -62,7 +62,11 @@ export default function AssistantWidget() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Server error')
 
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.text }])
+      // 🚨 THE FIX: Only append the message if text is not null (Respects the Golden Silence)
+      if (data.text) {
+        setMessages((prev) => [...prev, { role: 'assistant', content: data.text }])
+      }
+      
     } catch (error) {
       console.error("Chat error:", error)
       setMessages((prev) => [...prev, { role: 'assistant', content: "Connection error. Please check your network." }])
