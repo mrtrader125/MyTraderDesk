@@ -8,9 +8,8 @@ export default async function ProfilePage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  if (!user) redirect('/login')
+  if (!user || !user.email) redirect('/login')
 
-  // Fetch all identity data
   const { data: profile } = await supabase
     .from('profiles')
     .select('full_name, username, telegram_handle, telegram_user_id')
@@ -19,10 +18,11 @@ export default async function ProfilePage() {
 
   return (
     <ProfileClient 
+      userId={user.id}
       email={user.email} 
-      fullName={profile?.full_name} 
-      username={profile?.username}
-      telegram={profile?.telegram_handle}
+      initialFullName={profile?.full_name} 
+      initialUsername={profile?.username}
+      telegramHandle={profile?.telegram_handle}
       isTelegramLinked={!!profile?.telegram_user_id}
     />
   )

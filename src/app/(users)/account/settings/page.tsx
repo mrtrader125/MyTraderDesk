@@ -10,19 +10,23 @@ export default async function SettingsPage() {
 
   if (!user) redirect('/login')
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, username, telegram_user_id, telegram_handle')
-    .eq('id', user.id)
-    .single()
+  // Fetch their profile and their strict trading module rules
+  const [
+    { data: profile },
+    { data: module }
+  ] = await Promise.all([
+    supabase.from('profiles').select('timezone').eq('id', user.id).single(),
+    supabase.from('user_trading_modules')
+      .select('shift_start, shift_end, weekly_prep_time, daily_prep_time, max_daily_trades')
+      .eq('user_id', user.id)
+      .maybeSingle()
+  ])
 
   return (
     <SettingsClient 
       userId={user.id}
-      initialFullName={profile?.full_name}
-      initialUsername={profile?.username}
-      isTelegramLinked={!!profile?.telegram_user_id}
-      telegramHandle={profile?.telegram_handle}
+      initialTimezone={profile?.timezone}
+      initialModule={module}
     />
   )
 }

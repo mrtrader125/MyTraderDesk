@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { handleUserMessage } from '@/ingestion'
+import { handleUserMessage } from '@/ai/ingestion'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -193,9 +193,10 @@ export async function POST(req: Request) {
       }
 
       // --- NORMAL USER OTP LOGIC & MENTOR AI INTERCEPTION ---
+      // 🚨 FIX: Removed the failing join array
       const { data: existingProfile } = await supabase
         .from('profiles')
-        .select('id, username, plan, user_trading_modules(*)')
+        .select('id, username, plan') 
         .eq('telegram_user_id', telegramUserId)
         .maybeSingle()
 
@@ -205,28 +206,30 @@ export async function POST(req: Request) {
            return NextResponse.json({ status: 'success' })
         } 
         
-        // ⚡ THE AI MENTOR TAKES OVER HERE ⚡
         try {
-          const userModule = existingProfile.user_trading_modules?.[0]
+          // 🚨 FIX: Direct bulletproof database query to get the module
+          const { data: userModule } = await supabase
+            .from('user_trading_modules')
+            .select('*')
+            .eq('user_id', existingProfile.id)
+            .maybeSingle()
           
           if (!userModule) {
-             await sendMessage(chatId, "Sentinel module initializing. Please complete your setup in the web terminal.", 'Markdown')
+             await sendMessage(chatId, "Sentinel module initializing. Please complete your setup in the web terminal.")
              return NextResponse.json({ status: 'success' })
           }
 
-          // Show typing indicator
+          // 1. Show a typing indicator to make it feel responsive
           await fetch(`https://api.telegram.org/bot${botToken}/sendChatAction`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ chat_id: chatId, action: 'typing' })
           });
 
-          // Update last interaction timestamp
-          await supabase.from('user_trading_modules').update({ last_user_interaction_at: new Date().toISOString() }).eq('id', userModule.id)
-
-          // Route through the new ingestion layer
+          // 2. Route immediately through the new ingestion layer
           const replyText = await handleUserMessage(userModule, text)
           
+          // 3. Deliver the sanitized, rigid response
           if (replyText && replyText !== '[SILENCE]') {
             await sendMessage(chatId, replyText, 'Markdown')
           }
@@ -239,6 +242,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ status: 'success' })
       }
 
+      // --- OTP VERIFICATION ---
       if (text === '/start') {
         await sendMessage(chatId, `Welcome to Sentinel Command.\n\nYour Telegram is NOT connected to the terminal. Please enter the 6-digit transmission code from your account settings.`)
         return NextResponse.json({ status: 'success' })

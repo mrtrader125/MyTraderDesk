@@ -1,66 +1,124 @@
-import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
-import { Client } from '@upstash/qstash'
-import { evaluateTrigger } from '@/kernel/triggerEngine'
-import { isShiftActiveForUser, didShiftJustStart } from '@/mentor/shiftLogic'
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { getDailyTraderContext } from '@/ai/services/contextBuilder';
+import { safeGenerateMentorDecision } from '@/ai/safeGenerate';
 
-// Use Edge runtime for fast cron execution
 export const runtime = 'edge';
 
-const qstash = new Client({ token: process.env.QSTASH_TOKEN! })
-
-export async function GET(req: Request) {
-  // 1. Cron Security Check (Make sure your cronjobs.com header matches this!)
-  const authHeader = req.headers.get('authorization');
+export async function GET(request: Request) {
+  const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    console.error('Mentor Cron Error: Unauthorized access attempt.');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  const botToken = process.env.TELEGRAM_SENTINEL_TOKEN!;
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
   try {
-    const { data: users } = await supabase.from('user_trading_modules').select('*').eq('status', 'ACTIVE')
-    if (!users || users.length === 0) return NextResponse.json({ status: 'ok', message: 'No active users found.' })
+    // 1. Fetch users + their specific Operator Contract
+    // We join the profiles (for timezone) and the modules (for rules)
+    const { data: users, error } = await supabase
+      .from('profiles')
+      .select(`
+        id, username, telegram_user_id, timezone, plan,
+        user_trading_modules!inner (
+            status, current_day_state, daily_prep_time, shift_start, shift_end, max_daily_trades
+        )
+      `)
+      .not('telegram_user_id', 'is', null)
+      .eq('user_trading_modules.status', 'ACTIVE');
 
-    const { data: template } = await supabase.from('mentor_shift_template').select('*').single()
-    if (!template) {
-        console.error("Mentor Cron Error: Missing shift template config.");
-        return NextResponse.json({ error: 'Missing shift config' }, { status: 500 });
+    if (error || !users || users.length === 0) {
+      return NextResponse.json({ message: 'No active protocols to monitor.' }, { status: 200 });
     }
 
-    // 2. Process the Sweep globally
-    for (const user of users) {
-      const nowActive = isShiftActiveForUser(new Date(), user.timezone || 'UTC', template)
+    const mentorPromises = users.map(async (user: any) => {
+      const module = user.user_trading_modules[0];
       
-      // Check for Morning Catch-up if their shift just triggered
-      if (didShiftJustStart(user.last_shift_active, nowActive)) {
-        await qstash.publishJSON({
-          url: `${process.env.BASE_URL}/api/worker/catchup`,
-          body: { userId: user.user_id },
-          delay: Math.floor(Math.random() * 5)
-        })
+      // --- TIMEZONE MATH ---
+      // Convert UTC server time to the user's specific local time
+      const userTimezone = user.timezone || 'UTC';
+      const nowUserLocal = new Date(new Date().toLocaleString('en-US', { timeZone: userTimezone }));
+      const userHour = nowUserLocal.getHours();
+      const userMinute = nowUserLocal.getMinutes();
+      
+      // Convert "07:00:00" string to hour/min integers for comparison
+      const [prepTargetHour, prepTargetMin] = (module.daily_prep_time || '07:00').split(':').map(Number);
+      const [shiftStartHour, shiftStartMin] = (module.shift_start || '08:00').split(':').map(Number);
+      const [shiftEndHour, shiftEndMin] = (module.shift_end || '12:00').split(':').map(Number);
+
+      const isPastPrepDeadline = (userHour > prepTargetHour) || (userHour === prepTargetHour && userMinute >= prepTargetMin);
+      
+      const currentMins = userHour * 60 + userMinute;
+      const shiftStartMins = shiftStartHour * 60 + shiftStartMin;
+      const shiftEndMins = shiftEndHour * 60 + shiftEndMin;
+      const isInsideActiveShift = currentMins >= shiftStartMins && currentMins <= shiftEndMins;
+
+      // --- TRIGGER 1: THE MISSED PREP CHECK ---
+      if (isPastPrepDeadline && module.current_day_state === 'AWAITING_PREP') {
+          const warningPrompt = `[OPERATOR CONTEXT]\nThe user has missed their designated local prep time of ${module.daily_prep_time}. Their terminal shows they have not marked their prep as done. Issue a direct, cold warning. Tell them protocol is breached and they must complete their prep immediately.`;
+          
+          await triggerAI(user, warningPrompt, supabase, botToken);
+          
+          // Mark them as warned so we don't spam them every 5 minutes all day
+          await supabase.from('user_trading_modules').update({ current_day_state: 'PREP_MISSED_WARNED' }).eq('user_id', user.id);
+          return;
       }
 
-      // Update Shift State to maintain the lock
-      await supabase.from('user_trading_modules').update({
-        last_shift_active: nowActive,
-        last_shift_check: new Date().toISOString()
-      }).eq('id', user.id)
+      // --- THE GOLDEN SILENCE CHECK ---
+      // If they are in their shift, we completely abort any further checks to prevent distraction.
+      if (isInsideActiveShift) return;
 
-      // Evaluate standard behavioral triggers (Overtrade, Missed Prep, etc.)
-      const trigger = evaluateTrigger(user)
-      if (trigger) {
-        await qstash.publishJSON({
-          url: `${process.env.BASE_URL}/api/worker/ai-task`,
-          body: { userId: user.user_id, trigger },
-          delay: Math.floor(Math.random() * 5)
-        })
+      // --- TRIGGER 2: THE TRADE EXECUTION CHECK (Your original logic) ---
+      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60000).toISOString();
+      const { data: recentLogs } = await supabase
+        .from('user_desk_logs')
+        .select('execution_type')
+        .eq('user_id', user.id)
+        .gte('created_at', fifteenMinutesAgo);
+
+      if (!recentLogs || recentLogs.length === 0) return;
+
+      const { userProfile, liveContext, stats } = await getDailyTraderContext(supabase, user.id);
+      const recentImperfect = recentLogs.filter(l => l.execution_type === 'Imperfect').length;
+      let proactiveContext = "";
+
+      if (recentImperfect > 0) {
+         proactiveContext = `[OPERATOR CONTEXT]\n${liveContext}\nThe user JUST logged an 'Imperfect' execution. Acknowledge the deviation, ask what psychological trigger caused it, and shut down their session.`;
+      } else if (stats.tradesTaken >= module.max_daily_trades && stats.imperfectCount === 0) {
+         proactiveContext = `[OPERATOR CONTEXT]\n${liveContext}\nThe user JUST finished their trades for the day. Daily limits reached perfectly. Acknowledge discipline and order them to close the charts.`;
+      } else {
+         return; 
       }
-    }
 
-    return NextResponse.json({ status: 'ok', message: 'Sweep completed successfully.' })
+      await triggerAI(user, proactiveContext, supabase, botToken);
+    });
+
+    await Promise.all(mentorPromises);
+    return NextResponse.json({ message: `Heartbeat sweep complete.` }, { status: 200 });
 
   } catch (error: any) {
-    console.error('Mentor Cron Error:', error);
+    console.error('Heartbeat Cron Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+// Helper function to keep the route clean
+async function triggerAI(user: any, prompt: string, supabase: any, botToken: string) {
+    // We use safeGenerateMentorDecision so it goes through your strict CRO firewall
+    const decision = await safeGenerateMentorDecision({ prompt, user });
+    
+    if (decision && decision.type === 'message' && decision.content !== '[SILENCE]') {
+        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: user.telegram_user_id, text: decision.content, parse_mode: 'Markdown' })
+        });
+
+        await supabase.from('mentor_chat_logs').insert([
+            { user_id: user.id, role: 'model', content: decision.content }
+        ]);
+    }
 }
