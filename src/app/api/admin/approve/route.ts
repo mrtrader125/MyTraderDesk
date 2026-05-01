@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// 🚨 SAFEGUARD 1: Force Next.js to skip this file during the build process
+export const dynamic = 'force-dynamic';
 
 // Use Service Role to bypass RLS
 const supabase = createClient(
@@ -20,14 +21,18 @@ export async function POST(req: Request) {
     }
 
     if (action === 'approve') {
-      // 1. Update the applicant's status to approved
+      // 🚨 SAFEGUARD 2: Provide a dummy key if the real one is missing during compilation
+      const resendKey = process.env.RESEND_API_KEY || 're_dummy_key_to_prevent_build_crash';
+      const resend = new Resend(resendKey);
+      
+      // Update the applicant's status to approved
       await supabase.from('applicants').update({ status: 'approved' }).eq('id', applicantId);
 
-      // 2. Transmit the email pointing to your standard signup page
-      const signupUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/signup`; // Or /register, whatever your route is
+      // Transmit the email pointing to your standard signup page
+      const signupUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/signup`; 
       
       await resend.emails.send({
-        from: 'Desk Operations <ops@yourdomain.com>',
+        from: 'Desk Operations <ops@yourdomain.com>', // MUST BE YOUR VERIFIED DOMAIN
         to: email,
         subject: 'Terminal Access Granted: MyTraderDesk',
         html: `
