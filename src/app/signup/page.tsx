@@ -24,31 +24,45 @@ export default function Signup() {
     setLoading(true)
     setError('')
 
-    const { error } = await supabase.auth.signUp({
+    // 1. THE BOUNCER: Verify if the email is cleared for access
+    const { data: applicant, error: checkError } = await supabase
+      .from('applicants')
+      .select('status')
+      .eq('email', email)
+      .single()
+
+    if (checkError || !applicant || applicant.status !== 'approved') {
+      setError("Access Denied: This email has not been cleared for terminal access.")
+      setLoading(false)
+      return
+    }
+
+    // 2. THE EXECUTION: If cleared, create the account
+    const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
         },
-        // 🚨 THE FIX: Tell Supabase to send them to the callback, which pushes them to /verified
+        // Tell Supabase to send them to the callback, which pushes them to /verified
         emailRedirectTo: `${window.location.origin}/auth/callback?next=/verified`
       }
     })
 
-    if (error) {
-      setError(error.message)
+    if (signUpError) {
+      setError(signUpError.message)
       setLoading(false)
       return
     }
 
-    // Trigger the success screen!
+    // Trigger the success screen
     setIsSuccess(true)
     setLoading(false)
   }
 
   return (
-    <div className="min-h-screen bg-[#030305] flex items-center justify-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-[#030305] flex items-center justify-center p-6 relative overflow-hidden font-sans">
       {/* Background depth blooms */}
       <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] bg-blue-600/5 blur-[150px] rounded-full pointer-events-none" />
       
@@ -86,9 +100,9 @@ export default function Signup() {
                   <LineChart className="text-black" size={24} />
                 </div>
                 <h1 className="text-2xl font-black text-white tracking-tighter uppercase">
-                  Create <span className="text-blue-500">Account</span>
+                  Initialize <span className="text-blue-500">Access</span>
                 </h1>
-                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mt-2">Join MyTraderDesk</p>
+                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mt-2">Operator Registration</p>
               </div>
 
               <form onSubmit={signup} className="space-y-4">
@@ -109,7 +123,7 @@ export default function Signup() {
 
                 {/* EMAIL INPUT */}
                 <div>
-                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1 mb-2 block">Email Address</label>
+                  <label className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1 mb-2 block">Approved Email Address</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600" size={16} />
                     <input 
@@ -151,13 +165,13 @@ export default function Signup() {
                   className="w-full bg-white hover:bg-neutral-200 py-4 rounded-xl text-black font-bold uppercase tracking-widest text-xs shadow-xl flex items-center justify-center transition-all active:scale-[0.98] disabled:opacity-50 mt-6"
                 >
                   {loading ? <Loader2 className="animate-spin mr-2" size={16} /> : null}
-                  {loading ? 'Creating Account...' : 'Sign Up'}
+                  {loading ? 'Verifying Clearance...' : 'Initialize Profile'}
                 </button>
               </form>
 
               <div className="mt-8 pt-8 border-t border-white/5 text-center">
                 <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-                  Already have an account? <Link href="/login" className="ml-2 text-white hover:text-blue-500 transition-colors underline decoration-white/20 underline-offset-4">Log In</Link>
+                  Already initialized? <Link href="/login" className="ml-2 text-white hover:text-blue-500 transition-colors underline decoration-white/20 underline-offset-4">Log In</Link>
                 </p>
               </div>
             </>
