@@ -21,6 +21,8 @@ export default function ApplicationPage() {
     trading_experience: '',
     current_strategy: '',
     strategy_duration: '',
+    directional_bias: '',   // NEW: For the bias question
+    risk_management: '',    // NEW: For the stop loss/target question
     profitability_blocker: '',
     psychological_hurdles: '',
     target_objective: '',
@@ -211,7 +213,40 @@ export default function ApplicationPage() {
               </div>
             </div>
 
-            {/* Section 3: Diagnostics */}
+            {/* Section 3: System Mechanics */}
+            <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-lg space-y-6">
+              <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-3">System Mechanics</h3>
+              
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-zinc-300">How does your strategy determine market direction?</label>
+                <div className="space-y-3">
+                  <label className="flex items-start space-x-3 cursor-pointer">
+                    <input required type="radio" name="directional_bias" value="Strict Bias System" onChange={handleChange} className="form-radio mt-0.5 text-zinc-100 bg-zinc-950 border-zinc-800 focus:ring-zinc-500 focus:ring-offset-zinc-950" />
+                    <span className="text-sm text-zinc-400">My system provides a strict directional bias before I look for entries.</span>
+                  </label>
+                  <label className="flex items-start space-x-3 cursor-pointer">
+                    <input required type="radio" name="directional_bias" value="Real-time / Gut Feeling" onChange={handleChange} className="form-radio mt-0.5 text-zinc-100 bg-zinc-950 border-zinc-800 focus:ring-zinc-500 focus:ring-offset-zinc-950" />
+                    <span className="text-sm text-zinc-400">I decide the direction based on real-time price movement and gut feeling.</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-2">
+                <label className="block text-sm font-medium text-zinc-300">When do you define your stop-loss, targets, and breakeven levels?</label>
+                <div className="space-y-3">
+                  <label className="flex items-start space-x-3 cursor-pointer">
+                    <input required type="radio" name="risk_management" value="Pre-defined Levels" onChange={handleChange} className="form-radio mt-0.5 text-zinc-100 bg-zinc-950 border-zinc-800 focus:ring-zinc-500 focus:ring-offset-zinc-950" />
+                    <span className="text-sm text-zinc-400">Levels are strictly calculated and defined before I enter the trade.</span>
+                  </label>
+                  <label className="flex items-start space-x-3 cursor-pointer">
+                    <input required type="radio" name="risk_management" value="Manual Management" onChange={handleChange} className="form-radio mt-0.5 text-zinc-100 bg-zinc-950 border-zinc-800 focus:ring-zinc-500 focus:ring-offset-zinc-950" />
+                    <span className="text-sm text-zinc-400">I manage my exits manually while the trade is running.</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            {/* Section 4: Diagnostics */}
             <div className="bg-zinc-900/50 border border-zinc-800 p-6 rounded-lg space-y-6">
               <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest border-b border-zinc-800/50 pb-3">Diagnostics</h3>
               <div>
