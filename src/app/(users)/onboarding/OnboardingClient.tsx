@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter } from 'next/navigation'
-import { Globe, Clock, ShieldAlert, ArrowRight, CheckCircle2, Lock } from 'lucide-react'
 
 export default function OnboardingClient({ userId }: { userId: string }) {
   const router = useRouter()
@@ -12,16 +11,24 @@ export default function OnboardingClient({ userId }: { userId: string }) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  const [step, setStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // The Operator Contract Data
+  // New Protocol Data State
   const [formData, setFormData] = useState({
     timezone: '',
-    shift_start: '08:00',
-    shift_end: '12:00',
-    weekly_prep_time: '20:00',
-    daily_prep_time: '07:00',
+    strategy_status: 'defined', // 'defined' or 'developing'
+    weekly_analysis_day: '',
+    weekly_analysis_start: '',
+    weekly_analysis_end: '',
+    daily_prep_start: '',
+    daily_prep_end: '',
+    execution_type: 'fixed', // 'fixed' or 'alert'
+    execution_start: '',
+    execution_end: '',
+    weekly_review_day: '',
+    weekly_review_start: '',
+    weekly_review_end: '',
+    accepted_risk_contract: false
   })
 
   // Auto-detect timezone on mount
@@ -32,34 +39,42 @@ export default function OnboardingClient({ userId }: { userId: string }) {
     }))
   }, [])
 
-  const handleSignContract = async () => {
+  const handleInitialize = async () => {
+    if (!formData.accepted_risk_contract) return;
     setIsSubmitting(true)
 
     try {
-      // 1. Save Timezone to Profiles (so the Cron job can fetch it)
+      // 1. Save Timezone to Profiles
       await supabase.from('profiles')
         .update({ timezone: formData.timezone })
         .eq('id', userId)
 
-      // 2. Save Timezone to Operator Profiles (for redundancy/dashboard use)
+      // 2. Save the new operational parameters to Operator Profiles
       await supabase.from('operator_profiles')
-        .upsert({ user_id: userId, timezone: formData.timezone })
+        .upsert({ 
+          user_id: userId, 
+          timezone: formData.timezone,
+          strategy_status: formData.strategy_status,
+          weekly_analysis_window: `${formData.weekly_analysis_day} ${formData.weekly_analysis_start}-${formData.weekly_analysis_end}`,
+          daily_prep_window: `${formData.daily_prep_start}-${formData.daily_prep_end}`,
+          execution_type: formData.execution_type,
+          execution_window: `${formData.execution_start}-${formData.execution_end}`,
+          weekly_review_window: `${formData.weekly_review_day} ${formData.weekly_review_start}-${formData.weekly_review_end}`,
+        })
 
-      // 3. Initialize the Trading Module with the strict rules
+      // 3. Initialize the Trading Module with the strict MyTraderDesk rules
       await supabase.from('user_trading_modules')
         .upsert({
           user_id: userId,
-          shift_start: `${formData.shift_start}:00`,
-          shift_end: `${formData.shift_end}:00`,
-          weekly_prep_time: `${formData.weekly_prep_time}:00`,
-          daily_prep_time: `${formData.daily_prep_time}:00`,
+          shift_start: `${formData.execution_start}:00`,
+          shift_end: `${formData.execution_end}:00`,
           max_daily_trades: 2,
           max_staged_assets: 5,
           status: 'ACTIVE',
           current_day_state: 'AWAITING_PREP'
         })
 
-      // 4. Send them to the Desk to begin operation
+      // 4. Route to terminal
       router.push('/desk')
     } catch (error) {
       console.error("Initialization Error:", error)
@@ -68,156 +83,212 @@ export default function OnboardingClient({ userId }: { userId: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 font-sans selection:bg-blue-500/30">
-      <div className="max-w-xl w-full bg-zinc-950 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden relative">
+    <div className="min-h-screen bg-zinc-950 text-zinc-50 flex flex-col items-center py-12 px-6 font-sans">
+      
+      <div className="w-full max-w-2xl space-y-10">
         
-        {/* Top Progress Bar */}
-        <div className="absolute top-0 left-0 right-0 flex h-1 bg-zinc-900">
-          <div className="h-full bg-blue-600 transition-all duration-500" style={{ width: `${(step / 3) * 100}%` }} />
+        {/* Header */}
+        <div className="space-y-2 border-b border-zinc-800 pb-6">
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">System Configuration</h1>
+          <p className="text-zinc-400 text-sm">
+            Define your operational parameters to initialize the protocol. Local timezone detected as <span className="text-zinc-200 font-mono">{formData.timezone}</span>.
+          </p>
         </div>
 
-        <div className="p-8 sm:p-10">
-          {/* STEP 1: CHRONOLOGY */}
-          {step === 1 && (
-            <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="w-12 h-12 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-center mb-6">
-                <Globe className="text-blue-500" size={24} />
-              </div>
-              <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Chronology & Shifts</h2>
-              <p className="text-sm text-zinc-400 mb-8 leading-relaxed">
-                Define your local timezone and deep-work execution window. The Chief Risk Officer will enforce the <strong className="text-zinc-200">Golden Rule of Silence</strong> during your active shift to protect your focus.
-              </p>
-              
-              <div className="flex flex-col gap-6 mb-10">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">Detected Local Timezone</label>
-                  <div className="flex items-center gap-3 w-full bg-black border border-zinc-800 rounded-lg p-3 opacity-70">
-                    <Lock size={14} className="text-zinc-500" />
-                    <span className="text-sm font-bold text-zinc-300 font-mono tracking-wide">{formData.timezone}</span>
-                  </div>
-                </div>
+        <div className="space-y-10">
+          
+          {/* 1. Strategy Status */}
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-zinc-200">
+              1. What is the current status of your trading strategy?
+            </label>
+            <div className="flex flex-col space-y-3">
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input 
+                  type="radio" 
+                  checked={formData.strategy_status === 'defined'}
+                  onChange={() => setFormData({...formData, strategy_status: 'defined'})}
+                  className="form-radio text-zinc-100 bg-zinc-900 border-zinc-700 focus:ring-zinc-500 focus:ring-offset-zinc-950" 
+                />
+                <span className="text-sm text-zinc-300">Defined with strict rules</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input 
+                  type="radio" 
+                  checked={formData.strategy_status === 'developing'}
+                  onChange={() => setFormData({...formData, strategy_status: 'developing'})}
+                  className="form-radio text-zinc-100 bg-zinc-900 border-zinc-700 focus:ring-zinc-500 focus:ring-offset-zinc-950" 
+                />
+                <span className="text-sm text-zinc-300">Currently in development / testing</span>
+              </label>
+            </div>
+          </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Shift Start</label>
-                    <input 
-                      type="time" 
-                      value={formData.shift_start} 
-                      onChange={e => setFormData({...formData, shift_start: e.target.value})} 
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-white text-sm font-bold tracking-wider outline-none focus:border-blue-500 transition-colors" 
-                    />
+          {/* 2. Weekly Analysis */}
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-zinc-200">
+              2. When do you conduct your weekly market analysis to define your macro zones?
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <select 
+                value={formData.weekly_analysis_day}
+                onChange={(e) => setFormData({...formData, weekly_analysis_day: e.target.value})}
+                className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5 outline-none"
+              >
+                <option value="">Select Day</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+                <option value="Monday">Monday</option>
+              </select>
+              <input 
+                type="time" 
+                value={formData.weekly_analysis_start}
+                onChange={(e) => setFormData({...formData, weekly_analysis_start: e.target.value})}
+                className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5 outline-none [color-scheme:dark]" 
+              />
+              <input 
+                type="time" 
+                value={formData.weekly_analysis_end}
+                onChange={(e) => setFormData({...formData, weekly_analysis_end: e.target.value})}
+                className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5 outline-none [color-scheme:dark]" 
+              />
+            </div>
+          </div>
+
+          {/* 3. Daily Prep */}
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-zinc-200">
+              3. When is your daily prep time to filter setups into an actionable daily plan?
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input 
+                type="time" 
+                value={formData.daily_prep_start}
+                onChange={(e) => setFormData({...formData, daily_prep_start: e.target.value})}
+                className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5 outline-none [color-scheme:dark]" 
+              />
+              <input 
+                type="time" 
+                value={formData.daily_prep_end}
+                onChange={(e) => setFormData({...formData, daily_prep_end: e.target.value})}
+                className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5 outline-none [color-scheme:dark]" 
+              />
+            </div>
+          </div>
+
+          {/* 4. Execution Window */}
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-zinc-200">
+              4. When is your Execution Window?
+            </label>
+            <p className="text-xs text-zinc-500 mt-1 mb-3">Outside these hours, you are off-duty. Charts should be closed.</p>
+            <div className="space-y-5 p-5 border border-zinc-800 bg-zinc-900/30 rounded-md">
+              <div className="flex flex-col space-y-4">
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    checked={formData.execution_type === 'fixed'}
+                    onChange={() => setFormData({...formData, execution_type: 'fixed'})}
+                    className="form-radio mt-1 text-zinc-100 bg-zinc-900 border-zinc-700 focus:ring-zinc-500 focus:ring-offset-zinc-950" 
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-sm text-zinc-300">Fixed Session Times</span>
+                    <span className="text-xs text-zinc-500">I sit at the desk during specific hours to execute.</span>
                   </div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-blue-500 font-bold uppercase tracking-widest">Shift End</label>
-                    <input 
-                      type="time" 
-                      value={formData.shift_end} 
-                      onChange={e => setFormData({...formData, shift_end: e.target.value})} 
-                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-white text-sm font-bold tracking-wider outline-none focus:border-blue-500 transition-colors" 
-                    />
+                </label>
+                <label className="flex items-start space-x-3 cursor-pointer">
+                  <input 
+                    type="radio" 
+                    checked={formData.execution_type === 'alert'}
+                    onChange={() => setFormData({...formData, execution_type: 'alert'})}
+                    className="form-radio mt-1 text-zinc-100 bg-zinc-900 border-zinc-700 focus:ring-zinc-500 focus:ring-offset-zinc-950" 
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-sm text-zinc-300">Alert-Based (Active Window)</span>
+                    <span className="text-xs text-zinc-500">I execute on alerts, but only within my permitted active hours.</span>
                   </div>
-                </div>
+                </label>
               </div>
 
-              <button onClick={() => setStep(2)} className="w-full py-4 bg-white text-black text-xs font-black uppercase tracking-widest rounded-lg hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2">
-                Continue to Routine <ArrowRight size={16} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-zinc-800/50">
+                <input 
+                  type="time" 
+                  value={formData.execution_start}
+                  onChange={(e) => setFormData({...formData, execution_start: e.target.value})}
+                  className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5 outline-none [color-scheme:dark]" 
+                  placeholder="Start Time"
+                />
+                <input 
+                  type="time" 
+                  value={formData.execution_end}
+                  onChange={(e) => setFormData({...formData, execution_end: e.target.value})}
+                  className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5 outline-none [color-scheme:dark]" 
+                  placeholder="End Time"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* 5. Weekly Review */}
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-zinc-200">
+              5. When do you conduct your weekly autopsy to review trade data and behavior?
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <select 
+                value={formData.weekly_review_day}
+                onChange={(e) => setFormData({...formData, weekly_review_day: e.target.value})}
+                className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5 outline-none"
+              >
+                <option value="">Select Day</option>
+                <option value="Friday">Friday</option>
+                <option value="Saturday">Saturday</option>
+                <option value="Sunday">Sunday</option>
+              </select>
+              <input 
+                type="time" 
+                value={formData.weekly_review_start}
+                onChange={(e) => setFormData({...formData, weekly_review_start: e.target.value})}
+                className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5 outline-none [color-scheme:dark]" 
+              />
+              <input 
+                type="time" 
+                value={formData.weekly_review_end}
+                onChange={(e) => setFormData({...formData, weekly_review_end: e.target.value})}
+                className="bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm rounded-md focus:ring-zinc-500 focus:border-zinc-500 block w-full p-2.5 outline-none [color-scheme:dark]" 
+              />
+            </div>
+          </div>
+
+          {/* Risk Contract & Submit */}
+          <div className="pt-10 space-y-6">
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-md p-5">
+              <label className="flex items-start space-x-3 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  checked={formData.accepted_risk_contract}
+                  onChange={(e) => setFormData({...formData, accepted_risk_contract: e.target.checked})}
+                  className="form-checkbox mt-1 text-zinc-100 bg-zinc-900 border-zinc-700 rounded focus:ring-zinc-500 focus:ring-offset-zinc-950" 
+                />
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold text-zinc-200">I accept the Operator Protocol</span>
+                  <span className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                    By initializing, I agree to the platform's constraints: Maximum 2 trades daily, a limit of 5 staged daily assets, and a commitment to zero-outcome grading for behavioral consistency.
+                  </span>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex justify-end">
+              <button 
+                onClick={handleInitialize}
+                disabled={!formData.accepted_risk_contract || isSubmitting}
+                className="px-8 py-3 bg-zinc-100 text-zinc-950 text-sm font-semibold rounded-md hover:bg-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Initializing...' : 'Initialize Protocol'}
               </button>
             </div>
-          )}
-
-          {/* STEP 2: ROUTINE */}
-          {step === 2 && (
-            <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="w-12 h-12 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-center justify-center mb-6">
-                <Clock className="text-purple-500" size={24} />
-              </div>
-              <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">Routine Protocol</h2>
-              <p className="text-sm text-zinc-400 mb-8 leading-relaxed">
-                Establish your strict preparation deadlines. If your daily or weekly focus is not logged by these exact times, your terminal will be flagged.
-              </p>
-              
-              <div className="flex flex-col gap-6 mb-10">
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] text-purple-500 font-bold uppercase tracking-widest">Sunday Macro Prep Deadline</label>
-                  <p className="text-[10px] text-zinc-500 leading-snug mb-1">When must your macro vault be locked for the week?</p>
-                  <input 
-                    type="time" 
-                    value={formData.weekly_prep_time} 
-                    onChange={e => setFormData({...formData, weekly_prep_time: e.target.value})} 
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-white text-sm font-bold tracking-wider outline-none focus:border-purple-500 transition-colors" 
-                  />
-                </div>
-
-                <div className="flex flex-col gap-2">
-                  <label className="text-[10px] text-purple-500 font-bold uppercase tracking-widest">Daily Sniper Prep Deadline</label>
-                  <p className="text-[10px] text-zinc-500 leading-snug mb-1">When must your daily pairs be staged in the Desk?</p>
-                  <input 
-                    type="time" 
-                    value={formData.daily_prep_time} 
-                    onChange={e => setFormData({...formData, daily_prep_time: e.target.value})} 
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-white text-sm font-bold tracking-wider outline-none focus:border-purple-500 transition-colors" 
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={() => setStep(1)} className="px-6 py-4 bg-zinc-900 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-zinc-800 transition-colors">
-                  Back
-                </button>
-                <button onClick={() => setStep(3)} className="flex-1 py-4 bg-white text-black text-xs font-black uppercase tracking-widest rounded-lg hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2">
-                  Review Contract <ArrowRight size={16} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* STEP 3: THE RISK CONTRACT */}
-          {step === 3 && (
-            <div className="animate-in fade-in slide-in-from-right-4 duration-500">
-              <div className="w-12 h-12 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center justify-center mb-6">
-                <ShieldAlert className="text-red-500" size={24} />
-              </div>
-              <h2 className="text-2xl font-black text-white uppercase tracking-widest mb-2">The Risk Contract</h2>
-              <p className="text-sm text-zinc-400 mb-8 leading-relaxed">
-                By initializing this terminal, you are entering a binding behavioral contract with the Sentinel Vortex system.
-              </p>
-              
-              <div className="bg-black border border-zinc-800 rounded-xl p-5 mb-10 flex flex-col gap-4 shadow-inner">
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white uppercase tracking-widest">Maximum 2 Trades Daily</span>
-                    <span className="text-[10px] text-zinc-500 mt-1 leading-relaxed">The terminal will automatically lock execution capabilities once this threshold is reached.</span>
-                  </div>
-                </div>
-                <div className="w-full h-px bg-zinc-800/50" />
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white uppercase tracking-widest">Maximum 5 Focus Pairs</span>
-                    <span className="text-[10px] text-zinc-500 mt-1 leading-relaxed">You may not pull more than 5 assets from your weekly vault into your daily sniper routine.</span>
-                  </div>
-                </div>
-                <div className="w-full h-px bg-zinc-800/50" />
-                <div className="flex items-start gap-3">
-                  <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white uppercase tracking-widest">Zero-Outcome Grading</span>
-                    <span className="text-[10px] text-zinc-500 mt-1 leading-relaxed">You agree to grade all executions as Perfect or Imperfect based purely on protocol adherence, before the financial outcome is known.</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={() => setStep(2)} disabled={isSubmitting} className="px-6 py-4 bg-zinc-900 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-zinc-800 transition-colors disabled:opacity-50">
-                  Back
-                </button>
-                <button onClick={handleSignContract} disabled={isSubmitting} className="flex-1 py-4 bg-red-600 text-white text-xs font-black uppercase tracking-widest rounded-lg hover:bg-red-500 transition-colors flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.3)] disabled:opacity-50">
-                  {isSubmitting ? 'Initializing...' : 'Sign & Initialize'}
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
 
         </div>
       </div>
