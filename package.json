@@ -25,7 +25,8 @@
     "react-dom": "19.2.3",
     "react-markdown": "^9.0.1",
     "react-zoom-pan-pinch": "^3.7.0",
-    "recharts": "^3.8.0"
+    "recharts": "^3.8.0",
+    "resend": "^4.1.2"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
