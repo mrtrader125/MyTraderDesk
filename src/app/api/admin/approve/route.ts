@@ -21,18 +21,27 @@ export async function POST(req: Request) {
     }
 
     if (action === 'approve') {
-      // 🚨 SAFEGUARD 2: Provide a dummy key if the real one is missing during compilation
       const resendKey = process.env.RESEND_API_KEY || 're_dummy_key_to_prevent_build_crash';
       const resend = new Resend(resendKey);
       
-      // Update the applicant's status to approved
-      await supabase.from('applicants').update({ status: 'approved' }).eq('id', applicantId);
-
-      // Transmit the email pointing to your standard signup page
-      const signupUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/signup`; 
+      // 1. Generate a secure, unique cryptographic token
+      const inviteToken = crypto.randomUUID();
       
-      await resend.emails.send({
-        from: 'Desk Operations <ops@yourdomain.com>', // MUST BE YOUR VERIFIED DOMAIN
+      // 2. Update the applicant's status AND save their unique token
+      await supabase
+        .from('applicants')
+        .update({ 
+          status: 'approved',
+          invite_token: inviteToken 
+        })
+        .eq('id', applicantId);
+
+      // 3. Attach the token to the URL to create the Ghost Portal link
+      const signupUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/initialize?token=${inviteToken}`; 
+      
+      // 4. Transmit the email
+      const emailResponse = await resend.emails.send({
+        from: 'MyTraderDesk <noreply@mytraderdesk.com>',
         to: email,
         subject: 'Terminal Access Granted: MyTraderDesk',
         html: `
@@ -40,7 +49,7 @@ export async function POST(req: Request) {
             <p>${name},</p>
             <p>Your operational diagnostic has been reviewed. You meet the criteria for the founding cohort.</p>
             <p><strong>Terminal access has been granted.</strong></p>
-            <p>Your email address (${email}) has been whitelisted in our system. You may now initialize your profile and establish your operational protocol.</p>
+            <p>Your clearance has been cryptographically signed. Use the secure link below to initialize your profile and establish your operational protocol.</p>
             <br/>
             <a href="${signupUrl}" style="background-color: #111; color: #fff; padding: 12px 24px; text-decoration: none; font-weight: bold; text-transform: uppercase;">Initialize Terminal Access</a>
             <br/><br/>
@@ -49,7 +58,16 @@ export async function POST(req: Request) {
         `,
       });
 
-      return NextResponse.json({ success: true, message: 'Applicant approved and email transmitted.' });
+      // 🚨 IF RESEND FAILS, FORCE AN ERROR TO THE FRONTEND
+      if (emailResponse.error) {
+        console.error('RESEND REJECTION:', emailResponse.error);
+        return NextResponse.json(
+          { success: false, error: `Resend Blocked Email: ${emailResponse.error.message}` }, 
+          { status: 400 }
+        );
+      }
+
+      return NextResponse.json({ success: true, message: 'Applicant approved and clearance token transmitted.' });
     }
 
   } catch (error) {
