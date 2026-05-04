@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { useRouter } from 'next/navigation'
-import { ShieldCheck, Crosshair, Clock, Activity, ArrowRight, Zap, ChevronLeft, ChevronRight, BarChart2, TrendingUp, Target, Layers } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation' // 🚨 ADDED useSearchParams
+import { ShieldCheck, Crosshair, Clock, Activity, ArrowRight, Zap, ChevronLeft, ChevronRight, BarChart2, TrendingUp, Target, Layers, AlertTriangle } from 'lucide-react'
 
 export default function OnboardingClient({ userId }: { userId: string }) {
   const router = useRouter()
+  const searchParams = useSearchParams() // 🚨 ADDED
+  const isPreviewMode = searchParams.get('preview') === 'true' // 🚨 ADDED
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -14,16 +17,16 @@ export default function OnboardingClient({ userId }: { userId: string }) {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   
-  // 🚨 UI STATE: Progressive Flow
+  // UI STATE: Progressive Flow
   const [currentStep, setCurrentStep] = useState(1)
   const [phase, setPhase] = useState<'form' | 'activation'>('form')
   
   // Protocol Data State
   const [formData, setFormData] = useState({
     timezone: '',
-    trader_type: '', // beginner, intermediate, advanced
-    primary_goal: '', // profit, discipline, consistency
-    target_markets: [] as string[], // forex, crypto, commodities, indices
+    trader_type: '', 
+    primary_goal: '', 
+    target_markets: [] as string[], 
     strategy_status: 'defined', 
     weekly_analysis_day: '',
     weekly_analysis_start: '',
@@ -68,6 +71,15 @@ export default function OnboardingClient({ userId }: { userId: string }) {
     setIsSubmitting(true)
 
     try {
+      // 🚨 PREVIEW OVERRIDE: Skip the database and jump to activation
+      if (isPreviewMode) {
+        setTimeout(() => {
+          setIsSubmitting(false)
+          setPhase('activation')
+        }, 800) // Fake a slight delay for realism
+        return;
+      }
+
       await supabase.from('profiles').update({ 
         timezone: formData.timezone,
         protocol_established: true 
@@ -112,6 +124,13 @@ export default function OnboardingClient({ userId }: { userId: string }) {
   if (phase === 'activation') {
     return (
       <div className="min-h-screen bg-[#030305] flex items-center justify-center p-6 relative overflow-hidden font-sans">
+        
+        {isPreviewMode && (
+          <div className="absolute top-0 w-full bg-amber-500/10 border-b border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest text-center py-2 z-50 flex items-center justify-center gap-2">
+            <AlertTriangle size={14} /> Preview Mode Active — No Data Saved
+          </div>
+        )}
+
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-600/10 blur-[150px] rounded-full pointer-events-none opacity-50 animate-pulse" />
         
         <div className="w-full max-w-2xl relative z-10 animate-in fade-in zoom-in-95 duration-700">
@@ -202,10 +221,17 @@ export default function OnboardingClient({ userId }: { userId: string }) {
   ]
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-50 flex flex-col font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[#050505] text-zinc-50 flex flex-col font-sans selection:bg-blue-500/30 relative">
       
+      {/* PREVIEW BANNER */}
+      {isPreviewMode && (
+        <div className="absolute top-0 w-full bg-amber-500/10 border-b border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest text-center py-2 z-[100] flex items-center justify-center gap-2">
+          <AlertTriangle size={14} /> Preview Mode Active — No Data Will Be Saved
+        </div>
+      )}
+
       {/* GLOBAL PROGRESS HEADER */}
-      <div className="w-full border-b border-neutral-900 bg-[#0a0a0a] pt-8 pb-6 px-6 sticky top-0 z-50">
+      <div className={`w-full border-b border-neutral-900 bg-[#0a0a0a] pt-8 pb-6 px-6 sticky z-50 ${isPreviewMode ? 'top-8' : 'top-0'}`}>
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-black text-blue-500 uppercase tracking-widest">
