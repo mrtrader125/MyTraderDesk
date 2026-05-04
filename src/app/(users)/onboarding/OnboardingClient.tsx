@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
-import { useRouter, useSearchParams } from 'next/navigation' // 🚨 ADDED useSearchParams
-import { ShieldCheck, Crosshair, Clock, Activity, ArrowRight, Zap, ChevronLeft, ChevronRight, BarChart2, TrendingUp, Target, Layers, AlertTriangle } from 'lucide-react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { ShieldCheck, Crosshair, Clock, Activity, ArrowRight, Zap, ChevronLeft, ChevronRight, Layers, Calendar, AlertTriangle, CheckSquare } from 'lucide-react'
 
 export default function OnboardingClient({ userId }: { userId: string }) {
   const router = useRouter()
-  const searchParams = useSearchParams() // 🚨 ADDED
-  const isPreviewMode = searchParams.get('preview') === 'true' // 🚨 ADDED
+  const searchParams = useSearchParams()
+  const isPreviewMode = searchParams?.get('preview') === 'true'
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,33 +16,44 @@ export default function OnboardingClient({ userId }: { userId: string }) {
   )
 
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  // UI STATE: Progressive Flow
   const [currentStep, setCurrentStep] = useState(1)
   const [phase, setPhase] = useState<'form' | 'activation'>('form')
   
-  // Protocol Data State
+  // 🚨 NEW LOGIC SCHEMA
   const [formData, setFormData] = useState({
     timezone: '',
-    trader_type: '', 
-    primary_goal: '', 
-    target_markets: [] as string[], 
-    strategy_status: 'defined', 
-    weekly_analysis_day: '',
-    weekly_analysis_start: '',
-    weekly_analysis_end: '',
+    
+    // 1. Trading Scope
+    scope_type: 'single', // 'single' | 'multi'
+    target_assets: [] as string[], 
+    
+    // 2. Weekly Prep
+    weekly_prep_mode: 'structured', // 'structured' | 'none'
+    weekly_prep_day: '',
+    weekly_prep_start: '',
+    weekly_prep_end: '',
+    
+    // 3. Daily Prep
+    daily_prep_mode: 'before', // 'before' | 'fixed' | 'none'
+    daily_prep_offset: '30', // '15', '30', '60', 'custom'
     daily_prep_start: '',
     daily_prep_end: '',
-    execution_type: 'fixed', 
+    
+    // 4. Execution Behavior
+    execution_type: 'session', // 'session' | 'signal'
     execution_start: '',
     execution_end: '',
-    weekly_review_day: '',
-    weekly_review_start: '',
-    weekly_review_end: '',
+    
+    // 5. Review Process
+    review_mode: 'weekly', // 'weekly' | 'none'
+    review_day: '',
+    review_start: '',
+    review_end: '',
+    
+    // 6. Confirmation
     accepted_risk_contract: false
   })
 
-  // Auto-detect timezone
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -50,16 +61,16 @@ export default function OnboardingClient({ userId }: { userId: string }) {
     }))
   }, [])
 
-  const toggleMarket = (market: string) => {
+  const toggleAsset = (asset: string) => {
     setFormData(prev => {
-      const exists = prev.target_markets.includes(market)
-      if (exists) return { ...prev, target_markets: prev.target_markets.filter(m => m !== market) }
-      return { ...prev, target_markets: [...prev.target_markets, market] }
+      const exists = prev.target_assets.includes(asset)
+      if (exists) return { ...prev, target_assets: prev.target_assets.filter(a => a !== asset) }
+      return { ...prev, target_assets: [...prev.target_assets, asset] }
     })
   }
 
   const handleNext = () => {
-    if (currentStep < 5) setCurrentStep(prev => prev + 1)
+    if (currentStep < 6) setCurrentStep(prev => prev + 1)
   }
 
   const handleBack = () => {
@@ -71,12 +82,11 @@ export default function OnboardingClient({ userId }: { userId: string }) {
     setIsSubmitting(true)
 
     try {
-      // 🚨 PREVIEW OVERRIDE: Skip the database and jump to activation
       if (isPreviewMode) {
         setTimeout(() => {
           setIsSubmitting(false)
           setPhase('activation')
-        }, 800) // Fake a slight delay for realism
+        }, 800) 
         return;
       }
 
@@ -88,21 +98,28 @@ export default function OnboardingClient({ userId }: { userId: string }) {
       await supabase.from('operator_profiles').upsert({ 
         user_id: userId, 
         timezone: formData.timezone,
-        trader_type: formData.trader_type,
-        primary_goal: formData.primary_goal,
-        target_markets: formData.target_markets,
-        strategy_status: formData.strategy_status,
-        weekly_analysis_window: `${formData.weekly_analysis_day} ${formData.weekly_analysis_start}-${formData.weekly_analysis_end}`,
-        daily_prep_window: `${formData.daily_prep_start}-${formData.daily_prep_end}`,
+        
+        scope_type: formData.scope_type,
+        target_assets: formData.target_assets,
+        
+        weekly_prep_mode: formData.weekly_prep_mode,
+        weekly_analysis_window: formData.weekly_prep_mode === 'structured' ? `${formData.weekly_prep_day} ${formData.weekly_prep_start}-${formData.weekly_prep_end}` : 'NONE',
+        
+        daily_prep_mode: formData.daily_prep_mode,
+        daily_prep_offset: formData.daily_prep_mode === 'before' ? formData.daily_prep_offset : null,
+        daily_prep_window: formData.daily_prep_mode === 'fixed' ? `${formData.daily_prep_start}-${formData.daily_prep_end}` : 'NONE',
+        
         execution_type: formData.execution_type,
-        execution_window: `${formData.execution_start}-${formData.execution_end}`,
-        weekly_review_window: `${formData.weekly_review_day} ${formData.weekly_review_start}-${formData.weekly_review_end}`,
+        execution_window: formData.execution_type === 'session' ? `${formData.execution_start}-${formData.execution_end}` : 'SIGNAL_BASED',
+        
+        review_mode: formData.review_mode,
+        weekly_review_window: formData.review_mode === 'weekly' ? `${formData.review_day} ${formData.review_start}-${formData.review_end}` : 'NONE',
       })
 
       await supabase.from('user_trading_modules').upsert({
         user_id: userId,
-        shift_start: `${formData.execution_start || '00:00'}:00`,
-        shift_end: `${formData.execution_end || '00:00'}:00`,
+        shift_start: formData.execution_type === 'session' && formData.execution_start ? `${formData.execution_start}:00` : '00:00:00',
+        shift_end: formData.execution_type === 'session' && formData.execution_end ? `${formData.execution_end}:00` : '23:59:59',
         max_daily_trades: 2,
         max_staged_assets: 5,
         status: 'ACTIVE',
@@ -154,12 +171,15 @@ export default function OnboardingClient({ userId }: { userId: string }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-blue-500/10 rounded-xl shrink-0 border border-blue-500/20">
-                  <Crosshair className="text-blue-500" size={20} />
+                  <Layers className="text-blue-500" size={20} />
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Execution Status</h4>
+                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Trading Scope</h4>
                   <p className="text-sm font-bold text-white uppercase tracking-wide">
-                    {formData.strategy_status === 'defined' ? 'Strict Execution Mode' : 'Development Mode'}
+                    {formData.scope_type === 'single' ? 'Focused Asset' : 'Multi-Market'}
+                  </p>
+                  <p className="text-[10px] text-neutral-500 mt-0.5 truncate max-w-[150px]">
+                    {formData.target_assets.length > 0 ? formData.target_assets.join(', ') : 'Pending Assets'}
                   </p>
                 </div>
               </div>
@@ -169,11 +189,13 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                   <Clock className="text-amber-500" size={20} />
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Active Window</h4>
+                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Execution Behavior</h4>
                   <p className="text-sm font-bold text-white uppercase tracking-wide">
-                    {formData.execution_start || '00:00'} - {formData.execution_end || '00:00'}
+                    {formData.execution_type === 'session' ? 'Strict Session Window' : 'Signal Driven'}
                   </p>
-                  <p className="text-[10px] text-neutral-500 mt-0.5">{formData.execution_type === 'fixed' ? 'Fixed Session' : 'Alert Driven'}</p>
+                  {formData.execution_type === 'session' && (
+                    <p className="text-[10px] text-neutral-500 mt-0.5">{formData.execution_start || '--:--'} to {formData.execution_end || '--:--'}</p>
+                  )}
                 </div>
               </div>
               
@@ -210,15 +232,18 @@ export default function OnboardingClient({ userId }: { userId: string }) {
   // ==========================================
   // PHASE 1: PROGRESSIVE CONFIGURATION
   // ==========================================
-  const progressPercentage = (currentStep / 5) * 100;
+  const progressPercentage = (currentStep / 6) * 100;
   
   const phaseTitles = [
-    "Phase 1: Operator Identity",
-    "Phase 2: Objective Calibration",
-    "Phase 3: Market Scope",
-    "Phase 4: Execution Parameters",
-    "Phase 5: Protocol Initialization"
+    "Phase 1: Trading Scope",
+    "Phase 2: Weekly Preparation",
+    "Phase 3: Daily Preparation",
+    "Phase 4: Execution Behavior",
+    "Phase 5: Review Process",
+    "Phase 6: Protocol Confirmation"
   ]
+
+  const ASSETS = ['Forex', 'Crypto', 'Commodities', 'Stocks', 'Indices']
 
   return (
     <div className="min-h-screen bg-[#050505] text-zinc-50 flex flex-col font-sans selection:bg-blue-500/30 relative">
@@ -238,10 +263,9 @@ export default function OnboardingClient({ userId }: { userId: string }) {
               {phaseTitles[currentStep - 1]}
             </h2>
             <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
-              Step {currentStep} of 5
+              Step {currentStep} of 6
             </span>
           </div>
-          {/* Progress Bar */}
           <div className="w-full h-1.5 bg-neutral-900 rounded-full overflow-hidden">
             <div 
               className="h-full bg-blue-500 transition-all duration-500 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
@@ -254,133 +278,193 @@ export default function OnboardingClient({ userId }: { userId: string }) {
       {/* STEP CONTENT */}
       <div className="flex-1 flex flex-col max-w-3xl w-full mx-auto p-6 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
-        {/* STEP 1: IDENTITY */}
+        {/* STEP 1: TRADING SCOPE */}
         {currentStep === 1 && (
           <div className="space-y-8">
             <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">What is your current operating level?</h1>
-              <p className="text-neutral-400 text-sm">The terminal adjusts its analytics based on your experience.</p>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Select your trading scope</h1>
+              <p className="text-neutral-400 text-sm">This establishes the asset classes you monitor and execute within.</p>
             </div>
             
             <div className="grid gap-4">
-              {[
-                { id: 'beginner', title: 'Aspirational / Beginner', desc: 'Still finding my edge and learning market structure.' },
-                { id: 'intermediate', title: 'Intermediate Operator', desc: 'I have a system, but struggle with consistency and psychology.' },
-                { id: 'advanced', title: 'Advanced Professional', desc: 'Consistently profitable. Here strictly for execution scaling.' }
-              ].map(type => (
-                <button 
-                  key={type.id}
-                  onClick={() => setFormData({...formData, trader_type: type.id})}
-                  className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.trader_type === type.id ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}
-                >
-                  <span className={`text-sm font-black uppercase tracking-wide ${formData.trader_type === type.id ? 'text-blue-400' : 'text-white'}`}>{type.title}</span>
-                  <span className="text-xs text-neutral-500 mt-1">{type.desc}</span>
-                </button>
-              ))}
+              <button onClick={() => setFormData({...formData, scope_type: 'single'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.scope_type === 'single' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.scope_type === 'single' ? 'text-blue-400' : 'text-white'}`}>Single / Limited Asset Trader</span>
+              </button>
+              <button onClick={() => setFormData({...formData, scope_type: 'multi'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.scope_type === 'multi' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.scope_type === 'multi' ? 'text-blue-400' : 'text-white'}`}>Multi-Market Trader</span>
+              </button>
+            </div>
+
+            <div className="pt-4 border-t border-neutral-900">
+              <label className="block text-xs font-black text-neutral-500 uppercase tracking-widest mb-4">Select your markets</label>
+              <div className="grid gap-4 md:grid-cols-2">
+                {ASSETS.map(asset => {
+                  const isSelected = formData.target_assets.includes(asset);
+                  return (
+                    <button key={asset} onClick={() => toggleAsset(asset)} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${isSelected ? 'bg-white/10 border-white/30 text-white shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-400 hover:border-neutral-600'}`}>
+                      <span className="text-sm font-bold tracking-wide">{asset}</span>
+                      <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'border-white bg-white text-black' : 'border-neutral-700 bg-transparent'}`}>
+                        {isSelected && <CheckSquare size={10} />}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
         )}
 
-        {/* STEP 2: GOALS */}
+        {/* STEP 2: WEEKLY PREP */}
         {currentStep === 2 && (
           <div className="space-y-8">
             <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">What are you optimizing for?</h1>
-              <p className="text-neutral-400 text-sm">Select the primary reason you are deploying this terminal.</p>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Select your weekly preparation approach</h1>
+              <p className="text-neutral-400 text-sm">This defines when you map out macro zones and weekly thesis.</p>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-3">
-              {[
-                { id: 'profit', icon: TrendingUp, title: 'Raw Profit', color: 'text-emerald-500', bg: 'bg-emerald-500/10', border: 'border-emerald-500/50' },
-                { id: 'discipline', icon: Target, title: 'Iron Discipline', color: 'text-red-500', bg: 'bg-red-500/10', border: 'border-red-500/50' },
-                { id: 'consistency', icon: BarChart2, title: 'Consistency', color: 'text-blue-500', bg: 'bg-blue-500/10', border: 'border-blue-500/50' }
-              ].map(goal => (
-                <button 
-                  key={goal.id}
-                  onClick={() => setFormData({...formData, primary_goal: goal.id})}
-                  className={`flex flex-col items-center justify-center text-center p-8 rounded-2xl border transition-all ${formData.primary_goal === goal.id ? `${goal.bg} ${goal.border} shadow-inner` : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}
-                >
-                  <goal.icon size={32} className={`mb-4 ${formData.primary_goal === goal.id ? goal.color : 'text-neutral-600'}`} />
-                  <span className={`text-sm font-black uppercase tracking-wide ${formData.primary_goal === goal.id ? goal.color : 'text-white'}`}>{goal.title}</span>
-                </button>
-              ))}
+            <div className="grid gap-4">
+              <button onClick={() => setFormData({...formData, weekly_prep_mode: 'structured'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.weekly_prep_mode === 'structured' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.weekly_prep_mode === 'structured' ? 'text-blue-400' : 'text-white'}`}>I prepare a structured plan before the trading week</span>
+              </button>
+              <button onClick={() => setFormData({...formData, weekly_prep_mode: 'none'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.weekly_prep_mode === 'none' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.weekly_prep_mode === 'none' ? 'text-blue-400' : 'text-white'}`}>I do not follow a weekly preparation routine</span>
+              </button>
             </div>
+
+            {formData.weekly_prep_mode === 'structured' && (
+              <div className="pt-4 border-t border-neutral-900 animate-in fade-in duration-300">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <select value={formData.weekly_prep_day} onChange={(e) => setFormData({...formData, weekly_prep_day: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none appearance-none">
+                    <option value="">Select Day</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                    <option value="Monday">Monday</option>
+                  </select>
+                  <input type="time" value={formData.weekly_prep_start} onChange={(e) => setFormData({...formData, weekly_prep_start: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                  <input type="time" value={formData.weekly_prep_end} onChange={(e) => setFormData({...formData, weekly_prep_end: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* STEP 3: MARKETS */}
+        {/* STEP 3: DAILY PREP */}
         {currentStep === 3 && (
           <div className="space-y-8">
             <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Define your target markets.</h1>
-              <p className="text-neutral-400 text-sm">Select all asset classes you actively execute on.</p>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Select your daily preparation approach</h1>
+              <p className="text-neutral-400 text-sm">This sets your pre-market routine for filtering actionable daily setups.</p>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2">
-              {['Forex', 'Crypto', 'Commodities', 'Indices', 'Equities'].map(market => {
-                const isSelected = formData.target_markets.includes(market);
-                return (
-                  <button 
-                    key={market}
-                    onClick={() => toggleMarket(market)}
-                    className={`flex items-center justify-between p-5 rounded-2xl border transition-all ${isSelected ? 'bg-amber-500/10 border-amber-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Layers size={18} className={isSelected ? 'text-amber-500' : 'text-neutral-600'} />
-                      <span className={`text-sm font-black uppercase tracking-wide ${isSelected ? 'text-amber-400' : 'text-white'}`}>{market}</span>
-                    </div>
-                    <div className={`w-5 h-5 rounded border flex items-center justify-center ${isSelected ? 'border-amber-500 bg-amber-500' : 'border-neutral-700 bg-transparent'}`}>
-                      {isSelected && <ShieldCheck size={12} className="text-black" />}
-                    </div>
-                  </button>
-                )
-              })}
+            <div className="grid gap-4">
+              <button onClick={() => setFormData({...formData, daily_prep_mode: 'before'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.daily_prep_mode === 'before' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.daily_prep_mode === 'before' ? 'text-blue-400' : 'text-white'}`}>Before my trading session</span>
+              </button>
+              
+              {formData.daily_prep_mode === 'before' && (
+                <div className="pl-6 animate-in fade-in duration-300">
+                  <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Select preparation offset</label>
+                  <div className="flex flex-wrap gap-3">
+                    {['15', '30', '60'].map(mins => (
+                      <button key={mins} onClick={() => setFormData({...formData, daily_prep_offset: mins})} className={`px-4 py-2 rounded-lg border text-sm font-bold transition-all ${formData.daily_prep_offset === mins ? 'bg-white text-black border-white' : 'bg-[#111] border-neutral-800 text-neutral-400 hover:text-white'}`}>
+                        {mins === '60' ? '1 hour' : `${mins} mins`} before
+                      </button>
+                    ))}
+                    <button onClick={() => setFormData({...formData, daily_prep_offset: 'custom'})} className={`px-4 py-2 rounded-lg border text-sm font-bold transition-all ${formData.daily_prep_offset === 'custom' ? 'bg-white text-black border-white' : 'bg-[#111] border-neutral-800 text-neutral-400 hover:text-white'}`}>
+                      Custom
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <button onClick={() => setFormData({...formData, daily_prep_mode: 'fixed'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.daily_prep_mode === 'fixed' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.daily_prep_mode === 'fixed' ? 'text-blue-400' : 'text-white'}`}>During a fixed time window</span>
+              </button>
+
+              {formData.daily_prep_mode === 'fixed' && (
+                <div className="pl-6 animate-in fade-in duration-300">
+                  <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Select time range</label>
+                  <div className="grid grid-cols-2 gap-4 max-w-sm">
+                    <input type="time" value={formData.daily_prep_start} onChange={(e) => setFormData({...formData, daily_prep_start: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                    <input type="time" value={formData.daily_prep_end} onChange={(e) => setFormData({...formData, daily_prep_end: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                  </div>
+                </div>
+              )}
+
+              <button onClick={() => setFormData({...formData, daily_prep_mode: 'none'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.daily_prep_mode === 'none' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.daily_prep_mode === 'none' ? 'text-blue-400' : 'text-white'}`}>I do not follow a fixed preparation routine</span>
+              </button>
             </div>
           </div>
         )}
 
-        {/* STEP 4: EXECUTION SYSTEM */}
+        {/* STEP 4: EXECUTION BEHAVIOR */}
         {currentStep === 4 && (
           <div className="space-y-8">
             <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Execution Parameters</h1>
-              <p className="text-neutral-400 text-sm">Define your strict operating hours and routines. Charts close outside these windows.</p>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Select your execution approach</h1>
+              <p className="text-neutral-400 text-sm">This defines when and how you are allowed to execute trades.</p>
             </div>
             
-            <div className="space-y-6">
-              {/* Daily Prep */}
-              <div className="bg-[#0a0a0a] border border-neutral-800 p-6 rounded-2xl">
-                <label className="block text-xs font-black text-neutral-500 uppercase tracking-widest mb-4">Daily Prep Window</label>
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="time" value={formData.daily_prep_start} onChange={(e) => setFormData({...formData, daily_prep_start: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
-                  <input type="time" value={formData.daily_prep_end} onChange={(e) => setFormData({...formData, daily_prep_end: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+            <div className="grid gap-4">
+              <button onClick={() => setFormData({...formData, execution_type: 'session'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.execution_type === 'session' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.execution_type === 'session' ? 'text-blue-400' : 'text-white'}`}>I trade during specific session hours</span>
+              </button>
+              
+              {formData.execution_type === 'session' && (
+                <div className="pl-6 animate-in fade-in duration-300">
+                  <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Select execution time range</label>
+                  <div className="grid grid-cols-2 gap-4 max-w-sm">
+                    <input type="time" value={formData.execution_start} onChange={(e) => setFormData({...formData, execution_start: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                    <input type="time" value={formData.execution_end} onChange={(e) => setFormData({...formData, execution_end: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Execution Window */}
-              <div className="bg-[#0a0a0a] border border-neutral-800 p-6 rounded-2xl">
-                <label className="block text-xs font-black text-neutral-500 uppercase tracking-widest mb-4">Live Execution Window</label>
-                <div className="flex gap-6 mb-4">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input type="radio" checked={formData.execution_type === 'fixed'} onChange={() => setFormData({...formData, execution_type: 'fixed'})} className="text-blue-500 bg-neutral-900 border-neutral-700" />
-                    <span className="text-sm font-bold text-white">Fixed Session</span>
-                  </label>
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input type="radio" checked={formData.execution_type === 'alert'} onChange={() => setFormData({...formData, execution_type: 'alert'})} className="text-blue-500 bg-neutral-900 border-neutral-700" />
-                    <span className="text-sm font-bold text-white">Alert Driven</span>
-                  </label>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <input type="time" value={formData.execution_start} onChange={(e) => setFormData({...formData, execution_start: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
-                  <input type="time" value={formData.execution_end} onChange={(e) => setFormData({...formData, execution_end: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
-                </div>
-              </div>
+              <button onClick={() => setFormData({...formData, execution_type: 'signal'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.execution_type === 'signal' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.execution_type === 'signal' ? 'text-blue-400' : 'text-white'}`}>I execute trades based on signals and confirmations, regardless of time</span>
+              </button>
             </div>
           </div>
         )}
 
-        {/* STEP 5: PROTOCOL CONFIRMATION */}
+        {/* STEP 5: REVIEW PROCESS */}
         {currentStep === 5 && (
+          <div className="space-y-8">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Select your review process</h1>
+              <p className="text-neutral-400 text-sm">This establishes when you audit your data and behavioral performance.</p>
+            </div>
+            
+            <div className="grid gap-4">
+              <button onClick={() => setFormData({...formData, review_mode: 'weekly'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.review_mode === 'weekly' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.review_mode === 'weekly' ? 'text-blue-400' : 'text-white'}`}>I review my trades and behavior weekly</span>
+              </button>
+              
+              {formData.review_mode === 'weekly' && (
+                <div className="pl-6 animate-in fade-in duration-300">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <select value={formData.review_day} onChange={(e) => setFormData({...formData, review_day: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none appearance-none">
+                      <option value="">Select Day</option>
+                      <option value="Friday">Friday</option>
+                      <option value="Saturday">Saturday</option>
+                      <option value="Sunday">Sunday</option>
+                    </select>
+                    <input type="time" value={formData.review_start} onChange={(e) => setFormData({...formData, review_start: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                    <input type="time" value={formData.review_end} onChange={(e) => setFormData({...formData, review_end: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                  </div>
+                </div>
+              )}
+
+              <button onClick={() => setFormData({...formData, review_mode: 'none'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.review_mode === 'none' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
+                <span className={`text-sm font-black uppercase tracking-wide ${formData.review_mode === 'none' ? 'text-blue-400' : 'text-white'}`}>I do not follow a structured review process</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* STEP 6: PROTOCOL CONFIRMATION */}
+        {currentStep === 6 && (
           <div className="space-y-8">
             <div>
               <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Protocol Initialization</h1>
@@ -415,7 +499,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
             <ChevronLeft size={16} className="mr-2" /> Back
           </button>
 
-          {currentStep < 5 ? (
+          {currentStep < 6 ? (
             <button 
               onClick={handleNext}
               className="flex items-center px-8 py-3 bg-white text-black hover:bg-neutral-200 rounded-xl text-xs font-black uppercase tracking-widest transition-all"
