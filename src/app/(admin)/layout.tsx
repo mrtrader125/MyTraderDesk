@@ -15,7 +15,8 @@ import {
   BookOpen,
   PanelLeftClose,
   PanelLeftOpen,
-  Inbox // <-- Added this icon for the applicants page
+  Inbox,
+  Eye // <-- 🚨 Added for the preview button
 } from 'lucide-react'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -28,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
   useEffect(() => {
-    // 🚨 1. Load persistent sidebar state instantly
+    // 1. Load persistent sidebar state instantly
     const savedState = localStorage.getItem('adminSidebarState')
     if (savedState !== null) {
       setIsSidebarOpen(savedState === 'true')
@@ -61,7 +62,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     verifyAdmin()
   }, [router])
 
-  // 🚨 3. Safe toggle function that saves to localStorage
+  // 3. Safe toggle function that saves to localStorage
   const toggleSidebar = () => {
     setIsSidebarOpen(prev => {
       const newState = !prev;
@@ -77,13 +78,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const navLinks = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
-    { name: 'Applicants', path: '/admin/applications', icon: Inbox }, // <-- Added Applicants link
+    { name: 'Applicants', path: '/admin/applications', icon: Inbox }, 
     { name: 'Publish Setup', path: '/admin/analysis', icon: Send },
     { name: 'Publish Playbook', path: '/admin/playbook/new', icon: BookOpen }, 
     { name: 'Manage Floor', path: '/admin/floor/new', icon: Activity }, 
     { name: 'User Directory', path: '/admin/users', icon: Users },
     { name: 'Broadcast', path: '/admin/notifications', icon: Radio },
     { name: 'System Logs', path: '/admin/logs', icon: Activity },
+    // 🚨 ADDED: Quick link to safely test your onboarding UI
+    { name: 'Preview Onboarding', path: '/onboarding?preview=true', icon: Eye }, 
   ]
 
   if (!isAuthorized) {
@@ -124,7 +127,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Navigation */}
         <div className={`flex-1 py-6 space-y-2 overflow-y-auto scrollbar-hide ${isSidebarOpen ? 'px-4' : 'px-3'}`}>
           {navLinks.map((link) => {
-            const isActive = pathname === link.path
+            const isActive = pathname === link.path || (link.path.includes('?') && pathname + '?preview=true' === link.path)
             return (
               <button
                 key={link.name}
