@@ -57,7 +57,9 @@ function TopNavContent({ user }: { user: any }) {
     window.dispatchEvent(new CustomEvent('switchDashboardView', { detail: view }))
   }
 
+  // 🚨 THE VISUAL LOCKS
   if (pathname?.includes('/viewport')) return null
+  if (pathname === '/onboarding') return null
   
   const isAccountPage = pathname?.startsWith('/account')
   const isDashboard = pathname === '/dashboard'

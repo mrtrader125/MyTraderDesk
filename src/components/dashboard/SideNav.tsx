@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { 
   LayoutDashboard, LineChart, Bookmark, 
   Settings, LogOut, Menu, Users, Briefcase,
-  BookOpen, Activity // <-- Added new icons
+  BookOpen, Activity 
 } from 'lucide-react'
 
 export default function SideNav() {
@@ -19,7 +19,9 @@ export default function SideNav() {
     setIsOpen(false)
   }, [pathname])
 
+  // 🚨 THE VISUAL LOCKS
   if (pathname?.includes('/viewport')) return null;
+  if (pathname === '/onboarding') return null;
 
   const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -27,8 +29,8 @@ export default function SideNav() {
     { name: 'Live Floor', href: '/floor', icon: Users }, 
     { name: 'Markets', href: '/markets', icon: LineChart },
     { name: 'The Vault', href: '/vault', icon: Bookmark }, 
-    { name: 'Journal', href: '/journal', icon: BookOpen },     // <-- Added
-    { name: 'Analytics', href: '/analytics', icon: Activity }, // <-- Added
+    { name: 'Journal', href: '/journal', icon: BookOpen },     
+    { name: 'Analytics', href: '/analytics', icon: Activity }, 
     { name: 'Account', href: '/account/profile', icon: Settings },
   ]
 
@@ -79,7 +81,7 @@ export default function SideNav() {
                   {isOpen && (
                     <>
                       <span className="ml-3 font-black text-xs uppercase tracking-widest truncate">{item.name}</span>
-                      {/* @ts-ignore - Assuming isPro might be added to some items later */}
+                      {/* @ts-ignore */}
                       {item.isPro && (
                         <span className="ml-auto text-[8px] uppercase tracking-wider font-bold bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded border border-blue-500/20">
                           PRO
@@ -108,7 +110,6 @@ export default function SideNav() {
       {/* ========================================= */}
       {/* MOBILE BOTTOM NAV (Hidden on Desktop)       */}
       {/* ========================================= */}
-      {/* 🚨 FIX: Added overflow-x-auto and gap-6 so the 8 items don't squish together */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[65px] bg-[#050505]/95 backdrop-blur-xl border-t border-neutral-900 z-[100] flex items-center justify-start overflow-x-auto custom-scrollbar px-4 gap-6 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href.split('/')[1] ? `/${item.href.split('/')[1]}` : item.href))
