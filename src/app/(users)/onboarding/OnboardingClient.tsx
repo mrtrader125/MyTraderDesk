@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ShieldCheck, Crosshair, Clock, Activity, ArrowRight, Zap, ChevronLeft, ChevronRight, Layers, Calendar, AlertTriangle, CheckSquare } from 'lucide-react'
+import { ShieldCheck, Crosshair, Clock, Activity, ArrowRight, Zap, ChevronLeft, ChevronRight, Layers, AlertTriangle, CheckSquare } from 'lucide-react'
 
 export default function OnboardingClient({ userId }: { userId: string }) {
   const router = useRouter()
@@ -19,33 +19,33 @@ export default function OnboardingClient({ userId }: { userId: string }) {
   const [currentStep, setCurrentStep] = useState(1)
   const [phase, setPhase] = useState<'form' | 'activation'>('form')
   
-  // 🚨 NEW LOGIC SCHEMA
   const [formData, setFormData] = useState({
     timezone: '',
     
     // 1. Trading Scope
     scope_type: 'single', // 'single' | 'multi'
     target_assets: [] as string[], 
+    specific_instruments: '', // 🚨 ADDED for specific tickers/pairs
     
     // 2. Weekly Prep
-    weekly_prep_mode: 'structured', // 'structured' | 'none'
+    weekly_prep_mode: 'structured', 
     weekly_prep_day: '',
     weekly_prep_start: '',
     weekly_prep_end: '',
     
     // 3. Daily Prep
-    daily_prep_mode: 'before', // 'before' | 'fixed' | 'none'
-    daily_prep_offset: '30', // '15', '30', '60', 'custom'
+    daily_prep_mode: 'before', 
+    daily_prep_offset: '30', 
     daily_prep_start: '',
     daily_prep_end: '',
     
     // 4. Execution Behavior
-    execution_type: 'session', // 'session' | 'signal'
+    execution_type: 'session', 
     execution_start: '',
     execution_end: '',
     
     // 5. Review Process
-    review_mode: 'weekly', // 'weekly' | 'none'
+    review_mode: 'weekly', 
     review_day: '',
     review_start: '',
     review_end: '',
@@ -101,6 +101,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
         
         scope_type: formData.scope_type,
         target_assets: formData.target_assets,
+        specific_instruments: formData.scope_type === 'single' ? formData.specific_instruments : null, // 🚨 SAVING INSTRUMENTS
         
         weekly_prep_mode: formData.weekly_prep_mode,
         weekly_analysis_window: formData.weekly_prep_mode === 'structured' ? `${formData.weekly_prep_day} ${formData.weekly_prep_start}-${formData.weekly_prep_end}` : 'NONE',
@@ -204,12 +205,12 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                   <Activity className="text-red-500" size={20} />
                 </div>
                 <div>
-                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Discipline Engine</h4>
+                  <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-1">Daily Limits</h4>
                   <p className="text-sm font-bold text-white uppercase tracking-wide">
                     Active & Monitoring
                   </p>
                   <p className="text-xs text-neutral-400 mt-1.5 leading-relaxed">
-                    The system will forcefully halt your session if you exceed <span className="text-white font-bold">2 live executions</span> today. Grade your setups mercilessly.
+                    The system will monitor your activity to ensure you stay within your <span className="text-white font-bold">2 live executions</span> daily limit. Grade your setups mercilessly.
                   </p>
                 </div>
               </div>
@@ -240,7 +241,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
     "Phase 3: Daily Preparation",
     "Phase 4: Execution Behavior",
     "Phase 5: Review Process",
-    "Phase 6: Protocol Confirmation"
+    "Phase 6: Final Confirmation"
   ]
 
   const ASSETS = ['Forex', 'Crypto', 'Commodities', 'Stocks', 'Indices']
@@ -311,6 +312,21 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                 })}
               </div>
             </div>
+
+            {/* 🚨 SPECIFIC INSTRUMENTS (ONLY FOR SINGLE/LIMITED TRADERS) */}
+            {formData.scope_type === 'single' && (
+              <div className="pt-6 border-t border-neutral-900 mt-6 animate-in fade-in duration-300">
+                <label className="block text-xs font-black text-neutral-500 uppercase tracking-widest mb-2">Specific Instruments (Optional)</label>
+                <p className="text-[10px] text-neutral-500 mb-3">List the specific pairs, tickers, or contracts you trade.</p>
+                <input 
+                  type="text" 
+                  placeholder="e.g., XAUUSD, EURUSD, NQ1!"
+                  value={formData.specific_instruments}
+                  onChange={(e) => setFormData({...formData, specific_instruments: e.target.value})}
+                  className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-4 outline-none placeholder:text-neutral-700"
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -463,12 +479,12 @@ export default function OnboardingClient({ userId }: { userId: string }) {
           </div>
         )}
 
-        {/* STEP 6: PROTOCOL CONFIRMATION */}
+        {/* 🚨 STEP 6: GROUNDED PROTOCOL CONFIRMATION */}
         {currentStep === 6 && (
           <div className="space-y-8">
             <div>
-              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Protocol Initialization</h1>
-              <p className="text-neutral-400 text-sm">Review and accept the platform constraints to unlock the terminal.</p>
+              <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Final Confirmation</h1>
+              <p className="text-neutral-400 text-sm">Review the core rules of the platform before gaining access to the terminal.</p>
             </div>
             
             <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-6">
@@ -480,9 +496,9 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                   className="mt-1 w-5 h-5 text-red-500 bg-neutral-900 border-red-500/50 rounded focus:ring-red-500" 
                 />
                 <div className="flex flex-col">
-                  <span className="text-base font-black text-white tracking-wide uppercase">I accept the Operator Protocol</span>
+                  <span className="text-base font-black text-white tracking-wide uppercase">I accept the core trading rules</span>
                   <span className="text-sm text-red-200/70 mt-2 leading-relaxed font-medium">
-                    By initializing, I agree to the platform's constraints: Maximum 2 trades daily, a limit of 5 staged daily assets, and a commitment to zero-outcome grading for behavioral consistency.
+                    By continuing, you agree to stick to the system's hard limits: a maximum of 2 trades per day, a daily watchlist limit of 5 assets, and grading your trades based on execution quality rather than just profit and loss.
                   </span>
                 </div>
               </label>
@@ -512,7 +528,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
               disabled={!formData.accepted_risk_contract || isSubmitting}
               className="flex items-center px-8 py-3 bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-50 disabled:bg-neutral-800 disabled:text-neutral-500 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)]"
             >
-              {isSubmitting ? 'Writing to Ledger...' : 'Initialize'}
+              {isSubmitting ? 'Saving Profile...' : 'Complete Setup'}
             </button>
           )}
         </div>
