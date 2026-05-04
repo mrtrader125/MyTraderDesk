@@ -31,18 +31,37 @@ export default function LoginPage() {
     setError(null)
     setNeedsVerification(false)
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    // 1. Authenticate the user
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
-    if (error) {
-      if (error.message.toLowerCase().includes('email not confirmed')) {
+    if (authError) {
+      if (authError.message.toLowerCase().includes('email not confirmed')) {
         setNeedsVerification(true)
       } else {
-        setError(error.message)
+        setError(authError.message)
       }
       setLoading(false)
-    } else {
-      router.push('/dashboard')
-      router.refresh()
+      return; 
+    }
+
+    // 2. 🚨 TRAFFIC CONTROLLER: Check if they are a first-time operator
+    if (authData?.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('protocol_established')
+        .eq('id', authData.user.id)
+        .single()
+
+      // 3. Route them based on their clearance
+      if (!profile || profile.protocol_established !== true) {
+        // First time login -> Send to standalone onboarding page
+        router.push('/onboarding')
+      } else {
+        // Returning operator -> Send directly to the Command Center
+        router.push('/dashboard') 
+      }
+      
+      // Removed router.refresh() to prevent cancelling the push navigation
     }
   }
 
@@ -55,7 +74,6 @@ export default function LoginPage() {
     setResending(false)
   }
 
-  // Requests the 8-Digit Code
   const handleForgotPassword = async (e: React.MouseEvent) => {
     e.preventDefault()
     if (isResetting) return; 
@@ -68,19 +86,17 @@ export default function LoginPage() {
 
     setIsResetting(true)
 
-    // Triggers the email template with the OTP token
     const { error } = await supabase.auth.resetPasswordForEmail(email)
 
     if (error) {
       setError(error.message)
     } else {
-      setResetStep('verify') // Push them to the code entry screen
+      setResetStep('verify') 
     }
     
     setIsResetting(false)
   }
 
-  // Submits the 8-Digit Code back to Supabase
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -96,7 +112,6 @@ export default function LoginPage() {
       setError(error.message)
       setIsVerifying(false)
     } else {
-      // Success! They are authenticated. Push them to set a new password.
       router.push('/update-password')
     }
   }
@@ -112,7 +127,6 @@ export default function LoginPage() {
         <div className="relative bg-[#0a0a0f]/90 backdrop-blur-3xl border border-white/5 p-8 md:p-10 rounded-[2.5rem] shadow-2xl">
           
           {needsVerification ? (
-            /* UNVERIFIED EMAIL SCREEN */
             <div className="flex flex-col items-center text-center py-2 animate-in fade-in zoom-in-95 duration-500">
               <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
                 <AlertTriangle className="text-amber-500" size={28} />
@@ -155,7 +169,6 @@ export default function LoginPage() {
 
           ) : resetStep === 'verify' ? (
 
-            /* 🚨 8-DIGIT OTP ENTRY SCREEN */
             <div className="flex flex-col items-center text-center py-2 animate-in fade-in zoom-in-95 duration-500">
               <div className="w-16 h-16 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center mb-6 shadow-inner">
                 <Lock className="text-blue-500" size={28} />
@@ -206,7 +219,6 @@ export default function LoginPage() {
             </div>
 
           ) : (
-            /* ORIGINAL LOGIN FORM */
             <>
               <div className="flex flex-col items-center mb-10">
                 <div className="w-14 h-14 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center mb-6 shadow-inner relative overflow-hidden">

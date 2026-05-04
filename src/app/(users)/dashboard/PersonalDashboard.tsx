@@ -68,11 +68,11 @@ const sanitizeLayout = (data: any) => {
   }
 }
 
-export default function PersonalDashboard() {
+export default function PersonalDashboard({ userId }: { userId?: string }) {
   const router = useRouter()
   
   // 🚨 1. ALL USESTATE HOOKS FIRST
-  const [isPro, setIsPro] = useState<boolean>(true); // Assume pro until tier check confirms demo
+  const [isPro, setIsPro] = useState<boolean>(true); 
   const [user, setUser] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
@@ -360,7 +360,12 @@ export default function PersonalDashboard() {
       }
       setUser(session.user)
 
-      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', session.user.id).single();
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('plan')
+        .eq('id', session.user.id)
+        .single();
+
       const isProUser = profile?.plan === 'pro' || profile?.plan === 'premium';
       setIsPro(isProUser);
 
@@ -635,8 +640,9 @@ export default function PersonalDashboard() {
     )
   }
 
+
   return (
-    <div className="flex h-[calc(100vh-70px)] w-full bg-[#030303] text-zinc-300 font-sans overflow-y-auto lg:overflow-hidden">
+    <div className="flex h-full w-full bg-[#030303] text-zinc-300 font-sans overflow-y-auto lg:overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
         {isLoading || !layoutLoaded ? (
           <div className="flex-1 flex items-center justify-center">
@@ -645,7 +651,7 @@ export default function PersonalDashboard() {
         ) : (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
-            {/* --- TOP SECTION (Mobile: Stacked, Desktop: Side-by-Side) --- */}
+            {/* --- TOP SECTION --- */}
             <div className="flex flex-col lg:flex-row h-full lg:h-1/2 shrink-0 p-3 sm:p-4 gap-4 min-h-0 overflow-y-auto lg:overflow-hidden relative">
               
               {!isPro && (
@@ -654,7 +660,7 @@ export default function PersonalDashboard() {
                 </div>
               )}
 
-              {/* --- WIDGET GRID (Mobile: Bottom, Desktop: Left) --- */}
+              {/* --- WIDGET GRID --- */}
               <div 
                 ref={gridRef}
                 onDragOver={(e) => e.preventDefault()}
@@ -733,26 +739,26 @@ export default function PersonalDashboard() {
                   <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-0"></div>
                   
                   <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10 relative">
-                    <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none pointer-events-none">
-                      <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
-                    </div>
-                    {isPro && (
-                      <button 
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onClick={(e) => toggleFont(e, 'session')}
-                        className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
-                        title="Cycle Typography"
-                      >
-                        <Type size={12} />
-                      </button>
-                    )}
+                        <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none pointer-events-none">
+                          <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
+                        </div>
+                        {isPro && (
+                          <button 
+                            onPointerDown={(e) => e.stopPropagation()}
+                            onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                            onClick={(e) => toggleFont(e, 'session')}
+                            className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
+                            title="Cycle Typography"
+                          >
+                            <Type size={12} />
+                          </button>
+                        )}
                   </div>
 
                   <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-10 pointer-events-none" style={{ containerType: 'size' }}>
-                    {formatTime(sessionInfo.localTime, widgets.session.fontIdx)}
+                        {formatTime(sessionInfo.localTime, widgets.session.fontIdx)}
                   </div>
-                  
+                      
                   {sessionInfo.isOverlap && (
                     <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent animate-pulse" />
                   )}
@@ -771,9 +777,9 @@ export default function PersonalDashboard() {
 
               </div>
 
-              {/* --- ROUTINE TRACKER (Mobile: Top, Desktop: Right) --- */}
+              {/* --- ROUTINE TRACKER --- */}
               <div className="order-1 lg:order-2 w-full lg:w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0 relative">
-                
+                    
                 {/* Quick Nav Hints */}
                 <div className="absolute top-3 right-3 flex gap-2 z-10">
                   <Link href="/desk" className="flex flex-col items-center p-1.5 rounded-lg bg-zinc-950 border border-zinc-800/50 text-zinc-500 hover:text-emerald-400 hover:border-emerald-500/30 transition-all shadow-sm" title="Go to Desk [D]">
@@ -793,7 +799,7 @@ export default function PersonalDashboard() {
                 </div>
 
                 <div className="flex flex-col overflow-y-visible lg:overflow-y-auto custom-scrollbar flex-1 pr-2 pl-1 relative">
-                  
+                      
                   {/* Vertical Connecting Line */}
                   <div className="absolute left-[13px] top-2 bottom-6 w-px bg-zinc-800/60 z-0" />
 
@@ -818,8 +824,8 @@ export default function PersonalDashboard() {
                       'border-blue-500/50 text-transparent'
                     }`}>
                       {pushesToday > 0 && pushesToday <= 5 ? <CheckCircle2 size={12} /> : 
-                       pushesToday > 5 ? <AlertTriangle size={10} /> :
-                       <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
+                        pushesToday > 5 ? <AlertTriangle size={10} /> :
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />}
                     </div>
                     <div className="flex flex-col">
                       <span className={`text-xs font-bold tracking-wide ${pushesToday > 0 && pushesToday <= 5 ? 'text-zinc-500' : 'text-zinc-200'}`}>
@@ -837,27 +843,27 @@ export default function PersonalDashboard() {
                   <div className="flex items-start gap-4 relative z-10 mb-6">
                     <div className="flex flex-col items-center mt-0.5 shrink-0 bg-[#0a0a0a] py-1">
                       {pastDays.map((day, i) => (
-                         <div key={day.day} className="flex flex-col items-center">
-                           <div 
-                             className={`w-2.5 h-2.5 rounded-full ${
-                               day.status === 'perfect' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 
-                               day.status === 'imperfect' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]' : 
-                               'bg-zinc-800'
-                             }`} 
-                             title={day.day} 
-                           />
-                           {i < pastDays.length - 1 && (
-                             <div className={`w-px h-3 ${day.status === 'imperfect' ? 'bg-red-500/50' : 'bg-zinc-700'}`} />
-                           )}
-                         </div>
+                          <div key={day.day} className="flex flex-col items-center">
+                            <div 
+                              className={`w-2.5 h-2.5 rounded-full ${
+                                day.status === 'perfect' ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 
+                                day.status === 'imperfect' ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]' : 
+                                'bg-zinc-800'
+                              }`} 
+                              title={day.day} 
+                            />
+                            {i < pastDays.length - 1 && (
+                              <div className={`w-px h-3 ${day.status === 'imperfect' ? 'bg-red-500/50' : 'bg-zinc-700'}`} />
+                            )}
+                          </div>
                       ))}
                     </div>
                     <div className="flex flex-col flex-1 mt-0.5">
                       <span className="text-xs font-bold tracking-wide text-zinc-200 flex items-center justify-between">
                         Live Execution
                         <div className="flex gap-1 items-center pr-2">
-                           <div className={`h-1.5 w-6 rounded-sm ${tradesTakenToday >= 1 ? 'bg-zinc-800' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}`} />
-                           <div className={`h-1.5 w-6 rounded-sm ${tradesTakenToday >= 2 ? 'bg-zinc-800' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}`} />
+                            <div className={`h-1.5 w-6 rounded-sm ${tradesTakenToday >= 1 ? 'bg-zinc-800' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}`} />
+                            <div className={`h-1.5 w-6 rounded-sm ${tradesTakenToday >= 2 ? 'bg-zinc-800' : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'}`} />
                         </div>
                       </span>
                       {tradesTakenToday >= 2 ? (
@@ -889,9 +895,9 @@ export default function PersonalDashboard() {
               </div>
             </div>
 
-            {/* --- BOTTOM SECTION: ACTIVE FOCUS (Hidden on Mobile) --- */}
+            {/* --- BOTTOM SECTION: ACTIVE FOCUS --- */}
             <div className={`hidden lg:flex shrink-0 flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0 transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'w-full h-1/2' : 'w-48 xl:w-56 border-r border-zinc-800/60 h-1/2'}`}>
-              
+                  
               <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#050505]">
                 <div className="flex items-center gap-2 min-w-0">
                   <Crosshair size={14} className="text-blue-500 shrink-0" />
@@ -917,7 +923,7 @@ export default function PersonalDashboard() {
               </div>
 
               <div className="flex-1 flex flex-row min-h-0 overflow-hidden">
-                
+                    
                 <div className={`shrink-0 flex flex-col bg-[#080808] overflow-y-auto custom-scrollbar p-2 gap-1.5 ${isTodayFocusExpanded ? 'w-48 xl:w-56 border-r border-zinc-800/60' : 'w-full'}`}>
                   {todaySetups.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-zinc-600 text-center p-4">
@@ -959,7 +965,7 @@ export default function PersonalDashboard() {
                 </div>
 
                 <div className={`flex flex-row min-w-0 overflow-hidden transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'flex-1 opacity-100' : 'w-0 opacity-0'}`}>
-                  
+                      
                   <div 
                     className="flex-1 flex flex-col min-w-0 bg-[#030303] relative border-r border-zinc-800/60 group overflow-hidden"
                     onMouseDown={handlePeekStart}
@@ -1042,7 +1048,7 @@ export default function PersonalDashboard() {
               <button onClick={() => setIsMobileNotesOpen(false)} className="text-zinc-500 hover:text-white p-1"><X size={16}/></button>
             </div>
             <div className="p-5 overflow-y-auto custom-scrollbar flex-1 text-sm text-zinc-300 leading-relaxed font-medium">
-               <div dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} />
+                <div dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} />
             </div>
           </div>
         </div>

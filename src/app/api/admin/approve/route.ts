@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       
       // 4. Transmit the email
       const emailResponse = await resend.emails.send({
-        from: 'MyTraderDesk <noreply@mytraderdesk.com>',
+        from: 'MyTraderDesk <terminal@mytraderdesk.com>',
         to: email,
         subject: 'Terminal Access Granted: MyTraderDesk',
         html: `

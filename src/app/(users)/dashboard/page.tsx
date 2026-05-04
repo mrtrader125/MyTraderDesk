@@ -20,7 +20,8 @@ export default async function DashboardPage() {
     { data: vaultData },
     { data: analyses }
   ] = await Promise.all([
-    supabase.from('profiles').select('plan').eq('id', userId).single(),
+    // Fetching the protocol flag
+    supabase.from('profiles').select('plan, protocol_established').eq('id', userId).single(),
     supabase.from('notifications')
       .select('*')
       .eq('type', 'BROADCAST')
@@ -30,6 +31,11 @@ export default async function DashboardPage() {
     supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe, status)').eq('user_id', userId),
     supabase.from('analyses').select('*').order('created_at', { ascending: false })
   ])
+
+  // 🚨 THE BOUNCER: If they try to bypass the login route, kick them back to onboarding
+  if (profile?.protocol_established === false || profile?.protocol_established === null) {
+    redirect('/onboarding')
+  }
 
   const formattedWatchlist = vaultData?.map((v: any) => ({
     id: v.analysis_id,
@@ -47,7 +53,6 @@ export default async function DashboardPage() {
     }
   }
 
-  // PAYLOAD SCRUBBING: Prevent Next.js from leaking premium notes into the HTML payload for demo users.
   const isPro = profile?.plan === 'pro'
   const safeAnalyses = analyses?.map((setup: any) => {
     if (isPro) return setup
@@ -65,6 +70,7 @@ export default async function DashboardPage() {
       initialBroadcast={activeBroadcast} 
       initialWatchlist={formattedWatchlist} 
       initialSetups={safeAnalyses} 
+      // You no longer need to pass needsOnboarding to the client, because they can't reach this page if it's false!
     />
   )
 }
