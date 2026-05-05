@@ -1,3 +1,5 @@
+// src/ai/ingestion/index.ts
+
 import { handleToolCall } from '@/ai/kernel/toolDispatcher'
 import { safeGenerateMentorDecision } from '@/ai/safeGenerate'
 import { decodeUserIntent } from '@/ai/services/intentRouter'
@@ -6,27 +8,42 @@ export async function handleUserMessage(user: any, text: string) {
   const routerResult = await decodeUserIntent(text);
 
   if (routerResult.intent !== 'UNKNOWN') {
-    if (routerResult.intent === 'RESUME_USER') {
-      await handleToolCall(user, { tool: 'resume_user', args: {} });
-      return "Acknowledged. Status set to ACTIVE. Operations resumed.";
-    } 
     
+    // --- THE STANDOFF INTENTS ---
     if (routerResult.intent === 'MAINTAIN_LEAVE') {
       return "Acknowledged. Status remains ON_LEAVE. Close the terminal.";
     }
-    
     if (routerResult.intent === 'VALID_EXCEPTION') {
       return "Exception logged. Proceed with admin task. Status remains ON_LEAVE.";
     }
 
+    // --- THE DATABASE TOOL INTENTS ---
+    let toolDecision = null;
+
     if (routerResult.intent === 'PAUSE_USER') {
-      await handleToolCall(user, { tool: 'pause_user', args: { days: 1 } });
-      return "Acknowledged. Status set to ON_LEAVE. Mental capital protected.";
+      // Correctly passes the days variable from the LLM
+      toolDecision = { tool: 'pause_user', args: { days: routerResult.days || 1 } };
+    } 
+    else if (routerResult.intent === 'RESUME_USER') {
+      toolDecision = { tool: 'resume_user', args: {} };
+    }
+    else if (routerResult.intent === 'MARK_PREP_DONE') {
+      toolDecision = { tool: 'mark_prep_done', args: {} };
+    } 
+    else if (routerResult.intent === 'LOG_TRADE') {
+      toolDecision = { tool: 'log_trade', args: {} };
     }
 
-    if (routerResult.intent === 'MARK_PREP_DONE') {
-      await handleToolCall(user, { tool: 'mark_prep_done', args: {} });
-      return "Acknowledged. Prep marked complete.";
+    // Execute the Database Update
+    if (toolDecision) {
+      const result = await handleToolCall(user, toolDecision);
+      
+      if (result.success) {
+        if (toolDecision.tool === 'resume_user') return "Acknowledged. Status set to ACTIVE. Operations resumed.";
+        if (toolDecision.tool === 'pause_user') return "Acknowledged. Status set to ON_LEAVE. Mental capital protected.";
+        return "Acknowledged. Operator protocol and database have been updated.";
+      }
+      return result.message;
     }
   }
 
