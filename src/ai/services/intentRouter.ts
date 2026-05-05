@@ -13,6 +13,7 @@ Valid Intents:
 2. "MARK_PREP_DONE" - The user has finished their required prep work or analysis.
 3. "LOG_TRADE" - The user just took a trade, executed a setup, or locked an entry.
 4. "UNKNOWN" - The user is just chatting, asking a question, or the intent is unclear.
+5. "RESUME_USER" - The user is returning to the desk after a break, saying they are back, or ready to start trading again.
 
 OUTPUT FORMAT:
 You must return ONLY a raw JSON object. No markdown formatting, no code blocks, no explanation.
