@@ -2,7 +2,7 @@
 
 import { handleToolCall } from '@/ai/kernel/toolDispatcher'
 import { safeGenerateMentorDecision } from '@/ai/safeGenerate'
-import { decodeUserIntent } from '@/ai/services/intentRouter' // <-- Imports our new LLM decoder
+import { decodeUserIntent } from '@/ai/services/intentRouter' 
 
 export async function handleUserMessage(user: any, text: string) {
   // 1. Send the messy user text to the Intent Router
@@ -15,6 +15,9 @@ export async function handleUserMessage(user: any, text: string) {
     if (routerResult.intent === 'PAUSE_USER') {
       toolDecision = { tool: 'pause_user', args: { days: routerResult.days || 1 } };
     } 
+    else if (routerResult.intent === 'RESUME_USER') {
+      toolDecision = { tool: 'resume_user', args: {} };
+    }
     else if (routerResult.intent === 'MARK_PREP_DONE') {
       toolDecision = { tool: 'mark_prep_done', args: {} };
     } 
