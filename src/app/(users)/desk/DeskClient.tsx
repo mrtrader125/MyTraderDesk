@@ -738,7 +738,7 @@ export default function DeskClient() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user && isPro) {
         await supabase.auth.updateUser({
-          data: { desk_perfect_catalysts: perfectCatalysts, desk_imperfect_catalysts: imperfectCatalysts }
+          data: { desk_perfect_catalysts: desk_perfect_catalysts, desk_imperfect_catalysts: imperfectCatalysts }
         })
       }
     }
@@ -986,11 +986,29 @@ export default function DeskClient() {
 
     const newSetupsPayload = await Promise.all(uploadPromises);
     const { data } = await supabase.from('user_desk_setups').insert(newSetupsPayload).select();
+    
     if (data) {
       setSetups(prev => [...data.map(d => ({ 
         id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, 
         imageUrl: d.image_url, isToday: false, addedToTodayAt: null, createdAt: adjustDbToIST(d.created_at).getTime()
       })), ...prev]);
+
+      // --- THE TRIPWIRE: Check if they are supposed to be off the desk ---
+      const { data: moduleData } = await supabase
+        .from('user_trading_modules')
+        .select('status')
+        .eq('user_id', user.id)
+        .single();
+
+      if (moduleData?.status === 'ON_LEAVE') {
+        // Fire silent ping to backend to trigger the Telegram intervention
+        fetch('/api/telegram/intervene', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: user.id })
+        }).catch(() => {}); // Catch to prevent UI crash if it fails
+      }
+      // --- END TRIPWIRE ---
     }
   }
 
