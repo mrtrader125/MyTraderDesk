@@ -89,7 +89,7 @@ function TopNavContent({ user }: { user: any }) {
                   : 'text-neutral-600 hover:text-neutral-400 border-transparent'
               }`}
             >
-              Market
+              General
             </button>
 
             <button
@@ -100,7 +100,7 @@ function TopNavContent({ user }: { user: any }) {
                   : 'text-neutral-600 hover:text-neutral-400 border-transparent'
               }`}
             >
-              My Desk
+              Personal
             </button>
           </div>
         )}
