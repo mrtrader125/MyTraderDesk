@@ -124,19 +124,6 @@ export default function ProtocolPage() {
           ))}
         </div>
 
-        {/* UNIVERSAL CTA (The Enforcer) */}
-        <div className="bg-[#080808] border border-neutral-900 p-8 md:p-12 rounded-sm text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-cyan-500"></div>
-          <h3 className="text-2xl font-black text-white uppercase tracking-tight mb-4">Ready to Execute?</h3>
-          <p className="text-neutral-500 text-[11px] font-medium leading-relaxed max-w-lg mx-auto mb-8">
-            Reading about the routine is one thing; sticking to it is another. We built a professional terminal that legally forces you to follow this exact blueprint, tracking your daily compliance. <br/><br/>
-            <span className="text-cyan-400">We are strictly limiting our initial cohort to 150 Founding Members.</span>
-          </p>
-          <Link href="/signup" className="inline-flex items-center justify-center px-10 py-4 bg-white text-black rounded-sm font-black uppercase tracking-widest text-[10px] hover:bg-neutral-200 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.1)]">
-            Secure Your Spot for $29/mo <ArrowRight className="ml-2 w-4 h-4" />
-          </Link>
-        </div>
-
         {/* NEXT PROTOCOL LINK */}
         <div className="mt-16 pt-8 border-t border-neutral-900 flex justify-end">
           <Link href={`/protocol/${content.nextNode.slug}`} className="group flex flex-col items-end text-right">
