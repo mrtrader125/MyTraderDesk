@@ -208,39 +208,131 @@ export default function Home() {
         </div>
       </section>
       
-      <section id="features" className="relative z-10 w-full py-24 lg:py-32 px-6 border-t border-neutral-900 bg-[#020202]">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="text-center mb-14">
-            <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">What The Platform Does</h2>
-            <p className="text-neutral-500 text-sm mt-3 font-medium">The core operational tools built into the terminal.</p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
-            <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-8 hover:border-neutral-700 transition-colors shadow-lg shadow-black/20">
-              <Workflow className="w-8 h-8 text-blue-500 mb-6" />
-              <h3 className="text-lg font-bold text-white mb-3">MT5 Data Sync</h3>
-              <p className="text-sm text-neutral-400 leading-relaxed">
-                Connect your broker data via CSV or HTML parsing. Matches live executions to drafted setups, creating a frictionless record.
-              </p>
-            </div>
-            <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-8 hover:border-neutral-700 transition-colors shadow-lg shadow-black/20">
-              <BookOpen className="w-8 h-8 text-emerald-500 mb-6" />
-              <h3 className="text-lg font-bold text-white mb-3">Behavioral Journaling</h3>
-              <p className="text-sm text-neutral-400 leading-relaxed">
-                Go beyond PnL. Tracks your "Discipline Index." Categorize trades as Perfect/Imperfect, assigning explicit dollar costs to mistakes.
-              </p>
-            </div>
-            <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-8 hover:border-neutral-700 transition-colors shadow-lg shadow-black/20">
-              <TerminalSquare className="w-8 h-8 text-purple-500 mb-6" />
-              <h3 className="text-lg font-bold text-white mb-3">The Live Floor</h3>
-              <p className="text-sm text-neutral-400 leading-relaxed">
-                A real-time squawk box for Pro members. Access institutional-grade structural analysis and validate your own bias before executing.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+<section id="features" className="relative z-10 w-full py-24 lg:py-28 px-6 border-t border-neutral-900 bg-[#020202]">
+  <div className="max-w-[1400px] mx-auto">
+    
+    <div className="text-center mb-14">
+      <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">
+        What The Platform Does
+      </h2>
+      <p className="text-neutral-500 text-sm mt-3 font-medium">
+        The core operational tools built into the terminal.
+      </p>
+    </div>
 
+    <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+      {/* CARD 1 */}
+      <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
+        <Workflow className="w-7 h-7 text-blue-500 mb-5" />
+        
+        <div className="mb-3">
+          <h3 className="text-lg font-bold text-white">
+            MT5 Data Sync
+          </h3>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600 font-bold mt-1">
+            Execution Infrastructure
+          </p>
+        </div>
+
+        <p className="text-sm text-neutral-400 leading-relaxed">
+          Connect your broker data via CSV or HTML parsing. Matches live executions to drafted setups, creating a frictionless trading record.
+        </p>
+      </div>
+
+      {/* CARD 2 */}
+      <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
+        <BookOpen className="w-7 h-7 text-emerald-500 mb-5" />
+        
+        <div className="mb-3">
+          <h3 className="text-lg font-bold text-white">
+            Behavioral Journaling
+          </h3>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600 font-bold mt-1">
+            Discipline Analytics
+          </p>
+        </div>
+
+        <p className="text-sm text-neutral-400 leading-relaxed">
+          Go beyond PnL. Track execution quality, emotional discipline, and behavioral mistakes while assigning measurable costs to inconsistency.
+        </p>
+      </div>
+
+      {/* CARD 3 */}
+      <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
+        <TerminalSquare className="w-7 h-7 text-purple-500 mb-5" />
+        
+        <div className="mb-3">
+          <h3 className="text-lg font-bold text-white">
+            The Live Floor
+          </h3>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600 font-bold mt-1">
+            Real-Time Market Context
+          </p>
+        </div>
+
+        <p className="text-sm text-neutral-400 leading-relaxed">
+          Access institutional-grade structural analysis, directional bias, and key invalidation zones before executing your own setups.
+        </p>
+      </div>
+
+      {/* CARD 4 */}
+      <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
+        <ShieldCheck className="w-7 h-7 text-cyan-500 mb-5" />
+        
+        <div className="mb-3">
+          <h3 className="text-lg font-bold text-white">
+            Trading System
+          </h3>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600 font-bold mt-1">
+            Structured Execution Framework
+          </p>
+        </div>
+
+        <p className="text-sm text-neutral-400 leading-relaxed">
+          Build a personalized execution system around your existing strategy and edge to reduce mental overload, impulsive trades, and excessive chart exposure.
+        </p>
+      </div>
+
+      {/* CARD 5 */}
+      <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
+        <Map className="w-7 h-7 text-amber-500 mb-5" />
+        
+        <div className="mb-3">
+          <h3 className="text-lg font-bold text-white">
+            Market Context
+          </h3>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600 font-bold mt-1">
+            Professional Structural Guidance
+          </p>
+        </div>
+
+        <p className="text-sm text-neutral-400 leading-relaxed">
+          Receive higher-timeframe market structure, directional perspectives, and execution context designed to support independent decision-making.
+        </p>
+      </div>
+
+      {/* CARD 6 */}
+      <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
+        <Activity className="w-7 h-7 text-rose-500 mb-5" />
+        
+        <div className="mb-3">
+          <h3 className="text-lg font-bold text-white">
+            Psychological Context
+          </h3>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-600 font-bold mt-1">
+            Emotional Stability Tracking
+          </p>
+        </div>
+
+        <p className="text-sm text-neutral-400 leading-relaxed">
+          Identify emotional execution problems such as FOMO, hesitation, revenge trading, and impulsive behavior while improving long-term discipline over time.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
       <section id="blueprint" className="relative z-10 w-full py-24 lg:py-32 px-6 overflow-hidden border-t border-neutral-900 bg-[#050505]">
         <div className="text-center mb-14 relative z-20 max-w-3xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">The Operator's Blueprint</h2>
