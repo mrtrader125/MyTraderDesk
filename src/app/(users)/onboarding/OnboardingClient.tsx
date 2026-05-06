@@ -5,6 +5,86 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ShieldCheck, Crosshair, Clock, Activity, ArrowRight, Zap, ChevronLeft, ChevronRight, Layers, AlertTriangle, CheckSquare } from 'lucide-react'
 
+// 🚨 CUSTOM SCROLLABLE TIME PICKER
+function CustomTimeInput({ value, onChange }: { value: string, onChange: (val: string) => void }) {
+  // Convert 24h DB format "HH:mm" to 12h display
+  const parseTime = (v: string) => {
+    if (!v) return { h: '', m: '', p: 'AM' }
+    const [hh, mm] = v.split(':')
+    let hNum = parseInt(hh)
+    const p = hNum >= 12 ? 'PM' : 'AM'
+    hNum = hNum % 12 || 12
+    return { h: hNum.toString().padStart(2, '0'), m: mm, p }
+  }
+
+  const { h, m, p } = parseTime(value)
+
+  // Convert 12h back to 24h for the DB
+  const update = (newH: string, newM: string, newP: string) => {
+    let h24 = parseInt(newH || '12')
+    if (newP === 'PM' && h24 !== 12) h24 += 12
+    if (newP === 'AM' && h24 === 12) h24 = 0
+    onChange(`${h24.toString().padStart(2, '0')}:${(newM || '00').padStart(2, '0')}`)
+  }
+
+  // Handle Mouse Wheel Scrolling
+  const handleWheel = (e: React.WheelEvent<HTMLInputElement>, type: 'h' | 'm') => {
+    e.preventDefault(); 
+    let current = type === 'h' ? (h || '12') : (m || '00');
+    let n = parseInt(current);
+    
+    if (e.deltaY < 0) n += 1; // Scroll up = increase
+    else n -= 1; // Scroll down = decrease
+
+    if (type === 'h') {
+      if (n > 12) n = 1;
+      if (n < 1) n = 12;
+      update(n.toString().padStart(2, '0'), m || '00', p);
+    } else {
+      if (n > 59) n = 0;
+      if (n < 0) n = 59;
+      update(h || '12', n.toString().padStart(2, '0'), p);
+    }
+  }
+
+  return (
+    <div className="flex items-center justify-center gap-1 bg-[#111] border border-neutral-800 rounded-xl p-2 focus-within:border-blue-500 w-full transition-colors">
+      <input
+        type="text"
+        value={h}
+        onChange={(e) => {
+           let val = e.target.value.replace(/\D/g, '').slice(-2)
+           if (parseInt(val) > 12) val = '12'
+           update(val, m || '00', p)
+        }}
+        onWheel={(e) => handleWheel(e, 'h')}
+        className="w-7 bg-transparent text-white text-center outline-none text-sm font-bold placeholder:text-neutral-700"
+        placeholder="HH"
+      />
+      <span className="text-neutral-500 font-bold pb-0.5">:</span>
+      <input
+        type="text"
+        value={m}
+        onChange={(e) => {
+           let val = e.target.value.replace(/\D/g, '').slice(-2)
+           if (parseInt(val) > 59) val = '59'
+           update(h || '12', val, p)
+        }}
+        onWheel={(e) => handleWheel(e, 'm')}
+        className="w-7 bg-transparent text-white text-center outline-none text-sm font-bold placeholder:text-neutral-700"
+        placeholder="MM"
+      />
+      <button
+        type="button"
+        onClick={() => update(h || '12', m || '00', p === 'AM' ? 'PM' : 'AM')}
+        className="w-10 bg-neutral-800 text-neutral-300 text-[10px] font-black rounded hover:bg-neutral-700 py-1 ml-1 transition-colors"
+      >
+        {p}
+      </button>
+    </div>
+  )
+}
+
 export default function OnboardingClient({ userId }: { userId: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -23,9 +103,9 @@ export default function OnboardingClient({ userId }: { userId: string }) {
     timezone: '',
     
     // 1. Trading Scope
-    scope_type: 'single', // 'single' | 'multi'
+    scope_type: 'single', 
     target_assets: [] as string[], 
-    specific_instruments: '', // 🚨 ADDED for specific tickers/pairs
+    specific_instruments: '', 
     
     // 2. Weekly Prep
     weekly_prep_mode: 'structured', 
@@ -101,7 +181,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
         
         scope_type: formData.scope_type,
         target_assets: formData.target_assets,
-        specific_instruments: formData.scope_type === 'single' ? formData.specific_instruments : null, // 🚨 SAVING INSTRUMENTS
+        specific_instruments: formData.scope_type === 'single' ? formData.specific_instruments : null, 
         
         weekly_prep_mode: formData.weekly_prep_mode,
         weekly_analysis_window: formData.weekly_prep_mode === 'structured' ? `${formData.weekly_prep_day} ${formData.weekly_prep_start}-${formData.weekly_prep_end}` : 'NONE',
@@ -313,7 +393,6 @@ export default function OnboardingClient({ userId }: { userId: string }) {
               </div>
             </div>
 
-            {/* 🚨 SPECIFIC INSTRUMENTS (ONLY FOR SINGLE/LIMITED TRADERS) */}
             {formData.scope_type === 'single' && (
               <div className="pt-6 border-t border-neutral-900 mt-6 animate-in fade-in duration-300">
                 <label className="block text-xs font-black text-neutral-500 uppercase tracking-widest mb-2">Specific Instruments (Optional)</label>
@@ -349,15 +428,15 @@ export default function OnboardingClient({ userId }: { userId: string }) {
 
             {formData.weekly_prep_mode === 'structured' && (
               <div className="pt-4 border-t border-neutral-900 animate-in fade-in duration-300">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <select value={formData.weekly_prep_day} onChange={(e) => setFormData({...formData, weekly_prep_day: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none appearance-none">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                  <select value={formData.weekly_prep_day} onChange={(e) => setFormData({...formData, weekly_prep_day: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none appearance-none h-[42px]">
                     <option value="">Select Day</option>
                     <option value="Saturday">Saturday</option>
                     <option value="Sunday">Sunday</option>
                     <option value="Monday">Monday</option>
                   </select>
-                  <input type="time" value={formData.weekly_prep_start} onChange={(e) => setFormData({...formData, weekly_prep_start: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
-                  <input type="time" value={formData.weekly_prep_end} onChange={(e) => setFormData({...formData, weekly_prep_end: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                  <CustomTimeInput value={formData.weekly_prep_start} onChange={(val) => setFormData({...formData, weekly_prep_start: val})} />
+                  <CustomTimeInput value={formData.weekly_prep_end} onChange={(val) => setFormData({...formData, weekly_prep_end: val})} />
                 </div>
               </div>
             )}
@@ -401,8 +480,8 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                 <div className="pl-6 animate-in fade-in duration-300">
                   <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Select time range</label>
                   <div className="grid grid-cols-2 gap-4 max-w-sm">
-                    <input type="time" value={formData.daily_prep_start} onChange={(e) => setFormData({...formData, daily_prep_start: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
-                    <input type="time" value={formData.daily_prep_end} onChange={(e) => setFormData({...formData, daily_prep_end: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                    <CustomTimeInput value={formData.daily_prep_start} onChange={(val) => setFormData({...formData, daily_prep_start: val})} />
+                    <CustomTimeInput value={formData.daily_prep_end} onChange={(val) => setFormData({...formData, daily_prep_end: val})} />
                   </div>
                 </div>
               )}
@@ -431,8 +510,8 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                 <div className="pl-6 animate-in fade-in duration-300">
                   <label className="block text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-3">Select execution time range</label>
                   <div className="grid grid-cols-2 gap-4 max-w-sm">
-                    <input type="time" value={formData.execution_start} onChange={(e) => setFormData({...formData, execution_start: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
-                    <input type="time" value={formData.execution_end} onChange={(e) => setFormData({...formData, execution_end: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                    <CustomTimeInput value={formData.execution_start} onChange={(val) => setFormData({...formData, execution_start: val})} />
+                    <CustomTimeInput value={formData.execution_end} onChange={(val) => setFormData({...formData, execution_end: val})} />
                   </div>
                 </div>
               )}
@@ -459,15 +538,15 @@ export default function OnboardingClient({ userId }: { userId: string }) {
               
               {formData.review_mode === 'weekly' && (
                 <div className="pl-6 animate-in fade-in duration-300">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <select value={formData.review_day} onChange={(e) => setFormData({...formData, review_day: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none appearance-none">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                    <select value={formData.review_day} onChange={(e) => setFormData({...formData, review_day: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none appearance-none h-[42px]">
                       <option value="">Select Day</option>
                       <option value="Friday">Friday</option>
                       <option value="Saturday">Saturday</option>
                       <option value="Sunday">Sunday</option>
                     </select>
-                    <input type="time" value={formData.review_start} onChange={(e) => setFormData({...formData, review_start: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
-                    <input type="time" value={formData.review_end} onChange={(e) => setFormData({...formData, review_end: e.target.value})} className="bg-[#111] border border-neutral-800 text-white text-sm rounded-xl focus:border-blue-500 block w-full p-3 outline-none [color-scheme:dark]" />
+                    <CustomTimeInput value={formData.review_start} onChange={(val) => setFormData({...formData, review_start: val})} />
+                    <CustomTimeInput value={formData.review_end} onChange={(val) => setFormData({...formData, review_end: val})} />
                   </div>
                 </div>
               )}
@@ -479,7 +558,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
           </div>
         )}
 
-        {/* 🚨 STEP 6: GROUNDED PROTOCOL CONFIRMATION */}
+        {/* STEP 6: GROUNDED PROTOCOL CONFIRMATION */}
         {currentStep === 6 && (
           <div className="space-y-8">
             <div>
