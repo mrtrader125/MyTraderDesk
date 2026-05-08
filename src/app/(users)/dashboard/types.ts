@@ -1,3 +1,5 @@
+// src/app/(users)/dashboard/types.ts
+
 import { SupabaseClient, User } from '@supabase/supabase-js';
 import React from 'react';
 import { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
@@ -5,7 +7,7 @@ import { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 export interface Setup {
   id: string;
   symbol: string;
-  direction: string;
+  direction: 'LONG' | 'SHORT' | string;
   playbook?: string;
   notes?: string;
   imageUrl?: string;
@@ -14,7 +16,7 @@ export interface Setup {
 }
 
 export interface Widget {
-  id: string;
+  id: 'local' | 'session';
   x: number;
   y: number;
   w: number;
@@ -37,12 +39,24 @@ export interface WeekProgressDay {
 export interface ClockWidgetProps {
   fontIdx: number;
   isPro: boolean;
-  onToggleFont: (e: React.MouseEvent) => void;
+  onToggleFont: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 export interface SessionClockWidgetProps extends ClockWidgetProps {
   timeOffsetRef: React.MutableRefObject<number>;
   onOverlapChange: (overlap: boolean) => void;
+}
+
+export interface GridWidgetProps {
+  widget: Widget;
+  isPro: boolean;
+  isSessionOverlap?: boolean;
+  isDragging: boolean;
+  handleDragStart: (e: React.DragEvent<HTMLDivElement>, id: 'local' | 'session') => void;
+  handleDragEnd: (e: React.DragEvent<HTMLDivElement>) => void;
+  handleDropOnGrid: (e: React.DragEvent<HTMLDivElement>) => void;
+  handleResizePointerDown: (e: React.PointerEvent<HTMLDivElement>, id: 'local' | 'session') => void;
+  children: React.ReactNode;
 }
 
 export interface DashboardGridProps {
@@ -51,13 +65,13 @@ export interface DashboardGridProps {
   isSessionOverlap: boolean;
   draggingId: string | null;
   gridRef: React.RefObject<HTMLDivElement | null>;
+  handleDragStart: (e: React.DragEvent<HTMLDivElement>, id: 'local' | 'session') => void;
+  handleDragEnd: (e: React.DragEvent<HTMLDivElement>) => void;
+  handleDropOnGrid: (e: React.DragEvent<HTMLDivElement>) => void;
+  handleResizePointerDown: (e: React.PointerEvent<HTMLDivElement>, id: 'local' | 'session') => void;
+  handleToggleLocalFont: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  handleToggleSessionFont: (e: React.MouseEvent<HTMLButtonElement>) => void;
   timeOffsetRef: React.MutableRefObject<number>;
-  handleDragStart: (e: React.DragEvent, id: 'local' | 'session') => void;
-  handleDragEnd: (e: React.DragEvent) => void;
-  handleDropOnGrid: (e: React.DragEvent) => void;
-  handleResizePointerDown: (e: React.PointerEvent, id: 'local' | 'session') => void;
-  handleToggleLocalFont: (e: React.MouseEvent) => void;
-  handleToggleSessionFont: (e: React.MouseEvent) => void;
   setIsSessionOverlap: (overlap: boolean) => void;
 }
 
@@ -91,6 +105,13 @@ export interface ActiveFocusWorkspaceProps {
 }
 
 export const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v5';
+
+export const FONT_STYLES: readonly string[] = [
+  "font-mono font-black tracking-tighter text-zinc-100",   
+  "font-sans font-extrabold tracking-tight text-white",    
+  "font-serif font-light tracking-wide text-zinc-300",     
+  "font-sans font-thin tracking-widest text-zinc-400"      
+];
 
 export const DEMO_SETUPS: Setup[] = [
   {
