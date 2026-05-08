@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -27,13 +27,6 @@ const DEMO_SETUPS = [
   }
 ];
 
-const DEMO_LOGS = [
-  {
-    id: 'log-1', symbol: 'GBPUSD', direction: 'SHORT', reason: '[Perfect Risk Management]',
-    execution_type: 'Perfect', outcome: 'TP', rr: 2.5
-  }
-];
-
 const fontStyles = [
   "font-mono font-black tracking-tighter text-zinc-100",   
   "font-sans font-extrabold tracking-tight text-white",    
@@ -44,7 +37,6 @@ const fontStyles = [
 type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx: number }
 const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v4'
 
-// 🚨 GLOBAL SUPABASE CLIENT
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -68,10 +60,155 @@ const sanitizeLayout = (data: any) => {
   }
 }
 
+// ==========================================
+// 🚨 ISOLATED & MEMOIZED CLOCK COMPONENTS
+// These prevent the entire dashboard from 
+// re-rendering 60 times a minute.
+// ==========================================
+
+const formatTime = (timeStr: string, fontIdx: number) => {
+  if (!timeStr) return '--:--:--'
+  const [timeStrOnly, period] = timeStr.split(' ')
+  const parts = timeStrOnly?.split(':') || []
+  
+  return (
+    <div 
+      className={`flex items-baseline justify-center ${fontStyles[fontIdx]} select-none whitespace-nowrap tabular-nums leading-none`}
+      style={{ fontSize: 'min(13cqi, 40cqb)' }}
+    >
+      {parts.map((p, i) => (
+        <span key={i} className="flex items-baseline">
+          <span>{p}</span>
+          {i < 2 && <span className="opacity-20 font-sans font-light mx-[0.1em] text-[0.8em] relative -top-[0.05em]">:</span>}
+        </span>
+      ))}
+      {period && <span className="ml-[0.2em] opacity-40 font-sans tracking-widest font-bold text-[0.3em] uppercase">{period}</span>}
+    </div>
+  )
+}
+
+const LocalClockWidget = memo(({ fontIdx, isPro, onToggleFont }: { fontIdx: number, isPro: boolean, onToggleFont: (e: React.MouseEvent) => void }) => {
+  const [timeStr, setTimeStr] = useState('--:--:--')
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    setTimeStr(new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+    const timer = setInterval(() => {
+      setTimeStr(new Date().toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <>
+      <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10">
+        <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none pointer-events-none">
+          <Clock size={10} className="opacity-50"/> Local Time
+        </div>
+        {isPro && (
+          <button 
+            onPointerDown={(e) => e.stopPropagation()}
+            onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onClick={onToggleFont}
+            className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
+            title="Cycle Typography"
+          >
+            <Type size={12} />
+          </button>
+        )}
+      </div>
+      <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-0 pointer-events-none" style={{ containerType: 'size' }}>
+        {mounted ? formatTime(timeStr, fontIdx) : formatTime('--:--:--', fontIdx)}
+      </div>
+    </>
+  )
+})
+LocalClockWidget.displayName = 'LocalClockWidget'
+
+const SessionClockWidget = memo(({ fontIdx, timeOffsetRef, isPro, onToggleFont, onOverlapChange }: { fontIdx: number, timeOffsetRef: React.MutableRefObject<number>, isPro: boolean, onToggleFont: (e: React.MouseEvent) => void, onOverlapChange: (overlap: boolean) => void }) => {
+  const [sessionInfo, setSessionInfo] = useState({ name: 'Determining...', localTime: '--:--:--', isOverlap: false })
+
+  useEffect(() => {
+    let lastOverlap = false;
+
+    const timer = setInterval(() => {
+      const trueUTC = new Date(Date.now() + timeOffsetRef.current);
+      const utcHour = trueUTC.getUTCHours();
+      
+      const isSydney = utcHour >= 22 || utcHour < 7;
+      const isTokyo = utcHour >= 0 && utcHour < 9;
+      const isLondon = utcHour >= 8 && utcHour < 17;
+      const isNY = utcHour >= 13 && utcHour < 22;
+
+      const activeCount = [isSydney, isTokyo, isLondon, isNY].filter(Boolean).length;
+      const isOverlap = activeCount > 1;
+
+      // Crucial Optimization: Only alert parent if overlap state actually flips
+      if (isOverlap !== lastOverlap) {
+        lastOverlap = isOverlap;
+        onOverlapChange(isOverlap);
+      }
+
+      let sName = 'Interbank';
+      let tz = 'UTC';
+
+      if (isNY) { sName = 'New York'; tz = 'America/New_York'; }
+      else if (isLondon) { sName = 'London'; tz = 'Europe/London'; }
+      else if (isTokyo) { sName = 'Tokyo'; tz = 'Asia/Tokyo'; }
+      else if (isSydney) { sName = 'Sydney'; tz = 'Australia/Sydney'; }
+
+      setSessionInfo({
+        name: sName,
+        localTime: trueUTC.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        isOverlap
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [timeOffsetRef, onOverlapChange]);
+
+  return (
+    <>
+      <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-0"></div>
+      
+      <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10 relative">
+        <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none pointer-events-none">
+          <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
+        </div>
+        {isPro && (
+          <button 
+            onPointerDown={(e) => e.stopPropagation()}
+            onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            onClick={onToggleFont}
+            className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
+            title="Cycle Typography"
+          >
+            <Type size={12} />
+          </button>
+        )}
+      </div>
+
+      <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-10 pointer-events-none" style={{ containerType: 'size' }}>
+        {formatTime(sessionInfo.localTime, fontIdx)}
+      </div>
+          
+      {sessionInfo.isOverlap && (
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent animate-pulse" />
+      )}
+    </>
+  )
+})
+SessionClockWidget.displayName = 'SessionClockWidget'
+
+
+// ==========================================
+// 🚨 MAIN DASHBOARD COMPONENT
+// ==========================================
+
 export default function PersonalDashboard({ userId }: { userId?: string }) {
   const router = useRouter()
   
-  // 🚨 1. ALL USESTATE HOOKS FIRST
+  // States
   const [isPro, setIsPro] = useState<boolean>(true); 
   const [user, setUser] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
@@ -91,18 +228,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
   const [terminology, setTerminology] = useState<'LONG_SHORT' | 'BUY_SELL'>('LONG_SHORT')
 
-  const displayDirection = useCallback((dir: string | null | undefined) => {
-    if (!dir) return 'N/A';
-    if (terminology === 'BUY_SELL') return dir === 'LONG' ? 'BUY' : 'SELL';
-    return dir;
-  }, [terminology])
-
-  const [time, setTime] = useState<Date | null>(null) 
-  const [sessionInfo, setSessionInfo] = useState({ 
-    name: 'Determining...', 
-    localTime: '--:--:--',
-    isOverlap: false 
-  })
+  const [isSessionOverlap, setIsSessionOverlap] = useState(false)
 
   const [widgets, setWidgets] = useState<{local: Widget, session: Widget}>({
     local: { id: 'local', x: 0, y: 0, w: 3, h: 3, fontIdx: 0 },
@@ -118,13 +244,19 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
 
-  // 🚨 2. ROBUST TIME ENGINE 
   const [timeOffset, setTimeOffset] = useState(0);
   const timeOffsetRef = useRef(0);
   
   const [userTimezone, setUserTimezone] = useState(
     typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC'
   );
+
+  // Callbacks
+  const displayDirection = useCallback((dir: string | null | undefined) => {
+    if (!dir) return 'N/A';
+    if (terminology === 'BUY_SELL') return dir === 'LONG' ? 'BUY' : 'SELL';
+    return dir;
+  }, [terminology])
 
   const getTrueUTC = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
   
@@ -141,21 +273,38 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     return new Date(new Date(timestamp).toLocaleString('en-US', { timeZone: userTimezone })).toDateString();
   }, [userTimezone]);
 
-  const todaySetups = setups.filter(s => s.isToday)
-  const activeSetup = todaySetups.find(s => s.id === activeTodayId)
-
-  const pushesToday = setups.filter(s => s.addedToTodayAt && getBaseDateString(s.addedToTodayAt) === getBaseDate().toDateString()).length;
+  // Memoized Derived Data
+  const todaySetups = useMemo(() => setups.filter(s => s.isToday), [setups]);
+  const activeSetup = useMemo(() => todaySetups.find(s => s.id === activeTodayId), [todaySetups, activeTodayId]);
+  const pushesToday = useMemo(() => setups.filter(s => s.addedToTodayAt && getBaseDateString(s.addedToTodayAt) === getBaseDate().toDateString()).length, [setups, getBaseDateString, getBaseDate]);
+  const pastDays = useMemo(() => weekProgress.filter(d => d.isPast || d.isToday), [weekProgress]);
   
-  const now = getBaseDate()
-  const dayOfWeek = now.getDay() 
-  const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 
-  const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
-  const isVaultLocked = !isPrepWindow || (isPrepWindow && pendingReconciliationsCount > 0);
-  
-  const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
+  const { isPrepWindow, isWeekendNow, isVaultLocked } = useMemo(() => {
+    const now = getBaseDate();
+    const dayOfWeek = now.getDay();
+    const isWeekend = dayOfWeek === 6 || dayOfWeek === 0;
+    const isPrep = isWeekend || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
+    return {
+      isWeekendNow: isWeekend,
+      isPrepWindow: isPrep,
+      isVaultLocked: !isPrep || (isPrep && pendingReconciliationsCount > 0)
+    };
+  }, [getBaseDate, pendingReconciliationsCount]);
 
+  // Stable Widget Controls
+  const handleToggleLocalFont = useCallback((e: React.MouseEvent) => {
+    if (!isPro) return;
+    e.stopPropagation();
+    setWidgets(prev => ({ ...prev, local: { ...prev.local, fontIdx: (prev.local.fontIdx + 1) % fontStyles.length } }));
+  }, [isPro]);
 
-  // 🚨 3. ALL USEEFFECTS
+  const handleToggleSessionFont = useCallback((e: React.MouseEvent) => {
+    if (!isPro) return;
+    e.stopPropagation();
+    setWidgets(prev => ({ ...prev, session: { ...prev.session, fontIdx: (prev.session.fontIdx + 1) % fontStyles.length } }));
+  }, [isPro]);
+
+  // Data Loading Effects
   useEffect(() => {
     const fetchTime = async () => {
       try {
@@ -199,6 +348,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
       setLayoutLoaded(true)
     }
     loadLayout()
+    setMounted(true)
   }, [])
 
   useEffect(() => {
@@ -215,43 +365,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     return () => clearTimeout(timeoutId)
   }, [widgets, layoutLoaded, isPro])
 
-  useEffect(() => {
-    setMounted(true)
-    const timer = setInterval(() => {
-      const currentLocal = new Date();
-      setTime(currentLocal);
-      
-      const trueUTC = new Date(Date.now() + timeOffsetRef.current);
-      const utcHour = trueUTC.getUTCHours();
-      
-      const isSydney = utcHour >= 22 || utcHour < 7
-      const isTokyo = utcHour >= 0 && utcHour < 9
-      const isLondon = utcHour >= 8 && utcHour < 17
-      const isNY = utcHour >= 13 && utcHour < 22
-
-      const activeCount = [isSydney, isTokyo, isLondon, isNY].filter(Boolean).length
-      const isOverlap = activeCount > 1
-
-      let sName = 'Interbank'
-      let tz = 'UTC'
-
-      if (isNY) { sName = 'New York'; tz = 'America/New_York' }
-      else if (isLondon) { sName = 'London'; tz = 'Europe/London' }
-      else if (isTokyo) { sName = 'Tokyo'; tz = 'Asia/Tokyo' }
-      else if (isSydney) { sName = 'Sydney'; tz = 'Australia/Sydney' }
-
-      setSessionInfo({
-        name: sName,
-        localTime: trueUTC.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        isOverlap
-      })
-    }, 1000)
-    return () => clearInterval(timer)
-  }, [])
-
   const loadDashboardData = useCallback(async (activeUser: any, isUserPro: boolean) => {
-    
-    // 🚨 INJECT MOCK DATA FOR DEMO USERS
     if (!isUserPro) {
         const demoNow = Date.now();
         setSetups(DEMO_SETUPS.map(s => ({ ...s, addedToTodayAt: s.isToday ? demoNow - 100000 : null, createdAt: demoNow })));
@@ -379,7 +493,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
       await loadDashboardData(session.user, isProUser)
     }
-
     init()
   }, [loadDashboardData])
 
@@ -408,12 +521,8 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     const checkMidnightWipe = setInterval(() => {
       const todayStr = getBaseDate().toDateString();
       const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && getBaseDateString(s.addedToTodayAt) !== todayStr);
-      
-      if (hasStaleSetups) {
-        window.location.reload();
-      }
+      if (hasStaleSetups) window.location.reload();
     }, 60000); 
-    
     return () => clearInterval(checkMidnightWipe);
   }, [setups, getBaseDate, getBaseDateString]);
 
@@ -484,28 +593,27 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [todaySetups, activeTodayId, router, isMobileNotesOpen]);
 
-
-  // 🚨 4. EVENT HANDLERS
-  const handlePeekStart = () => {
+  // Drag and Grid Callbacks
+  const handlePeekStart = useCallback(() => {
     if (chartScale !== 1) return; 
     peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
-  };
+  }, [chartScale]);
 
-  const handlePeekEnd = () => {
+  const handlePeekEnd = useCallback(() => {
     if (peekTimer.current) clearTimeout(peekTimer.current);
     setIsPeeking(false);
-  };
+  }, []);
 
-  const checkOverlap = (rect1: Omit<Widget, 'id' | 'fontIdx'>, rect2: Omit<Widget, 'id' | 'fontIdx'>) => {
+  const checkOverlap = useCallback((rect1: Omit<Widget, 'id' | 'fontIdx'>, rect2: Omit<Widget, 'id' | 'fontIdx'>) => {
     return (
       rect1.x < rect2.x + rect2.w &&
       rect1.x + rect1.w > rect2.x &&
       rect1.y < rect2.y + rect2.h &&
       rect1.y + rect1.h > rect2.y
     )
-  }
+  }, []);
 
-  const handleDragStart = (e: React.DragEvent, id: 'local' | 'session') => {
+  const handleDragStart = useCallback((e: React.DragEvent, id: 'local' | 'session') => {
     if (!isPro) return;
     e.dataTransfer.effectAllowed = 'move'
     e.dataTransfer.setData('widgetId', id)
@@ -521,22 +629,20 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     e.dataTransfer.setData('offsetX', offsetX.toString())
     e.dataTransfer.setData('offsetY', offsetY.toString())
 
-    requestAnimationFrame(() => {
-      setDraggingId(id)
-    })
-  }
+    requestAnimationFrame(() => setDraggingId(id))
+  }, [isPro, widgets]);
 
-  const handleDragEnd = (e: React.DragEvent) => {
+  const handleDragEnd = useCallback((e: React.DragEvent) => {
     setDraggingId(null)
-  }
+  }, []);
 
-  const handleDropOnGrid = (e: React.DragEvent) => {
+  const handleDropOnGrid = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     setDraggingId(null)
     
     const id = e.dataTransfer.getData('widgetId') as 'local' | 'session'
-    if (!id || !widgets[id] || !gridRef.current) return
+    if (!id || !gridRef.current) return
 
     const offsetX = parseInt(e.dataTransfer.getData('offsetX') || '0')
     const offsetY = parseInt(e.dataTransfer.getData('offsetY') || '0')
@@ -550,10 +656,8 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     setWidgets(prev => {
       const w = prev[id].w
       const h = prev[id].h
-      
       const finalX = dropCellX - offsetX
       const finalY = dropCellY - offsetY
-
       const safeX = Math.max(0, Math.min(finalX, 7 - w))
       const safeY = Math.max(0, Math.min(finalY, 7 - h))
 
@@ -563,9 +667,9 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
       if (checkOverlap(proposedWidget, prev[otherId])) return prev; 
       return { ...prev, [id]: proposedWidget }
     })
-  }
+  }, [checkOverlap]);
 
-  const handleResizePointerDown = (e: React.PointerEvent, id: 'local' | 'session') => {
+  const handleResizePointerDown = useCallback((e: React.PointerEvent, id: 'local' | 'session') => {
     if (!isPro) return;
     e.preventDefault()
     e.stopPropagation()
@@ -575,71 +679,43 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
     const startX = e.clientX
     const startY = e.clientY
-    const startWidget = { ...widgets[id] }
     
     if (!gridRef.current) return
     const { width, height } = gridRef.current.getBoundingClientRect()
     const cellW = width / 7
     const cellH = height / 7
 
-    const onPointerMove = (moveEvent: PointerEvent) => {
-      const dx = moveEvent.clientX - startX
-      const dy = moveEvent.clientY - startY
+    setWidgets(prev => {
+      const startWidget = { ...prev[id] }
 
-      const deltaW = Math.round(dx / cellW)
-      const deltaH = Math.round(dy / cellH)
+      const onPointerMove = (moveEvent: PointerEvent) => {
+        const dx = moveEvent.clientX - startX
+        const dy = moveEvent.clientY - startY
+        const deltaW = Math.round(dx / cellW)
+        const deltaH = Math.round(dy / cellH)
+        const newW = Math.max(1, Math.min(7 - startWidget.x, startWidget.w + deltaW))
+        const newH = Math.max(1, Math.min(7 - startWidget.y, startWidget.h + deltaH))
 
-      const newW = Math.max(1, Math.min(7 - startWidget.x, startWidget.w + deltaW))
-      const newH = Math.max(1, Math.min(7 - startWidget.y, startWidget.h + deltaH))
+        setWidgets(innerPrev => {
+          const proposedWidget = { ...innerPrev[id], w: newW, h: newH }
+          const otherId = id === 'local' ? 'session' : 'local'
+          if (checkOverlap(proposedWidget, innerPrev[otherId])) return innerPrev; 
+          return { ...innerPrev, [id]: proposedWidget }
+        })
+      }
 
-      setWidgets(prev => {
-        const proposedWidget = { ...prev[id], w: newW, h: newH }
-        const otherId = id === 'local' ? 'session' : 'local'
-        if (checkOverlap(proposedWidget, prev[otherId])) return prev; 
-        return { ...prev, [id]: proposedWidget }
-      })
-    }
+      const onPointerUp = (upEvent: PointerEvent) => {
+        target.releasePointerCapture(upEvent.pointerId)
+        target.removeEventListener('pointermove', onPointerMove)
+        target.removeEventListener('pointerup', onPointerUp)
+      }
 
-    const onPointerUp = (upEvent: PointerEvent) => {
-      target.releasePointerCapture(upEvent.pointerId)
-      target.removeEventListener('pointermove', onPointerMove)
-      target.removeEventListener('pointerup', onPointerUp)
-    }
-
-    target.addEventListener('pointermove', onPointerMove)
-    target.addEventListener('pointerup', onPointerUp)
-  }
-
-  const toggleFont = (e: React.MouseEvent, id: 'local' | 'session') => {
-    if (!isPro) return;
-    e.stopPropagation()
-    setWidgets(prev => ({
-      ...prev,
-      [id]: { ...prev[id], fontIdx: (prev[id].fontIdx + 1) % fontStyles.length }
-    }))
-  }
-
-  const formatTime = (timeStr: string, fontIdx: number) => {
-    if (!timeStr) return '--:--:--'
-    const [timeStrOnly, period] = timeStr.split(' ')
-    const parts = timeStrOnly?.split(':') || []
-    
-    return (
-      <div 
-        className={`flex items-baseline justify-center ${fontStyles[fontIdx]} select-none whitespace-nowrap tabular-nums leading-none`}
-        style={{ fontSize: 'min(13cqi, 40cqb)' }}
-      >
-        {parts.map((p, i) => (
-          <span key={i} className="flex items-baseline">
-            <span>{p}</span>
-            {i < 2 && <span className="opacity-20 font-sans font-light mx-[0.1em] text-[0.8em] relative -top-[0.05em]">:</span>}
-          </span>
-        ))}
-        {period && <span className="ml-[0.2em] opacity-40 font-sans tracking-widest font-bold text-[0.3em] uppercase">{period}</span>}
-      </div>
-    )
-  }
-
+      target.addEventListener('pointermove', onPointerMove)
+      target.addEventListener('pointerup', onPointerUp)
+      
+      return prev;
+    });
+  }, [isPro, checkOverlap]);
 
   return (
     <div className="flex h-full w-full bg-[#030303] text-zinc-300 font-sans overflow-y-auto lg:overflow-hidden">
@@ -686,29 +762,11 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                     height: '100%'
                   }}
                 >
-                  <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10">
-                    <div className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1.5 select-none pointer-events-none">
-                      <Clock size={10} className="opacity-50"/> Local Time
-                    </div>
-                    {isPro && (
-                      <button 
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                        onClick={(e) => toggleFont(e, 'local')}
-                        className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
-                        title="Cycle Typography"
-                      >
-                        <Type size={12} />
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-0 pointer-events-none" style={{ containerType: 'size' }}>
-                    {mounted && time 
-                      ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), widgets.local.fontIdx) 
-                      : formatTime('--:--:--', widgets.local.fontIdx)}
-                  </div>
-
+                  <LocalClockWidget 
+                    fontIdx={widgets.local.fontIdx} 
+                    isPro={isPro} 
+                    onToggleFont={handleToggleLocalFont} 
+                  />
                   {isPro && (
                     <div 
                       draggable={false}
@@ -728,7 +786,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                   onDragEnd={handleDragEnd}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDropOnGrid}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md group overflow-hidden transition-all duration-200 z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''} ${isPro ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md group overflow-hidden transition-all duration-200 z-10 ${isSessionOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''} ${isPro ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
@@ -736,33 +794,13 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                     height: '100%'
                   }}
                 >
-                  <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-0"></div>
-                  
-                  <div className="flex items-center justify-between w-full shrink-0 pt-3 px-4 z-10 relative">
-                        <div className="text-[9px] font-bold text-blue-500/60 uppercase tracking-widest flex items-center gap-1.5 select-none pointer-events-none">
-                          <Globe2 size={10} className="text-blue-500/80"/> {sessionInfo.name} Session
-                        </div>
-                        {isPro && (
-                          <button 
-                            onPointerDown={(e) => e.stopPropagation()}
-                            onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                            onClick={(e) => toggleFont(e, 'session')}
-                            className="text-zinc-600 hover:text-white opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer bg-zinc-900/50 hover:bg-zinc-800 rounded"
-                            title="Cycle Typography"
-                          >
-                            <Type size={12} />
-                          </button>
-                        )}
-                  </div>
-
-                  <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-10 pointer-events-none" style={{ containerType: 'size' }}>
-                        {formatTime(sessionInfo.localTime, widgets.session.fontIdx)}
-                  </div>
-                      
-                  {sessionInfo.isOverlap && (
-                    <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent animate-pulse" />
-                  )}
-
+                  <SessionClockWidget 
+                    fontIdx={widgets.session.fontIdx} 
+                    timeOffsetRef={timeOffsetRef} 
+                    isPro={isPro} 
+                    onToggleFont={handleToggleSessionFont} 
+                    onOverlapChange={setIsSessionOverlap} 
+                  />
                   {isPro && (
                     <div 
                       draggable={false}
