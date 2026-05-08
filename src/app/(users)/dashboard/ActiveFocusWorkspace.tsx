@@ -103,7 +103,7 @@ export const ActiveFocusWorkspace = memo(({
                     <img 
                       src={activeSetup.imageUrl} 
                       alt={`${activeSetup.symbol} Chart`}
-                      loading="lazy"
+                      fetchPriority="high"
                       decoding="async" 
                       className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto transform-gpu will-change-transform" 
                       draggable={false} 
