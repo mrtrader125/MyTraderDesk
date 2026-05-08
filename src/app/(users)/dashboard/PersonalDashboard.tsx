@@ -669,53 +669,53 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     })
   }, [checkOverlap]);
 
-  const handleResizePointerDown = useCallback((e: React.PointerEvent, id: 'local' | 'session') => {
+const handleResizePointerDown = useCallback((e: React.PointerEvent, id: 'local' | 'session') => {
     if (!isPro) return;
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
-    const target = e.currentTarget as HTMLElement
-    target.setPointerCapture(e.pointerId) 
+    const target = e.currentTarget as HTMLElement;
+    target.setPointerCapture(e.pointerId); 
 
-    const startX = e.clientX
-    const startY = e.clientY
+    const startX = e.clientX;
+    const startY = e.clientY;
     
-    if (!gridRef.current) return
-    const { width, height } = gridRef.current.getBoundingClientRect()
-    const cellW = width / 7
-    const cellH = height / 7
+    if (!gridRef.current) return;
+    const { width, height } = gridRef.current.getBoundingClientRect();
+    const cellW = width / 7;
+    const cellH = height / 7;
 
-    setWidgets(prev => {
-      const startWidget = { ...prev[id] }
+    // Safely snapshot the starting widget dimensions from the current closure
+    const startWidget = { ...widgets[id] };
 
-      const onPointerMove = (moveEvent: PointerEvent) => {
-        const dx = moveEvent.clientX - startX
-        const dy = moveEvent.clientY - startY
-        const deltaW = Math.round(dx / cellW)
-        const deltaH = Math.round(dy / cellH)
-        const newW = Math.max(1, Math.min(7 - startWidget.x, startWidget.w + deltaW))
-        const newH = Math.max(1, Math.min(7 - startWidget.y, startWidget.h + deltaH))
-
-        setWidgets(innerPrev => {
-          const proposedWidget = { ...innerPrev[id], w: newW, h: newH }
-          const otherId = id === 'local' ? 'session' : 'local'
-          if (checkOverlap(proposedWidget, innerPrev[otherId])) return innerPrev; 
-          return { ...innerPrev, [id]: proposedWidget }
-        })
-      }
-
-      const onPointerUp = (upEvent: PointerEvent) => {
-        target.releasePointerCapture(upEvent.pointerId)
-        target.removeEventListener('pointermove', onPointerMove)
-        target.removeEventListener('pointerup', onPointerUp)
-      }
-
-      target.addEventListener('pointermove', onPointerMove)
-      target.addEventListener('pointerup', onPointerUp)
+    const onPointerMove = (moveEvent: PointerEvent) => {
+      const dx = moveEvent.clientX - startX;
+      const dy = moveEvent.clientY - startY;
       
-      return prev;
-    });
-  }, [isPro, checkOverlap]);
+      const deltaW = Math.round(dx / cellW);
+      const deltaH = Math.round(dy / cellH);
+      
+      const newW = Math.max(1, Math.min(7 - startWidget.x, startWidget.w + deltaW));
+      const newH = Math.max(1, Math.min(7 - startWidget.y, startWidget.h + deltaH));
+
+      setWidgets(prev => {
+        const proposedWidget = { ...prev[id], w: newW, h: newH };
+        const otherId = id === 'local' ? 'session' : 'local';
+        
+        if (checkOverlap(proposedWidget, prev[otherId])) return prev; 
+        return { ...prev, [id]: proposedWidget };
+      });
+    };
+
+    const onPointerUp = (upEvent: PointerEvent) => {
+      target.releasePointerCapture(upEvent.pointerId);
+      target.removeEventListener('pointermove', onPointerMove);
+      target.removeEventListener('pointerup', onPointerUp);
+    };
+
+    target.addEventListener('pointermove', onPointerMove);
+    target.addEventListener('pointerup', onPointerUp);
+  }, [isPro, widgets, checkOverlap]);
 
   return (
     <div className="flex h-full w-full bg-[#030303] text-zinc-300 font-sans overflow-y-auto lg:overflow-hidden">
