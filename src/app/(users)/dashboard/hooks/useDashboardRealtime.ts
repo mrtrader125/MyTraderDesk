@@ -10,7 +10,7 @@ export function useDashboardRealtime(
   isPro: boolean,
   getBaseDateRef: React.MutableRefObject<() => Date>,
   adjustDbToBaseRef: React.MutableRefObject<(s: string) => Date>,
-  getBaseDateString: (timestamp: number) => string,
+  getBaseDateStringRef: React.MutableRefObject<(timestamp: number) => string>,
   syncLogsLightweight: () => Promise<void>
 ) {
   const [setups, setSetups] = useState<Setup[]>([]);
@@ -18,15 +18,14 @@ export function useDashboardRealtime(
   const [isLoading, setIsLoading] = useState(true);
 
   const syncDebounceTimer = useRef<NodeJS.Timeout | null>(null);
-  const isSyncingRef = useRef(false);
 
   const todaySetups = useMemo(() => setups.filter(s => s.isToday), [setups]);
-  const pushesToday = useMemo(() => setups.filter(s => s.addedToTodayAt && getBaseDateString(s.addedToTodayAt) === getBaseDateRef.current().toDateString()).length, [setups, getBaseDateString, getBaseDateRef]);
+  const pushesToday = useMemo(() => setups.filter(s => s.addedToTodayAt && getBaseDateStringRef.current(s.addedToTodayAt) === getBaseDateRef.current().toDateString()).length, [setups, getBaseDateStringRef, getBaseDateRef]);
 
   const loadDashboardData = useCallback(async (activeUser: User, isUserPro: boolean) => {
     if (!isUserPro) {
-      setSetups(DEMO_SETUPS);
-      setVaultSetupCount(2);
+      setSetups([...DEMO_SETUPS]);
+      setVaultSetupCount(DEMO_SETUPS.length);
       setIsLoading(false);
       return;
     }
@@ -39,17 +38,16 @@ export function useDashboardRealtime(
 
     if (setupsData) {
       const todayStr = getBaseDateRef.current().toDateString();
-      const expiredSetups = setupsData.filter((s: Record<string, any>) => s.is_today && s.added_to_today_at && adjustDbToBaseRef.current(s.added_to_today_at).toDateString() !== todayStr);
+      const expiredSetups = setupsData.filter((s: Record<string, unknown>) => s.is_today && s.added_to_today_at && adjustDbToBaseRef.current(s.added_to_today_at as string).toDateString() !== todayStr);
       if (expiredSetups.length > 0) {
-        const expiredIds = expiredSetups.map((s: Record<string, any>) => s.id);
+        const expiredIds = expiredSetups.map((s: Record<string, unknown>) => s.id);
         await supabase.from('user_desk_setups').update({ is_today: false, added_to_today_at: null }).in('id', expiredIds);
-        expiredSetups.forEach((s: Record<string, any>) => { s.is_today = false; s.added_to_today_at = null; });
       }
     }
 
-    const parsedSetups: Setup[] = setupsData ? setupsData.map((d: Record<string, any>) => ({ 
-      id: d.id, symbol: d.symbol, direction: d.direction, playbook: d.playbook, notes: d.notes, 
-      imageUrl: d.image_url, isToday: d.is_today, addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at).getTime() : null 
+    const parsedSetups: Setup[] = setupsData ? setupsData.map((d: Record<string, unknown>) => ({ 
+      id: d.id as string, symbol: d.symbol as string, direction: d.direction as string, playbook: d.playbook as string, notes: d.notes as string, 
+      imageUrl: d.image_url as string, isToday: d.is_today as boolean, addedToTodayAt: d.added_to_today_at ? new Date(d.added_to_today_at as string).getTime() : null 
     })) : [];
     
     setSetups(parsedSetups); 
@@ -59,12 +57,6 @@ export function useDashboardRealtime(
 
   useEffect(() => {
     if (!user || !isPro) return;
-
-    const safeSyncLogs = async () => {
-      if (isSyncingRef.current) return;
-      isSyncingRef.current = true;
-      try { await syncLogsLightweight(); } finally { isSyncingRef.current = false; }
-    };
 
     const channel = supabase.channel(`dashboard-sync-${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_desk_setups', filter: `user_id=eq.${user.id}` }, (payload) => {
@@ -89,7 +81,7 @@ export function useDashboardRealtime(
       )
       .on('postgres_changes', { event: '*', schema: 'public', table: 'user_desk_logs', filter: `user_id=eq.${user.id}` }, () => {
           if (syncDebounceTimer.current) clearTimeout(syncDebounceTimer.current);
-          syncDebounceTimer.current = setTimeout(() => { safeSyncLogs(); }, 1000);
+          syncDebounceTimer.current = setTimeout(() => { syncLogsLightweight(); }, 1000);
         }
       ).subscribe();
 
@@ -99,5 +91,5 @@ export function useDashboardRealtime(
     };
   }, [user, isPro, supabase, syncLogsLightweight]);
 
-  return { setups, todaySetups, pushesToday, vaultSetupCount, isLoading, loadDashboardData, setSetups, setVaultSetupCount };
+  return { setups, todaySetups, pushesToday, vaultSetupCount, isLoading, loadDashboardData };
 }
