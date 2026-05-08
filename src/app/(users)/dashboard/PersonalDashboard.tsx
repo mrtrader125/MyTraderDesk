@@ -8,16 +8,11 @@ import { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { Lock, X, BookOpen } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
-// Types
 import { Setup } from './types';
-
-// Components
 import { DashboardGrid } from './DashboardGrid';
 import { RoutineTracker } from './RoutineTracker';
 import { ActiveFocusWorkspace } from './ActiveFocusWorkspace';
 import { FullScreenChartOverlay } from './FullScreenChartOverlay';
-
-// Hooks
 import { useWidgetGrid } from './hooks/useWidgetGrid';
 import { useTradingWeekProgress } from './hooks/useTradingWeekProgress';
 import { useDashboardRealtime } from './hooks/useDashboardRealtime';
@@ -57,13 +52,14 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
   const getBaseDateRef = useRef<() => Date>(getBaseDate);
   const adjustDbToBaseRef = useRef<(s: string) => Date>(adjustDbToBase);
+  const getBaseDateStringRef = useRef<(timestamp: number) => string>(getBaseDateString);
 
   useEffect(() => {
     getBaseDateRef.current = getBaseDate;
     adjustDbToBaseRef.current = adjustDbToBase;
-  }, [getBaseDate, adjustDbToBase]);
+    getBaseDateStringRef.current = getBaseDateString;
+  }, [getBaseDate, adjustDbToBase, getBaseDateString]);
 
-  // Hook Executions
   const { 
     widgets, draggingId, gridRef, layoutLoaded, handleDragStart, handleDragEnd, handleDropOnGrid, handleResizePointerDown, handleToggleLocalFont, handleToggleSessionFont 
   } = useWidgetGrid(isPro, supabase);
@@ -74,7 +70,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
   const { 
     setups, todaySetups, pushesToday, vaultSetupCount, isLoading, loadDashboardData 
-  } = useDashboardRealtime(supabase, user, isPro, getBaseDateRef, adjustDbToBaseRef, getBaseDateString, syncLogsLightweight);
+  } = useDashboardRealtime(supabase, user, isPro, getBaseDateRef, adjustDbToBaseRef, getBaseDateStringRef, syncLogsLightweight);
 
   const activeSetup = useMemo(() => todaySetups.find((s: Setup) => s.id === activeTodayId), [todaySetups, activeTodayId]);
   const pastDays = useMemo(() => weekProgress.filter((d) => d.isPast || d.isToday), [weekProgress]);
@@ -87,7 +83,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   }, [getBaseDate, pendingReconciliationsCount]);
 
   useKeyboardShortcuts(todaySetups, activeTodayId, setActiveTodayId, isMobileNotesOpen, setIsMobileNotesOpen, setIsTodayFocusExpanded, setIsFullScreen);
-  useMidnightReset(setups, getBaseDate, getBaseDateString);
+  useMidnightReset(setups, getBaseDateRef, getBaseDateStringRef);
 
   useEffect(() => {
     const fetchTime = async () => {
