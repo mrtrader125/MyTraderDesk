@@ -3,13 +3,7 @@
 'use client';
 
 import React, { memo } from 'react';
-
-interface FullScreenChartOverlayProps {
-  imageUrl: string;
-  isFullScreen: boolean;
-  isPeeking: boolean;
-  onClose: () => void;
-}
+import { FullScreenChartOverlayProps } from './types';
 
 export const FullScreenChartOverlay = memo(({ imageUrl, isFullScreen, isPeeking, onClose }: FullScreenChartOverlayProps) => {
   if (!isPeeking && !isFullScreen) return null;
