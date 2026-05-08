@@ -3,7 +3,8 @@
 'use client';
 
 import React, { memo } from 'react';
-import { LocalClockWidget, SessionClockWidget } from './LiveClockWidgets';
+import { LocalClockWidget } from './LocalClockWidget';
+import { SessionClockWidget } from './SessionClockWidget';
 import { DashboardGridProps } from './types';
 import { GridWidget } from './GridWidget';
 
