@@ -1,4 +1,6 @@
-'use client'
+// src/app/(users)/dashboard/PersonalDashboard.tsx
+
+'use client';
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
@@ -6,13 +8,14 @@ import { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch';
 import { Lock, X, BookOpen } from 'lucide-react';
 import { User } from '@supabase/supabase-js';
 
-// Types & Config
+// Types
 import { Setup } from './types';
 
 // Components
 import { DashboardGrid } from './DashboardGrid';
 import { RoutineTracker } from './RoutineTracker';
 import { ActiveFocusWorkspace } from './ActiveFocusWorkspace';
+import { FullScreenChartOverlay } from './FullScreenChartOverlay';
 
 // Hooks
 import { useWidgetGrid } from './hooks/useWidgetGrid';
@@ -40,11 +43,11 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   const [isPeeking, setIsPeeking] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [chartScale, setChartScale] = useState(1);
+  
   const peekTimer = useRef<NodeJS.Timeout | null>(null);
   const transformRef = useRef<ReactZoomPanPinchRef>(null);
 
   const [timeOffset, setTimeOffset] = useState(0);
-  const timeOffsetRef = useRef(0);
   const [userTimezone, setUserTimezone] = useState(typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : 'UTC');
 
   const getTrueUTC = useCallback(() => new Date(Date.now() + timeOffset), [timeOffset]);
@@ -70,13 +73,10 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   } = useTradingWeekProgress(supabase, user, getBaseDateRef, adjustDbToBaseRef);
 
   const { 
-    setups, vaultSetupCount, isLoading, loadDashboardData 
-  } = useDashboardRealtime(supabase, user, isPro, getBaseDateRef, adjustDbToBaseRef, syncLogsLightweight);
+    setups, todaySetups, pushesToday, vaultSetupCount, isLoading, loadDashboardData 
+  } = useDashboardRealtime(supabase, user, isPro, getBaseDateRef, adjustDbToBaseRef, getBaseDateString, syncLogsLightweight);
 
-  // Derived State (Memoized to prevent thrashing)
-  const todaySetups = useMemo(() => setups.filter((s: Setup) => s.isToday), [setups]);
   const activeSetup = useMemo(() => todaySetups.find((s: Setup) => s.id === activeTodayId), [todaySetups, activeTodayId]);
-  const pushesToday = useMemo(() => setups.filter((s: Setup) => s.addedToTodayAt && getBaseDateString(s.addedToTodayAt) === getBaseDate().toDateString()).length, [setups, getBaseDateString, getBaseDate]);
   const pastDays = useMemo(() => weekProgress.filter((d) => d.isPast || d.isToday), [weekProgress]);
   
   const { isPrepWindow, isWeekendNow, isVaultLocked } = useMemo(() => {
@@ -89,7 +89,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   useKeyboardShortcuts(todaySetups, activeTodayId, setActiveTodayId, isMobileNotesOpen, setIsMobileNotesOpen, setIsTodayFocusExpanded, setIsFullScreen);
   useMidnightReset(setups, getBaseDate, getBaseDateString);
 
-  // Core Sync Fetching
   useEffect(() => {
     const fetchTime = async () => {
       try {
@@ -97,8 +96,8 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
         if (!res.ok) throw new Error('API Blocked');
         const data = await res.json();
         const offset = new Date(data.dateTime + "Z").getTime() - Date.now();
-        setTimeOffset(offset); timeOffsetRef.current = offset;
-      } catch (error) { setTimeOffset(0); timeOffsetRef.current = 0; }
+        setTimeOffset(offset);
+      } catch (error) { setTimeOffset(0); }
     };
     fetchTime();
   }, []);
@@ -121,13 +120,14 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     init();
   }, [loadDashboardData]);
 
-  // Mobile Notes Sanitizer
   useEffect(() => {
+    let isMounted = true;
     if (isMobileNotesOpen && activeSetup?.notes) {
       import('dompurify').then((DOMPurify) => {
-        setMobileSanitizedNotes(DOMPurify.default.sanitize(activeSetup.notes!, { USE_PROFILES: { html: true } }));
+        if (isMounted) setMobileSanitizedNotes(DOMPurify.default.sanitize(activeSetup.notes!, { USE_PROFILES: { html: true } }));
       });
     }
+    return () => { isMounted = false; };
   }, [isMobileNotesOpen, activeSetup?.notes]);
 
   useEffect(() => {
@@ -148,6 +148,11 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   const handlePeekStart = useCallback(() => { if (chartScale !== 1) return; peekTimer.current = setTimeout(() => setIsPeeking(true), 400); }, [chartScale]);
   const handlePeekEnd = useCallback(() => { if (peekTimer.current) clearTimeout(peekTimer.current); setIsPeeking(false); }, []);
 
+  const timeOffsetRefProp = useRef(timeOffset);
+  useEffect(() => { timeOffsetRefProp.current = timeOffset; }, [timeOffset]);
+
+  const handleCloseFullScreen = useCallback(() => setIsFullScreen(false), []);
+
   return (
     <div className="flex h-full w-full bg-[#030303] text-zinc-300 font-sans overflow-y-auto lg:overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
@@ -159,21 +164,49 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
               {!isPro && <div className="absolute top-4 right-4 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">Sandbox Mode <Lock size={12} className="stroke-[3]" /></div>}
 
               <DashboardGrid 
-                widgets={widgets} isPro={isPro} isSessionOverlap={isSessionOverlap} draggingId={draggingId} gridRef={gridRef} timeOffsetRef={timeOffsetRef}
-                handleDragStart={handleDragStart} handleDragEnd={handleDragEnd} handleDropOnGrid={handleDropOnGrid} handleResizePointerDown={handleResizePointerDown} 
-                handleToggleLocalFont={handleToggleLocalFont} handleToggleSessionFont={handleToggleSessionFont} setIsSessionOverlap={setIsSessionOverlap}
+                widgets={widgets} 
+                isPro={isPro} 
+                isSessionOverlap={isSessionOverlap} 
+                draggingId={draggingId} 
+                gridRef={gridRef} 
+                timeOffsetRef={timeOffsetRefProp}
+                handleDragStart={handleDragStart} 
+                handleDragEnd={handleDragEnd} 
+                handleDropOnGrid={handleDropOnGrid} 
+                handleResizePointerDown={handleResizePointerDown} 
+                handleToggleLocalFont={handleToggleLocalFont} 
+                handleToggleSessionFont={handleToggleSessionFont} 
+                setIsSessionOverlap={setIsSessionOverlap}
               />
 
               <RoutineTracker 
-                isPro={isPro} vaultSetupCount={vaultSetupCount} isVaultLocked={isVaultLocked} isPrepWindow={isPrepWindow} pushesToday={pushesToday} 
-                pastDays={pastDays} tradesTakenToday={tradesTakenToday} isWeekendNow={isWeekendNow} pendingReconciliationsCount={pendingReconciliationsCount}
+                isPro={isPro} 
+                vaultSetupCount={vaultSetupCount} 
+                isVaultLocked={isVaultLocked} 
+                isPrepWindow={isPrepWindow} 
+                pushesToday={pushesToday} 
+                pastDays={pastDays} 
+                tradesTakenToday={tradesTakenToday} 
+                isWeekendNow={isWeekendNow} 
+                pendingReconciliationsCount={pendingReconciliationsCount}
               />
             </div>
 
             <ActiveFocusWorkspace 
-              isTodayFocusExpanded={isTodayFocusExpanded} setIsTodayFocusExpanded={setIsTodayFocusExpanded} todaySetups={todaySetups} activeSetup={activeSetup} 
-              activeTodayId={activeTodayId} setActiveTodayId={setActiveTodayId} setIsMobileNotesOpen={setIsMobileNotesOpen} displayDirection={displayDirection} 
-              handlePeekStart={handlePeekStart} handlePeekEnd={handlePeekEnd} chartScale={chartScale} setChartScale={setChartScale} transformRef={transformRef} setIsFullScreen={setIsFullScreen}
+              isTodayFocusExpanded={isTodayFocusExpanded} 
+              setIsTodayFocusExpanded={setIsTodayFocusExpanded} 
+              todaySetups={todaySetups} 
+              activeSetup={activeSetup} 
+              activeTodayId={activeTodayId} 
+              setActiveTodayId={setActiveTodayId} 
+              setIsMobileNotesOpen={setIsMobileNotesOpen} 
+              displayDirection={displayDirection} 
+              handlePeekStart={handlePeekStart} 
+              handlePeekEnd={handlePeekEnd} 
+              chartScale={chartScale} 
+              setChartScale={setChartScale} 
+              transformRef={transformRef} 
+              setIsFullScreen={setIsFullScreen}
             />
           </div>
         )}
@@ -191,11 +224,12 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
         </div>
       )}
 
-      {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
-        <div className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`} onClick={() => { if (isFullScreen) setIsFullScreen(false); }}>
-          <img src={activeSetup.imageUrl} alt="Peek" fetchPriority="high" decoding="async" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl transform-gpu" />
-        </div>
-      )}
+      <FullScreenChartOverlay
+        imageUrl={activeSetup?.imageUrl || ''}
+        isFullScreen={isFullScreen}
+        isPeeking={isPeeking}
+        onClose={handleCloseFullScreen}
+      />
     </div>
   );
 }
