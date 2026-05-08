@@ -1,6 +1,8 @@
-'use client'
+// src/app/(users)/dashboard/ActiveFocusWorkspace.tsx
 
-import React, { memo, useEffect, useState } from 'react';
+'use client';
+
+import React, { memo, useEffect, useState, useRef } from 'react';
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch';
 import { Crosshair, Target, ChevronLeft, ChevronRight, Maximize, Info } from 'lucide-react';
 import { ActiveFocusWorkspaceProps, Setup } from './types';
@@ -12,6 +14,7 @@ export const ActiveFocusWorkspace = memo(({
 }: ActiveFocusWorkspaceProps) => {
 
   const [sanitizedNotes, setSanitizedNotes] = useState('<p class="text-zinc-600 italic">Loading notes...</p>');
+  const rafRef = useRef<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -31,6 +34,11 @@ export const ActiveFocusWorkspace = memo(({
     return () => { isMounted = false; };
   }, [activeSetup?.notes]);
 
+  const onTransformed = (ref: any) => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => setChartScale(ref.state.scale));
+  };
+
   return (
     <div className={`hidden lg:flex shrink-0 flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0 transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'w-full h-1/2' : 'w-48 xl:w-56 border-r border-zinc-800/60 h-1/2'}`}>
       <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#050505]">
@@ -43,7 +51,7 @@ export const ActiveFocusWorkspace = memo(({
         </div>
         <div className="flex items-center gap-3 shrink-0 ml-2">
           {isTodayFocusExpanded && <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest hidden sm:block">{todaySetups.length} Pairs Locked</span>}
-          <button onClick={() => setIsTodayFocusExpanded(!isTodayFocusExpanded)} className="text-zinc-500 hover:text-white transition-colors p-1" title={isTodayFocusExpanded ? "Collapse Focus Workspace [A]" : "Expand Focus Workspace [A]"}>
+          <button onClick={() => setIsTodayFocusExpanded(prev => !prev)} className="text-zinc-500 hover:text-white transition-colors p-1" title={isTodayFocusExpanded ? "Collapse Focus Workspace [A]" : "Expand Focus Workspace [A]"}>
             {isTodayFocusExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
           </button>
         </div>
@@ -88,14 +96,14 @@ export const ActiveFocusWorkspace = memo(({
                   key={activeSetup.id}
                   initialScale={1} minScale={0.5} maxScale={10} centerOnInit={true}
                   wheel={{ step: 0.1 }} doubleClick={{ mode: 'reset' }} panning={{ disabled: false }}
-                  onTransformed={(ref) => setChartScale(ref.state.scale)}
+                  onTransformed={onTransformed}
                   ref={transformRef}
                 >
                   <TransformComponent wrapperStyle={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }} contentStyle={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <img 
                       src={activeSetup.imageUrl} 
                       alt={`${activeSetup.symbol} Chart`}
-                      fetchPriority="high"
+                      loading="lazy"
                       decoding="async" 
                       className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/50 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto transform-gpu will-change-transform" 
                       draggable={false} 
