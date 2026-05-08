@@ -1,4 +1,6 @@
-'use client'
+// src/app/(users)/dashboard/RoutineTracker.tsx
+
+'use client';
 
 import React, { memo } from 'react';
 import Link from 'next/link';
