@@ -28,7 +28,6 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false })
       .limit(1),
     supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe, status)').eq('user_id', userId),
-    // 🚨 OPTIMIZATION: Only fetch required fields, active/waiting status, and limit to 40
     supabase.from('analyses')
       .select('id, asset_symbol, timeframe, bias, status, category, created_at')
       .in('status', ['ACTIVE', 'WAITING'])
@@ -56,7 +55,6 @@ export default async function DashboardPage() {
     }
   }
 
-  // No longer need to strip out heavy content/notes as they aren't queried anymore
   const safeAnalyses = analyses || []
 
   return (
