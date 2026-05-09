@@ -1,44 +1,38 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
+import { createBrowserClient } from '@supabase/ssr'
 import { ShieldCheck, Target, Crosshair, Loader2 } from 'lucide-react'
 import GeneralDashboard from './GeneralDashboard'
-import dynamic from 'next/dynamic'
+import PersonalDashboard from './PersonalDashboard'
 
-const PersonalDashboard = dynamic(
-  () => import('./PersonalDashboard'),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex-1 flex items-center justify-center text-zinc-500 bg-[#050505] h-full">
-        <Loader2 className="animate-spin mr-2" size={24} />
-        <span className="text-sm font-bold uppercase tracking-widest">Loading Desk...</span>
-      </div>
-    )
-  }
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
 export default function DashboardClient(props: any) {
   const { userId, needsOnboarding } = props
 
+  // Navigation State
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
   
+  // Onboarding States (Lifted from Personal Dashboard)
   const [showOnboarding, setShowOnboarding] = useState(needsOnboarding)
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
+  // Listen for the custom event fired by TopNav
   useEffect(() => {
-    const handleSwitch = (e: any) => {
-      setActiveView(e.detail)
+    const handleViewChange = (e: any) => {
+      if (e.detail === 'general' || e.detail === 'personal') {
+        setActiveView(e.detail)
+      }
     }
-
-    window.addEventListener('dashboard-view-change', handleSwitch)
-
-    return () => {
-      window.removeEventListener('dashboard-view-change', handleSwitch)
-    }
+    window.addEventListener('switchDashboardView', handleViewChange)
+    return () => window.removeEventListener('switchDashboardView', handleViewChange)
   }, [])
 
+  // The Submission Protocol
   const completeProtocol = async () => {
     setIsSubmittingProtocol(true)
     if (userId) {
@@ -51,6 +45,9 @@ export default function DashboardClient(props: any) {
   return (
     <div className="relative flex flex-col h-[calc(100dvh-56px)] md:h-[calc(100dvh-64px)] bg-[#050505] overflow-hidden w-full">
       
+      {/* ========================================= */}
+      {/* THE MASTER GHOST OVERLAY                  */}
+      {/* ========================================= */}
       {showOnboarding && (
         <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
           <div className="w-full max-w-lg bg-[#0a0a0f] border border-zinc-800 rounded-3xl p-10 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
@@ -93,12 +90,34 @@ export default function DashboardClient(props: any) {
         </div>
       )}
 
+      {/* ========================================= */}
+      {/* THE BLURRED DASHBOARD CONTAINER           */}
+      {/* ========================================= */}
       <div className={`relative flex-1 bg-[#050505] overflow-hidden w-full h-full transition-all duration-1000 ${showOnboarding ? 'opacity-20 blur-sm pointer-events-none' : 'opacity-100 blur-none'}`}>
-        {activeView === 'general' ? (
+        
+        {/* GENERAL VIEW */}
+        <div 
+          className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${
+            activeView === 'general' 
+              ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' 
+              : 'opacity-0 translate-y-4 -z-10 pointer-events-none'
+          }`}
+        >
           <GeneralDashboard {...props} />
-        ) : (
+        </div>
+
+        {/* PERSONAL VIEW */}
+        <div 
+          className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${
+            activeView === 'personal' 
+              ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' 
+              : 'opacity-0 translate-y-4 -z-10 pointer-events-none'
+          }`}
+        >
+          {/* We pass userId down just in case PersonalDashboard needs it directly */}
           <PersonalDashboard userId={userId} />
-        )}
+        </div>
+
       </div>
     </div>
   )
