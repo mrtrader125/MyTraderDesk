@@ -9,7 +9,6 @@ import AssistantWidget from '@/components/dashboard/AssistantWidget'
 import PresenceHeartbeat from '@/components/dashboard/PresenceHeartbeat'
 import LiveClockWidgets from '@/components/dashboard/LiveClockWidgets'
 import BootSequence from '@/components/dashboard/BootSequence'
-import NotificationBell from '@/components/dashboard/NotificationBell'
 
 export default async function DashboardLayout({
   children,
@@ -85,7 +84,6 @@ export default async function DashboardLayout({
         <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent">
           <TopNav user={minimalUser}>
             <LiveClockWidgets />
-            <NotificationBell />
           </TopNav>
 
           <main className="flex-1 overflow-y-auto scrollbar-hide">
