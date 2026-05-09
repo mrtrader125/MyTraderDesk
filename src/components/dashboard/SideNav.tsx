@@ -4,9 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { preload } from 'swr'
 import { supabase } from '@/lib/supabase'
-import { fetchDashboardData } from '@/app/(users)/dashboard/DashboardClient'
 import { 
   LayoutDashboard, LineChart, Bookmark, 
   Settings, LogOut, Menu, Users, Briefcase,
@@ -40,14 +38,6 @@ export default function SideNav() {
     window.location.href = '/login'
   }
 
-  // 🚨 INTENT BASED PREFETCHING
-  const handleHover = (href: string) => {
-    if (href === '/dashboard') {
-      preload('dashboard_data', fetchDashboardData)
-    }
-    // You can add more prefetchers here for /markets, /vault, etc. later
-  }
-
   return (
     <>
       {/* DESKTOP SIDEBAR */}
@@ -76,8 +66,6 @@ export default function SideNav() {
                 key={item.name} 
                 href={item.href} 
                 prefetch={true}
-                onMouseEnter={() => handleHover(item.href)}
-                onTouchStart={() => handleHover(item.href)}
               >
                 <div className={`flex items-center w-full p-3 rounded-xl transition-all mb-2
                   ${isActive ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20 shadow-inner' : 'text-neutral-500 border border-transparent hover:bg-[#111] hover:text-neutral-300'}`}>
@@ -112,8 +100,6 @@ export default function SideNav() {
               key={item.name} 
               href={item.href} 
               prefetch={true}
-              onMouseEnter={() => handleHover(item.href)}
-              onTouchStart={() => handleHover(item.href)}
               className="relative flex flex-col items-center justify-center min-w-[64px] shrink-0 h-full space-y-1.5 group"
             >
               {isActive && (
