@@ -13,12 +13,13 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// 🚨 EXPORTED SWR FETCHER: This allows the sidebar to trigger it in the background
+// 🚨 UPDATED FETCHER: It now gets the session natively on the client
 export const fetchDashboardData = async () => {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user) return null
 
   const userId = session.user.id
+
   const [
     { data: profile },
     { data: broadcasts },
@@ -60,12 +61,13 @@ export const fetchDashboardData = async () => {
   }
 }
 
+// 🚨 REMOVED userId from props since the fetcher gets it now
 export default function DashboardClient() {
   const router = useRouter()
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
-  // 🚀 SWR MAGIC: Pulls from RAM instantly if prefetched
+  // SWR automatically handles the caching and loading state
   const { data, mutate } = useSWR('dashboard_data', fetchDashboardData, {
     revalidateOnFocus: false,
     dedupingInterval: 60000 
@@ -79,16 +81,15 @@ export default function DashboardClient() {
     return () => window.removeEventListener('switchDashboardView', handleViewChange)
   }, [])
 
-  // 🚨 OPTIMISTIC SHELL: Never show a spinner. Render the dashboard layout instantly.
+  // Provide a safe fallback so the UI renders the empty dark shell instantly
   const safeData = data || {
     userId: '',
-    profile: { plan: 'demo', protocol_established: true }, // Assumes true initially to prevent flash
+    profile: { plan: 'demo', protocol_established: true },
     broadcast: null,
     watchlist: [],
     setups: []
   }
 
-  // Only show onboarding if we have data AND it explicitly says false
   const showOnboarding = data && (data.profile?.protocol_established === false || data.profile?.protocol_established === null)
 
   const completeProtocol = async () => {
@@ -130,7 +131,6 @@ export default function DashboardClient() {
 
       <div className={`relative flex-1 bg-[#050505] overflow-hidden w-full h-full transition-all duration-1000 ${showOnboarding ? 'opacity-20 blur-sm pointer-events-none' : 'opacity-100 blur-none'}`}>
         
-        {/* FAST CSS TRANSITIONS: duration-200 ease-out translate-y-2 */}
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'general' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-2 -z-10 pointer-events-none'}`}>
           <GeneralDashboard 
             userId={safeData.userId} 
