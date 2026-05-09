@@ -20,7 +20,6 @@ export default async function DashboardPage() {
     { data: vaultData },
     { data: analyses }
   ] = await Promise.all([
-    // Fetching the protocol flag
     supabase.from('profiles').select('plan, protocol_established').eq('id', userId).single(),
     supabase.from('notifications')
       .select('*')
@@ -29,10 +28,14 @@ export default async function DashboardPage() {
       .order('created_at', { ascending: false })
       .limit(1),
     supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe, status)').eq('user_id', userId),
-    supabase.from('analyses').select('*').order('created_at', { ascending: false })
+    // 🚨 OPTIMIZATION: Only fetch required fields, active/waiting status, and limit to 40
+    supabase.from('analyses')
+      .select('id, asset_symbol, timeframe, bias, status, category, created_at')
+      .in('status', ['ACTIVE', 'WAITING'])
+      .order('created_at', { ascending: false })
+      .limit(40)
   ])
 
-  // 🚨 THE BOUNCER: If they try to bypass the login route, kick them back to onboarding
   if (profile?.protocol_established === false || profile?.protocol_established === null) {
     redirect('/onboarding')
   }
@@ -53,15 +56,8 @@ export default async function DashboardPage() {
     }
   }
 
-  const isPro = profile?.plan === 'pro'
-  const safeAnalyses = analyses?.map((setup: any) => {
-    if (isPro) return setup
-    return {
-      ...setup,
-      notes: null,
-      content: null
-    }
-  }) || []
+  // No longer need to strip out heavy content/notes as they aren't queried anymore
+  const safeAnalyses = analyses || []
 
   return (
     <DashboardClient 
@@ -70,7 +66,6 @@ export default async function DashboardPage() {
       initialBroadcast={activeBroadcast} 
       initialWatchlist={formattedWatchlist} 
       initialSetups={safeAnalyses} 
-      // You no longer need to pass needsOnboarding to the client, because they can't reach this page if it's false!
     />
   )
 }
