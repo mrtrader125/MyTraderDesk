@@ -17,12 +17,15 @@ export default function DashboardClient() {
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
-  // 1. Set up empty states so the shell renders instantly (0.00ms)
+  // 1. Initial Empty State (Loads in 0ms)
   const [userId, setUserId] = useState<string>('')
   const [profile, setProfile] = useState<any>({ plan: 'pro', protocol_established: true })
   const [broadcast, setBroadcast] = useState<any>(null)
   const [watchlist, setWatchlist] = useState<any[]>([])
   const [setups, setSetups] = useState<any[]>([])
+  
+  // 🚨 THE FIX: Track when data finishes downloading
+  const [isDataLoaded, setIsDataLoaded] = useState(false)
 
   useEffect(() => {
     const handleViewChange = (e: any) => {
@@ -32,7 +35,6 @@ export default function DashboardClient() {
     return () => window.removeEventListener('switchDashboardView', handleViewChange)
   }, [])
 
-  // 2. Safely fetch data like your DeskClient (No Promise.all explosions)
   useEffect(() => {
     const initData = async () => {
       const { data: { session } } = await supabase.auth.getSession()
@@ -76,6 +78,9 @@ export default function DashboardClient() {
         })
         setSetups(safeAnalyses)
       }
+
+      // 🚨 DATA HAS ARRIVED: Trigger the UI to refresh with the real numbers
+      setIsDataLoaded(true)
     }
 
     initData()
@@ -123,7 +128,9 @@ export default function DashboardClient() {
       <div className={`relative flex-1 bg-[#050505] overflow-hidden w-full h-full transition-all duration-1000 ${showOnboarding ? 'opacity-20 blur-sm pointer-events-none' : 'opacity-100 blur-none'}`}>
         
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'general' ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 -z-10 pointer-events-none'}`}>
+          {/* 🚨 THE KEY TRICK: Forces GeneralDashboard to refresh the millisecond the data arrives */}
           <GeneralDashboard 
+            key={`general-${isDataLoaded}`} 
             userId={userId} 
             initialPlan={profile?.plan?.toLowerCase() || 'pro'} 
             initialBroadcast={broadcast} 
@@ -133,7 +140,11 @@ export default function DashboardClient() {
         </div>
 
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'personal' ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 -z-10 pointer-events-none'}`}>
-          <PersonalDashboard userId={userId} />
+          {/* 🚨 THE KEY TRICK: Prevents PersonalDashboard from sticking on empty data */}
+          <PersonalDashboard 
+            key={`personal-${isDataLoaded}`}
+            userId={userId} 
+          />
         </div>
 
       </div>
