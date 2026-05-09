@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import useSWR from 'swr'
 import { createBrowserClient } from '@supabase/ssr'
-import { ShieldCheck, Target, Crosshair, Loader2 } from 'lucide-react'
+import { ShieldCheck, Loader2 } from 'lucide-react'
 import GeneralDashboard from './GeneralDashboard'
 import PersonalDashboard from './PersonalDashboard'
 import { useRouter } from 'next/navigation'
@@ -14,12 +14,7 @@ const supabase = createBrowserClient(
 )
 
 // The SWR Data Fetcher
-const fetchDashboardData = async () => {
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session?.user) throw new Error("Not authenticated")
-
-  const userId = session.user.id
-
+const fetchDashboardData = async (userId: string) => {
   const [
     { data: profile },
     { data: broadcasts },
@@ -55,7 +50,6 @@ const fetchDashboardData = async () => {
   }) || []
 
   return {
-    userId,
     profile,
     broadcast: activeBroadcast,
     watchlist: formattedWatchlist,
@@ -63,13 +57,13 @@ const fetchDashboardData = async () => {
   }
 }
 
-export default function DashboardClient() {
+export default function DashboardClient({ userId }: { userId: string }) {
   const router = useRouter()
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
   // 🚀 SWR MAGIC: Caches the data in RAM. Second visit is 0ms.
-  const { data, isLoading, mutate } = useSWR('dashboard_data', fetchDashboardData, {
+  const { data, isLoading, mutate } = useSWR(userId ? `dashboard_data_${userId}` : null, () => fetchDashboardData(userId), {
     revalidateOnFocus: false, // Doesn't spam the DB if they switch browser tabs
     dedupingInterval: 60000   // Caches the data for 60 seconds
   })
@@ -82,7 +76,7 @@ export default function DashboardClient() {
     return () => window.removeEventListener('switchDashboardView', handleViewChange)
   }, [])
 
-  // If loading for the very first time, show spinner.
+  // Show spinner only on the very first load
   if (isLoading || !data) {
     return (
       <div className="flex h-[calc(100dvh-56px)] md:h-[calc(100dvh-64px)] w-full items-center justify-center bg-[#050505]">
@@ -96,7 +90,7 @@ export default function DashboardClient() {
 
   const completeProtocol = async () => {
     setIsSubmittingProtocol(true)
-    await supabase.from('profiles').update({ protocol_established: true }).eq('id', data.userId)
+    await supabase.from('profiles').update({ protocol_established: true }).eq('id', userId)
     await mutate() // Instantly updates the cached data to remove onboarding screen
     setIsSubmittingProtocol(false)
   }
@@ -114,7 +108,7 @@ export default function DashboardClient() {
               Establish <span className="text-blue-500">Protocol</span>
             </h2>
             <p className="text-sm text-zinc-400 leading-relaxed mb-8">
-              Terminal access granted. Before engaging the live markets, you must define your operational parameters.
+              Terminal access granted. Before engaging the live markets, you must define your operational parameters. These cannot be bypassed.
             </p>
 
             <button 
@@ -131,9 +125,10 @@ export default function DashboardClient() {
 
       <div className={`relative flex-1 bg-[#050505] overflow-hidden w-full h-full transition-all duration-1000 ${showOnboarding ? 'opacity-20 blur-sm pointer-events-none' : 'opacity-100 blur-none'}`}>
         
-        <div className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${activeView === 'general' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-4 -z-10 pointer-events-none'}`}>
+        {/* FAST CSS TRANSITIONS: duration-200 ease-out translate-y-2 */}
+        <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'general' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-2 -z-10 pointer-events-none'}`}>
           <GeneralDashboard 
-            userId={data.userId} 
+            userId={userId} 
             initialPlan={data.profile?.plan?.toLowerCase() || 'demo'} 
             initialBroadcast={data.broadcast} 
             initialWatchlist={data.watchlist} 
@@ -141,8 +136,8 @@ export default function DashboardClient() {
           />
         </div>
 
-        <div className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${activeView === 'personal' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-4 -z-10 pointer-events-none'}`}>
-          <PersonalDashboard userId={data.userId} />
+        <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'personal' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-2 -z-10 pointer-events-none'}`}>
+          <PersonalDashboard userId={userId} />
         </div>
 
       </div>
