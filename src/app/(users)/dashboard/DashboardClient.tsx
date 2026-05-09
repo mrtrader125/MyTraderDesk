@@ -1,53 +1,109 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import useSWR from 'swr'
 import { createBrowserClient } from '@supabase/ssr'
 import { ShieldCheck, Target, Crosshair, Loader2 } from 'lucide-react'
 import GeneralDashboard from './GeneralDashboard'
 import PersonalDashboard from './PersonalDashboard'
+import { useRouter } from 'next/navigation'
 
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-export default function DashboardClient(props: any) {
-  const { userId, needsOnboarding } = props
+// The SWR Data Fetcher
+const fetchDashboardData = async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) throw new Error("Not authenticated")
 
-  // Navigation State
+  const userId = session.user.id
+
+  const [
+    { data: profile },
+    { data: broadcasts },
+    { data: vaultData },
+    { data: analyses }
+  ] = await Promise.all([
+    supabase.from('profiles').select('plan, protocol_established').eq('id', userId).single(),
+    supabase.from('notifications').select('*').eq('type', 'BROADCAST').eq('status', 'ACTIVE').order('created_at', { ascending: false }).limit(1),
+    supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe, status)').eq('user_id', userId),
+    supabase.from('analyses').select('*').order('created_at', { ascending: false })
+  ])
+
+  const formattedWatchlist = vaultData?.map((v: any) => ({
+    id: v.analysis_id,
+    symbol: v.analyses?.asset_symbol,
+    timeframe: v.analyses?.timeframe,
+    status: v.analyses?.status
+  })) || []
+
+  let activeBroadcast = null
+  if (broadcasts && broadcasts.length > 0) {
+    const b = broadcasts[0]
+    const userTier = profile?.plan ? profile.plan.toUpperCase() : 'DEMO'
+    if (b.target_tier === 'ALL' || b.target_tier === userTier) {
+      activeBroadcast = b
+    }
+  }
+
+  const isPro = profile?.plan === 'pro' || profile?.plan === 'premium'
+  const safeAnalyses = analyses?.map((setup: any) => {
+    if (isPro) return setup
+    return { ...setup, notes: null, content: null }
+  }) || []
+
+  return {
+    userId,
+    profile,
+    broadcast: activeBroadcast,
+    watchlist: formattedWatchlist,
+    setups: safeAnalyses
+  }
+}
+
+export default function DashboardClient() {
+  const router = useRouter()
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
-  
-  // Onboarding States (Lifted from Personal Dashboard)
-  const [showOnboarding, setShowOnboarding] = useState(needsOnboarding)
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
-  // Listen for the custom event fired by TopNav
+  // 🚀 SWR MAGIC: Caches the data in RAM. Second visit is 0ms.
+  const { data, isLoading, mutate } = useSWR('dashboard_data', fetchDashboardData, {
+    revalidateOnFocus: false, // Doesn't spam the DB if they switch browser tabs
+    dedupingInterval: 60000   // Caches the data for 60 seconds
+  })
+
   useEffect(() => {
     const handleViewChange = (e: any) => {
-      if (e.detail === 'general' || e.detail === 'personal') {
-        setActiveView(e.detail)
-      }
+      if (e.detail === 'general' || e.detail === 'personal') setActiveView(e.detail)
     }
     window.addEventListener('switchDashboardView', handleViewChange)
     return () => window.removeEventListener('switchDashboardView', handleViewChange)
   }, [])
 
-  // The Submission Protocol
+  // If loading for the very first time, show spinner.
+  if (isLoading || !data) {
+    return (
+      <div className="flex h-[calc(100dvh-56px)] md:h-[calc(100dvh-64px)] w-full items-center justify-center bg-[#050505]">
+        <Loader2 className="animate-spin text-blue-500" size={32} />
+      </div>
+    )
+  }
+
+  // The Bouncer: Redirect to onboarding if protocol isn't established
+  const showOnboarding = data.profile?.protocol_established === false || data.profile?.protocol_established === null
+
   const completeProtocol = async () => {
     setIsSubmittingProtocol(true)
-    if (userId) {
-      await supabase.from('profiles').update({ protocol_established: true }).eq('id', userId)
-    }
-    setShowOnboarding(false)
+    await supabase.from('profiles').update({ protocol_established: true }).eq('id', data.userId)
+    await mutate() // Instantly updates the cached data to remove onboarding screen
     setIsSubmittingProtocol(false)
   }
 
   return (
     <div className="relative flex flex-col h-[calc(100dvh-56px)] md:h-[calc(100dvh-64px)] bg-[#050505] overflow-hidden w-full">
       
-      {/* ========================================= */}
-      {/* THE MASTER GHOST OVERLAY                  */}
-      {/* ========================================= */}
       {showOnboarding && (
         <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
           <div className="w-full max-w-lg bg-[#0a0a0f] border border-zinc-800 rounded-3xl p-10 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
@@ -58,25 +114,8 @@ export default function DashboardClient(props: any) {
               Establish <span className="text-blue-500">Protocol</span>
             </h2>
             <p className="text-sm text-zinc-400 leading-relaxed mb-8">
-              Terminal access granted. Before engaging the live markets, you must define your operational parameters. These cannot be bypassed.
+              Terminal access granted. Before engaging the live markets, you must define your operational parameters.
             </p>
-
-            <div className="space-y-4 mb-10">
-              <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl flex items-start gap-4">
-                <Target className="text-zinc-500 mt-1" size={20} />
-                <div>
-                  <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-1">Risk Parameter</h4>
-                  <p className="text-xs text-zinc-500">Acknowledge the strict 2-trade maximum daily limit.</p>
-                </div>
-              </div>
-              <div className="p-4 bg-zinc-900/50 border border-zinc-800/50 rounded-xl flex items-start gap-4">
-                <Crosshair className="text-zinc-500 mt-1" size={20} />
-                <div>
-                  <h4 className="text-xs font-bold text-zinc-300 uppercase tracking-widest mb-1">Data Ingestion</h4>
-                  <p className="text-xs text-zinc-500">Prepare your MT5 execution CSV for the automated journal.</p>
-                </div>
-              </div>
-            </div>
 
             <button 
               onClick={completeProtocol}
@@ -90,32 +129,20 @@ export default function DashboardClient(props: any) {
         </div>
       )}
 
-      {/* ========================================= */}
-      {/* THE BLURRED DASHBOARD CONTAINER           */}
-      {/* ========================================= */}
       <div className={`relative flex-1 bg-[#050505] overflow-hidden w-full h-full transition-all duration-1000 ${showOnboarding ? 'opacity-20 blur-sm pointer-events-none' : 'opacity-100 blur-none'}`}>
         
-        {/* GENERAL VIEW */}
-        <div 
-          className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${
-            activeView === 'general' 
-              ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' 
-              : 'opacity-0 translate-y-4 -z-10 pointer-events-none'
-          }`}
-        >
-          <GeneralDashboard {...props} />
+        <div className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${activeView === 'general' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-4 -z-10 pointer-events-none'}`}>
+          <GeneralDashboard 
+            userId={data.userId} 
+            initialPlan={data.profile?.plan?.toLowerCase() || 'demo'} 
+            initialBroadcast={data.broadcast} 
+            initialWatchlist={data.watchlist} 
+            initialSetups={data.setups} 
+          />
         </div>
 
-        {/* PERSONAL VIEW */}
-        <div 
-          className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${
-            activeView === 'personal' 
-              ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' 
-              : 'opacity-0 translate-y-4 -z-10 pointer-events-none'
-          }`}
-        >
-          {/* We pass userId down just in case PersonalDashboard needs it directly */}
-          <PersonalDashboard userId={userId} />
+        <div className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${activeView === 'personal' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-4 -z-10 pointer-events-none'}`}>
+          <PersonalDashboard userId={data.userId} />
         </div>
 
       </div>
