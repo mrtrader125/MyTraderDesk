@@ -30,7 +30,6 @@ export default async function DashboardPage() {
     supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe, status)').eq('user_id', userId),
     supabase.from('analyses')
       .select('id, asset_symbol, timeframe, bias, status, category, created_at')
-      .in('status', ['ACTIVE', 'WAITING'])
       .order('created_at', { ascending: false })
       .limit(40)
   ])
