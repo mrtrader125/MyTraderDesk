@@ -1,15 +1,17 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-// 🚨 ADDED useSearchParams
+import { useEffect, useState, useRef } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation' 
 import { createBrowserClient } from '@supabase/ssr'
 
 export default function SystemGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const searchParams = useSearchParams() // 🚨 ADDED
+  const searchParams = useSearchParams() 
   const [isVerifying, setIsVerifying] = useState(true)
+  
+  // FIX: Track verification so we don't query the DB on every sidebar click
+  const hasVerified = useRef(false) 
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,6 +20,12 @@ export default function SystemGuard({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const enforceProtocol = async () => {
+      // If already verified this session, skip the DB check
+      if (hasVerified.current) {
+        setIsVerifying(false)
+        return
+      }
+
       if (pathname === '/login' || pathname === '/signup' || pathname === '/' || pathname === '/admin') {
         setIsVerifying(false)
         return
@@ -37,17 +45,14 @@ export default function SystemGuard({ children }: { children: React.ReactNode })
         .single()
 
       const hasClearance = profile?.protocol_established === true;
-      const isPreviewMode = searchParams.get('preview') === 'true'; // 🚨 NEW CHECK
+      const isPreviewMode = searchParams.get('preview') === 'true';
 
-      // THE GLOBAL ROUTE LOCK
       if (!hasClearance && pathname !== '/onboarding') {
-        // Escaped onboarding? Drag them back.
         router.push('/onboarding')
       } else if (hasClearance && pathname === '/onboarding' && !isPreviewMode) {
-        // 🚨 UPDATED: Only kick them to dashboard if they are NOT in preview mode
         router.push('/dashboard')
       } else {
-        // Clearance matches location, or they are in admin preview mode. Let them pass.
+        hasVerified.current = true; // Mark as safe for future clicks
         setIsVerifying(false)
       }
     }
