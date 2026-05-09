@@ -71,7 +71,6 @@ const sanitizeLayout = (data: any) => {
 export default function PersonalDashboard({ userId }: { userId?: string }) {
   const router = useRouter()
   
-  // 🚨 1. ALL USESTATE HOOKS FIRST
   const [isPro, setIsPro] = useState<boolean>(true); 
   const [user, setUser] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
@@ -118,7 +117,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
 
-  // 🚨 2. ROBUST TIME ENGINE 
+  // 🚨 ROBUST TIME ENGINE 
   const [timeOffset, setTimeOffset] = useState(0);
   const timeOffsetRef = useRef(0);
   
@@ -154,8 +153,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   
   const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
 
-
-  // 🚨 3. ALL USEEFFECTS
   useEffect(() => {
     const fetchTime = async () => {
       try {
@@ -174,44 +171,55 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     fetchTime();
   }, []);
 
+  // 🚨 THE FIX: Read from Local Storage First (0ms speed), then sync from Supabase if empty
   useEffect(() => {
     const loadLayout = async () => {
+      // 1. FASTEST: Read from the user's device memory first
+      const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY)
+      if (savedLayout) {
+        try {
+          const parsed = JSON.parse(savedLayout)
+          const sanitized = sanitizeLayout(parsed)
+          if (sanitized) {
+            setWidgets(sanitized)
+            setLayoutLoaded(true)
+            return // Exit instantly! The layout is loaded in 0ms.
+          }
+        } catch (e) {}
+      }
+
+      // 2. FALLBACK: Read from Supabase (Only happens if they login on a new device)
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user?.user_metadata?.desk_layout) {
           const sanitized = sanitizeLayout(user.user_metadata.desk_layout)
           if (sanitized) {
             setWidgets(sanitized)
-            setLayoutLoaded(true)
-            return 
+            localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(sanitized))
           }
         }
       } catch (e) {}
 
-      const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY)
-      if (savedLayout) {
-        try {
-          const parsed = JSON.parse(savedLayout)
-          const sanitized = sanitizeLayout(parsed)
-          if (sanitized) setWidgets(sanitized)
-        } catch (e) {}
-      }
       setLayoutLoaded(true)
     }
     loadLayout()
   }, [])
 
+  // 🚨 THE FIX: Instant save to device, quiet backup to cloud
   useEffect(() => {
-    if (!layoutLoaded || !isPro) return;
+    if (!layoutLoaded) return;
+    
+    // Instantly save to local storage (immune to unmounting)
     localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(widgets))
+
+    // Backup to cloud in background
+    if (!isPro) return;
     const timeoutId = setTimeout(async () => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.auth.updateUser({ data: { desk_layout: widgets } })
-        }
+        await supabase.auth.updateUser({ data: { desk_layout: widgets } })
       } catch (e) {}
     }, 2000)
+    
     return () => clearTimeout(timeoutId)
   }, [widgets, layoutLoaded, isPro])
 
@@ -251,7 +259,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
   const loadDashboardData = useCallback(async (activeUser: any, isUserPro: boolean) => {
     
-    // 🚨 INJECT MOCK DATA FOR DEMO USERS
+    // INJECT MOCK DATA FOR DEMO USERS
     if (!isUserPro) {
         const demoNow = Date.now();
         setSetups(DEMO_SETUPS.map(s => ({ ...s, addedToTodayAt: s.isToday ? demoNow - 100000 : null, createdAt: demoNow })));
@@ -485,7 +493,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   }, [todaySetups, activeTodayId, router, isMobileNotesOpen]);
 
 
-  // 🚨 4. EVENT HANDLERS
   const handlePeekStart = () => {
     if (chartScale !== 1) return; 
     peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
