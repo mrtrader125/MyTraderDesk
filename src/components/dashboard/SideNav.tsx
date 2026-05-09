@@ -6,7 +6,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { preload } from 'swr'
 import { supabase } from '@/lib/supabase'
-import { fetchDashboardData } from '@/app/app/(users)/dashboard/DashboardClient'
+import { fetchDashboardData } from '@/app/(users)/dashboard/DashboardClient'
 import { 
   LayoutDashboard, LineChart, Bookmark, 
   Settings, LogOut, Menu, Users, Briefcase,
