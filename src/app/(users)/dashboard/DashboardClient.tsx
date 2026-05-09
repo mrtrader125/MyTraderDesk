@@ -13,7 +13,7 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// 🚨 UPDATED FETCHER: It now gets the session natively on the client
+// The SWR Data Fetcher
 export const fetchDashboardData = async () => {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user) return null
@@ -61,13 +61,12 @@ export const fetchDashboardData = async () => {
   }
 }
 
-// 🚨 REMOVED userId from props since the fetcher gets it now
 export default function DashboardClient() {
   const router = useRouter()
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
-  // SWR automatically handles the caching and loading state
+  // 🚀 SWR Caching
   const { data, mutate } = useSWR('dashboard_data', fetchDashboardData, {
     revalidateOnFocus: false,
     dedupingInterval: 60000 
@@ -81,15 +80,17 @@ export default function DashboardClient() {
     return () => window.removeEventListener('switchDashboardView', handleViewChange)
   }, [])
 
-  // Provide a safe fallback so the UI renders the empty dark shell instantly
+  // 🚨 THE FIX: Safe default data. 
+  // This allows the layout to render INSTANTLY while SWR fetches the real data in the background.
   const safeData = data || {
     userId: '',
-    profile: { plan: 'demo', protocol_established: true },
+    profile: { plan: 'demo', protocol_established: true }, // Assumes true initially to prevent flash
     broadcast: null,
     watchlist: [],
     setups: []
   }
 
+  // Only show onboarding if we have data AND it explicitly says false
   const showOnboarding = data && (data.profile?.protocol_established === false || data.profile?.protocol_established === null)
 
   const completeProtocol = async () => {
@@ -131,6 +132,7 @@ export default function DashboardClient() {
 
       <div className={`relative flex-1 bg-[#050505] overflow-hidden w-full h-full transition-all duration-1000 ${showOnboarding ? 'opacity-20 blur-sm pointer-events-none' : 'opacity-100 blur-none'}`}>
         
+        {/* General View */}
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'general' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-2 -z-10 pointer-events-none'}`}>
           <GeneralDashboard 
             userId={safeData.userId} 
@@ -141,6 +143,7 @@ export default function DashboardClient() {
           />
         </div>
 
+        {/* Personal View */}
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'personal' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-2 -z-10 pointer-events-none'}`}>
           <PersonalDashboard userId={safeData.userId} />
         </div>
