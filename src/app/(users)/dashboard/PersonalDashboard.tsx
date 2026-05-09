@@ -4,14 +4,17 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { createBrowserClient } from '@supabase/ssr'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
+import dynamic from 'next/dynamic'
+import type { ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { 
   Crosshair, CheckCircle2, Clock, 
   Target, Globe2, Activity, Lock, X, AlertTriangle, Type,
   ChevronLeft, ChevronRight, BookOpen, Maximize, Info
 } from 'lucide-react'
 
-// --- DUMMY DATA FOR DEMO TIER ---
+const TransformWrapper = dynamic(() => import('react-zoom-pan-pinch').then(mod => mod.TransformWrapper), { ssr: false })
+const TransformComponent = dynamic(() => import('react-zoom-pan-pinch').then(mod => mod.TransformComponent), { ssr: false })
+
 const DEMO_SETUPS = [
   {
     id: 'demo-1', symbol: 'BTCUSD', direction: 'LONG', playbook: 'Liquidity Sweep',
@@ -27,13 +30,6 @@ const DEMO_SETUPS = [
   }
 ];
 
-const DEMO_LOGS = [
-  {
-    id: 'log-1', symbol: 'GBPUSD', direction: 'SHORT', reason: '[Perfect Risk Management]',
-    execution_type: 'Perfect', outcome: 'TP', rr: 2.5
-  }
-];
-
 const fontStyles = [
   "font-mono font-black tracking-tighter text-zinc-100",   
   "font-sans font-extrabold tracking-tight text-white",    
@@ -44,7 +40,6 @@ const fontStyles = [
 type Widget = { id: string, x: number, y: number, w: number, h: number, fontIdx: number }
 const LAYOUT_STORAGE_KEY = 'operator_desk_playground_layout_v4'
 
-// 🚨 GLOBAL SUPABASE CLIENT
 const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -71,7 +66,6 @@ const sanitizeLayout = (data: any) => {
 export default function PersonalDashboard({ userId }: { userId?: string }) {
   const router = useRouter()
   
-  // 🚨 1. ALL USESTATE HOOKS FIRST
   const [isPro, setIsPro] = useState<boolean>(true); 
   const [user, setUser] = useState<any>(null)
   const [mounted, setMounted] = useState(false)
@@ -118,7 +112,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
 
-  // 🚨 2. ROBUST TIME ENGINE 
   const [timeOffset, setTimeOffset] = useState(0);
   const timeOffsetRef = useRef(0);
   
@@ -154,8 +147,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   
   const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
 
-
-  // 🚨 3. ALL USEEFFECTS
   useEffect(() => {
     const fetchTime = async () => {
       try {
@@ -242,16 +233,15 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
       setSessionInfo({
         name: sName,
-        localTime: trueUTC.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        localTime: trueUTC.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit' }),
         isOverlap
       })
-    }, 1000)
+    }, 30000)
     return () => clearInterval(timer)
   }, [])
 
   const loadDashboardData = useCallback(async (activeUser: any, isUserPro: boolean) => {
     
-    // 🚨 INJECT MOCK DATA FOR DEMO USERS
     if (!isUserPro) {
         const demoNow = Date.now();
         setSetups(DEMO_SETUPS.map(s => ({ ...s, addedToTodayAt: s.isToday ? demoNow - 100000 : null, createdAt: demoNow })));
@@ -386,36 +376,46 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   useEffect(() => {
     if (!user || !isPro) return;
 
+    let debounceTimer: NodeJS.Timeout;
+    
     const channel = supabase.channel('dashboard-sync')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'user_desk_setups', filter: `user_id=eq.${user.id}` },
-        () => loadDashboardData(user, true)
+        () => {
+          clearTimeout(debounceTimer)
+          debounceTimer = setTimeout(() => loadDashboardData(user, true), 1000)
+        }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'user_desk_logs', filter: `user_id=eq.${user.id}` },
-        () => loadDashboardData(user, true)
+        () => {
+          clearTimeout(debounceTimer)
+          debounceTimer = setTimeout(() => loadDashboardData(user, true), 1000)
+        }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      clearTimeout(debounceTimer);
     }
   }, [user, loadDashboardData, isPro]);
 
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
       const todayStr = getBaseDate().toDateString();
-      const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && getBaseDateString(s.addedToTodayAt) !== todayStr);
-      
-      if (hasStaleSetups) {
-        window.location.reload();
-      }
+      setSetups(prev => prev.map(s => {
+        if (s.isToday && s.addedToTodayAt && getBaseDateString(s.addedToTodayAt) !== todayStr) {
+          return { ...s, isToday: false }
+        }
+        return s;
+      }))
     }, 60000); 
     
     return () => clearInterval(checkMidnightWipe);
-  }, [setups, getBaseDate, getBaseDateString]);
+  }, [getBaseDate, getBaseDateString]);
 
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) {
@@ -485,7 +485,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   }, [todaySetups, activeTodayId, router, isMobileNotesOpen]);
 
 
-  // 🚨 4. EVENT HANDLERS
   const handlePeekStart = () => {
     if (chartScale !== 1) return; 
     peekTimer.current = setTimeout(() => setIsPeeking(true), 400);
@@ -620,7 +619,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   }
 
   const formatTime = (timeStr: string, fontIdx: number) => {
-    if (!timeStr) return '--:--:--'
+    if (!timeStr) return '--:--'
     const [timeStrOnly, period] = timeStr.split(' ')
     const parts = timeStrOnly?.split(':') || []
     
@@ -640,7 +639,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     )
   }
 
-
   return (
     <div className="flex h-full w-full bg-[#030303] text-zinc-300 font-sans overflow-y-auto lg:overflow-hidden">
       <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
@@ -651,7 +649,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
         ) : (
           <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
-            {/* --- TOP SECTION --- */}
             <div className="flex flex-col lg:flex-row h-full lg:h-1/2 shrink-0 p-3 sm:p-4 gap-4 min-h-0 overflow-y-auto lg:overflow-hidden relative">
               
               {!isPro && (
@@ -660,7 +657,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                 </div>
               )}
 
-              {/* --- WIDGET GRID --- */}
               <div 
                 ref={gridRef}
                 onDragOver={(e) => e.preventDefault()}
@@ -671,7 +667,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                   <div key={`slot-${i}`} className="w-full h-full rounded border border-dashed border-zinc-800/10 pointer-events-none" />
                 ))}
 
-                {/* Local Time Widget */}
                 <div 
                   draggable={isPro} 
                   onDragStart={(e) => handleDragStart(e, 'local')}
@@ -705,8 +700,8 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                   
                   <div className="flex-1 w-full flex justify-center items-center px-4 pb-2 min-h-0 overflow-hidden relative z-0 pointer-events-none" style={{ containerType: 'size' }}>
                     {mounted && time 
-                      ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }), widgets.local.fontIdx) 
-                      : formatTime('--:--:--', widgets.local.fontIdx)}
+                      ? formatTime(time.toLocaleTimeString('en-US', { hour12: true, hour: '2-digit', minute: '2-digit' }), widgets.local.fontIdx) 
+                      : formatTime('--:--', widgets.local.fontIdx)}
                   </div>
 
                   {isPro && (
@@ -721,7 +716,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                   )}
                 </div>
 
-                {/* Session Widget */}
                 <div 
                   draggable={isPro} 
                   onDragStart={(e) => handleDragStart(e, 'session')}
@@ -777,10 +771,8 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
               </div>
 
-              {/* --- ROUTINE TRACKER --- */}
               <div className="order-1 lg:order-2 w-full lg:w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0 relative">
                     
-                {/* Quick Nav Hints */}
                 <div className="absolute top-3 right-3 flex gap-2 z-10">
                   <Link href="/desk" className="flex flex-col items-center p-1.5 rounded-lg bg-zinc-950 border border-zinc-800/50 text-zinc-500 hover:text-emerald-400 hover:border-emerald-500/30 transition-all shadow-sm" title="Go to Desk [D]">
                     <span className="text-[8px] font-mono tracking-widest leading-none mb-0.5">[D]</span>
@@ -800,10 +792,8 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
                 <div className="flex flex-col overflow-y-visible lg:overflow-y-auto custom-scrollbar flex-1 pr-2 pl-1 relative">
                       
-                  {/* Vertical Connecting Line */}
                   <div className="absolute left-[13px] top-2 bottom-6 w-px bg-zinc-800/60 z-0" />
 
-                  {/* Phase 1: Macro Prep */}
                   <div className={`flex items-start gap-4 relative z-10 mb-6 ${isVaultLocked && isPro ? 'opacity-60' : ''}`}>
                     <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${vaultSetupCount > 0 ? 'border-emerald-500 text-emerald-400' : isVaultLocked ? 'border-red-500/50 text-red-500/50' : 'border-zinc-700 text-transparent'}`}>
                       {vaultSetupCount > 0 ? <CheckCircle2 size={12} /> : isVaultLocked && isPro ? <Lock size={10} /> : null}
@@ -816,7 +806,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                     </div>
                   </div>
 
-                  {/* Phase 2: Today Filtering */}
                   <div className="flex items-start gap-4 relative z-10 mb-6">
                     <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${
                       pushesToday > 0 && pushesToday <= 5 ? 'border-emerald-500 text-emerald-400' : 
@@ -839,7 +828,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                     </div>
                   </div>
 
-                  {/* Phase 3 & 4: Discipline Chain & Hard Stop */}
                   <div className="flex items-start gap-4 relative z-10 mb-6">
                     <div className="flex flex-col items-center mt-0.5 shrink-0 bg-[#0a0a0a] py-1">
                       {pastDays.map((day, i) => (
@@ -876,7 +864,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                     </div>
                   </div>
 
-                  {/* Phase 5: Weekend Windup */}
                   <div className={`flex items-start gap-4 relative z-10 ${!isWeekendNow ? 'opacity-40 grayscale' : ''}`}>
                     <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${
                       isWeekendNow && pendingReconciliationsCount === 0 && tradesTakenToday > 0 ? 'border-emerald-500 text-emerald-400' : 'border-zinc-700 text-transparent'
@@ -895,7 +882,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
               </div>
             </div>
 
-            {/* --- BOTTOM SECTION: ACTIVE FOCUS --- */}
             <div className={`hidden lg:flex shrink-0 flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0 transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'w-full h-1/2' : 'w-48 xl:w-56 border-r border-zinc-800/60 h-1/2'}`}>
                   
               <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#050505]">
@@ -1039,7 +1025,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
         )}
       </div>
 
-      {/* 🚨 Mobile Notes Overlay */}
       {isMobileNotesOpen && activeSetup && (
         <div className="lg:hidden fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200" onClick={() => setIsMobileNotesOpen(false)}>
           <div className="w-full h-[50vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300" onClick={e => e.stopPropagation()}>
@@ -1054,7 +1039,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
         </div>
       )}
 
-      {/* 🚨 Full Screen Chart Overlays */}
       {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
         <div 
           className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`}
