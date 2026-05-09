@@ -6,7 +6,6 @@ import { ShieldCheck, Target, Crosshair, Loader2 } from 'lucide-react'
 import GeneralDashboard from './GeneralDashboard'
 import dynamic from 'next/dynamic'
 
-// 🚨 OPTIMIZATION: Lazy load the heavy Personal Dashboard
 const PersonalDashboard = dynamic(
   () => import('./PersonalDashboard'),
   {
@@ -24,6 +23,7 @@ export default function DashboardClient(props: any) {
   const { userId, needsOnboarding } = props
 
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
+  
   const [showOnboarding, setShowOnboarding] = useState(needsOnboarding)
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
@@ -31,7 +31,9 @@ export default function DashboardClient(props: any) {
     const handleSwitch = (e: any) => {
       setActiveView(e.detail)
     }
+
     window.addEventListener('dashboard-view-change', handleSwitch)
+
     return () => {
       window.removeEventListener('dashboard-view-change', handleSwitch)
     }
@@ -48,6 +50,7 @@ export default function DashboardClient(props: any) {
 
   return (
     <div className="relative flex flex-col h-[calc(100dvh-56px)] md:h-[calc(100dvh-64px)] bg-[#050505] overflow-hidden w-full">
+      
       {showOnboarding && (
         <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
           <div className="w-full max-w-lg bg-[#0a0a0f] border border-zinc-800 rounded-3xl p-10 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
