@@ -55,15 +55,19 @@ const sanitizeLayout = (data: any) => {
   return {
     local: { 
       id: 'local', 
-      x: Number(data.local.x) || 0, y: Number(data.local.y) || 0, 
-      w: Number(data.local.w) || 3, h: Number(data.local.h) || 3, 
-      fontIdx: Number(data.local.fontIdx) || 0 
+      x: data.local.x ?? 0, 
+      y: data.local.y ?? 0, 
+      w: data.local.w ?? 3, 
+      h: data.local.h ?? 3, 
+      fontIdx: data.local.fontIdx ?? 0 
     },
     session: { 
       id: 'session', 
-      x: Number(data.session.x) || 0, y: Number(data.session.y) || 3, 
-      w: Number(data.session.w) || 3, h: Number(data.session.h) || 3, 
-      fontIdx: Number(data.session.fontIdx) || 0 
+      x: data.session.x ?? 0, 
+      y: data.session.y ?? 3, 
+      w: data.session.w ?? 3, 
+      h: data.session.h ?? 3, 
+      fontIdx: data.session.fontIdx ?? 0 
     }
   }
 }
