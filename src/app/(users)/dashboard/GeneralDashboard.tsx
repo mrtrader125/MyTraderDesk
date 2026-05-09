@@ -67,6 +67,19 @@ export default function GeneralDashboard({
   const [showThisWeek, setShowThisWeek] = useState(false)
   const [showOlder, setShowOlder] = useState(false)
 
+  // 🚨 THE FIX: Sync the real data into local state the millisecond the parent gets it from Supabase
+  useEffect(() => {
+    setUserPlan(initialPlan || 'free')
+    
+    // Only override setups if the user is Pro. Demo users use the mock data below.
+    if (initialPlan === 'pro' || initialPlan === 'premium') {
+      setSetups(initialSetups || [])
+    }
+    
+    setWatchlist(initialWatchlist || [])
+    setActiveBroadcast(initialBroadcast)
+  }, [initialPlan, initialSetups, initialWatchlist, initialBroadcast])
+
   const isProUser = userPlan === 'pro' || userPlan === 'premium';
 
   const FILTERS = useMemo(() => {
