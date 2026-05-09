@@ -3,10 +3,16 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import useSWR from 'swr'
+import { createBrowserClient } from '@supabase/ssr'
 import { Bookmark, Lock, Clock, TrendingUp, TrendingDown, Minus, Trash2, FolderOpen, Edit3, X, FileText } from 'lucide-react'
 import { getSetupAccess } from '@/lib/access'
 import { ASSET_CATEGORIES, PLAN_CONFIG } from '@/lib/platformConfig'
+
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
 const CATEGORIES = [
   { id: 'ALL', label: 'All', req: 'free' },
@@ -17,47 +23,132 @@ const CATEGORIES = [
   })
 ]
 
-export default function VaultClient({ initialItems, initialPlan, userId }: any) {
+// 🚨 SWR FETCHER: Grabs the Vault data securely on the client
+export const fetchVaultData = async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return null
+
+  const userId = session.user.id
+  const [
+    { data: profile },
+    { data: vaultData }
+  ] = await Promise.all([
+    supabase.from('profiles').select('plan').eq('id', userId).single(),
+    supabase.from('user_vault')
+      .select(`id, note, created_at, analysis_id, analyses (*)`)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+  ])
+
+  let formattedItems: any[] = []
+  if (vaultData) {
+    formattedItems = vaultData.map((item: any) => ({
+      ...item.analyses, 
+      vault_id: item.id, 
+      saved_note: item.note, 
+      saved_at: item.created_at
+    }))
+  }
+
+  return {
+    userId,
+    profile,
+    vaultItems: formattedItems
+  }
+}
+
+export default function VaultClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
   
   const [isProUser, setIsProUser] = useState<boolean>(true)
   const [vaultItems, setVaultItems] = useState<any[]>([])
-  const [userPlan] = useState<string>(initialPlan || 'free')
+  const [userPlan, setUserPlan] = useState<string>('free')
   
   const [activeTab, setActiveTab] = useState('ALL')
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null)
   const [tempNote, setTempNote] = useState('')
-  const [mounted, setMounted] = useState(false)
+
+  // 🚀 SWR MAGIC: Fetches data instantly.
+  // dedupingInterval: 500 means it always fetches fresh data when you navigate from the dashboard.
+  const { data, mutate, isLoading } = useSWR('vault_data', fetchVaultData, {
+    revalidateOnFocus: true,
+    dedupingInterval: 500 
+  })
 
   useEffect(() => {
-    setMounted(true)
     const handleSearch = (e: any) => setSearchQuery(e.detail?.toLowerCase() || '')
     window.addEventListener('globalSearch', handleSearch)
     return () => window.removeEventListener('globalSearch', handleSearch)
   }, [])
 
-  // 🚨 TIER CHECK & DATA INITIALIZATION
+  // 🚨 SYNC SWR DATA TO LOCAL STATE FOR OPTIMISTIC UI
   useEffect(() => {
-    const isPro = initialPlan === 'pro' || initialPlan === 'premium';
-    setIsProUser(isPro);
-
-    if (isPro) {
-      setVaultItems(initialItems || []);
-    } else {
-      // Demo users get an empty vault to start, but if they navigated here 
-      // directly from clicking a mock bookmark, we simulate an empty state 
-      // instead of pulling real data.
-      setVaultItems([]);
+    if (data) {
+      const isPro = data.profile?.plan === 'pro' || data.profile?.plan === 'premium';
+      setIsProUser(isPro);
+      setUserPlan(data.profile?.plan?.toLowerCase() || 'free');
+      
+      if (isPro) {
+        setVaultItems(data.vaultItems || []);
+      } else {
+        setVaultItems([]);
+      }
     }
-  }, [initialItems, initialPlan])
+  }, [data])
 
+  // 🚨 NEUTRAL SKELETON: Renders instantly to prevent lag/flashing
+  if (isLoading || !data) {
+    return (
+      <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden relative">
+        <div className="flex flex-col items-center mb-10 mt-1">
+          <div className="h-[38px] w-full max-w-lg bg-[#0a0a0a] border border-neutral-800 rounded-xl animate-pulse"></div>
+        </div>
+        <div className="max-w-[100rem] mx-auto space-y-10">
+          <section>
+            <div className="flex items-center mb-4">
+               <div className="h-2 w-16 bg-neutral-800 rounded animate-pulse"></div>
+               <div className="ml-4 h-px flex-1 bg-neutral-800"></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col min-h-[180px] animate-pulse">
+                  <div className="h-28 w-full bg-neutral-900 border-b border-neutral-800/50 shrink-0"></div>
+                  <div className="p-4 pr-5 flex flex-col flex-1 justify-between relative">
+                    <div className="absolute top-0 right-0 inset-y-0 w-1 bg-neutral-800" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-1/2 bg-neutral-800 rounded"></div>
+                      <div className="h-2 w-3/4 bg-neutral-900 rounded mt-2"></div>
+                      <div className="h-2 w-1/2 bg-neutral-900 rounded"></div>
+                    </div>
+                    <div className="flex justify-between items-center pt-3 border-t border-neutral-800/80 mt-3">
+                      <div className="h-2 w-16 bg-neutral-900 rounded"></div>
+                      <div className="h-2 w-10 bg-neutral-900 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    )
+  }
+
+  // 🚨 OPTIMISTIC UI DELETION
   const removeFromVault = async (e: React.MouseEvent, vaultIdToRemove: string) => {
     e.preventDefault() 
     e.stopPropagation()
+    
+    // 1. Instantly remove from screen
     setVaultItems(prev => prev.filter(item => item.vault_id !== vaultIdToRemove))
-    if (userId && isProUser) await supabase.from('user_vault').delete().eq('id', vaultIdToRemove)
+    
+    // 2. Sync to DB & update SWR cache in background
+    if (data.userId && isProUser) {
+      await supabase.from('user_vault').delete().eq('id', vaultIdToRemove)
+      mutate() 
+    }
   }
 
   const handleOpenNote = (e: React.MouseEvent, vaultId: string, currentNote: string) => {
@@ -68,13 +159,17 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
     setEditingNoteId(vaultId)
   }
 
+  // 🚨 OPTIMISTIC UI NOTES SAVE
   const handleSaveNote = async () => {
-    if (!editingNoteId || !userId || !isProUser) return
-    const { error } = await supabase.from('user_vault').update({ note: tempNote }).eq('id', editingNoteId)
-    if (!error) {
-      setVaultItems(prev => prev.map(item => item.vault_id === editingNoteId ? { ...item, saved_note: tempNote } : item))
-    }
+    if (!editingNoteId || !data.userId || !isProUser) return
+    
+    // 1. Instantly update UI
+    setVaultItems(prev => prev.map(item => item.vault_id === editingNoteId ? { ...item, saved_note: tempNote } : item))
     setEditingNoteId(null)
+
+    // 2. Sync to DB
+    await supabase.from('user_vault').update({ note: tempNote }).eq('id', editingNoteId)
+    mutate()
   }
 
   const filteredItems = vaultItems.filter(item => {
@@ -98,7 +193,6 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
   })
 
   const VaultCard = ({ setup }: { setup: any }) => {
-    // Inject pseudo-locking for demo users
     const { hasAccess, requiredTier } = isProUser ? getSetupAccess(setup, userPlan) : { hasAccess: false, requiredTier: 'pro' };
     const isBull = setup.bias?.toUpperCase() === 'BULLISH'
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
@@ -119,7 +213,6 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
         }}
       >
         <div className="h-28 w-full bg-black relative overflow-hidden border-b border-neutral-800/50 shrink-0">
-          
           <img 
             src={setup.image_url} 
             alt="Setup" 
@@ -175,8 +268,6 @@ export default function VaultClient({ initialItems, initialPlan, userId }: any) 
       </Link>
     )
   }
-
-  if (!mounted) return <div className="w-full min-h-screen bg-[#050505]"></div>
 
   return (
     <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden relative">
