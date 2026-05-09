@@ -4,69 +4,99 @@ import { createServerClient } from '@supabase/ssr'
 
 import SideNav from '@/components/dashboard/SideNav'
 import TopNav from '@/components/dashboard/TopNav'
-// Import the new Client Boundary wrappers
-import { GlobalWidgets, TopNavWidgets } from '@/components/dashboard/ClientWidgets'
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies()
+import AssistantWidget from '@/components/dashboard/AssistantWidget'
+import PresenceHeartbeat from '@/components/dashboard/PresenceHeartbeat'
+import LiveClockWidgets from '@/components/dashboard/LiveClockWidgets'
+import BootSequence from '@/components/dashboard/BootSequence'
+import NotificationBell from '@/components/dashboard/NotificationBell'
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          try { cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options)) } 
-          catch (error) {}
-        },
-      },
-    }
-  )
+export default async function DashboardLayout({
+children,
+}: {
+children: React.ReactNode
+}) {
+const cookieStore = await cookies()
 
-  const { data: { user } } = await supabase.auth.getUser()
+const supabase = createServerClient(
+process.env.NEXT_PUBLIC_SUPABASE_URL!,
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+{
+cookies: {
+getAll() {
+return cookieStore.getAll()
+},
+setAll(cookiesToSet) {
+try {
+cookiesToSet.forEach(({ name, value, options }) =>
+cookieStore.set(name, value, options)
+)
+} catch (error) {}
+},
+},
+}
+)
 
-  if (!user) {
-    redirect('/login?error=Unauthorized')
-  }
+const {
+data: { user },
+} = await supabase.auth.getUser()
 
-  const userPlan = user.user_metadata?.plan?.toLowerCase() || 'free'
+if (!user) {
+redirect('/login?error=Unauthorized')
+}
 
-  // Pass minimal user down to prevent child components from making DB calls
-  const minimalUser = {
-    id: user.id,
-    email: user.email,
-    plan: userPlan,
-    metadata: user.user_metadata
-  }
+const userPlan = user.user_metadata?.plan?.toLowerCase() || 'free'
 
-  return (
-    <div data-theme={userPlan} className="bg-[#050505] text-white font-sans min-h-screen relative selection:bg-blue-500/30">
-      
-      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <div className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] blur-[120px] rounded-full transition-colors duration-1000 ${userPlan === 'pro' ? 'bg-blue-600/5' : 'bg-neutral-500/5'}`} />
-        <div className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] blur-[120px] rounded-full transition-colors duration-1000 ${userPlan === 'pro' ? 'bg-blue-600/5' : 'bg-neutral-500/5'}`} />
-      </div>
+const minimalUser = {
+id: user.id,
+email: user.email,
+plan: userPlan,
+metadata: user.user_metadata,
+}
 
-      <div className="flex h-screen w-full relative z-10">
-        
-        <SideNav user={minimalUser} />
+return ( <div
+   data-theme={userPlan}
+   className="bg-[#050505] text-white font-sans min-h-screen relative selection:bg-blue-500/30"
+ > <BootSequence />
 
-        <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent">
-          
-          <TopNav user={minimalUser}>
-             {/* Nav widgets lazy loaded safely via client boundary */}
-             <TopNavWidgets />
-          </TopNav>
-          
-          <main className="flex-1 overflow-y-auto scrollbar-hide">
-            {children}
-          </main>
-        </div>
-      </div>
+```
+  <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div
+      className={`absolute top-[-10%] left-[-10%] w-[50%] h-[50%] blur-[120px] rounded-full transition-colors duration-1000 ${
+        userPlan === 'pro'
+          ? 'bg-blue-600/5'
+          : 'bg-neutral-500/5'
+      }`}
+    />
 
-      {/* Heavy logic workers pushed to the end of the tree via client boundary */}
-      <GlobalWidgets userId={minimalUser.id} />
+    <div
+      className={`absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] blur-[120px] rounded-full transition-colors duration-1000 ${
+        userPlan === 'pro'
+          ? 'bg-blue-600/5'
+          : 'bg-neutral-500/5'
+      }`}
+    />
+  </div>
+
+  <div className="flex h-screen w-full relative z-10">
+    <SideNav user={minimalUser} />
+
+    <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent">
+      <TopNav user={minimalUser}>
+        <LiveClockWidgets />
+        <NotificationBell />
+      </TopNav>
+
+      <main className="flex-1 overflow-y-auto scrollbar-hide">
+        {children}
+      </main>
     </div>
-  )
+  </div>
+
+  <AssistantWidget />
+  <PresenceHeartbeat userId={minimalUser.id} />
+</div>
+```
+
+)
 }
