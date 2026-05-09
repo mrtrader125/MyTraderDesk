@@ -1,44 +1,17 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Activity, Zap, Globe, TrendingUp, TrendingDown, Minus, BellRing, Bookmark, ChevronRight, ChevronDown, ChevronUp, Filter, CheckSquare, Square, X, Target, Search, Plus, Layers, Tag } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { ASSET_CATEGORIES, PLAN_CONFIG } from '@/lib/platformConfig'
-import Image from 'next/image'
 
-// --- HISTORICAL DUMMY DATA FOR DEMO TIER ---
 const DEMO_SETUPS = [
-  {
-    id: 'demo-old-1', asset_symbol: 'BTCUSD', direction: 'LONG', category: 'Crypto', timeframe: '4H', bias: 'BULLISH',
-    status: 'ACTIVE', notes: '<p><b>Historical Play:</b> Bullish market structure. Price swept Asian session lows perfectly.</p>',
-    image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
-    created_at: new Date(Date.now() - 43200000).toISOString() // 12 hours ago
-  },
-  {
-    id: 'demo-old-2', asset_symbol: 'EURUSD', direction: 'SHORT', category: 'Forex', timeframe: '15M', bias: 'BEARISH',
-    status: 'WAITING', notes: '<p><b>Archive:</b> Standard premium supply mitigation. DXY was showing extreme strength during this session.</p>',
-    image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
-    created_at: new Date(Date.now() - 172800000).toISOString() // 2 days ago
-  },
-  {
-    id: 'demo-old-3', asset_symbol: 'XAUUSD', direction: 'LONG', category: 'Commodities', timeframe: '1D', bias: 'BULLISH',
-    status: 'WAITING', notes: '<p><b>Archive:</b> Gold ranging between 2300 and 2350. Heavy accumulation phase.</p>',
-    image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
-    created_at: new Date(Date.now() - 432000000).toISOString() // 5 days ago
-  },
-  {
-    id: 'demo-old-4', asset_symbol: 'GBPUSD', direction: 'SHORT', category: 'Forex', timeframe: '1H', bias: 'BEARISH',
-    status: 'ACTIVE', notes: '<p><b>Archive:</b> London session distribution. Clean break of structure to the downside.</p>',
-    image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
-    created_at: new Date(Date.now() - 864000000).toISOString() // 10 days ago (Older)
-  },
-  {
-    id: 'demo-old-5', asset_symbol: 'NAS100', direction: 'LONG', category: 'Indices', timeframe: '15M', bias: 'BULLISH',
-    status: 'WAITING', notes: '<p><b>Archive:</b> Tech sector earnings catalyst. Waiting for the NY open volatility to settle before entry.</p>',
-    image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
-    created_at: new Date(Date.now() - 1296000000).toISOString() // 15 days ago (Older)
-  }
+  { id: 'demo-old-1', asset_symbol: 'BTCUSD', direction: 'LONG', category: 'Crypto', timeframe: '4H', bias: 'BULLISH', status: 'ACTIVE', created_at: new Date(Date.now() - 43200000).toISOString() },
+  { id: 'demo-old-2', asset_symbol: 'EURUSD', direction: 'SHORT', category: 'Forex', timeframe: '15M', bias: 'BEARISH', status: 'WAITING', created_at: new Date(Date.now() - 172800000).toISOString() },
+  { id: 'demo-old-3', asset_symbol: 'XAUUSD', direction: 'LONG', category: 'Commodities', timeframe: '1D', bias: 'BULLISH', status: 'WAITING', created_at: new Date(Date.now() - 432000000).toISOString() },
+  { id: 'demo-old-4', asset_symbol: 'GBPUSD', direction: 'SHORT', category: 'Forex', timeframe: '1H', bias: 'BEARISH', status: 'ACTIVE', created_at: new Date(Date.now() - 864000000).toISOString() },
+  { id: 'demo-old-5', asset_symbol: 'NAS100', direction: 'LONG', category: 'Indices', timeframe: '15M', bias: 'BULLISH', status: 'WAITING', created_at: new Date(Date.now() - 1296000000).toISOString() }
 ];
 
 export default function GeneralDashboard({ 
@@ -51,7 +24,6 @@ export default function GeneralDashboard({
   const router = useRouter()
   const searchParams = useSearchParams() 
   const [searchQuery, setSearchQuery] = useState(searchParams.get('search')?.toLowerCase() || '')
-  const [mounted, setMounted] = useState(false)
   const [activeFilter, setActiveFilter] = useState('All')
   
   const [userPlan, setUserPlan] = useState(initialPlan || 'free') 
@@ -87,13 +59,8 @@ export default function GeneralDashboard({
   }, [])
 
   useEffect(() => {
-    setMounted(true)
-    
-    // 🚨 IF DEMO TIER: Load Historical Sandbox Data
     if (!isProUser) {
        setSetups(DEMO_SETUPS);
-       
-       // Load local preferences for demo users so the UI still works
        const localFilters = localStorage.getItem('mtd_demo_filters')
        if (localFilters) {
          try {
@@ -105,7 +72,6 @@ export default function GeneralDashboard({
        return;
     }
 
-    // 🚨 IF PRO TIER: Load Real Database Preferences
     if (userId && isProUser) {
       const localFilters = localStorage.getItem(`mtd_filters_${userId}`)
       if (localFilters) {
@@ -125,7 +91,6 @@ export default function GeneralDashboard({
   const groupedSetups = useMemo(() => {
     const hasPermanentFilters = savedCategories.length > 0 || savedSymbols.length > 0
 
-    // Step 1: Base filtering (Status, Tabs, Search)
     const baseFiltered = setups.filter(setup => {
       const status = (setup.status || '').toUpperCase()
       
@@ -144,7 +109,6 @@ export default function GeneralDashboard({
       return passesPermanent && passesTab && passesSearch
     })
 
-    // Step 2: Group by Asset Symbol to enforce "One Setup Per Asset"
     const assetGroups: Record<string, any[]> = {}
     baseFiltered.forEach(setup => {
       const sym = setup.asset_symbol
@@ -156,7 +120,6 @@ export default function GeneralDashboard({
     const intradayTfs = ['5M', '15M', '30M', '1H', '2H', '3H', '4H']
     const dailyTfs = ['1D', 'D', 'DAILY']
 
-    // Step 3: Apply Timeframe logic & pick the absolute latest
     Object.values(assetGroups).forEach(group => {
       group.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
@@ -172,10 +135,8 @@ export default function GeneralDashboard({
       }
     })
 
-    // Step 4: Sort all final setups by latest first overall
     finalSetups.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-    // Step 5: Distribute into date buckets
     const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0);
     const yesterdayDate = new Date(todayDate); yesterdayDate.setDate(yesterdayDate.getDate() - 1);
     const weekDate = new Date(todayDate); weekDate.setDate(todayDate.getDate() - 7);
@@ -197,7 +158,6 @@ export default function GeneralDashboard({
     setSavedCategories(cats)
     setSavedSymbols(syms)
     
-    // Allow local saves for demo users so the UI works realistically
     if (!isProUser) {
        localStorage.setItem('mtd_demo_filters', JSON.stringify({ categories: cats, symbols: syms }))
     } else if (userId) {
@@ -215,7 +175,7 @@ export default function GeneralDashboard({
     setSymbolInput('')
   }
 
-  const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
+  const toggleBookmark = (e: React.MouseEvent, setup: any) => {
     e.stopPropagation() 
     if (!setup) return;
 
@@ -225,11 +185,11 @@ export default function GeneralDashboard({
     if (exists) {
       updated = updated.filter(item => item.id !== setup.id)
       setWatchlist(updated)
-      if (isProUser && userId) await supabase.from('user_vault').delete().match({ user_id: userId, analysis_id: setup.id })
+      if (isProUser && userId) supabase.from('user_vault').delete().match({ user_id: userId, analysis_id: setup.id }).then()
     } else {
       updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe, status: setup.status }) 
       setWatchlist(updated)
-      if (isProUser && userId) await supabase.from('user_vault').insert([{ user_id: userId, analysis_id: setup.id }])
+      if (isProUser && userId) supabase.from('user_vault').insert([{ user_id: userId, analysis_id: setup.id }]).then()
     }
   }
 
@@ -287,7 +247,7 @@ export default function GeneralDashboard({
                 <div 
                   key={setup.id} 
                   title={`Status: ${status}`}
-                  onClick={async () => {
+                  onClick={() => {
                     if (isProUser && userId) supabase.from('activity_logs').insert([{ user_id: userId, action: 'FEED_CLICK', asset_symbol: setup.asset_symbol, timeframe: setup.timeframe }]).then()
                     router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=dashboard`)
                   }}
@@ -320,8 +280,6 @@ export default function GeneralDashboard({
     )
   }
 
-  if (!mounted) return <div className="w-full min-h-screen bg-[#050505]"></div>
-
   const totalFiltered = groupedSetups.today.length + groupedSetups.yesterday.length + groupedSetups.thisWeek.length + groupedSetups.older.length
   const noFiltersApplied = savedCategories.length === 0 && savedSymbols.length === 0
 
@@ -329,7 +287,6 @@ export default function GeneralDashboard({
     <div className="w-full bg-[#050505] text-white p-3 md:p-6 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start h-full min-h-0 max-w-[1800px] mx-auto w-full">
         
-        {/* --- LEFT COLUMN: MAIN CONTENT --- */}
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col h-full min-h-0 space-y-3 md:space-y-4">
           
           <div className="shrink-0 grid grid-cols-2 md:grid-cols-12 gap-3">
@@ -359,7 +316,7 @@ export default function GeneralDashboard({
             {FILTERS.map(f => (
               <button 
                 key={f.name}
-                onClick={async () => {
+                onClick={() => {
                   setActiveFilter(f.name)
                   if (userId && isProUser) supabase.from('activity_logs').insert([{ user_id: userId, action: 'FILTER_CLICK', search_query: f.name }]).then()
                 }}
@@ -409,7 +366,6 @@ export default function GeneralDashboard({
           </div>
         </div>
 
-        {/* --- RIGHT COLUMN: DESKTOP WIDGETS --- */}
         <div className="hidden lg:flex lg:col-span-4 xl:col-span-3 flex-col h-full min-h-0 overflow-y-auto custom-scrollbar space-y-5 pb-6">
           <MobileWidgets activeBroadcast={activeBroadcast} watchlist={watchlist} router={router} />
         </div>
@@ -522,7 +478,7 @@ export default function GeneralDashboard({
   )
 }
 
-function MobileWidgets({ activeBroadcast, watchlist, router }: any) {
+const MobileWidgets = React.memo(function MobileWidgets({ activeBroadcast, watchlist, router }: any) {
   return (
     <>
       <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shadow-sm">
@@ -594,4 +550,4 @@ function MobileWidgets({ activeBroadcast, watchlist, router }: any) {
       </div>
     </>
   )
-}
+})
