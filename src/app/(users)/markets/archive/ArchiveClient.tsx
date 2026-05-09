@@ -1,34 +1,31 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import useSWR from 'swr'
+import { createBrowserClient } from '@supabase/ssr'
 import { ArrowLeft, Lock, Clock, Shield, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react'
 import { PLAN_CONFIG, getAssetCategory } from '@/lib/platformConfig'
 
-// 🚨 INLINED ACCESS LOGIC
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+
 const getSetupAccess = (setup: any, userPlan: string) => {
   if (!setup) return { hasAccess: false, requiredTier: 'pro' };
   if (userPlan === 'pro' || userPlan === 'premium') return { hasAccess: true, requiredTier: 'free' };
-
   const category = getAssetCategory(setup.asset_symbol);
   const isAllowedCategory = PLAN_CONFIG.free.allowedCategories.includes(category);
-
   if (!isAllowedCategory) return { hasAccess: false, requiredTier: 'pro' };
   if (setup.tier_access === 'free') return { hasAccess: true, requiredTier: 'free' };
-
   const postTime = new Date(setup.created_at).getTime();
-  const currentTime = new Date().getTime();
-  const hoursSincePosted = (currentTime - postTime) / (1000 * 60 * 60);
-
-  if (hoursSincePosted >= PLAN_CONFIG.free.delayHours) {
-    return { hasAccess: true, requiredTier: 'free' };
-  } else {
-    return { hasAccess: false, requiredTier: 'pro' };
-  }
+  const hoursSincePosted = (new Date().getTime() - postTime) / (1000 * 60 * 60);
+  if (hoursSincePosted >= PLAN_CONFIG.free.delayHours) return { hasAccess: true, requiredTier: 'free' };
+  return { hasAccess: false, requiredTier: 'pro' };
 }
 
-// --- SORTING WEIGHT LOGIC ---
 const getTfWeight = (tf: string) => {
   const cleanTf = (tf || '').trim().toLowerCase();
   if (cleanTf === '1m' || cleanTf === '1min') return 1;
@@ -55,7 +52,6 @@ const getStatusWeight = (status: string) => {
   return 99;
 }
 
-// --- DUMMY DATA GENERATOR FOR DEMO TIER ---
 const generateDemoHistory = (assetSymbol: string) => {
   const now = Date.now();
   return [
@@ -68,40 +64,59 @@ const generateDemoHistory = (assetSymbol: string) => {
       id: `demo-hist-2`, asset_symbol: assetSymbol, timeframe: '15M', bias: 'BEARISH', status: 'DONE',
       image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
       created_at: new Date(now - 86400000).toISOString(), tier_access: 'pro', is_prime: false
-    },
-    {
-      id: `demo-hist-3`, asset_symbol: assetSymbol, timeframe: '1D', bias: 'BULLISH', status: 'ARCHIVED',
-      image_url: 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80',
-      created_at: new Date(now - 432000000).toISOString(), tier_access: 'free', is_prime: false
-    },
-    {
-      id: `demo-hist-4`, asset_symbol: assetSymbol, timeframe: '1H', bias: 'BEARISH', status: 'CANCELED',
-      image_url: 'https://images.unsplash.com/photo-1642543492481-44e81e3914a7?auto=format&fit=crop&w=1200&q=80',
-      created_at: new Date(now - 864000000).toISOString(), tier_access: 'pro', is_prime: true
     }
   ];
 };
 
-export default function ArchiveClient({ asset, initialHistory, userPlan, userId }: { asset: string, initialHistory: any[], userPlan: string, userId?: string }) {
+// 🚀 SWR FETCHER
+const fetchArchiveData = async ([key, asset]: string[]) => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return null
+
+  const [ { data: profile }, { data: history } ] = await Promise.all([
+    supabase.from('profiles').select('plan').eq('id', session.user.id).single(),
+    supabase.from('analyses').select('*').eq('asset_symbol', asset).order('created_at', { ascending: false })
+  ])
+
+  const isPro = profile?.plan === 'pro' || profile?.plan === 'premium';
+  const safeHistory = history?.map((setup: any) => {
+    if (isPro) return setup
+    return { ...setup, notes: null, content: null }
+  }) || []
+
+  return { plan: profile?.plan?.toLowerCase() || 'demo', history: safeHistory, userId: session.user.id }
+}
+
+export default function ArchiveClient() {
   const router = useRouter()
-  const [history, setHistory] = useState<any[]>([])
-  const [isProUser, setIsProUser] = useState<boolean>(true)
+  const searchParams = useSearchParams()
+  const asset = searchParams.get('asset')
 
   useEffect(() => {
-    const isPro = userPlan === 'pro' || userPlan === 'premium';
-    setIsProUser(isPro);
+    if (!asset) router.push('/markets')
+  }, [asset, router])
 
-    if (!isPro) {
-      setHistory(generateDemoHistory(asset));
-    } else {
-      setHistory(initialHistory);
-    }
-  }, [userPlan, initialHistory, asset]);
+  // 🚀 SWR CACHE
+  const { data, isLoading } = useSWR(asset ? ['archive_data', asset] : null, fetchArchiveData, { dedupingInterval: 60000 })
+
+  if (isLoading || !data) {
+    return (
+      <div className="w-full bg-[#050505] p-6 lg:p-8 flex flex-col h-[calc(100dvh-65px)]">
+        <div className="h-10 bg-[#0a0a0a] rounded-xl border border-neutral-800 animate-pulse mb-8"></div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl min-h-[180px] animate-pulse"></div>
+            ))}
+        </div>
+      </div>
+    )
+  }
+
+  const isProUser = data.plan === 'pro' || data.plan === 'premium'
+  const history = isProUser ? data.history : generateDemoHistory(asset!)
   
-  // --- GROUPING & SORTING LOGIC ---
   const todayDate = new Date(); todayDate.setHours(0, 0, 0, 0)
   const yesterdayDate = new Date(todayDate); yesterdayDate.setDate(yesterdayDate.getDate() - 1)
-
   const grouped = { today: [] as any[], yesterday: [] as any[], older: [] as any[] }
 
   history.forEach(setup => {
@@ -120,11 +135,9 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     const statusA = getStatusWeight(a.status);
     const statusB = getStatusWeight(b.status);
     if (statusA !== statusB) return statusA - statusB;
-
     const tfA = getTfWeight(a.timeframe);
     const tfB = getTfWeight(b.timeframe);
     if (tfA !== tfB) return tfA - tfB;
-
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   };
 
@@ -136,15 +149,11 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     const dateObj = new Date(setup.created_at)
     const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
     const formattedTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-    const displayText = setup.title || setup.content || `${asset} Setup`
-    
     const isBull = setup.bias?.toUpperCase() === 'BULLISH'
     const isBear = setup.bias?.toUpperCase() === 'BEARISH'
     const isPrime = setup.is_prime === true;
     
-    // Simulate real locking logic even on demo tier so they see how it works
-    const { hasAccess, requiredTier } = getSetupAccess(setup, userPlan)
-
+    const { hasAccess, requiredTier } = getSetupAccess(setup, data.plan)
     const status = (setup.status || 'WAITING').toUpperCase()
     let statusLine = "bg-neutral-800 group-hover:bg-neutral-600"
     
@@ -173,7 +182,6 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
-        {/* IMAGE AREA */}
         <div className="h-24 md:h-28 w-full bg-[#050505] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
           <img 
             src={setup.image_url} 
@@ -191,36 +199,22 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
           )}
         </div>
 
-        {/* BOTTOM CONTENT AREA */}
         <div className="relative p-3 md:p-4 flex flex-col flex-1 justify-between z-10">
           <div className={`absolute top-0 right-0 inset-y-0 w-1 transition-all duration-500 z-30 ${statusLine}`} />
-          
           <div className="flex justify-between items-start mb-2 pr-2">
             <div className="flex flex-col gap-1.5">
-              <h3 className={`text-[13px] md:text-sm font-black uppercase tracking-wider transition-colors ${hasAccess ? 'text-neutral-200 group-hover:text-white' : 'text-neutral-600'}`}>
-                {asset}
-              </h3>
-              
+              <h3 className={`text-[13px] md:text-sm font-black uppercase tracking-wider transition-colors ${hasAccess ? 'text-neutral-200 group-hover:text-white' : 'text-neutral-600'}`}>{asset}</h3>
               <div className="flex items-center gap-1.5">
-                {hasAccess && (
-                  <span className="bg-[#111] px-1.5 py-0.5 rounded text-[9px] font-black text-white uppercase tracking-widest border border-white/5 shadow-inner">
-                    {setup.timeframe || '-'}
-                  </span>
-                )}
+                {hasAccess && <span className="bg-[#111] px-1.5 py-0.5 rounded text-[9px] font-black text-white uppercase tracking-widest border border-white/5 shadow-inner">{setup.timeframe || '-'}</span>}
                 {hasAccess && (
                   <span className="flex items-center justify-center bg-[#111] w-5 h-5 rounded border border-white/5 shadow-inner">
                     {isBull ? <TrendingUp size={10} className="text-emerald-400" /> : isBear ? <TrendingDown size={10} className="text-red-400" /> : <Minus size={10} className="text-neutral-500" />}
                   </span>
                 )}
-                {isPrime && (
-                  <div className="flex items-center justify-center w-5 h-5 rounded border bg-blue-500/10 border-blue-500/20 shadow-sm" title="Prime Setup">
-                    <Target size={10} className="text-blue-400" />
-                  </div>
-                )}
+                {isPrime && <div className="flex items-center justify-center w-5 h-5 rounded border bg-blue-500/10 border-blue-500/20 shadow-sm" title="Prime Setup"><Target size={10} className="text-blue-400" /></div>}
               </div>
             </div>
           </div>
-          
           <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-neutral-500 pt-2.5 border-t border-neutral-800/50 mt-auto pr-1">
             <span className="flex items-center"><Clock size={8} className="mr-1.5" /> {formattedDate}</span>
             <span>{formattedTime}</span>
@@ -234,17 +228,12 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
     <div className="w-full bg-[#050505] font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
       <div className="w-full border-b border-neutral-900 bg-[#0a0a0a]/95 backdrop-blur-md z-20 shadow-sm shrink-0">
         <div className="max-w-[90rem] mx-auto flex items-center space-x-3 p-3 md:p-5 relative">
-          
           {!isProUser && (
             <div className="absolute top-1/2 -translate-y-1/2 right-4 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">
               Sandbox Mode <Lock size={12} className="stroke-[3]" />
             </div>
           )}
-
-          <Link 
-            href="/markets"
-            className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#111] border border-neutral-800 flex items-center justify-center text-neutral-400 hover:bg-neutral-800 hover:text-white hover:border-neutral-600 transition-all shrink-0 shadow-sm"
-          >
+          <Link href="/markets" className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#111] border border-neutral-800 flex items-center justify-center text-neutral-400 hover:bg-neutral-800 hover:text-white hover:border-neutral-600 transition-all shrink-0 shadow-sm">
             <ArrowLeft size={14} />
           </Link>
           <div className="flex flex-col">
@@ -255,44 +244,32 @@ export default function ArchiveClient({ asset, initialHistory, userPlan, userId 
       </div>
 
       <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#050505] p-3 md:p-5 lg:p-6 relative">
-        {!isProUser && (
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-10 pointer-events-none" />
-        )}
-        
+        {!isProUser && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-10 pointer-events-none" />}
         <div className="max-w-[90rem] mx-auto space-y-8 md:space-y-10 pb-20 md:pb-6 relative z-20">
           {grouped.today.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-[9px] md:text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">
-                Published Today <div className="ml-3 h-px flex-1 bg-neutral-800"></div>
-              </h2>
+              <h2 className="text-[9px] md:text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">Published Today <div className="ml-3 h-px flex-1 bg-neutral-800"></div></h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
                 {grouped.today.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
               </div>
             </section>
           )}
-
           {grouped.yesterday.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-              <h2 className="text-[9px] md:text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-4 flex items-center">
-                Yesterday <div className="ml-3 h-px flex-1 bg-neutral-800"></div>
-              </h2>
+              <h2 className="text-[9px] md:text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-4 flex items-center">Yesterday <div className="ml-3 h-px flex-1 bg-neutral-800"></div></h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
                 {grouped.yesterday.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
               </div>
             </section>
           )}
-
           {grouped.older.length > 0 && (
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-              <h2 className="text-[9px] md:text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 flex items-center">
-                Older Setups <div className="ml-3 h-px flex-1 bg-neutral-800/50"></div>
-              </h2>
+              <h2 className="text-[9px] md:text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 flex items-center">Older Setups <div className="ml-3 h-px flex-1 bg-neutral-800/50"></div></h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 transition-opacity">
                 {grouped.older.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
               </div>
             </section>
           )}
-
           {history.length === 0 && (
             <div className="py-24 text-center flex flex-col items-center opacity-50">
               <Shield size={28} className="text-neutral-700 mb-3" />
