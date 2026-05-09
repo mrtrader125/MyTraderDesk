@@ -1,19 +1,12 @@
 import { Metadata } from 'next'
 import DeskClient from './DeskClient'
-import { createClient } from '@/lib/supabaseServer'
-import { redirect } from 'next/navigation'
 
 export const metadata: Metadata = {
   title: 'Operator Desk | MyTraderDesk',
 }
 
-export default async function DeskPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
+// 🚨 NO SUPABASE. NO COOKIES. NO ASYNC/AWAIT.
+// This makes the page 100% Static. Next.js will route to it in 0.00ms.
+export default function DeskPage() {
   return <DeskClient />
 }
