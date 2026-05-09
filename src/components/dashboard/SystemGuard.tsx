@@ -1,14 +1,20 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+// 🚨 ADDED useSearchParams
 import { usePathname, useRouter, useSearchParams } from 'next/navigation' 
-import { supabase } from '@/lib/supabase'
+import { createBrowserClient } from '@supabase/ssr'
 
 export default function SystemGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const searchParams = useSearchParams() 
+  const searchParams = useSearchParams() // 🚨 ADDED
   const [isVerifying, setIsVerifying] = useState(true)
+
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
 
   useEffect(() => {
     const enforceProtocol = async () => {
@@ -31,14 +37,14 @@ export default function SystemGuard({ children }: { children: React.ReactNode })
         .single()
 
       const hasClearance = profile?.protocol_established === true;
-      const isPreviewMode = searchParams.get('preview') === 'true'; 
+      const isPreviewMode = searchParams.get('preview') === 'true'; // 🚨 NEW CHECK
 
       // THE GLOBAL ROUTE LOCK
       if (!hasClearance && pathname !== '/onboarding') {
         // Escaped onboarding? Drag them back.
         router.push('/onboarding')
       } else if (hasClearance && pathname === '/onboarding' && !isPreviewMode) {
-        // Only kick them to dashboard if they are NOT in preview mode
+        // 🚨 UPDATED: Only kick them to dashboard if they are NOT in preview mode
         router.push('/dashboard')
       } else {
         // Clearance matches location, or they are in admin preview mode. Let them pass.
@@ -47,7 +53,7 @@ export default function SystemGuard({ children }: { children: React.ReactNode })
     }
 
     enforceProtocol()
-  }, [pathname, router, searchParams]) 
+  }, [pathname, router, searchParams, supabase]) 
 
   if (isVerifying) {
     return <div className="min-h-screen bg-[#050505]" />

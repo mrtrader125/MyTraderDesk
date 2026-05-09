@@ -25,10 +25,25 @@ function TopNavContent({ user }: { user: any }) {
 
   useEffect(() => {
     setSearchTerm('')
+    window.dispatchEvent(new CustomEvent('globalSearch', { detail: '' }))
   }, [pathname])
 
+  useEffect(() => {
+    if (!searchTerm || !user?.id) return
+    const timer = setTimeout(() => {
+      supabase.from('activity_logs').insert([{
+        user_id: user.id,
+        action: 'SEARCH',
+        search_query: searchTerm
+      }]).then()
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [searchTerm, user])
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value)
+    const val = e.target.value
+    setSearchTerm(val)
+    window.dispatchEvent(new CustomEvent('globalSearch', { detail: val }))
   }
 
   const handleSignOut = async () => {
@@ -36,17 +51,13 @@ function TopNavContent({ user }: { user: any }) {
     router.push('/login')
   }
 
-  // Updated to dispatch custom event
+  // Handle Dashboard Toggle Change
   const handleViewSwitch = (view: 'general' | 'personal') => {
     setDashboardView(view)
-
-    window.dispatchEvent(
-      new CustomEvent('dashboard-view-change', {
-        detail: view
-      })
-    )
+    window.dispatchEvent(new CustomEvent('switchDashboardView', { detail: view }))
   }
 
+  // 🚨 THE VISUAL LOCKS
   if (pathname?.includes('/viewport')) return null
   if (pathname === '/onboarding') return null
   
@@ -55,17 +66,19 @@ function TopNavContent({ user }: { user: any }) {
   const userInitial = user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'
 
   return (
-    <header className="h-14 md:h-16 w-full border-b border-neutral-900 bg-[#0a0a0a]/95 flex items-center justify-between px-3 md:px-6 shrink-0 z-40 sticky top-0">
+    <header className="h-14 md:h-16 w-full border-b border-neutral-900 bg-[#0a0a0a]/95 backdrop-blur-md flex items-center justify-between px-3 md:px-6 shrink-0 z-40 sticky top-0">
       
+      {/* LEFT SECTION: Logo & Workspace Toggle */}
       <div className="flex items-center h-full">
         {!isAccountPage && (
           <div className="md:hidden flex items-center mr-6 shrink-0">
             <Link href="/dashboard" className="relative h-14 w-28 flex items-center block">
-              <Image src="/logo.png" alt="My Trader Desk" fill className="object-contain object-left" unoptimized />
+              <Image src="/logo.png" alt="My Trader Desk" fill className="object-contain object-left" priority unoptimized />
             </Link>
           </div>
         )}
 
+        {/* DASHBOARD VIEW TOGGLE (Clean, technical text links) */}
         {mounted && isDashboard && (
           <div className="hidden lg:flex items-center gap-6 h-full">
             <button
@@ -93,10 +106,13 @@ function TopNavContent({ user }: { user: any }) {
         )}
       </div>
 
+      {/* CENTER SECTION: Empty for breathing room */}
       <div className="flex-1"></div>
 
+      {/* RIGHT SECTION: Utilities & Profile */}
       <div className="flex items-center gap-3 md:gap-4 shrink-0">
         
+        {/* COMPACT SEARCH BAR */}
         {mounted && !isAccountPage && (
           <div className="hidden sm:flex items-center bg-transparent border border-neutral-800/60 rounded flex-row px-2.5 py-1.5 w-48 lg:w-56 focus-within:border-neutral-600 transition-colors group">
             <Search size={13} className="text-neutral-600 mr-2 shrink-0 group-focus-within:text-neutral-300 transition-colors" />
@@ -107,12 +123,14 @@ function TopNavContent({ user }: { user: any }) {
               placeholder="Search..."
               className="bg-transparent border-none outline-none text-xs w-full text-white placeholder-neutral-700"
             />
+            {/* Keyboard shortcut hint for premium feel */}
             <div className="hidden lg:flex items-center justify-center bg-neutral-900 border border-neutral-800 rounded px-1.5 py-0.5 ml-2 shrink-0">
               <span className="text-[9px] font-mono font-medium text-neutral-500 tracking-tighter">⌘K</span>
             </div>
           </div>
         )}
 
+        {/* ICONS & PROFILE */}
         <div className="flex items-center gap-3 relative">
           {mounted && <NotificationBell />}
 

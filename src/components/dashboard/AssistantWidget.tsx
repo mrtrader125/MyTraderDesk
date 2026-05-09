@@ -21,29 +21,26 @@ export default function AssistantWidget() {
     if (isOpen) scrollToBottom()
   }, [messages, isOpen])
 
-  // OPTIMIZED: Only fetch history when opened and empty
+  // Fetch chat history on mount
   useEffect(() => {
-    if (!isOpen || messages.length > 0) return
-
     const fetchHistory = async () => {
       try {
-        const res = await fetch('/api/chat')
-        const data = await res.json()
-
-        if (data.messages?.length) {
+        const res = await fetch('/api/chat');
+        const data = await res.json();
+        if (data.messages && data.messages.length > 0) {
+          // Map DB 'model' role to frontend 'assistant' role
           const formatted = data.messages.map((m: any) => ({
-            role: m.role === 'model' ? 'assistant' : 'user',
-            content: m.content
-          }))
-          setMessages(formatted)
+             role: m.role === 'model' ? 'assistant' : 'user',
+             content: m.content
+          }));
+          setMessages(formatted);
         }
       } catch (e) { 
-        console.error("Failed to load history") 
+        console.error("Failed to load history"); 
       }
-    }
-
-    fetchHistory()
-  }, [isOpen, messages.length])
+    };
+    fetchHistory();
+  }, []);
 
   const customSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,12 +55,14 @@ export default function AssistantWidget() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // Only sending messages. The backend securely fetches the user profile and daily context!
         body: JSON.stringify({ messages: currentMessages }) 
       })
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Server error')
 
+      // 🚨 THE FIX: Only append the message if text is not null (Respects the Golden Silence)
       if (data.text) {
         setMessages((prev) => [...prev, { role: 'assistant', content: data.text }])
       }

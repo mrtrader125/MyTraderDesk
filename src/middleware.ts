@@ -37,9 +37,14 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // ========================================
-  // SAFE SESSION CHECK
-  // ========================================
+  // IMPORTANT:
+  // We DO NOT call:
+  // - profiles table
+  // - admin checks
+  // - plan checks
+  // anymore.
+
+  // ONLY refresh auth session safely.
   const {
     data: { session },
   } = await supabase.auth.getSession()
@@ -49,9 +54,9 @@ export async function middleware(request: NextRequest) {
   // ========================================
   // AUTH ROUTES
   // ========================================
-  const isAuthRoute =
-    path === '/login' ||
-    path.startsWith('/initialize')
+const isAuthRoute =
+  path === '/login' ||
+  path.startsWith('/initialize')
 
   // ========================================
   // PROTECTED ROUTES
@@ -74,18 +79,14 @@ export async function middleware(request: NextRequest) {
   // NOT LOGGED IN
   // ========================================
   if (!session && isProtectedRoute) {
-    return NextResponse.redirect(
-      new URL('/login', request.url)
-    )
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   // ========================================
   // ALREADY LOGGED IN
   // ========================================
   if (session && isAuthRoute) {
-    return NextResponse.redirect(
-      new URL('/dashboard', request.url)
-    )
+    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   return response
