@@ -4,32 +4,39 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { ShieldCheck, Target, Crosshair, Loader2 } from 'lucide-react'
 import GeneralDashboard from './GeneralDashboard'
-import PersonalDashboard from './PersonalDashboard'
+import dynamic from 'next/dynamic'
+
+// 🚨 OPTIMIZATION: Lazy load the heavy Personal Dashboard
+const PersonalDashboard = dynamic(
+  () => import('./PersonalDashboard'),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex-1 flex items-center justify-center text-zinc-500 bg-[#050505] h-full">
+        <Loader2 className="animate-spin mr-2" size={24} />
+        <span className="text-sm font-bold uppercase tracking-widest">Loading Desk...</span>
+      </div>
+    )
+  }
+)
 
 export default function DashboardClient(props: any) {
   const { userId, needsOnboarding } = props
 
-  // State restored for the dashboard toggle
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
-  
-  // Onboarding States
   const [showOnboarding, setShowOnboarding] = useState(needsOnboarding)
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
-  // Listen for the custom event from TopNav
   useEffect(() => {
     const handleSwitch = (e: any) => {
       setActiveView(e.detail)
     }
-
     window.addEventListener('dashboard-view-change', handleSwitch)
-
     return () => {
       window.removeEventListener('dashboard-view-change', handleSwitch)
     }
   }, [])
 
-  // The Submission Protocol
   const completeProtocol = async () => {
     setIsSubmittingProtocol(true)
     if (userId) {
@@ -41,10 +48,6 @@ export default function DashboardClient(props: any) {
 
   return (
     <div className="relative flex flex-col h-[calc(100dvh-56px)] md:h-[calc(100dvh-64px)] bg-[#050505] overflow-hidden w-full">
-      
-      {/* ========================================= */}
-      {/* THE MASTER GHOST OVERLAY                  */}
-      {/* ========================================= */}
       {showOnboarding && (
         <div className="absolute inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
           <div className="w-full max-w-lg bg-[#0a0a0f] border border-zinc-800 rounded-3xl p-10 shadow-2xl animate-in fade-in zoom-in-95 duration-500">
@@ -87,9 +90,6 @@ export default function DashboardClient(props: any) {
         </div>
       )}
 
-      {/* ========================================= */}
-      {/* CONDITIONAL DASHBOARD RENDER              */}
-      {/* ========================================= */}
       <div className={`relative flex-1 bg-[#050505] overflow-hidden w-full h-full transition-all duration-1000 ${showOnboarding ? 'opacity-20 blur-sm pointer-events-none' : 'opacity-100 blur-none'}`}>
         {activeView === 'general' ? (
           <GeneralDashboard {...props} />
