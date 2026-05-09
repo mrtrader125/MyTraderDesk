@@ -13,7 +13,6 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// 🚀 SWR FETCHER: This gets the data and caches it in RAM
 export const fetchDashboardData = async () => {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session?.user) return null
@@ -64,14 +63,34 @@ export default function DashboardClient() {
   const router = useRouter()
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
+  const [isDataLoaded, setIsDataLoaded] = useState(false)
 
-  // 🚀 RESTORING THE CACHE
-  // It holds data in RAM for 2 minutes (120000ms).
-  // Clicking around the app and coming back will now be 0.00ms.
   const { data, mutate } = useSWR('dashboard_data', fetchDashboardData, {
     revalidateOnFocus: false,
     dedupingInterval: 120000 
   })
+
+  // 🚨 SUPABASE REALTIME MAGIC: Listen for Admin updates instantly
+  useEffect(() => {
+    // 1. Listen for new Analyses being dropped
+    const feedChannel = supabase.channel('live-feed')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'analyses' }, () => {
+        mutate() // Instantly triggers a background fetch to update the UI
+      })
+      .subscribe()
+
+    // 2. Listen for System Broadcasts
+    const broadcastChannel = supabase.channel('live-broadcasts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => {
+        mutate()
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(feedChannel)
+      supabase.removeChannel(broadcastChannel)
+    }
+  }, [mutate])
 
   useEffect(() => {
     const handleViewChange = (e: any) => {
@@ -81,9 +100,10 @@ export default function DashboardClient() {
     return () => window.removeEventListener('switchDashboardView', handleViewChange)
   }, [])
 
-  // 🚨 OPTIMISTIC UI SHELL
-  // If SWR doesn't have the cache yet, it instantly renders the UI with empty data.
-  // A split-second later, SWR gives the real data to GeneralDashboard seamlessly.
+  useEffect(() => {
+    if (data) setIsDataLoaded(true)
+  }, [data])
+
   const safeData = data || {
     userId: '',
     profile: { plan: 'pro', protocol_established: true }, 
@@ -131,21 +151,25 @@ export default function DashboardClient() {
         </div>
       )}
 
-      {/* Instantly renders the layout in 0ms, passing real data the moment SWR provides it */}
       <div className={`relative flex-1 bg-[#050505] overflow-hidden w-full h-full transition-all duration-1000 ${showOnboarding ? 'opacity-20 blur-sm pointer-events-none' : 'opacity-100 blur-none'}`}>
         
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'general' ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 -z-10 pointer-events-none'}`}>
           <GeneralDashboard 
+            key={`general-${isDataLoaded}`} 
             userId={safeData.userId} 
-            initialPlan={safeData.profile?.plan?.toLowerCase()} 
+            initialPlan={safeData.profile?.plan?.toLowerCase() || 'pro'} 
             initialBroadcast={safeData.broadcast} 
             initialWatchlist={safeData.watchlist} 
-            initialSetups={safeData.setups} 
+            initialSetups={safeData.setups}
+            onMutate={mutate} // 🚨 Pass mutate down so GeneralDashboard can update the global cache!
           />
         </div>
 
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'personal' ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 -z-10 pointer-events-none'}`}>
-          <PersonalDashboard userId={safeData.userId} />
+          <PersonalDashboard 
+            key={`personal-${isDataLoaded}`}
+            userId={safeData.userId} 
+          />
         </div>
 
       </div>
