@@ -13,8 +13,12 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-// The SWR Data Fetcher
-const fetchDashboardData = async (userId: string) => {
+// 🚨 EXPORTED SWR FETCHER: This allows the sidebar to trigger it in the background
+export const fetchDashboardData = async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return null
+
+  const userId = session.user.id
   const [
     { data: profile },
     { data: broadcasts },
@@ -38,9 +42,7 @@ const fetchDashboardData = async (userId: string) => {
   if (broadcasts && broadcasts.length > 0) {
     const b = broadcasts[0]
     const userTier = profile?.plan ? profile.plan.toUpperCase() : 'DEMO'
-    if (b.target_tier === 'ALL' || b.target_tier === userTier) {
-      activeBroadcast = b
-    }
+    if (b.target_tier === 'ALL' || b.target_tier === userTier) activeBroadcast = b
   }
 
   const isPro = profile?.plan === 'pro' || profile?.plan === 'premium'
@@ -50,6 +52,7 @@ const fetchDashboardData = async (userId: string) => {
   }) || []
 
   return {
+    userId,
     profile,
     broadcast: activeBroadcast,
     watchlist: formattedWatchlist,
@@ -57,15 +60,15 @@ const fetchDashboardData = async (userId: string) => {
   }
 }
 
-export default function DashboardClient({ userId }: { userId: string }) {
+export default function DashboardClient() {
   const router = useRouter()
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
-  // 🚀 SWR MAGIC: Caches the data in RAM. Second visit is 0ms.
-  const { data, isLoading, mutate } = useSWR(userId ? `dashboard_data_${userId}` : null, () => fetchDashboardData(userId), {
-    revalidateOnFocus: false, // Doesn't spam the DB if they switch browser tabs
-    dedupingInterval: 60000   // Caches the data for 60 seconds
+  // 🚀 SWR MAGIC: Pulls from RAM instantly if prefetched
+  const { data, mutate } = useSWR('dashboard_data', fetchDashboardData, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60000 
   })
 
   useEffect(() => {
@@ -76,22 +79,24 @@ export default function DashboardClient({ userId }: { userId: string }) {
     return () => window.removeEventListener('switchDashboardView', handleViewChange)
   }, [])
 
-  // Show spinner only on the very first load
-  if (isLoading || !data) {
-    return (
-      <div className="flex h-[calc(100dvh-56px)] md:h-[calc(100dvh-64px)] w-full items-center justify-center bg-[#050505]">
-        <Loader2 className="animate-spin text-blue-500" size={32} />
-      </div>
-    )
+  // 🚨 OPTIMISTIC SHELL: Never show a spinner. Render the dashboard layout instantly.
+  const safeData = data || {
+    userId: '',
+    profile: { plan: 'demo', protocol_established: true }, // Assumes true initially to prevent flash
+    broadcast: null,
+    watchlist: [],
+    setups: []
   }
 
-  // The Bouncer: Redirect to onboarding if protocol isn't established
-  const showOnboarding = data.profile?.protocol_established === false || data.profile?.protocol_established === null
+  // Only show onboarding if we have data AND it explicitly says false
+  const showOnboarding = data && (data.profile?.protocol_established === false || data.profile?.protocol_established === null)
 
   const completeProtocol = async () => {
     setIsSubmittingProtocol(true)
-    await supabase.from('profiles').update({ protocol_established: true }).eq('id', userId)
-    await mutate() // Instantly updates the cached data to remove onboarding screen
+    if (data?.userId) {
+      await supabase.from('profiles').update({ protocol_established: true }).eq('id', data.userId)
+      await mutate() 
+    }
     setIsSubmittingProtocol(false)
   }
 
@@ -108,7 +113,7 @@ export default function DashboardClient({ userId }: { userId: string }) {
               Establish <span className="text-blue-500">Protocol</span>
             </h2>
             <p className="text-sm text-zinc-400 leading-relaxed mb-8">
-              Terminal access granted. Before engaging the live markets, you must define your operational parameters. These cannot be bypassed.
+              Terminal access granted. Before engaging the live markets, you must define your operational parameters.
             </p>
 
             <button 
@@ -128,16 +133,16 @@ export default function DashboardClient({ userId }: { userId: string }) {
         {/* FAST CSS TRANSITIONS: duration-200 ease-out translate-y-2 */}
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'general' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-2 -z-10 pointer-events-none'}`}>
           <GeneralDashboard 
-            userId={userId} 
-            initialPlan={data.profile?.plan?.toLowerCase() || 'demo'} 
-            initialBroadcast={data.broadcast} 
-            initialWatchlist={data.watchlist} 
-            initialSetups={data.setups} 
+            userId={safeData.userId} 
+            initialPlan={safeData.profile?.plan?.toLowerCase() || 'demo'} 
+            initialBroadcast={safeData.broadcast} 
+            initialWatchlist={safeData.watchlist} 
+            initialSetups={safeData.setups} 
           />
         </div>
 
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'personal' ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' : 'opacity-0 translate-y-2 -z-10 pointer-events-none'}`}>
-          <PersonalDashboard userId={userId} />
+          <PersonalDashboard userId={safeData.userId} />
         </div>
 
       </div>
