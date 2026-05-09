@@ -46,7 +46,8 @@ export default function GeneralDashboard({
   initialPlan, 
   initialBroadcast, 
   initialWatchlist, 
-  initialSetups 
+  initialSetups,
+  onMutate // 🚨 Captured the mutate function from DashboardClient
 }: any) {
   const router = useRouter()
   const searchParams = useSearchParams() 
@@ -228,6 +229,7 @@ export default function GeneralDashboard({
     setSymbolInput('')
   }
 
+  // 🚨 THE VAULT FIX: Optimistic UI + Direct Database Command + Cache Update
   const toggleBookmark = async (e: React.MouseEvent, setup: any) => {
     e.stopPropagation() 
     if (!setup) return;
@@ -237,12 +239,23 @@ export default function GeneralDashboard({
 
     if (exists) {
       updated = updated.filter(item => item.id !== setup.id)
-      setWatchlist(updated)
-      if (isProUser && userId) await supabase.from('user_vault').delete().match({ user_id: userId, analysis_id: setup.id })
+      setWatchlist(updated) // 1. Instant UI update
+      
+      if (userId) {
+        await supabase.from('user_vault').delete().match({ user_id: userId, analysis_id: setup.id }) // 2. DB Sync
+      }
     } else {
       updated.unshift({ id: setup.id, symbol: setup.asset_symbol, timeframe: setup.timeframe, status: setup.status }) 
-      setWatchlist(updated)
-      if (isProUser && userId) await supabase.from('user_vault').insert([{ user_id: userId, analysis_id: setup.id }])
+      setWatchlist(updated) // 1. Instant UI update
+      
+      if (userId) {
+        await supabase.from('user_vault').insert([{ user_id: userId, analysis_id: setup.id }]) // 2. DB Sync
+      }
+    }
+
+    // 3. Update the global SWR Cache so the app permanently remembers this action!
+    if (onMutate) {
+      onMutate()
     }
   }
 
