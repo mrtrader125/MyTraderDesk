@@ -1,35 +1,32 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { supabase } from '@/lib/supabase'
 import { ShieldCheck, Target, Crosshair, Loader2 } from 'lucide-react'
 import GeneralDashboard from './GeneralDashboard'
 import PersonalDashboard from './PersonalDashboard'
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 export default function DashboardClient(props: any) {
   const { userId, needsOnboarding } = props
 
-  // Navigation State
+  // State restored for the dashboard toggle
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
   
-  // Onboarding States (Lifted from Personal Dashboard)
+  // Onboarding States
   const [showOnboarding, setShowOnboarding] = useState(needsOnboarding)
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
-  // Listen for the custom event fired by TopNav
+  // Listen for the custom event from TopNav
   useEffect(() => {
-    const handleViewChange = (e: any) => {
-      if (e.detail === 'general' || e.detail === 'personal') {
-        setActiveView(e.detail)
-      }
+    const handleSwitch = (e: any) => {
+      setActiveView(e.detail)
     }
-    window.addEventListener('switchDashboardView', handleViewChange)
-    return () => window.removeEventListener('switchDashboardView', handleViewChange)
+
+    window.addEventListener('dashboard-view-change', handleSwitch)
+
+    return () => {
+      window.removeEventListener('dashboard-view-change', handleSwitch)
+    }
   }, [])
 
   // The Submission Protocol
@@ -91,33 +88,14 @@ export default function DashboardClient(props: any) {
       )}
 
       {/* ========================================= */}
-      {/* THE BLURRED DASHBOARD CONTAINER           */}
+      {/* CONDITIONAL DASHBOARD RENDER              */}
       {/* ========================================= */}
       <div className={`relative flex-1 bg-[#050505] overflow-hidden w-full h-full transition-all duration-1000 ${showOnboarding ? 'opacity-20 blur-sm pointer-events-none' : 'opacity-100 blur-none'}`}>
-        
-        {/* GENERAL VIEW */}
-        <div 
-          className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${
-            activeView === 'general' 
-              ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' 
-              : 'opacity-0 translate-y-4 -z-10 pointer-events-none'
-          }`}
-        >
+        {activeView === 'general' ? (
           <GeneralDashboard {...props} />
-        </div>
-
-        {/* PERSONAL VIEW */}
-        <div 
-          className={`absolute inset-0 w-full h-full transition-all duration-500 ease-in-out ${
-            activeView === 'personal' 
-              ? 'opacity-100 translate-y-0 z-10 pointer-events-auto' 
-              : 'opacity-0 translate-y-4 -z-10 pointer-events-none'
-          }`}
-        >
-          {/* We pass userId down just in case PersonalDashboard needs it directly */}
+        ) : (
           <PersonalDashboard userId={userId} />
-        </div>
-
+        )}
       </div>
     </div>
   )
