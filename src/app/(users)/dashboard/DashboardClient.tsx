@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react'
+import useSWR from 'swr'
 import { createBrowserClient } from '@supabase/ssr'
 import { ShieldCheck, Loader2 } from 'lucide-react'
 import GeneralDashboard from './GeneralDashboard'
@@ -12,20 +13,65 @@ const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// 🚀 SWR FETCHER: This gets the data and caches it in RAM
+export const fetchDashboardData = async () => {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session?.user) return null
+
+  const userId = session.user.id
+  const [
+    { data: profile },
+    { data: broadcasts },
+    { data: vaultData },
+    { data: analyses }
+  ] = await Promise.all([
+    supabase.from('profiles').select('plan, protocol_established').eq('id', userId).single(),
+    supabase.from('notifications').select('*').eq('type', 'BROADCAST').eq('status', 'ACTIVE').order('created_at', { ascending: false }).limit(1),
+    supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe, status)').eq('user_id', userId),
+    supabase.from('analyses').select('*').order('created_at', { ascending: false })
+  ])
+
+  const formattedWatchlist = vaultData?.map((v: any) => ({
+    id: v.analysis_id,
+    symbol: v.analyses?.asset_symbol,
+    timeframe: v.analyses?.timeframe,
+    status: v.analyses?.status
+  })) || []
+
+  let activeBroadcast = null
+  if (broadcasts && broadcasts.length > 0) {
+    const b = broadcasts[0]
+    const userTier = profile?.plan ? profile.plan.toUpperCase() : 'DEMO'
+    if (b.target_tier === 'ALL' || b.target_tier === userTier) activeBroadcast = b
+  }
+
+  const isPro = profile?.plan === 'pro' || profile?.plan === 'premium'
+  const safeAnalyses = analyses?.map((setup: any) => {
+    if (isPro) return setup
+    return { ...setup, notes: null, content: null }
+  }) || []
+
+  return {
+    userId,
+    profile,
+    broadcast: activeBroadcast,
+    watchlist: formattedWatchlist,
+    setups: safeAnalyses
+  }
+}
+
 export default function DashboardClient() {
   const router = useRouter()
   const [activeView, setActiveView] = useState<'general' | 'personal'>('general')
   const [isSubmittingProtocol, setIsSubmittingProtocol] = useState(false)
 
-  // 1. Initial Empty State (Loads in 0ms)
-  const [userId, setUserId] = useState<string>('')
-  const [profile, setProfile] = useState<any>({ plan: 'pro', protocol_established: true })
-  const [broadcast, setBroadcast] = useState<any>(null)
-  const [watchlist, setWatchlist] = useState<any[]>([])
-  const [setups, setSetups] = useState<any[]>([])
-  
-  // 🚨 THE FIX: Track when data finishes downloading
-  const [isDataLoaded, setIsDataLoaded] = useState(false)
+  // 🚀 RESTORING THE CACHE
+  // It holds data in RAM for 2 minutes (120000ms).
+  // Clicking around the app and coming back will now be 0.00ms.
+  const { data, mutate } = useSWR('dashboard_data', fetchDashboardData, {
+    revalidateOnFocus: false,
+    dedupingInterval: 120000 
+  })
 
   useEffect(() => {
     const handleViewChange = (e: any) => {
@@ -35,64 +81,24 @@ export default function DashboardClient() {
     return () => window.removeEventListener('switchDashboardView', handleViewChange)
   }, [])
 
-  useEffect(() => {
-    const initData = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      const user = session?.user
-      if (!user) return
+  // 🚨 OPTIMISTIC UI SHELL
+  // If SWR doesn't have the cache yet, it instantly renders the UI with empty data.
+  // A split-second later, SWR gives the real data to GeneralDashboard seamlessly.
+  const safeData = data || {
+    userId: '',
+    profile: { plan: 'pro', protocol_established: true }, 
+    broadcast: null,
+    watchlist: [],
+    setups: []
+  }
 
-      setUserId(user.id)
-
-      // Fetch Profile
-      const { data: profileData } = await supabase.from('profiles').select('plan, protocol_established').eq('id', user.id).single()
-      if (profileData) setProfile(profileData)
-
-      // Fetch Broadcasts
-      const { data: broadcastsData } = await supabase.from('notifications').select('*').eq('type', 'BROADCAST').eq('status', 'ACTIVE').order('created_at', { ascending: false }).limit(1)
-      if (broadcastsData && broadcastsData.length > 0) {
-        const b = broadcastsData[0]
-        const userTier = profileData?.plan ? profileData.plan.toUpperCase() : 'DEMO'
-        if (b.target_tier === 'ALL' || b.target_tier === userTier) {
-          setBroadcast(b)
-        }
-      }
-
-      // Fetch Vault
-      const { data: vaultData } = await supabase.from('user_vault').select('analysis_id, analyses(asset_symbol, timeframe, status)').eq('user_id', user.id)
-      if (vaultData) {
-        setWatchlist(vaultData.map((v: any) => ({
-          id: v.analysis_id,
-          symbol: v.analyses?.asset_symbol,
-          timeframe: v.analyses?.timeframe,
-          status: v.analyses?.status
-        })))
-      }
-
-      // Fetch Analyses
-      const { data: analysesData } = await supabase.from('analyses').select('*').order('created_at', { ascending: false })
-      if (analysesData) {
-        const isPro = profileData?.plan === 'pro' || profileData?.plan === 'premium'
-        const safeAnalyses = analysesData.map((setup: any) => {
-          if (isPro) return setup
-          return { ...setup, notes: null, content: null }
-        })
-        setSetups(safeAnalyses)
-      }
-
-      // 🚨 DATA HAS ARRIVED: Trigger the UI to refresh with the real numbers
-      setIsDataLoaded(true)
-    }
-
-    initData()
-  }, [])
-
-  const showOnboarding = profile?.protocol_established === false || profile?.protocol_established === null
+  const showOnboarding = data && (data.profile?.protocol_established === false || data.profile?.protocol_established === null)
 
   const completeProtocol = async () => {
     setIsSubmittingProtocol(true)
-    if (userId) {
-      await supabase.from('profiles').update({ protocol_established: true }).eq('id', userId)
-      setProfile((prev: any) => ({ ...prev, protocol_established: true }))
+    if (data?.userId) {
+      await supabase.from('profiles').update({ protocol_established: true }).eq('id', data.userId)
+      await mutate() 
     }
     setIsSubmittingProtocol(false)
   }
@@ -125,26 +131,21 @@ export default function DashboardClient() {
         </div>
       )}
 
+      {/* Instantly renders the layout in 0ms, passing real data the moment SWR provides it */}
       <div className={`relative flex-1 bg-[#050505] overflow-hidden w-full h-full transition-all duration-1000 ${showOnboarding ? 'opacity-20 blur-sm pointer-events-none' : 'opacity-100 blur-none'}`}>
         
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'general' ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 -z-10 pointer-events-none'}`}>
-          {/* 🚨 THE KEY TRICK: Forces GeneralDashboard to refresh the millisecond the data arrives */}
           <GeneralDashboard 
-            key={`general-${isDataLoaded}`} 
-            userId={userId} 
-            initialPlan={profile?.plan?.toLowerCase() || 'pro'} 
-            initialBroadcast={broadcast} 
-            initialWatchlist={watchlist} 
-            initialSetups={setups} 
+            userId={safeData.userId} 
+            initialPlan={safeData.profile?.plan?.toLowerCase()} 
+            initialBroadcast={safeData.broadcast} 
+            initialWatchlist={safeData.watchlist} 
+            initialSetups={safeData.setups} 
           />
         </div>
 
         <div className={`absolute inset-0 w-full h-full transition-all duration-200 ease-out ${activeView === 'personal' ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 -z-10 pointer-events-none'}`}>
-          {/* 🚨 THE KEY TRICK: Prevents PersonalDashboard from sticking on empty data */}
-          <PersonalDashboard 
-            key={`personal-${isDataLoaded}`}
-            userId={userId} 
-          />
+          <PersonalDashboard userId={safeData.userId} />
         </div>
 
       </div>
