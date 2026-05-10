@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation' // 🚨 ADDED useRouter
 import { supabase } from '@/lib/supabase'
 import { 
   LayoutDashboard, LineChart, Bookmark, 
@@ -14,6 +14,7 @@ import {
 export default function SideNav() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const router = useRouter() // 🚨 INITIALIZED ROUTER
 
   useEffect(() => {
     setIsOpen(false)
@@ -66,6 +67,8 @@ export default function SideNav() {
                 key={item.name} 
                 href={item.href} 
                 prefetch={true}
+                // 🚨 THE HACK: Prefetch the exact millisecond they hover
+                onMouseEnter={() => router.prefetch(item.href)} 
               >
                 <div className={`flex items-center w-full p-3 rounded-xl transition-all mb-2
                   ${isActive ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20 shadow-inner' : 'text-neutral-500 border border-transparent hover:bg-[#111] hover:text-neutral-300'}`}>
@@ -100,6 +103,8 @@ export default function SideNav() {
               key={item.name} 
               href={item.href} 
               prefetch={true}
+              // 🚨 THE HACK: Prefetch the millisecond their thumb touches down before the click fires
+              onTouchStart={() => router.prefetch(item.href)}
               className="relative flex flex-col items-center justify-center min-w-[64px] shrink-0 h-full space-y-1.5 group"
             >
               {isActive && (
