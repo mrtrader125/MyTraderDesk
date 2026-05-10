@@ -1,39 +1,48 @@
 'use client';
+import { useState, useEffect } from 'react';
+import useSWR from 'swr';
+import { createBrowserClient } from '@supabase/ssr';
+import { Loader2 } from 'lucide-react';
 
-import { useState } from 'react';
+const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
 
-// Define the type based on your Supabase schema
-type Applicant = {
-  id: string;
-  created_at: string;
-  full_name: string;
-  email: string;
-  trading_experience: string;
-  current_strategy: string;
-  strategy_duration: string;
-  profitability_blocker: string;
-  psychological_hurdles: string;
-  target_objective: string;
-  status: string;
-  directional_bias?: string;
-  risk_management?: string;
-};
+// 🚨 SWR FETCHER
+const fetchApplicants = async () => {
+  const { data, error } = await supabase.from('applicants').select('*').order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
 
-export default function ApplicantViewer({ applicants: initialApplicants }: { applicants: Applicant[] }) {
-  const [applicants, setApplicants] = useState<Applicant[]>(initialApplicants);
-  const [selectedId, setSelectedId] = useState<string | null>(
-    applicants.length > 0 ? applicants[0].id : null
-  );
+export default function ApplicantViewer() {
+  // 🚨 SWR CACHING
+  const { data: applicants, isLoading, mutate } = useSWR('admin_applicants', fetchApplicants, { dedupingInterval: 30000 });
   
-  // New state to prevent double-clicks while sending the email
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const selectedApplicant = applicants.find((a) => a.id === selectedId);
+  // Auto-select first applicant when data loads
+  useEffect(() => {
+    if (applicants && applicants.length > 0 && !selectedId) {
+      setSelectedId(applicants[0].id);
+    }
+  }, [applicants, selectedId]);
 
-  // THE TRIGGER: This talks to your secure Next.js API route
+  if (isLoading || !applicants) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center border border-zinc-800 border-dashed rounded-lg bg-[#0a0a0a] min-h-[400px]">
+        <Loader2 className="animate-spin text-zinc-500 mb-4" size={32} />
+        <p className="text-zinc-500 text-sm tracking-widest uppercase">Syncing Queue...</p>
+      </div>
+    );
+  }
+
+  const selectedApplicant = applicants.find((a: any) => a.id === selectedId);
+
   const handleAction = async (action: 'approve' | 'reject') => {
     if (!selectedApplicant) return;
-    
     setIsProcessing(true);
 
     try {
@@ -48,20 +57,15 @@ export default function ApplicantViewer({ applicants: initialApplicants }: { app
         })
       });
 
-      const result = await response.json();
-
-      if (!response.ok) throw new Error(result.error || 'Failed to process action');
-
-      // Update the local state so the UI changes immediately
-      setApplicants(prev => prev.map(app => 
+      if (!response.ok) throw new Error('Failed to process action');
+      
+      // Update cache instantly
+      mutate(applicants.map((app: any) => 
         app.id === selectedApplicant.id ? { ...app, status: action === 'approve' ? 'approved' : 'rejected' } : app
-      ));
-
-      alert(`Operator successfully ${action}d.`);
+      ), false);
 
     } catch (error: any) {
       alert(`System Error: ${error.message}`);
-      console.error(error);
     } finally {
       setIsProcessing(false);
     }
@@ -80,18 +84,17 @@ export default function ApplicantViewer({ applicants: initialApplicants }: { app
       
       {/* Left Pane: Applicant List */}
       <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-zinc-800 bg-zinc-900/30 flex flex-col max-h-[400px] md:max-h-[800px] overflow-hidden">
-        <div className="p-4 border-b border-zinc-800 bg-zinc-900/50 shrink-0">
+        <div className="p-4 border-b border-zinc-800 bg-zinc-900/50 shrink-0 flex justify-between items-center">
           <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Applicant Queue</h3>
+          <span className="text-[10px] font-bold text-blue-500 bg-blue-500/10 px-2 py-0.5 rounded">{applicants.length} Total</span>
         </div>
-        <div className="overflow-y-auto flex-1 scrollbar-hide">
-          {applicants.map((applicant) => (
+        <div className="overflow-y-auto flex-1 custom-scrollbar">
+          {applicants.map((applicant: any) => (
             <button
               key={applicant.id}
               onClick={() => setSelectedId(applicant.id)}
               className={`w-full text-left p-4 border-b border-zinc-800/50 transition-all hover:bg-zinc-800/30 ${
-                selectedId === applicant.id 
-                  ? 'bg-zinc-800/50 border-l-2 border-l-blue-500' 
-                  : 'border-l-2 border-l-transparent'
+                selectedId === applicant.id ? 'bg-zinc-800/50 border-l-2 border-l-blue-500' : 'border-l-2 border-l-transparent'
               }`}
             >
               <div className="flex justify-between items-start mb-1">
@@ -104,8 +107,7 @@ export default function ApplicantViewer({ applicants: initialApplicants }: { app
                 <span className="text-xs text-zinc-500 truncate pr-2">{applicant.email}</span>
                 <span className={`text-[9px] px-2 py-0.5 rounded-sm uppercase tracking-widest font-bold ${
                   applicant.status === 'pending' ? 'bg-amber-900/30 text-amber-500' : 
-                  applicant.status === 'approved' ? 'bg-emerald-900/30 text-emerald-500' :
-                  'bg-red-900/30 text-red-500'
+                  applicant.status === 'approved' ? 'bg-emerald-900/30 text-emerald-500' : 'bg-red-900/30 text-red-500'
                 }`}>
                   {applicant.status}
                 </span>
@@ -116,9 +118,9 @@ export default function ApplicantViewer({ applicants: initialApplicants }: { app
       </div>
 
       {/* Right Pane: Detailed Dossier */}
-      <div className="w-full md:w-2/3 bg-[#0a0a0a] flex flex-col max-h-[800px] overflow-y-auto scrollbar-hide">
+      <div className="w-full md:w-2/3 bg-[#0a0a0a] flex flex-col max-h-[800px] overflow-y-auto custom-scrollbar">
         {selectedApplicant ? (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full animate-in fade-in duration-300">
             {/* Dossier Header */}
             <div className="px-8 py-6 border-b border-zinc-800 bg-zinc-900/20 shrink-0 flex justify-between items-start">
               <div>
@@ -195,9 +197,8 @@ export default function ApplicantViewer({ applicants: initialApplicants }: { app
 
             {/* Admin Actions Footer */}
             <div className="mt-auto px-8 py-5 border-t border-zinc-800 bg-zinc-900/50 flex justify-end gap-4 shrink-0">
-              {/* If they are already approved/rejected, just show the status instead of buttons */}
               {selectedApplicant.status !== 'pending' ? (
-                <div className="text-xs font-bold text-zinc-500 uppercase tracking-widest py-2">
+                <div className={`text-xs font-bold uppercase tracking-widest py-2 ${selectedApplicant.status === 'approved' ? 'text-emerald-500' : 'text-red-500'}`}>
                   Status: {selectedApplicant.status}
                 </div>
               ) : (
@@ -214,7 +215,7 @@ export default function ApplicantViewer({ applicants: initialApplicants }: { app
                     disabled={isProcessing}
                     className="text-xs font-bold bg-zinc-100 text-zinc-900 hover:bg-white uppercase tracking-widest px-6 py-2 rounded transition-colors shadow-lg disabled:opacity-50 min-w-[160px] flex items-center justify-center"
                   >
-                    {isProcessing ? 'Transmitting...' : 'Approve Access'}
+                    {isProcessing ? <Loader2 size={14} className="animate-spin" /> : 'Approve Access'}
                   </button>
                 </>
               )}
@@ -222,7 +223,7 @@ export default function ApplicantViewer({ applicants: initialApplicants }: { app
           </div>
         ) : (
           <div className="flex-1 flex items-center justify-center h-full">
-            <p className="text-zinc-600 text-sm">Select an operator from the queue to review their dossier.</p>
+            <p className="text-zinc-600 text-sm font-bold uppercase tracking-widest">Select an operator</p>
           </div>
         )}
       </div>
