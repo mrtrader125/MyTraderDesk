@@ -124,14 +124,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </div>
 
-        {/* Navigation */}
+       {/* Navigation */}
         <div className={`flex-1 py-6 space-y-2 overflow-y-auto scrollbar-hide ${isSidebarOpen ? 'px-4' : 'px-3'}`}>
           {navLinks.map((link) => {
             const isActive = pathname === link.path || (link.path.includes('?') && pathname + '?preview=true' === link.path)
             return (
-              <button
+              // 🚨 CHANGED FROM <button> TO <Link> WITH HOVER HACK
+              <Link
                 key={link.name}
-                onClick={() => router.push(link.path)}
+                href={link.path}
+                prefetch={true}
+                onMouseEnter={() => router.prefetch(link.path)}
                 title={!isSidebarOpen ? link.name : undefined}
                 className={`w-full flex items-center rounded-xl transition-all group ${
                   isActive 
@@ -148,7 +151,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   )}
                 </div>
                 {isSidebarOpen && isActive && <ChevronRight size={14} className="opacity-50 shrink-0" />}
-              </button>
+              </Link>
             )
           })}
         </div>
