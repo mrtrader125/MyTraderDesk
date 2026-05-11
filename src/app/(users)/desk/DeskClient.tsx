@@ -1058,7 +1058,7 @@ export default function DeskClient() {
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
           
-          <div className="flex-1 flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-[400px] lg:min-h-0 shrink-0 transition-all duration-300">
+          <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 h-full lg:h-[calc(50%-4px)]">
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
             
             <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
@@ -1112,7 +1112,7 @@ export default function DeskClient() {
                               </button>
                             )}
                             {!isExecuted && (
-                              <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setLogSetupId(setup.id); setIsAuditOpen(true); }} className="p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
+                              <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setLogSetupId(setup.id); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
                                 <Target size={12} />
                               </button>
                             )}
@@ -1182,7 +1182,7 @@ export default function DeskClient() {
             </div>
           </div>
           
-          <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-[750px] lg:h-[calc(50%-4px)]' : 'h-12'}`}>
+          <div className={`hidden lg:flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
             <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
               <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
@@ -1196,7 +1196,7 @@ export default function DeskClient() {
               </button>
             </div>
 
-            <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 pointer-events-none'}`}>
+            <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
               
               <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
                 <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
