@@ -738,7 +738,7 @@ export default function DeskClient() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user && isPro) {
         await supabase.auth.updateUser({
-          data: { desk_perfect_catalysts: desk_perfect_catalysts, desk_imperfect_catalysts: imperfectCatalysts }
+          data: { desk_perfect_catalysts: perfectCatalysts, desk_imperfect_catalysts: imperfectCatalysts }
         })
       }
     }
@@ -754,9 +754,9 @@ export default function DeskClient() {
       
       setUser(user)
 
-      // 🚨 TIER CHECK
-      const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single();
-      const isProUser = profile?.plan === 'pro' || profile?.plan === 'premium';
+      // 🚨 TIER CHECK (UPDATED TO REMOVE PREMIUM, ALLOW PRO + ADMIN)
+      const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).single();
+      const isProUser = profile?.plan === 'pro' || profile?.role === 'admin';
       setIsPro(isProUser);
 
       if (user.user_metadata?.trade_terminology) setTerminology(user.user_metadata.trade_terminology);
@@ -842,9 +842,10 @@ export default function DeskClient() {
     else if (todaySetups.length === 0) { setActiveTodayId(null); if(logPair) { setLogPair(''); setLogSetupId(null); } }
   }, [todaySetups.length, activeTodayId])
 
+  // 🚨 2. UPDATED DATABASE INSERT (NO SILENT FAILURES, PLAYBOOK ADDED)
   const handleLockEntry = useCallback(async () => {
     if (tradesTakenToday < 2 && logPair && logDirection && logExecution && user) {
-      // 🚨 DEMO TIER DB INTERCEPT
+      
       if (!isPro) {
         setTradesTakenToday(prev => prev + 1);
         const spoofedNow = getISTDate();
@@ -858,8 +859,25 @@ export default function DeskClient() {
         return;
       }
 
-      const newLog = { user_id: user.id, symbol: logPair, direction: logDirection, reason: logCatalystText || null, execution_type: logExecution, setup_id: logSetupId }
-      const { data } = await supabase.from('user_desk_logs').insert([newLog]).select()
+      const targetSetup = setups.find(s => s.id === logSetupId);
+
+      const newLog = { 
+        user_id: user.id, 
+        symbol: logPair, 
+        direction: logDirection, 
+        reason: logCatalystText || null, 
+        execution_type: logExecution, 
+        setup_id: logSetupId,
+        playbook: targetSetup?.playbook || null 
+      }
+      
+      const { data, error } = await supabase.from('user_desk_logs').insert([newLog]).select()
+      
+      if (error) {
+        alert(`Supabase Error: ${error.message}`);
+        return;
+      }
+
       if (data && data[0]) {
         setTradesTakenToday(prev => prev + 1);
         const spoofedNow = getISTDate();
@@ -868,11 +886,12 @@ export default function DeskClient() {
           symbol: data[0].symbol, direction: data[0].direction, reason: data[0].reason, execution: data[0].execution_type, 
           rr: '', outcome: '', created_at: data[0].created_at 
         }, ...prev]);
-        setExecutedSymbols(prev => [...prev, data[0].symbol]);
+        setExecutedSymbols(prev => [...prev, data[0].symbol]); 
       }
+      
       setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); setLogSetupId(null); setIsAuditOpen(false); 
     }
-  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, logSetupId, user, getISTDate, isPro]);
+  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, logSetupId, user, getISTDate, isPro, setups]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -957,7 +976,6 @@ export default function DeskClient() {
   const handleBulkUpload = async (draftsToSave: any[]) => {
     if (!user) return alert("Authentication Error: No active user session found.")
     
-    // 🚨 DEMO TIER DB INTERCEPT
     if (!isPro) {
        const newFakeSetups = draftsToSave.map(draft => ({
           id: 'demo-' + Math.random(),
@@ -993,22 +1011,14 @@ export default function DeskClient() {
         imageUrl: d.image_url, isToday: false, addedToTodayAt: null, createdAt: adjustDbToIST(d.created_at).getTime()
       })), ...prev]);
 
-      // --- THE TRIPWIRE: Check if they are supposed to be off the desk ---
-      const { data: moduleData } = await supabase
-        .from('user_trading_modules')
-        .select('status')
-        .eq('user_id', user.id)
-        .single();
-
+      const { data: moduleData } = await supabase.from('user_trading_modules').select('status').eq('user_id', user.id).single();
       if (moduleData?.status === 'ON_LEAVE') {
-        // Fire silent ping to backend to trigger the Telegram intervention
         fetch('/api/telegram/intervene', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id })
-        }).catch(() => {}); // Catch to prevent UI crash if it fails
+        }).catch(() => {});
       }
-      // --- END TRIPWIRE ---
     }
   }
 
@@ -1058,7 +1068,8 @@ export default function DeskClient() {
 
         <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
           
-          <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 h-full lg:h-[calc(50%-4px)]">
+          {/* 🚨 LAYOUT FIX: Flexible Top Container */}
+          <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 transition-all duration-300 ${isAuditOpen ? 'h-[500px] lg:h-[calc(50%-4px)]' : 'flex-1'}`}>
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
             
             <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
@@ -1112,7 +1123,8 @@ export default function DeskClient() {
                               </button>
                             )}
                             {!isExecuted && (
-                              <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setLogSetupId(setup.id); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
+                              // 🚨 LAYOUT FIX: Target button is visible on mobile now
+                              <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setLogSetupId(setup.id); setIsAuditOpen(true); }} className="p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
                                 <Target size={12} />
                               </button>
                             )}
@@ -1182,7 +1194,8 @@ export default function DeskClient() {
             </div>
           </div>
           
-          <div className={`hidden lg:flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
+          {/* 🚨 LAYOUT FIX: Action Logs Expand Correctly */}
+          <div className={`flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-[750px] lg:h-[calc(50%-4px)]' : 'h-12'}`}>
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
             <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
               <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
@@ -1196,9 +1209,11 @@ export default function DeskClient() {
               </button>
             </div>
 
-            <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
+            {/* 🚨 LAYOUT FIX: Pointer-events-none hides content cleanly on close */}
+            <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 pointer-events-none'}`}>
               
-              <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
+              {/* 🚨 LAYOUT FIX: Scrollable Form area so buttons are never cut off */}
+              <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col relative bg-zinc-950/50 overflow-y-auto custom-scrollbar">
                 <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
                   <div className="flex justify-between items-end">
                     <div className="flex items-center gap-2">
