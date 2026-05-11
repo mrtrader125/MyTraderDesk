@@ -1,14 +1,11 @@
 import { Metadata } from 'next'
 import DeskClient from './DeskClient'
 
-// 🚨 Force Vercel to cache this page for 0ms loads
-export const dynamic = 'force-static'
-
 export const metadata: Metadata = {
   title: 'Operator Desk | MyTraderDesk',
 }
 
-// 🚨 NO SUPABASE SERVER CALLS. 100% STATIC.
+// 🚨 Removed the 'force-static' tag so it doesn't conflict with your layouts!
 export default function DeskPage() {
   return <DeskClient />
 }
