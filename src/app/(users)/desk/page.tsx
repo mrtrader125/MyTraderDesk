@@ -1,19 +1,14 @@
 import { Metadata } from 'next'
 import DeskClient from './DeskClient'
-import { createClient } from '@/lib/supabaseServer'
-import { redirect } from 'next/navigation'
+
+// 🚨 Force Vercel to cache this page for 0ms loads
+export const dynamic = 'force-static'
 
 export const metadata: Metadata = {
   title: 'Operator Desk | MyTraderDesk',
 }
 
-export default async function DeskPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
+// 🚨 NO SUPABASE SERVER CALLS. 100% STATIC.
+export default function DeskPage() {
   return <DeskClient />
 }
