@@ -23,7 +23,7 @@ const HoverRevealSlider = ({ before, after }: { before: string, after: string })
       className="relative overflow-hidden rounded-2xl ring-1 ring-white/[0.04] w-full aspect-video bg-[#050505] group cursor-pointer shadow-inner"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => setIsHovered(!isHovered)} // Added toggle for mobile touch
+      onClick={() => setIsHovered(!isHovered)} 
     >
       <img 
         src={after} 
@@ -151,10 +151,11 @@ export default function Home() {
         </div>
       </nav>
       
-      <section className="relative z-10 min-h-screen flex flex-col justify-center pt-24 pb-16 md:pt-28 md:pb-20">
+      {/* Reverted Hero Section to exactly match original centered layout */}
+      <section className="relative z-10 min-h-screen flex flex-col justify-center pt-28 pb-16 md:pt-28 md:pb-20">
         <div className="flex-1 flex flex-col items-center justify-center max-w-[900px] mx-auto text-center px-5 w-full mt-10 sm:mt-0">
           <h1 className="text-[2.5rem] leading-[1.1] sm:text-5xl lg:text-[4rem] font-extrabold tracking-tight text-white mb-5 flex flex-col items-center justify-center w-full">
-            {/* Removed the raw whitespace-nowrap that breaks small mobile screens */}
+            {/* Fixed horizontal mobile scroll issue by removing hard whitespace-nowrap constraints */}
             <span className="block sm:inline sm:whitespace-nowrap">Systematic Trading Terminal &</span>
             <span className="text-blue-500 block sm:inline sm:whitespace-nowrap mt-1 sm:mt-0">Performance Journal.</span>
           </h1>
@@ -171,6 +172,7 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Reverted bottom elements back to original layout */}
         <div className="w-full flex flex-col items-center mt-12 sm:mt-auto pt-8 px-5">
           <div className="flex items-center gap-3 mb-5">
             <div className="flex -space-x-2">
