@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   User, Map, ShieldCheck, Filter, ArrowRight, Activity, 
   ChevronLeft, ChevronRight, Lock, ChevronDown, Globe2, BarChart3, Database,
-  TerminalSquare, BookOpen, Workflow, Target, Star, Quote, MonitorSmartphone
+  TerminalSquare, BookOpen, Workflow, Target, Star, Quote
 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
@@ -23,7 +23,7 @@ const HoverRevealSlider = ({ before, after }: { before: string, after: string })
       className="relative overflow-hidden rounded-2xl ring-1 ring-white/[0.04] w-full aspect-video bg-[#050505] group cursor-pointer shadow-inner"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      onClick={() => setIsHovered(!isHovered)} 
+      onClick={() => setIsHovered(!isHovered)} // Added toggle for mobile touch
     >
       <img 
         src={after} 
@@ -120,7 +120,6 @@ export default function Home() {
   return (
     <div className="bg-[#050505] text-neutral-200 min-h-screen font-sans selection:bg-blue-500/30 selection:text-white relative overflow-x-hidden">
       
-      {/* Background glow effects */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] h-[50%] bg-blue-600/5 blur-[150px]"></div>
         <div className="absolute bottom-0 right-0 w-[50%] h-[50%] bg-neutral-600/5 blur-[150px]"></div>
@@ -152,99 +151,63 @@ export default function Home() {
         </div>
       </nav>
       
-      <section className="relative z-10 min-h-screen flex flex-col justify-center pt-32 pb-16 md:pt-40 md:pb-24">
-        
-        {/* Core Value Proposition */}
-        <div className="flex flex-col items-center justify-center max-w-[900px] mx-auto text-center px-5 w-full">
-          <h1 className="text-[2.5rem] leading-[1.1] sm:text-5xl lg:text-[4.5rem] font-extrabold tracking-tight text-white mb-6 flex flex-col items-center justify-center w-full">
+      <section className="relative z-10 min-h-screen flex flex-col justify-center pt-24 pb-16 md:pt-28 md:pb-20">
+        <div className="flex-1 flex flex-col items-center justify-center max-w-[900px] mx-auto text-center px-5 w-full mt-10 sm:mt-0">
+          <h1 className="text-[2.5rem] leading-[1.1] sm:text-5xl lg:text-[4rem] font-extrabold tracking-tight text-white mb-5 flex flex-col items-center justify-center w-full">
+            {/* Removed the raw whitespace-nowrap that breaks small mobile screens */}
             <span className="block sm:inline sm:whitespace-nowrap">Systematic Trading Terminal &</span>
             <span className="text-blue-500 block sm:inline sm:whitespace-nowrap mt-1 sm:mt-0">Performance Journal.</span>
           </h1>
           <p className="text-sm md:text-base text-neutral-400 max-w-2xl mx-auto leading-relaxed font-medium">
             A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
           </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
-            <Link href="/apply" className="px-8 py-3.5 sm:py-4 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.15)]">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
+            <Link href="/apply" className="px-6 py-3.5 sm:py-3 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.15)]">
               Apply For Founding Cohort
             </Link>
-            <Link href="#features" className="px-8 py-3.5 sm:py-4 bg-[#111] text-white border border-neutral-800/60 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-[#1a1a1a] transition-colors w-full sm:w-auto flex items-center justify-center gap-2">
-              See How It Works <Lock className="w-3.5 h-3.5 text-neutral-500" />
+            <Link href="#features" className="px-6 py-3.5 sm:py-3 bg-[#111] text-white border border-neutral-800/60 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-[#1a1a1a] transition-colors w-full sm:w-auto">
+              See How It Works
             </Link>
           </div>
         </div>
 
-        {/* Visual Anchor & Trust Panel */}
-        <div className="w-full max-w-[1400px] mx-auto mt-16 sm:mt-24 px-5 flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-12 relative z-20">
-          
-          {/* Left: Terminal Mockup */}
-          <div className="w-full lg:w-[55%] relative aspect-[16/9] lg:aspect-auto lg:h-[450px]">
-            <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/10 to-transparent rounded-3xl overflow-hidden flex items-center justify-center">
-               {/* Drop your actual mockup image here! 
-                  Ensure the image is named terminal-mockup.png in your public folder 
-               */}
-               <Image 
-                 src="/terminal-mockup.png" 
-                 alt="MyTraderDesk Terminal Interface" 
-                 fill 
-                 className="object-contain object-center drop-shadow-[0_0_40px_rgba(59,130,246,0.15)] z-10" 
-               />
-               
-               {/* Fallback wireframe if image is missing */}
-               <div className="absolute inset-0 flex flex-col items-center justify-center -z-10 border border-neutral-800/50 rounded-3xl bg-[#080808]/50 backdrop-blur-sm">
-                  <MonitorSmartphone className="w-16 h-16 text-neutral-800 mb-4" />
-                  <p className="text-[10px] font-bold text-neutral-700 uppercase tracking-widest">[Terminal Mockup Placeholder]</p>
-               </div>
+        <div className="w-full flex flex-col items-center mt-12 sm:mt-auto pt-8 px-5">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex -space-x-2">
+              {heroProfiles.length > 0 ? (
+                heroProfiles.map((src, index) => (
+                  <div key={index} className="relative w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-800 overflow-hidden">
+                    <Image src={src} alt="Active Operator" fill className="object-cover" />
+                  </div>
+                ))
+              ) : (
+                <>
+                  <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-800"></div>
+                  <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-700"></div>
+                  <div className="w-6 h-6 rounded-full border-2 border-[#050505] bg-neutral-600"></div>
+                </>
+              )}
             </div>
-          </div>
-
-          {/* Right: The Trust Panel */}
-          <div className="w-full lg:w-[45%] flex flex-col">
-            <div className="bg-[#080808]/80 backdrop-blur-md border border-neutral-800/80 rounded-3xl p-8 sm:p-10 shadow-2xl">
-              
-              <h3 className="text-[9px] sm:text-[10px] font-bold text-neutral-500 tracking-[0.15em] uppercase mb-6 text-center lg:text-left">
-                Compatible Institutional Platforms
-              </h3>
-              
-              {/* Fake Logos - Replace with actual SVGs or Next Images if you have them */}
-              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-x-8 gap-y-4 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-                <div className="flex items-center gap-2"><Globe2 className="w-5 h-5 text-neutral-400"/> <span className="font-bold text-sm tracking-tight text-neutral-300">MetaTrader 4/5</span></div>
-                <div className="flex items-center gap-2"><Target className="w-5 h-5 text-neutral-400"/> <span className="font-bold text-sm tracking-tight text-neutral-300">cTrader</span></div>
-                <div className="flex items-center gap-2"><Database className="w-5 h-5 text-neutral-400"/> <span className="font-bold text-sm tracking-tight text-neutral-300">Supabase</span></div>
-              </div>
-
-              <hr className="border-neutral-800/60 my-8" />
-
-              <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-                <div className="flex -space-x-3 shrink-0">
-                  {heroProfiles.length > 0 ? (
-                    heroProfiles.map((src, index) => (
-                      <div key={index} className="relative w-12 h-12 rounded-full border-2 border-[#080808] bg-neutral-800 overflow-hidden shadow-sm">
-                        <Image src={src} alt="Active Operator" fill className="object-cover" />
-                      </div>
-                    ))
-                  ) : (
-                    <>
-                      <div className="w-12 h-12 rounded-full border-2 border-[#080808] bg-neutral-800"></div>
-                      <div className="w-12 h-12 rounded-full border-2 border-[#080808] bg-neutral-700"></div>
-                      <div className="w-12 h-12 rounded-full border-2 border-[#080808] bg-neutral-600"></div>
-                    </>
-                  )}
-                </div>
-                <div>
-                  <p className="text-base sm:text-lg font-bold text-white"><span className="text-blue-500">95% Higher</span> Discipline Index</p>
-                  <p className="text-[9px] sm:text-[10px] text-neutral-500 font-medium uppercase tracking-[0.1em] mt-1.5 leading-relaxed">
-                    Reported by current cohort members.<br className="hidden sm:block" /> Explicitly remove your visual bias leaks.
-                  </p>
-                </div>
-              </div>
-
-            </div>
+            <p className="text-[8px] sm:text-[9px] font-bold text-neutral-500 tracking-widest uppercase">Join active operators validating setups today.</p>
           </div>
           
+          <div className="flex flex-wrap justify-center gap-2 sm:gap-2.5 opacity-80">
+            <div className="px-3 sm:px-4 py-2 border border-neutral-800/50 rounded-lg bg-[#080808] flex items-center gap-2">
+              <Globe2 className="w-3.5 h-3.5 text-neutral-500" />
+              <span className="text-[8px] sm:text-[9px] font-bold tracking-widest uppercase text-neutral-400">MetaTrader 4 / 5</span>
+            </div>
+            <div className="px-3 sm:px-4 py-2 border border-neutral-800/50 rounded-lg bg-[#080808] flex items-center gap-2">
+              <BarChart3 className="w-3.5 h-3.5 text-neutral-500" />
+              <span className="text-[8px] sm:text-[9px] font-bold tracking-widest uppercase text-neutral-400">TradingView Charts</span>
+            </div>
+            <div className="px-3 sm:px-4 py-2 border border-neutral-800/50 rounded-lg bg-[#080808] flex items-center gap-2">
+              <Target className="w-3.5 h-3.5 text-neutral-500" />
+              <span className="text-[8px] sm:text-[9px] font-bold tracking-widest uppercase text-neutral-400">cTrader</span>
+            </div>
+          </div>
         </div>
       </section>
       
-      {/* ... [Features Section remains perfectly untouched] ... */}
       <section id="features" className="relative z-10 w-full py-16 md:py-24 lg:py-28 px-5 sm:px-6 border-t border-neutral-900 bg-[#020202]">
         <div className="max-w-[1400px] mx-auto">
           
