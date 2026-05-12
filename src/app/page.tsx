@@ -67,12 +67,15 @@ export default function Home() {
   const [heroProfiles, setHeroProfiles] = useState<string[]>([])
 
   const terminalSlides = [
-    { id: 'mtd1', title: 'Dashboard', desc: 'Your central hub for daily market structure and active setups.' },
-    { id: 'mtd2', title: 'Markets', desc: 'Multi-timeframe analysis across Forex, Crypto, Indices, and Commodities.' },
-    { id: 'mtd3', title: 'The Vault', desc: 'Your personal archive. Bookmark and save setups from the Live Floor.' },
-    { id: 'mtd4', title: 'Live Floor', desc: 'Real-time structural analysis and community bias voting.' },
-    { id: 'mtd5', title: 'Account', desc: 'Manage your terminal preferences and subscription access.' }
-  ]
+  { id: 'mtd1', title: 'Market Feed', desc: 'Your central hub for daily market structure, active setups, and system broadcasts.' },
+  { id: 'mtd2', title: 'Workspace', desc: 'Your customizable terminal to track active pairs and enforce your daily sniper routine.' },
+  { id: 'mtd3', title: 'Performance Journal', desc: 'Conduct trade autopsies by comparing your structural intent against actual execution reality.' },
+  { id: 'mtd4', title: 'Macro Analytics', desc: 'Track your cumulative yield, playbook strike rates, and behavioral discipline heatmap.' },
+  { id: 'mtd5', title: 'Execution Desk', desc: 'Stage live trades, sync your MT5 data, and manage your post-trade settlement queue.' },
+  { id: 'mtd6', title: 'Markets', desc: 'Multi-timeframe analysis across Forex, Crypto, Indices, and Commodities.' },
+  { id: 'mtd7', title: 'The Vault', desc: 'Your personal archive. Bookmark, organize, and annotate high-probability setups.' },
+  { id: 'mtd8', title: 'Live Floor', desc: 'Real-time structural analysis, community sentiment voting, and live terminal squawks.' }
+]
 
   const faqs = [
     { q: "Do you support burner or sandbox accounts?", a: "No. The system requires discipline. By removing burner accounts, we remove the temptation for impulsive trading. All MT5 executions are synced and logged permanently." },
