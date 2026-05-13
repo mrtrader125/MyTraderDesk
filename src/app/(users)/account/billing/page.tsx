@@ -30,7 +30,7 @@ export default function BillingPage() {
       </div>
 
       {/* PORTAL ACCESS CARD */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-[2.5rem] p-6 md:p-10 text-center shadow-sm">
+      <div className="bg-[#000000] border border-neutral-800 rounded-2xl md:rounded-[2.5rem] p-6 md:p-10 text-center shadow-sm">
         <div className="w-12 h-12 md:w-16 md:h-16 bg-[#111] md:bg-neutral-900 border border-neutral-800 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-5 md:mb-6 shadow-inner">
           <CreditCard className="text-neutral-400 w-5 h-5 md:w-7 md:h-7" />
         </div>

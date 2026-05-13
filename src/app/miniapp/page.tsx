@@ -141,7 +141,7 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
       </button>
 
       {/* BOTTOM THESIS DRAWER */}
-      <div className={`absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-3xl transition-transform duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 ${showThesis ? 'translate-y-0' : 'translate-y-[calc(100%-4.5rem)]'}`}>
+      <div className={`absolute bottom-0 left-0 right-0 bg-[#000000] border-t border-white/10 rounded-t-3xl transition-transform duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 ${showThesis ? 'translate-y-0' : 'translate-y-[calc(100%-4.5rem)]'}`}>
         <div 
           className="h-[4.5rem] flex items-center justify-between px-6 cursor-pointer"
           onClick={() => setShowThesis(!showThesis)}
@@ -395,7 +395,7 @@ export default function MiniAppPage() {
                 className={`w-full text-left border rounded-2xl p-4 flex items-center justify-between transition-transform active:scale-95 relative overflow-hidden shadow-sm
                   ${isUnseen 
                     ? 'bg-[#0a1526] border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)] animate-pulse' 
-                    : 'bg-[#0a0a0a] border-white/[0.04]'}
+                    : 'bg-[#000000] border-white/[0.04]'}
                 `}
               >
                 {/* 🚨 FIX: BLINKING UNSEEN UI */}

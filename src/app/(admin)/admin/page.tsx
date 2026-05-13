@@ -84,7 +84,7 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
-        <div className="bg-[#0a0a0a] border border-neutral-800 p-6 rounded-3xl shadow-lg relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 flex flex-col justify-between">
+        <div className="bg-[#000000] border border-neutral-800 p-6 rounded-3xl shadow-lg relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-[50px] rounded-full pointer-events-none group-hover:bg-emerald-500/20 transition-all"></div>
           <div className="relative z-10">
             <div className="p-2.5 bg-black border border-neutral-800 rounded-xl w-fit mb-4 text-emerald-500"><DollarSign size={18} /></div>
@@ -105,7 +105,7 @@ export default async function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg">
+        <div className="bg-[#000000] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg">
           <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center"><Activity size={16} className="mr-2 text-brand-primary" /> Analysis Output</h3>
           <div className="space-y-3">
             <TimeRow label="Published Today" count={setups.today} highlight={true} />
@@ -115,7 +115,7 @@ export default async function AdminDashboard() {
           </div>
         </div>
 
-        <div className="bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
+        <div className="bg-[#000000] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
           <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center"><BarChart2 size={16} className="mr-2 text-blue-500" /> Subscription Tiers</h3>
           
           <div className="w-full h-3 rounded-full flex overflow-hidden bg-neutral-900 mb-6 border border-neutral-800">
@@ -134,7 +134,7 @@ export default async function AdminDashboard() {
       <div>
         <h2 className="text-lg font-black text-white uppercase tracking-tighter italic mb-4 mt-4">Platform <span className="text-brand-primary">Engagement</span></h2>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-1 bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg">
+          <div className="lg:col-span-1 bg-[#000000] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg">
             <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center"><Search size={16} className="mr-2 text-white" /> Trending Assets</h3>
             {topSearches.length > 0 ? (
               <div className="space-y-4">
@@ -153,7 +153,7 @@ export default async function AdminDashboard() {
             ) : <div className="text-center py-6 text-[10px] font-bold text-neutral-600 uppercase tracking-widest">No recent search data</div>}
           </div>
 
-          <div className="lg:col-span-2 bg-[#0a0a0a] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
+          <div className="lg:col-span-2 bg-[#000000] border border-neutral-800 p-6 sm:p-8 rounded-3xl shadow-lg flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xs font-black text-white uppercase tracking-widest flex items-center"><Activity size={16} className="mr-2 text-blue-500" /> Live Activity Feed</h3>
               <div className="flex items-center"><div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse mr-2"></div><span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Live Updates</span></div>
@@ -192,7 +192,7 @@ export default async function AdminDashboard() {
 
 function StatCard({ label, value, subValue, color, icon: Icon }: any) {
   return (
-    <div className="bg-[#0a0a0a] border border-neutral-800 p-6 rounded-3xl shadow-lg relative overflow-hidden group hover:border-neutral-600 transition-all duration-500 flex flex-col justify-between">
+    <div className="bg-[#000000] border border-neutral-800 p-6 rounded-3xl shadow-lg relative overflow-hidden group hover:border-neutral-600 transition-all duration-500 flex flex-col justify-between">
       <div className="relative z-10">
         <div className={`p-2.5 bg-black border border-neutral-800 rounded-xl w-fit mb-4 ${color}`}><Icon size={18} /></div>
         <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">{label}</div>

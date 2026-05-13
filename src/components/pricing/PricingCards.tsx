@@ -49,7 +49,7 @@ export default function PricingCards({ userPlan = 'free' }: { userPlan?: string 
   return (
     <div className="w-full max-w-[1000px] mx-auto flex flex-col items-center">
       {/* BILLING TOGGLE */}
-      <div className="flex items-center gap-2 mb-10 p-1.5 bg-[#0a0a0a] border border-neutral-800 rounded-full shadow-inner">
+      <div className="flex items-center gap-2 mb-10 p-1.5 bg-[#000000] border border-neutral-800 rounded-full shadow-inner">
         <button onClick={() => setIsYearly(false)} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all ${!isYearly ? 'bg-neutral-800 text-white shadow-md' : 'text-neutral-500 hover:text-neutral-300'}`}>Monthly</button>
         <button onClick={() => setIsYearly(true)} className={`px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${isYearly ? 'bg-brand-primary/20 text-brand-primary border border-brand-primary/30 shadow-md' : 'text-neutral-500 hover:text-neutral-300'}`}>
           Annually <span className="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-500 rounded text-[8px] tracking-wider">SAVE 16%</span>
@@ -59,7 +59,7 @@ export default function PricingCards({ userPlan = 'free' }: { userPlan?: string 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
         
         {/* FREE / DEMO TIER CARD */}
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[1.5rem] p-6 md:p-8 flex flex-col relative overflow-hidden shadow-lg">
+        <div className="bg-[#000000] border border-neutral-800 rounded-[1.5rem] p-6 md:p-8 flex flex-col relative overflow-hidden shadow-lg">
           <div className="p-3 bg-neutral-800/50 text-neutral-400 rounded-xl w-fit mb-4"><Shield size={20} /></div>
           <h3 className="text-lg font-black text-white uppercase tracking-wider mb-1.5">Terminal Demo</h3>
           <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest mb-6 leading-relaxed">Take a risk-free tour of the terminal interface and see the operational protocol in action.</p>
@@ -95,7 +95,7 @@ export default function PricingCards({ userPlan = 'free' }: { userPlan?: string 
         </div>
 
         {/* PROFESSIONAL CARD */}
-        <div className="bg-[#0a0a0a] border border-blue-500/40 rounded-[1.5rem] p-6 md:p-8 flex flex-col relative overflow-hidden shadow-[0_0_40px_rgba(37,99,235,0.15)] hover:border-blue-500 transition-colors">
+        <div className="bg-[#000000] border border-blue-500/40 rounded-[1.5rem] p-6 md:p-8 flex flex-col relative overflow-hidden shadow-[0_0_40px_rgba(37,99,235,0.15)] hover:border-blue-500 transition-colors">
           <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-80"></div>
           <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-500/10 blur-[50px] rounded-full pointer-events-none"></div>
           

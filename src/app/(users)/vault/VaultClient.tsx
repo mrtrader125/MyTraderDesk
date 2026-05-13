@@ -101,9 +101,9 @@ export default function VaultClient() {
   // 🚨 NEUTRAL SKELETON: Renders instantly to prevent lag/flashing
   if (isLoading || !data) {
     return (
-      <div className="w-full min-h-screen bg-[#0a0a0a] p-6 md:p-8 font-sans overflow-x-hidden relative">
+      <div className="w-full min-h-screen bg-[#000000] p-6 md:p-8 font-sans overflow-x-hidden relative">
         <div className="flex flex-col items-center mb-10 mt-1">
-          <div className="h-[38px] w-full max-w-lg bg-[#0a0a0a] border border-neutral-800 rounded-xl animate-pulse"></div>
+          <div className="h-[38px] w-full max-w-lg bg-[#000000] border border-neutral-800 rounded-xl animate-pulse"></div>
         </div>
         <div className="max-w-[100rem] mx-auto space-y-10">
           <section>
@@ -113,7 +113,7 @@ export default function VaultClient() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
               {[1, 2, 3, 4, 5].map(i => (
-                <div key={i} className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col min-h-[180px] animate-pulse">
+                <div key={i} className="bg-[#000000] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col min-h-[180px] animate-pulse">
                   <div className="h-28 w-full bg-neutral-900 border-b border-neutral-800/50 shrink-0"></div>
                   <div className="p-4 pr-5 flex flex-col flex-1 justify-between relative">
                     <div className="absolute top-0 right-0 inset-y-0 w-1 bg-neutral-800" />
@@ -207,7 +207,7 @@ export default function VaultClient() {
     return (
       <Link 
         href={isProUser ? `/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=vault` : '#'}
-        className={`bg-[#0a0a0a] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group transition-all duration-300 min-h-[180px] shadow-sm relative block ${!isProUser ? 'opacity-80 cursor-default' : 'hover:border-neutral-600 hover:bg-white/[0.02]'}`}
+        className={`bg-[#000000] border border-neutral-800 rounded-2xl overflow-hidden flex flex-col group transition-all duration-300 min-h-[180px] shadow-sm relative block ${!isProUser ? 'opacity-80 cursor-default' : 'hover:border-neutral-600 hover:bg-white/[0.02]'}`}
         onClick={(e) => {
            if (!isProUser) e.preventDefault();
         }}
@@ -228,7 +228,7 @@ export default function VaultClient() {
           )}
 
           {hasAccess && (
-            <div className="absolute top-2 left-2 bg-[#0a0a0a]/90 backdrop-blur-md px-2 py-0.5 rounded-md text-[9px] font-black text-white uppercase tracking-widest border border-white/10">{setup.timeframe || '-'}</div>
+            <div className="absolute top-2 left-2 bg-[#000000]/90 backdrop-blur-md px-2 py-0.5 rounded-md text-[9px] font-black text-white uppercase tracking-widest border border-white/10">{setup.timeframe || '-'}</div>
           )}
 
           {isProUser && (
@@ -239,7 +239,7 @@ export default function VaultClient() {
           )}
         </div>
 
-        <div className="relative p-4 pr-5 flex flex-col flex-1 justify-between bg-gradient-to-b from-[#0a0a0a] to-[#050505]">
+        <div className="relative p-4 pr-5 flex flex-col flex-1 justify-between bg-gradient-to-b from-[#000000] to-[#050505]">
           <div className={`absolute top-0 right-0 inset-y-0 w-1 md:w-1.5 transition-all duration-500 z-30 ${statusLine}`} />
 
           <div className="z-10">
@@ -270,7 +270,7 @@ export default function VaultClient() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#0a0a0a] p-6 md:p-8 font-sans overflow-x-hidden relative">
+    <div className="w-full min-h-screen bg-[#000000] p-6 md:p-8 font-sans overflow-x-hidden relative">
       
       {!isProUser && (
         <div className="absolute top-4 right-4 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">
@@ -281,7 +281,7 @@ export default function VaultClient() {
       <div className="flex flex-col items-center mb-8 mt-1">
         
         {/* UNRESTRICTED CATEGORY TABS */}
-        <div className="flex items-center space-x-1 bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800">
+        <div className="flex items-center space-x-1 bg-[#000000] p-1 rounded-xl border border-neutral-800">
           {CATEGORIES.map((cat) => {
             const active = activeTab === cat.id
             return (
@@ -298,7 +298,7 @@ export default function VaultClient() {
       </div>
 
       {vaultItems.length === 0 ? (
-        <div className="w-full max-w-xl mx-auto mt-6 border border-dashed border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#0a0a0a]">
+        <div className="w-full max-w-xl mx-auto mt-6 border border-dashed border-neutral-800 rounded-3xl p-12 flex flex-col items-center text-center bg-[#000000]">
           {!isProUser ? (
              <>
                <Lock size={40} className="text-amber-500/40 mb-4 stroke-1" />
@@ -362,7 +362,7 @@ export default function VaultClient() {
       {/* NOTES MODAL */}
       {editingNoteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6">
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
+          <div className="bg-[#000000] border border-neutral-800 rounded-2xl w-full max-w-lg shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
             <button onClick={() => setEditingNoteId(null)} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors"><X size={20} /></button>
             <div className="flex items-center mb-6">
               <Edit3 size={18} className="text-amber-500 mr-2" />

@@ -142,7 +142,7 @@ function UpdatePasswordForm() {
 export default function UpdatePasswordPage() {
   return (
     <div className="h-screen w-screen flex items-center justify-center bg-[#030303] p-6">
-      <div className="w-full max-w-md bg-[#0a0a0a] border border-white/10 p-8 md:p-10 rounded-[2rem] shadow-2xl relative overflow-hidden">
+      <div className="w-full max-w-md bg-[#000000] border border-white/10 p-8 md:p-10 rounded-[2rem] shadow-2xl relative overflow-hidden">
         
         <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
           <Lock size={150} />

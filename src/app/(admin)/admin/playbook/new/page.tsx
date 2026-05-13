@@ -78,7 +78,7 @@ export default function AdminPlaybookPublish() {
                 type="text" 
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-4 py-3 text-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-[#000000] border border-neutral-800 rounded-xl px-4 py-3 text-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
           </div>

@@ -101,11 +101,11 @@ export default function ArchiveClient() {
 
   if (isLoading || !data) {
     return (
-      <div className="w-full bg-[#0a0a0a] p-6 lg:p-8 flex flex-col h-[calc(100dvh-65px)]">
-        <div className="h-10 bg-[#0a0a0a] rounded-xl border border-neutral-800 animate-pulse mb-8"></div>
+      <div className="w-full bg-[#000000] p-6 lg:p-8 flex flex-col h-[calc(100dvh-65px)]">
+        <div className="h-10 bg-[#000000] rounded-xl border border-neutral-800 animate-pulse mb-8"></div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl min-h-[180px] animate-pulse"></div>
+              <div key={i} className="bg-[#000000] border border-neutral-800 rounded-xl min-h-[180px] animate-pulse"></div>
             ))}
         </div>
       </div>
@@ -176,13 +176,13 @@ export default function ArchiveClient() {
     return (
       <div 
         onClick={handleCardClick}
-        className={`bg-[#0a0a0a] border rounded-xl overflow-hidden flex flex-col transition-all duration-300 relative min-h-[180px] md:min-h-[200px]
+        className={`bg-[#000000] border rounded-xl overflow-hidden flex flex-col transition-all duration-300 relative min-h-[180px] md:min-h-[200px]
           ${!isProUser ? 'opacity-80' : 'group cursor-pointer'}
           ${isPrime && isProUser ? 'border-blue-500/30 hover:border-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.05)]' : 'border-neutral-800 hover:border-neutral-600 shadow-sm'}
           ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
-        <div className="h-24 md:h-28 w-full bg-[#0a0a0a] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
+        <div className="h-24 md:h-28 w-full bg-[#000000] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
           <img 
             src={setup.image_url} 
             alt={`${asset} Chart`} 
@@ -225,8 +225,8 @@ export default function ArchiveClient() {
   }
 
   return (
-    <div className="w-full bg-[#0a0a0a] font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
-      <div className="w-full border-b border-neutral-900 bg-[#0a0a0a]/95 backdrop-blur-md z-20 shadow-sm shrink-0">
+    <div className="w-full bg-[#000000] font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
+      <div className="w-full border-b border-neutral-900 bg-[#000000]/95 backdrop-blur-md z-20 shadow-sm shrink-0">
         <div className="max-w-[90rem] mx-auto flex items-center space-x-3 p-3 md:p-5 relative">
           {!isProUser && (
             <div className="absolute top-1/2 -translate-y-1/2 right-4 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">
@@ -243,7 +243,7 @@ export default function ArchiveClient() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#0a0a0a] p-3 md:p-5 lg:p-6 relative">
+      <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#000000] p-3 md:p-5 lg:p-6 relative">
         {!isProUser && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-10 pointer-events-none" />}
         <div className="max-w-[90rem] mx-auto space-y-8 md:space-y-10 pb-20 md:pb-6 relative z-20">
           {grouped.today.length > 0 && (

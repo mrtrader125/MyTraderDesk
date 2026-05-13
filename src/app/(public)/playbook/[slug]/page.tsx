@@ -144,7 +144,7 @@ export default async function PlaybookArticlePage({ params }: Props) {
           </article>
 
           {/* Clean Systematic CTA Box */}
-          <div className="mt-24 p-8 md:p-10 bg-[#0A0A0A] border border-neutral-800/60 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+          <div className="mt-24 p-8 md:p-10 bg-[#000000] border border-neutral-800/60 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
              <div>
                <h3 className="text-xl font-medium text-white mb-2 tracking-tight">
                  Access the Live Execution Floor

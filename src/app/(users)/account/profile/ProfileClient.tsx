@@ -84,8 +84,8 @@ export default function ProfileClient() {
   if (isLoading || !data) {
     return (
       <div className="max-w-3xl space-y-6 md:space-y-8">
-        <div><div className="h-6 w-32 bg-[#0a0a0a] border border-neutral-800 rounded-md animate-pulse mb-2"></div><div className="h-3 w-64 bg-[#0a0a0a] border border-neutral-800 rounded-md animate-pulse"></div></div>
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 md:p-8 shadow-sm"><div className="h-4 w-40 bg-neutral-900 rounded animate-pulse mb-8"></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"><div className="space-y-2"><div className="w-full h-11 bg-[#0a0a0a] border border-neutral-800 rounded-xl animate-pulse"></div></div><div className="space-y-2"><div className="w-full h-11 bg-[#0a0a0a] border border-neutral-800 rounded-xl animate-pulse"></div></div></div></div>
+        <div><div className="h-6 w-32 bg-[#000000] border border-neutral-800 rounded-md animate-pulse mb-2"></div><div className="h-3 w-64 bg-[#000000] border border-neutral-800 rounded-md animate-pulse"></div></div>
+        <div className="bg-[#000000] border border-neutral-800 rounded-2xl p-5 md:p-8 shadow-sm"><div className="h-4 w-40 bg-neutral-900 rounded animate-pulse mb-8"></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6"><div className="space-y-2"><div className="w-full h-11 bg-[#000000] border border-neutral-800 rounded-xl animate-pulse"></div></div><div className="space-y-2"><div className="w-full h-11 bg-[#000000] border border-neutral-800 rounded-xl animate-pulse"></div></div></div></div>
       </div>
     )
   }
@@ -99,16 +99,16 @@ export default function ProfileClient() {
         <p className="text-[10px] md:text-xs font-bold text-neutral-500 uppercase tracking-widest leading-relaxed">Manage your permanent identity and platform access.</p>
       </div>
 
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm">
+      <div className="bg-[#000000] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm">
         <h3 className="text-xs md:text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center"><User className="mr-2 text-neutral-500" size={16} /> Core Identity</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Email (Read Only)</label>
-            <div className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-neutral-600 shadow-inner truncate">{data.user.email}</div>
+            <div className="w-full bg-[#000000] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-neutral-600 shadow-inner truncate">{data.user.email}</div>
           </div>
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Full Name (Private)</label>
-            <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-blue-500/50 shadow-inner" />
+            <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full bg-[#000000] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-blue-500/50 shadow-inner" />
           </div>
         </div>
         <div className="flex justify-end pt-4 border-t border-neutral-900">
@@ -118,13 +118,13 @@ export default function ProfileClient() {
         </div>
       </div>
 
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm">
+      <div className="bg-[#000000] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm">
         <h3 className="text-xs md:text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center"><Lock className="mr-2 text-neutral-500" size={16} /> Public Reputation</h3>
         <p className="text-[10px] text-neutral-500 font-medium mb-6">Your permanent username on the trading floor. For security, it can only be set once.</p>
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-1">
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500 font-black">@</span>
-            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} disabled={isUsernameLocked} placeholder="Set username..." className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 pl-8 pr-4 text-xs font-bold text-white shadow-inner disabled:opacity-70 disabled:cursor-not-allowed outline-none focus:border-blue-500" />
+            <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} disabled={isUsernameLocked} placeholder="Set username..." className="w-full bg-[#000000] border border-neutral-800 rounded-xl py-3 pl-8 pr-4 text-xs font-bold text-white shadow-inner disabled:opacity-70 disabled:cursor-not-allowed outline-none focus:border-blue-500" />
           </div>
           {!isUsernameLocked && (
             <button onClick={handleLockUsername} disabled={savingUsername || !username} className="px-6 py-3 bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white border border-red-600/20 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-50">
@@ -152,17 +152,17 @@ export default function ProfileClient() {
         ) : (
           <div className="bg-black border border-neutral-800 p-6 rounded-xl text-center">
             <p className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest mb-2">DM this code to @sentinel_vortex_bot:</p>
-            <div className="text-4xl font-mono tracking-[0.2em] text-white bg-[#0a0a0a] border border-neutral-800 py-4 rounded-xl mb-4">{code}</div>
+            <div className="text-4xl font-mono tracking-[0.2em] text-white bg-[#000000] border border-neutral-800 py-4 rounded-xl mb-4">{code}</div>
             <p className="text-[9px] text-neutral-500 uppercase tracking-widest">(Waiting for confirmation... auto-refreshing)</p>
           </div>
         )}
       </div>
 
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm">
+      <div className="bg-[#000000] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm">
         <h3 className="text-xs md:text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center"><Key className="mr-2 text-neutral-500" size={16} /> Access Security</h3>
         <p className="text-[10px] text-neutral-500 font-medium mb-6">Updating your password will immediately terminate all other active sessions globally.</p>
         <div className="flex flex-col md:flex-row gap-4">
-          <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New Password" className="flex-1 bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500/50 shadow-inner" />
+          <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="New Password" className="flex-1 bg-[#000000] border border-neutral-800 rounded-xl py-3 px-4 text-xs text-white outline-none focus:border-blue-500/50 shadow-inner" />
           <button onClick={handlePasswordUpdate} disabled={isUpdatingPassword || !newPassword} className="px-6 py-3 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-50">
             {isUpdatingPassword ? 'Updating...' : 'Update Password'}
           </button>

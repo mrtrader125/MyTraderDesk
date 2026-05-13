@@ -324,7 +324,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
             <div className="flex-1 flex flex-col h-full min-w-0 relative transition-all duration-500 ease-in-out bg-[#080808] border border-white/[0.04] rounded-2xl shadow-xl">
               
               {/* INTEGRATED HEADER */}
-              <div className="px-4 py-3 border-b border-white/[0.04] bg-[#0a0a0a] flex items-center justify-between shrink-0 z-10 rounded-t-2xl">
+              <div className="px-4 py-3 border-b border-white/[0.04] bg-[#000000] flex items-center justify-between shrink-0 z-10 rounded-t-2xl">
                 
                 {/* Left Controls */}
                 <div className="flex items-center gap-4">
@@ -439,7 +439,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
 
                           {/* TEXT ONLY BROADCAST */}
                           {!isSetup ? (
-                            <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] p-5 flex flex-col gap-3 shadow-sm group-hover/post:border-white/[0.08] transition-colors">
+                            <div className="bg-[#000000] rounded-2xl border border-white/[0.03] p-5 flex flex-col gap-3 shadow-sm group-hover/post:border-white/[0.08] transition-colors">
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
                                   <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -460,7 +460,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                             </div>
                           ) : (
                             /* FULL SETUP POST */
-                            <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] overflow-hidden shadow-sm flex flex-col group-hover/post:border-white/[0.08] transition-colors">
+                            <div className="bg-[#000000] rounded-2xl border border-white/[0.03] overflow-hidden shadow-sm flex flex-col group-hover/post:border-white/[0.08] transition-colors">
                               <div className="flex flex-col lg:flex-row border-b border-white/[0.02]">
                                 
                                 <div className="relative w-full lg:w-[400px] shrink-0 aspect-[16/10] bg-[#000000] cursor-pointer group/img border-r border-white/[0.02]" onClick={() => setExpandedImage(post.image_url)}>
@@ -517,7 +517,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
               </div>
 
               {/* ADMIN CHAT INPUT BAR (COMPACT & ANCHORED) */}
-              <div className="shrink-0 bg-[#0a0a0a] border-t border-white/[0.04] p-3 flex flex-col relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] rounded-b-2xl">
+              <div className="shrink-0 bg-[#000000] border-t border-white/[0.04] p-3 flex flex-col relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] rounded-b-2xl">
                 
                 {/* COMPACT SETUP THUMBNAIL BAR */}
                 {imagePreview && (
@@ -683,7 +683,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                 </div>
 
                 {/* SQUAWK INPUT BAR */}
-                <div className="p-3 bg-[#0a0a0a] border-t border-white/[0.04] shrink-0 rounded-b-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-20">
+                <div className="p-3 bg-[#000000] border-t border-white/[0.04] shrink-0 rounded-b-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-20">
                   <div className="flex items-center gap-2 mb-2 px-1">
                      <select value={commsTag} onChange={e=>setCommsTag(e.target.value)} className="bg-[#111] text-[9px] font-bold uppercase tracking-widest text-neutral-400 border border-white/[0.05] rounded-md px-2 py-1.5 outline-none cursor-pointer appearance-none focus:border-[#2AABEE]">
                        <option value="">No Tag</option>
@@ -718,7 +718,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
       {mounted && isLibraryOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-8">
           <div className="absolute inset-0 bg-black/95 backdrop-blur-sm" onClick={() => setIsLibraryOpen(false)}></div>
-          <div className="relative w-full max-w-6xl h-[85vh] bg-[#0a0a0a] rounded-3xl border border-white/[0.05] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-6xl h-[85vh] bg-[#000000] rounded-3xl border border-white/[0.05] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-8 py-6 border-b border-white/[0.05] bg-[#0c0c0c] flex justify-between items-center shrink-0">
                <h2 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-3"><FolderSearch className="text-blue-500 w-5 h-5"/> Master Playbook</h2>
                <button onClick={() => setIsLibraryOpen(false)} className="p-2 bg-[#111] hover:bg-[#1a1a1a] border border-white/[0.05] rounded-xl text-neutral-400 transition-colors"><X size={20}/></button>

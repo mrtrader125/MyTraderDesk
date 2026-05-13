@@ -80,7 +80,7 @@ export default function AssistantWidget() {
       
       {/* THE CHAT WINDOW */}
       <div 
-        className={`bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-300 origin-bottom-right mb-4 flex flex-col ${
+        className={`bg-[#000000] border border-neutral-800 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.8)] overflow-hidden transition-all duration-300 origin-bottom-right mb-4 flex flex-col ${
           isOpen ? 'w-[calc(100vw-32px)] md:w-[380px] h-[500px] opacity-100 scale-100' : 'w-0 h-0 opacity-0 scale-95 pointer-events-none'
         }`}
       >
@@ -104,7 +104,7 @@ export default function AssistantWidget() {
         </div>
 
         {/* Message Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#0a0a0a]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#000000]">
           {messages.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-50 space-y-3">
               <Bot size={32} className="text-neutral-600" />

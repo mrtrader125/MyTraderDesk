@@ -106,7 +106,7 @@ export default function BroadcastPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         <div className="lg:col-span-7 space-y-6">
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
+          <div className="bg-[#000000] border border-neutral-800 rounded-[2rem] p-6 sm:p-8 shadow-xl relative overflow-hidden">
             <div className="absolute -top-32 -right-32 w-64 h-64 bg-brand-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
             
             <h3 className="text-xs font-black text-white uppercase tracking-widest mb-6 flex items-center relative z-10">
@@ -185,7 +185,7 @@ export default function BroadcastPage() {
                   <p className={`text-xs leading-relaxed font-medium relative z-10 ${urgency === 'CRITICAL' ? 'text-red-100' : urgency === 'WARNING' ? 'text-amber-100' : 'text-blue-100'}`}>{message || 'Broadcast message content.'}</p>
                 </div>
               ) : (
-                <div className="w-full max-w-sm bg-[#0a0a0a] text-left border border-neutral-800 rounded-2xl shadow-2xl p-4">
+                <div className="w-full max-w-sm bg-[#000000] text-left border border-neutral-800 rounded-2xl shadow-2xl p-4">
                   <div className="flex items-start space-x-3">
                     <div className={`mt-0.5 p-2 rounded-xl shrink-0 ${urgency === 'CRITICAL' ? 'bg-red-500/10 text-red-500' : urgency === 'WARNING' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'}`}>
                       {urgency === 'CRITICAL' ? <AlertTriangle size={14} /> : urgency === 'WARNING' ? <Zap size={14} /> : <Info size={14} />}
@@ -201,7 +201,7 @@ export default function BroadcastPage() {
             </div>
           </div>
 
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col h-[400px]">
+          <div className="bg-[#000000] border border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col h-[400px]">
             <h3 className="text-xs font-black text-white uppercase tracking-widest mb-4 flex items-center shrink-0"><Clock size={16} className="mr-2 text-neutral-500" /> Broadcast History</h3>
             <div className="flex-1 overflow-y-auto scrollbar-hide space-y-3 pr-2">
               {history.length === 0 ? (

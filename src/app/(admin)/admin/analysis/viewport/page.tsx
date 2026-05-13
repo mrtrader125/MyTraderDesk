@@ -82,7 +82,7 @@ function AdminViewportContent() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
         {/* MAIN CHART VIEW */}
-        <div className="lg:col-span-3 bg-[#0a0a0a] border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl relative flex flex-col">
+        <div className="lg:col-span-3 bg-[#000000] border border-neutral-800 rounded-3xl overflow-hidden shadow-2xl relative flex flex-col">
           <div className="absolute top-4 left-4 z-10 flex gap-2">
             <span className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg text-[10px] font-black text-white uppercase tracking-widest border border-white/10 shadow-lg">
               {setup.asset_symbol}
@@ -100,7 +100,7 @@ function AdminViewportContent() {
 />
           </div>
           
-          <div className="p-4 border-t border-neutral-800 bg-[#0a0a0a] flex items-center justify-between">
+          <div className="p-4 border-t border-neutral-800 bg-[#000000] flex items-center justify-between">
             <div className="flex items-center text-[10px] font-bold text-neutral-500 uppercase tracking-widest">
               <Clock size={12} className="mr-2" /> Published: {new Date(setup.created_at).toLocaleString()}
             </div>
@@ -116,7 +116,7 @@ function AdminViewportContent() {
         {/* SIDE PANEL */}
         <div className="lg:col-span-1 space-y-6">
           
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 shadow-xl">
+          <div className="bg-[#000000] border border-neutral-800 rounded-3xl p-6 shadow-xl">
             <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center">
               <Activity size={14} className="mr-2" /> Setup Details
             </h3>
@@ -139,7 +139,7 @@ function AdminViewportContent() {
             </div>
           </div>
 
-          <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 shadow-xl flex-1">
+          <div className="bg-[#000000] border border-neutral-800 rounded-3xl p-6 shadow-xl flex-1">
             <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4">Analysis Notes</h3>
             <div className="bg-black border border-neutral-800/50 rounded-xl p-4 min-h-[150px]">
               {setup.title && <h4 className="text-sm font-black text-white mb-2">{setup.title}</h4>}

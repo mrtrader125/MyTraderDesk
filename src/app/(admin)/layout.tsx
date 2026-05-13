@@ -103,7 +103,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     <div className="flex h-screen bg-black text-white font-sans overflow-hidden">
       {/* SIDEBAR */}
       <div 
-        className={`bg-[#0a0a0a] border-r border-neutral-800 flex flex-col z-20 shrink-0 transition-all duration-300 ease-in-out ${
+        className={`bg-[#000000] border-r border-neutral-800 flex flex-col z-20 shrink-0 transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'w-64' : 'w-20'
         }`}
       >

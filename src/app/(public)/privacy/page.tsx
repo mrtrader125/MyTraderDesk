@@ -16,7 +16,7 @@ export default function PrivacyPage() {
           <p className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.3em] mt-2">Data Protection Standard 2026</p>
         </div>
 
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-8 md:p-12 space-y-8 text-sm leading-relaxed text-neutral-400">
+        <div className="bg-[#000000] border border-neutral-800 rounded-3xl p-8 md:p-12 space-y-8 text-sm leading-relaxed text-neutral-400">
           <section>
             <h2 className="text-white font-black uppercase tracking-widest mb-4 flex items-center">
               <Shield className="text-emerald-500 mr-3" size={16} /> Data Collection

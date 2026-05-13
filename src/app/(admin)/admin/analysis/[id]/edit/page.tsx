@@ -131,7 +131,7 @@ export default function EditSetupPage() {
         <p className="text-[11px] text-neutral-500 mt-1 font-bold uppercase tracking-widest">Update your market analysis</p>
       </div>
 
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden">
+      <div className="bg-[#000000] border border-neutral-800 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden">
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-brand-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
         
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-8">

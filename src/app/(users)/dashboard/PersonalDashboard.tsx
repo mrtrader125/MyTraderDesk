@@ -676,7 +676,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                 ref={gridRef}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDropOnGrid}
-                className="order-2 lg:order-1 w-full lg:w-[60%] shrink-0 min-h-[300px] lg:min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#0a0a0a] rounded-xl border border-zinc-800/20 p-2"
+                className="order-2 lg:order-1 w-full lg:w-[60%] shrink-0 min-h-[300px] lg:min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#000000] rounded-xl border border-zinc-800/20 p-2"
               >
                 {Array.from({ length: 49 }).map((_, i) => (
                   <div key={`slot-${i}`} className="w-full h-full rounded border border-dashed border-zinc-800/10 pointer-events-none" />
@@ -689,7 +689,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                   onDragEnd={handleDragEnd}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDropOnGrid}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md group overflow-hidden transition-all duration-200 z-10 ${draggingId === 'local' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''} ${isPro ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                  className={`absolute bg-[#000000] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md group overflow-hidden transition-all duration-200 z-10 ${draggingId === 'local' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''} ${isPro ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   style={{
                     gridColumn: `${widgets.local.x + 1} / span ${widgets.local.w}`,
                     gridRow: `${widgets.local.y + 1} / span ${widgets.local.h}`,
@@ -739,7 +739,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                   onDragEnd={handleDragEnd}
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={handleDropOnGrid}
-                  className={`absolute bg-[#0a0a0a] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md group overflow-hidden transition-all duration-200 z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''} ${isPro ? 'cursor-grab active:cursor-grabbing' : ''}`}
+                  className={`absolute bg-[#000000] border border-zinc-800/50 hover:border-zinc-700 rounded-lg flex flex-col shadow-md group overflow-hidden transition-all duration-200 z-10 ${sessionInfo.isOverlap ? 'border-b-[3px] border-b-blue-500/50 shadow-[0_4px_20px_-10px_rgba(59,130,246,0.15)]' : ''} ${draggingId === 'session' ? 'opacity-40 ring-2 ring-blue-500/50 scale-[1.02] shadow-2xl z-50' : ''} ${isPro ? 'cursor-grab active:cursor-grabbing' : ''}`}
                   style={{
                     gridColumn: `${widgets.session.x + 1} / span ${widgets.session.w}`,
                     gridRow: `${widgets.session.y + 1} / span ${widgets.session.h}`,
@@ -789,7 +789,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
               </div>
 
               {/* --- ROUTINE TRACKER --- */}
-              <div className="order-1 lg:order-2 w-full lg:w-[40%] bg-[#0a0a0a] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0 relative">
+              <div className="order-1 lg:order-2 w-full lg:w-[40%] bg-[#000000] border border-zinc-800/60 rounded-lg p-5 flex flex-col shadow-sm min-h-0 shrink-0 relative">
                     
                 {/* Quick Nav Hints */}
                 <div className="absolute top-3 right-3 flex gap-2 z-10">
@@ -816,7 +816,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
                   {/* Phase 1: Macro Prep */}
                   <div className={`flex items-start gap-4 relative z-10 mb-6 ${isVaultLocked && isPro ? 'opacity-60' : ''}`}>
-                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${vaultSetupCount > 0 ? 'border-emerald-500 text-emerald-400' : isVaultLocked ? 'border-red-500/50 text-red-500/50' : 'border-zinc-700 text-transparent'}`}>
+                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#000000] ${vaultSetupCount > 0 ? 'border-emerald-500 text-emerald-400' : isVaultLocked ? 'border-red-500/50 text-red-500/50' : 'border-zinc-700 text-transparent'}`}>
                       {vaultSetupCount > 0 ? <CheckCircle2 size={12} /> : isVaultLocked && isPro ? <Lock size={10} /> : null}
                     </div>
                     <div className="flex flex-col">
@@ -829,7 +829,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
                   {/* Phase 2: Today Filtering */}
                   <div className="flex items-start gap-4 relative z-10 mb-6">
-                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${
+                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#000000] ${
                       pushesToday > 0 && pushesToday <= 5 ? 'border-emerald-500 text-emerald-400' : 
                       pushesToday > 5 ? 'border-red-500 text-red-400' :
                       'border-blue-500/50 text-transparent'
@@ -852,7 +852,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
                   {/* Phase 3 & 4: Discipline Chain & Hard Stop */}
                   <div className="flex items-start gap-4 relative z-10 mb-6">
-                    <div className="flex flex-col items-center mt-0.5 shrink-0 bg-[#0a0a0a] py-1">
+                    <div className="flex flex-col items-center mt-0.5 shrink-0 bg-[#000000] py-1">
                       {pastDays.map((day, i) => (
                           <div key={day.day} className="flex flex-col items-center">
                             <div 
@@ -889,7 +889,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
                   {/* Phase 5: Weekend Windup */}
                   <div className={`flex items-start gap-4 relative z-10 ${!isWeekendNow ? 'opacity-40 grayscale' : ''}`}>
-                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${
+                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#000000] ${
                       isWeekendNow && pendingReconciliationsCount === 0 && tradesTakenToday > 0 ? 'border-emerald-500 text-emerald-400' : 'border-zinc-700 text-transparent'
                     }`}>
                       {isWeekendNow && pendingReconciliationsCount === 0 && tradesTakenToday > 0 && <CheckCircle2 size={12} />}
@@ -909,7 +909,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
             {/* --- BOTTOM SECTION: ACTIVE FOCUS --- */}
             <div className={`hidden lg:flex shrink-0 flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0 transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'w-full h-1/2' : 'w-48 xl:w-56 border-r border-zinc-800/60 h-1/2'}`}>
                   
-              <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#0a0a0a]">
+              <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#000000]">
                 <div className="flex items-center gap-2 min-w-0">
                   <Crosshair size={14} className="text-blue-500 shrink-0" />
                   <h2 className="text-xs font-bold text-white uppercase tracking-widest truncate">
@@ -950,7 +950,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                           className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group ${
                             activeTodayId === setup.id 
                               ? 'bg-zinc-800 border-zinc-600 shadow-sm' 
-                              : 'bg-[#0a0a0a] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
+                              : 'bg-[#000000] border-zinc-800/50 hover:bg-zinc-900 hover:border-zinc-700'
                           }`}
                         >
                           <div className="flex justify-between items-center mb-1">
@@ -1029,7 +1029,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                   </div>
 
                   <div className="w-64 sm:w-80 shrink-0 flex flex-col min-h-0 p-3 bg-[#030303]">
-                    <div className="flex-1 bg-[#0a0a0a] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
+                    <div className="flex-1 bg-[#000000] border border-zinc-800/60 rounded-xl p-4 shadow-sm flex flex-col min-h-0">
                       {activeSetup ? (
                         <div 
                           className="w-full h-full overflow-y-auto custom-scrollbar text-xs text-zinc-300 leading-relaxed font-medium"

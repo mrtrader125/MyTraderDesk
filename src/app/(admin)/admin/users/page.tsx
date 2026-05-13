@@ -105,13 +105,13 @@ export default function UsersDirectoryPage() {
             placeholder="Search users..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors"
+            className="w-full bg-[#000000] border border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors"
           />
         </div>
       </div>
 
       {/* THE DIRECTORY TABLE */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl overflow-hidden shadow-lg">
+      <div className="bg-[#000000] border border-neutral-800 rounded-3xl overflow-hidden shadow-lg">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -184,7 +184,7 @@ export default function UsersDirectoryPage() {
         <>
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity" onClick={() => setSelectedUser(null)}></div>
           
-          <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-[#0a0a0a] border-l border-neutral-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
+          <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-[#000000] border-l border-neutral-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
             
             {/* Panel Header */}
             <div className="p-6 border-b border-neutral-800 flex items-start justify-between bg-black">

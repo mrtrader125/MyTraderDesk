@@ -173,7 +173,7 @@ export default function SystemLogsPage() {
 
         <button 
           onClick={handleExportCSV}
-          className="flex items-center px-6 py-3 bg-[#0a0a0a] border border-neutral-800 text-neutral-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:text-white hover:border-neutral-600 hover:bg-white/5 transition-colors shrink-0"
+          className="flex items-center px-6 py-3 bg-[#000000] border border-neutral-800 text-neutral-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:text-white hover:border-neutral-600 hover:bg-white/5 transition-colors shrink-0"
         >
           <ArrowDownToLine size={14} className="mr-2" /> Export to CSV
         </button>
@@ -183,7 +183,7 @@ export default function SystemLogsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Top Overall Views */}
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 shadow-xl">
+        <div className="bg-[#000000] border border-neutral-800 rounded-[2rem] p-6 shadow-xl">
           <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center border-b border-neutral-800 pb-3">
             <Eye size={14} className="mr-2 text-blue-500" /> Most Viewed Charts (Overall)
           </h3>
@@ -198,7 +198,7 @@ export default function SystemLogsPage() {
         </div>
 
         {/* Top Overall Searches */}
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 shadow-xl">
+        <div className="bg-[#000000] border border-neutral-800 rounded-[2rem] p-6 shadow-xl">
           <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center border-b border-neutral-800 pb-3">
             <Search size={14} className="mr-2 text-brand-primary" /> Top Searched Assets
           </h3>
@@ -213,7 +213,7 @@ export default function SystemLogsPage() {
         </div>
 
         {/* Top Views by Tier */}
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col">
+        <div className="bg-[#000000] border border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col">
           <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 flex items-center border-b border-neutral-800 pb-3">
             <Users size={14} className="mr-2 text-emerald-500" /> Most Viewed by Plan
           </h3>
@@ -240,7 +240,7 @@ export default function SystemLogsPage() {
       </div>
 
       {/* CONTROLS (Search & Filter) */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col lg:flex-row gap-6 mt-4">
+      <div className="bg-[#000000] border border-neutral-800 rounded-[2rem] p-6 shadow-xl flex flex-col lg:flex-row gap-6 mt-4">
         <div className="flex-1 relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" size={16} />
           <input 
@@ -271,7 +271,7 @@ export default function SystemLogsPage() {
       </div>
 
       {/* THE MATRIX TABLE */}
-      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] overflow-hidden shadow-2xl flex flex-col h-[600px]">
+      <div className="bg-[#000000] border border-neutral-800 rounded-[2rem] overflow-hidden shadow-2xl flex flex-col h-[600px]">
         <div className="overflow-x-auto flex-1">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead className="sticky top-0 z-10 bg-black border-b border-neutral-800 shadow-sm">

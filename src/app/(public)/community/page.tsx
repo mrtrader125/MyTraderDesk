@@ -81,7 +81,7 @@ export default function PublicTeaserFloor() {
                 <div className="opacity-30 select-none pointer-events-none blur-[2px]">
                   
                   {/* Header */}
-                  <div className="px-4 py-2.5 border-b border-neutral-900 flex justify-between items-center bg-[#0a0a0a]">
+                  <div className="px-4 py-2.5 border-b border-neutral-900 flex justify-between items-center bg-[#000000]">
                     <div className="flex items-center gap-2">
                       <span className="px-5 py-2 bg-neutral-800 rounded animate-pulse w-20"></span>
                       <span className="px-3 py-2 bg-neutral-800 rounded animate-pulse w-10"></span>
@@ -130,7 +130,7 @@ export default function PublicTeaserFloor() {
 
           {/* --- RIGHT COLUMN: LOCKED LIVE SQUAWK --- */}
           <div className="lg:col-span-1">
-            <div className="bg-[#0a0a0a] rounded-xl border border-neutral-800 overflow-hidden flex flex-col h-[calc(100vh-80px)] sticky top-6 shadow-xl relative">
+            <div className="bg-[#000000] rounded-xl border border-neutral-800 overflow-hidden flex flex-col h-[calc(100vh-80px)] sticky top-6 shadow-xl relative">
               
               {/* BLUR OVERLAY */}
               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70 backdrop-blur-[6px] p-5 text-center mt-12">

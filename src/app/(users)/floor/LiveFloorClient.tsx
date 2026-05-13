@@ -309,7 +309,7 @@ export default function LiveFloorClient({
                         // --- TEXT ONLY BROADCAST ---
                         if (!isSetup) {
                           return (
-                            <div key={post.id} className="group bg-[#0a0a0a] rounded-2xl border border-white/[0.03] p-6 flex flex-col gap-3 transition-all hover:border-white/[0.06] animate-in slide-in-from-bottom-4 fade-in duration-500 shadow-sm">
+                            <div key={post.id} className="group bg-[#000000] rounded-2xl border border-white/[0.03] p-6 flex flex-col gap-3 transition-all hover:border-white/[0.06] animate-in slide-in-from-bottom-4 fade-in duration-500 shadow-sm">
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
                                   <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -336,7 +336,7 @@ export default function LiveFloorClient({
 
                         // --- FULL SETUP ---
                         return (
-                          <div key={post.id} className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] overflow-hidden transition-all hover:border-white/[0.06] shadow-sm flex flex-col animate-in slide-in-from-bottom-4 fade-in duration-500">
+                          <div key={post.id} className="bg-[#000000] rounded-2xl border border-white/[0.03] overflow-hidden transition-all hover:border-white/[0.06] shadow-sm flex flex-col animate-in slide-in-from-bottom-4 fade-in duration-500">
                             
                             {isLocked ? (
                               <div className="p-16 flex flex-col items-center justify-center text-center bg-gradient-to-b from-transparent to-amber-900/10">
@@ -423,7 +423,7 @@ export default function LiveFloorClient({
                                     {/* Sentiment Global Vote */}
                                     <div className="flex items-center gap-4 mb-auto">
                                       <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Sentiment</span>
-                                      <div className="flex items-center bg-[#0a0a0a] p-1 rounded-xl border border-white/[0.04]">
+                                      <div className="flex items-center bg-[#000000] p-1 rounded-xl border border-white/[0.04]">
                                         <button 
                                           onClick={() => handleInteractionUpdate(post.id, { vote: pInt.vote === 'align' ? null : 'align' })}
                                           className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
@@ -491,7 +491,7 @@ export default function LiveFloorClient({
                                   </div>
                                 </div>
 
-                                <div className="px-6 lg:px-8 py-6 bg-[#0a0a0a]">
+                                <div className="px-6 lg:px-8 py-6 bg-[#000000]">
                                   <p 
                                     className="text-sm text-neutral-400 whitespace-pre-wrap leading-relaxed"
                                     dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }}
@@ -515,7 +515,7 @@ export default function LiveFloorClient({
                   {/* INLINE LOCKED STATE FOR DEMO USERS */}
                   {!isProUser && (
                      <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#030303]/80 backdrop-blur-[3px] rounded-2xl mx-1 mb-8 border border-white/[0.02]">
-                       <div className="flex flex-col items-center text-center p-8 bg-[#0a0a0a] rounded-2xl border border-white/[0.04] shadow-2xl">
+                       <div className="flex flex-col items-center text-center p-8 bg-[#000000] rounded-2xl border border-white/[0.04] shadow-2xl">
                           <Lock className="w-10 h-10 text-emerald-500/40 mb-4 stroke-1" />
                           <h3 className="text-sm font-bold tracking-widest text-white uppercase mb-2">Reflection Locked</h3>
                           <p className="text-xs text-neutral-400 max-w-[260px] leading-relaxed">Professional members get advanced execution metrics and organic alignment scoring.</p>
@@ -527,7 +527,7 @@ export default function LiveFloorClient({
                     
                     {/* LEFT HALF: STATS */}
                     <div className="w-full lg:w-[40%] flex flex-col gap-6 animate-in slide-in-from-left-8 fade-in duration-500">
-                      <div className="flex bg-[#0a0a0a] rounded-lg border border-white/[0.03] p-1">
+                      <div className="flex bg-[#000000] rounded-lg border border-white/[0.03] p-1">
                         {['today', 'week', 'month', 'all'].map(t => (
                           <button 
                             key={t}
@@ -541,7 +541,7 @@ export default function LiveFloorClient({
                         ))}
                       </div>
 
-                      <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] p-8 shadow-sm flex-1 flex flex-col">
+                      <div className="bg-[#000000] rounded-2xl border border-white/[0.03] p-8 shadow-sm flex-1 flex flex-col">
                         <h3 className="text-sm font-semibold text-white mb-8 flex items-center gap-2">
                           <Brain className="text-emerald-400 w-4 h-4" /> Reflection Metrics
                         </h3>
@@ -581,7 +581,7 @@ export default function LiveFloorClient({
                     <div className="w-full lg:w-[60%] flex flex-col h-full min-h-[400px] animate-in slide-in-from-bottom-8 fade-in duration-500 delay-100">
                       <h3 className="text-sm font-semibold text-neutral-300 mb-4 px-1">Trade Log</h3>
                       
-                      <div className="flex-1 bg-[#0a0a0a] rounded-2xl border border-white/[0.03] overflow-hidden flex flex-col shadow-sm">
+                      <div className="flex-1 bg-[#000000] rounded-2xl border border-white/[0.03] overflow-hidden flex flex-col shadow-sm">
                         <div className="overflow-y-auto p-4 custom-scrollbar flex-1">
                           {takenTrades.length === 0 ? (
                             <div className="h-full flex flex-col items-center justify-center opacity-40 p-8">
@@ -595,7 +595,7 @@ export default function LiveFloorClient({
                               {takenTrades.map(post => {
                                 const pInt = interactions[post.id]
                                 return (
-                                  <div key={post.id} className="bg-[#0a0a0a] rounded-xl p-5 flex flex-col gap-3 group border border-white/[0.02] hover:border-white/[0.05] transition-all duration-300">
+                                  <div key={post.id} className="bg-[#000000] rounded-xl p-5 flex flex-col gap-3 group border border-white/[0.02] hover:border-white/[0.05] transition-all duration-300">
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-3">
                                         <span className="text-xs font-bold tracking-wider uppercase text-neutral-200">
@@ -661,7 +661,7 @@ export default function LiveFloorClient({
                   <div className="w-2 h-2 rounded-full bg-[#2AABEE] animate-pulse shadow-[0_0_8px_#2AABEE]" />
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar w-full bg-[#0a0a0a] rounded-b-2xl">
+                <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar w-full bg-[#000000] rounded-b-2xl">
                   
                   {/* INLINE LOCKED STATE FOR SQUAWK */}
                   {!isProUser ? (
