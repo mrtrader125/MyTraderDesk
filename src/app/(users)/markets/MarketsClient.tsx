@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import useSWR from 'swr'
 import { createBrowserClient } from '@supabase/ssr'
-import { Activity, ArrowRight, Target, Archive, Lock } from 'lucide-react'
+import { ArrowRight, Lock, Activity } from 'lucide-react'
 import { ASSET_CATEGORIES } from '@/lib/platformConfig'
 
 const supabase = createBrowserClient(
@@ -13,7 +13,7 @@ const supabase = createBrowserClient(
 )
 
 const CATEGORIES = [
-  { id: 'ALL', label: 'All' },
+  { id: 'ALL', label: 'All Markets' },
   ...Object.keys(ASSET_CATEGORIES).map(category => ({
     id: category,
     label: category.charAt(0) + category.slice(1).toLowerCase(),
@@ -55,35 +55,6 @@ const fetchMarketsData = async () => {
   return { plan: profile?.plan?.toLowerCase() || 'demo', groupedArray, userId: session.user.id }
 }
 
-const AssetIcon = ({ symbol, category }: { symbol: string, category: string }) => {
-  const cleanSymbol = symbol.toUpperCase().trim();
-  let bgTint = "from-neutral-800/80 to-[#0a0a0a]";
-  if (category === 'FOREX') bgTint = "from-blue-900/30 to-[#0a0a0a]";
-  else if (category === 'CRYPTO') bgTint = "from-purple-900/30 to-[#0a0a0a]";
-  else if (category === 'COMMODITY' || category === 'METALS') bgTint = "from-amber-900/30 to-[#0a0a0a]";
-  else if (category === 'INDICES' || category === 'STOCKS') bgTint = "from-emerald-900/30 to-[#0a0a0a]";
-
-  if (cleanSymbol.length === 6) {
-    const base = cleanSymbol.substring(0, 3);
-    const quote = cleanSymbol.substring(3, 6);
-    return (
-      <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br ${bgTint} border border-white/[0.04] flex flex-col items-center justify-center shrink-0 shadow-[inset_0_2px_10px_rgba(255,255,255,0.03)] group-hover:border-blue-500/30 transition-colors duration-500`}>
-        <span className="text-[10px] md:text-[11px] font-black text-white leading-none tracking-widest mt-1 font-mono">{base}</span>
-        <div className="w-5 md:w-6 h-[1px] bg-white/10 my-[3px] md:my-[4px]"></div>
-        <span className="text-[10px] md:text-[11px] font-bold text-neutral-500 leading-none tracking-widest mb-1 font-mono">{quote}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className={`w-12 h-12 md:w-14 md:h-14 rounded-xl md:rounded-2xl bg-gradient-to-br ${bgTint} border border-white/[0.04] flex items-center justify-center shrink-0 shadow-[inset_0_2px_10px_rgba(255,255,255,0.03)] group-hover:border-blue-500/30 transition-colors duration-500`}>
-      <span className="text-[11px] md:text-xs font-black text-white tracking-widest font-mono">
-        {cleanSymbol.length > 5 ? cleanSymbol.substring(0, 4) : cleanSymbol}
-      </span>
-    </div>
-  );
-}
-
 export default function MarketsClient() {
   const router = useRouter()
   const searchParams = useSearchParams() 
@@ -118,15 +89,15 @@ export default function MarketsClient() {
     if (data) fetchUnseenStatus();
   }, [data]);
 
-  // 🚨 INSTANT SHELL: Shown for 0.1s on first load, then data pops in
+  // 🚨 INSTANT SHELL
   if (isLoading || !data) {
     return (
-      <div className="w-full bg-[#050505] p-4 md:p-6 lg:p-8 flex flex-col h-[calc(100dvh-65px)]">
+      <div className="w-full bg-transparent p-4 md:p-8 flex flex-col h-[calc(100dvh-65px)]">
         <div className="max-w-[90rem] mx-auto w-full flex flex-col min-h-0">
-          <div className="shrink-0 w-full mb-6 md:mb-8 h-10 bg-[#0a0a0a] rounded-xl animate-pulse"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5">
+          <div className="shrink-0 w-64 mb-8 h-8 bg-[#0a0a0a] rounded-md animate-pulse"></div>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
-              <div key={i} className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 min-h-[140px] animate-pulse"></div>
+              <div key={i} className="bg-[#0a0a0a] border border-white/[0.02] rounded-xl h-[100px] animate-pulse"></div>
             ))}
           </div>
         </div>
@@ -142,24 +113,30 @@ export default function MarketsClient() {
   })
 
   return (
-    <div className="w-full bg-[#050505] p-4 md:p-6 lg:p-8 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
+    <div className="w-full bg-transparent p-4 md:p-8 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
       <div className="max-w-[90rem] mx-auto w-full h-full flex flex-col min-h-0">
         
-        <div className="shrink-0 w-full mb-6 md:mb-8 flex items-center gap-4">
-          <div className="flex items-center space-x-1.5 bg-[#0a0a0a] p-1.5 rounded-xl border border-white/[0.05] overflow-x-auto w-full scrollbar-hide shadow-sm relative">
+        {/* Sleek Minimalist Nav Pills */}
+        <div className="shrink-0 w-full mb-8 relative border-b border-white/[0.05] pb-4">
+          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
             {!isProUser && (
-              <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl border border-white/[0.02]">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5"><Lock size={12}/> Global Markets</span>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.03] rounded-md border border-white/[0.05] text-neutral-500 shrink-0">
+                <Lock size={12} />
+                <span className="text-[10px] font-bold uppercase tracking-widest">Locked</span>
               </div>
             )}
+            
             {CATEGORIES.map((cat) => {
               const active = activeTab === cat.id
               return (
                 <button 
                   key={cat.id}
                   onClick={() => { if (isProUser) setActiveTab(cat.id); }}
-                  className={`relative flex items-center px-5 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shrink-0
-                    ${active ? 'bg-white text-black shadow-md' : 'text-neutral-500 hover:text-white hover:bg-white/[0.04]'}`}
+                  className={`relative flex items-center px-4 py-1.5 rounded-full text-[11px] font-semibold tracking-wide transition-all whitespace-nowrap shrink-0
+                    ${active 
+                      ? 'bg-white text-black' 
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.05]'
+                    } ${!isProUser ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {cat.label}
                 </button>
@@ -168,37 +145,66 @@ export default function MarketsClient() {
           </div>
         </div>
 
+        {/* Dense Institutional Grid */}
         <div className="flex-1 overflow-y-auto custom-scrollbar pb-24 md:pb-6 pr-1">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
             {filteredMarkets.map((market: any) => {
               const hasUnseen = unseenAssets.has(market.symbol);
+              
+              // Formatting the symbol nicely
+              const cleanSymbol = market.symbol.toUpperCase().trim()
+              const isStandardPair = cleanSymbol.length === 6
+              
               return (
                 <div 
                   key={market.symbol}
                   onClick={() => { if (isProUser) router.push(`/markets/viewport?asset=${market.symbol}&from=markets`); }}
-                  className={`bg-[#0a0a0a] border rounded-2xl p-5 transition-all duration-300 flex flex-col min-h-[140px] relative overflow-hidden
-                    ${!isProUser ? 'opacity-80' : 'cursor-pointer group hover:border-neutral-600'}
-                    ${hasUnseen && isProUser ? 'border-blue-500/20 bg-blue-500/[0.02]' : 'border-white/[0.04]'}
+                  className={`bg-[#0a0a0a] border rounded-xl p-4 transition-all duration-200 flex flex-col justify-between min-h-[110px] relative group
+                    ${!isProUser ? 'opacity-60 grayscale' : 'cursor-pointer hover:border-white/[0.15] hover:bg-[#0c0c0c]'}
+                    ${hasUnseen && isProUser ? 'border-blue-500/30' : 'border-white/[0.04]'}
                   `}
                 >
-                  <div className="flex justify-between items-start mb-5 z-10">
-                    <div className="flex items-center space-x-3.5">
-                      <AssetIcon symbol={market.symbol} category={market.category} />
-                      <div className="flex flex-col justify-center gap-1.5">
-                        <h3 className="text-xl font-black text-white tracking-tight font-mono">{market.symbol}</h3>
-                        <span className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest bg-[#111] px-1.5 py-0.5 rounded border border-white/[0.02]">{market.category}</span>
-                      </div>
+                  {/* Top: Asset Identity */}
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="text-lg md:text-xl font-mono text-white tracking-tight flex items-baseline gap-1">
+                        {isStandardPair ? (
+                          <><span>{cleanSymbol.substring(0,3)}</span><span className="text-neutral-500 text-sm">{cleanSymbol.substring(3,6)}</span></>
+                        ) : (
+                          cleanSymbol
+                        )}
+                      </h3>
+                      <span className="text-[9px] font-medium text-neutral-500 tracking-widest uppercase">
+                        {market.category}
+                      </span>
                     </div>
+                    
+                    {hasUnseen && isProUser && (
+                      <span className="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
+                    )}
                   </div>
 
-                  <div className="mt-auto pt-4 border-t border-white/[0.05] flex items-center justify-between z-10">
-                    <div className="flex items-center gap-2">
-                      {market.activeCount > 0 && <div className="w-2.5 h-2.5 rounded-full bg-blue-500" title="Active"></div>}
-                      {market.waitingCount > 0 && <div className="w-2.5 h-2.5 rounded-full bg-amber-500" title="Waiting"></div>}
+                  {/* Bottom: Setup Data Density */}
+                  <div className="flex items-end justify-between mt-4">
+                    <div className="flex flex-col gap-0.5">
+                      {market.activeCount > 0 && (
+                        <div className="flex items-center gap-1.5 text-[10px] text-blue-400 font-mono tracking-wide">
+                          <Activity size={10} /> {market.activeCount} ACTIVE
+                        </div>
+                      )}
+                      {market.waitingCount > 0 && (
+                        <div className="flex items-center gap-1.5 text-[10px] text-amber-500/80 font-mono tracking-wide">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80 ml-0.5" /> {market.waitingCount} WAIT
+                        </div>
+                      )}
+                      {market.activeCount === 0 && market.waitingCount === 0 && (
+                        <span className="text-[10px] text-neutral-600 font-mono uppercase">Archived</span>
+                      )}
                     </div>
-                    <button className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#111] border border-white/[0.05] text-neutral-500 group-hover:text-white group-hover:bg-blue-600 group-hover:border-blue-500 transition-all">
+                    
+                    <div className="text-neutral-600 group-hover:text-white transition-colors duration-200">
                       {isProUser ? <ArrowRight size={14} /> : <Lock size={12} />}
-                    </button>
+                    </div>
                   </div>
                 </div>
               )
