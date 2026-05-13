@@ -327,7 +327,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
   const ASSETS = ['Forex', 'Crypto', 'Commodities', 'Stocks', 'Indices']
 
   return (
-    <div className="min-h-screen bg-[#000000] text-zinc-50 flex flex-col font-sans selection:bg-blue-500/30 relative">
+    <div className="min-h-screen bg-[#050505] text-zinc-50 flex flex-col font-sans selection:bg-blue-500/30 relative">
       
       {/* PREVIEW BANNER */}
       {isPreviewMode && (
@@ -337,7 +337,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
       )}
 
       {/* GLOBAL PROGRESS HEADER */}
-      <div className={`w-full border-b border-neutral-900 bg-[#000000] pt-8 pb-6 px-6 sticky z-50 ${isPreviewMode ? 'top-8' : 'top-0'}`}>
+      <div className={`w-full border-b border-neutral-900 bg-[#0a0a0a] pt-8 pb-6 px-6 sticky z-50 ${isPreviewMode ? 'top-8' : 'top-0'}`}>
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xs font-black text-blue-500 uppercase tracking-widest">
@@ -368,10 +368,10 @@ export default function OnboardingClient({ userId }: { userId: string }) {
             </div>
             
             <div className="grid gap-4">
-              <button onClick={() => setFormData({...formData, scope_type: 'single'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.scope_type === 'single' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, scope_type: 'single'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.scope_type === 'single' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.scope_type === 'single' ? 'text-blue-400' : 'text-white'}`}>Single / Limited Asset Trader</span>
               </button>
-              <button onClick={() => setFormData({...formData, scope_type: 'multi'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.scope_type === 'multi' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, scope_type: 'multi'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.scope_type === 'multi' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.scope_type === 'multi' ? 'text-blue-400' : 'text-white'}`}>Multi-Market Trader</span>
               </button>
             </div>
@@ -382,7 +382,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                 {ASSETS.map(asset => {
                   const isSelected = formData.target_assets.includes(asset);
                   return (
-                    <button key={asset} onClick={() => toggleAsset(asset)} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${isSelected ? 'bg-white/10 border-white/30 text-white shadow-inner' : 'bg-[#000000] border-neutral-800 text-neutral-400 hover:border-neutral-600'}`}>
+                    <button key={asset} onClick={() => toggleAsset(asset)} className={`flex items-center justify-between p-4 rounded-xl border transition-all ${isSelected ? 'bg-white/10 border-white/30 text-white shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 text-neutral-400 hover:border-neutral-600'}`}>
                       <span className="text-sm font-bold tracking-wide">{asset}</span>
                       <div className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? 'border-white bg-white text-black' : 'border-neutral-700 bg-transparent'}`}>
                         {isSelected && <CheckSquare size={10} />}
@@ -418,10 +418,10 @@ export default function OnboardingClient({ userId }: { userId: string }) {
             </div>
             
             <div className="grid gap-4">
-              <button onClick={() => setFormData({...formData, weekly_prep_mode: 'structured'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.weekly_prep_mode === 'structured' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, weekly_prep_mode: 'structured'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.weekly_prep_mode === 'structured' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.weekly_prep_mode === 'structured' ? 'text-blue-400' : 'text-white'}`}>I prepare a structured plan before the trading week</span>
               </button>
-              <button onClick={() => setFormData({...formData, weekly_prep_mode: 'none'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.weekly_prep_mode === 'none' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, weekly_prep_mode: 'none'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.weekly_prep_mode === 'none' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.weekly_prep_mode === 'none' ? 'text-blue-400' : 'text-white'}`}>I do not follow a weekly preparation routine</span>
               </button>
             </div>
@@ -452,7 +452,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
             </div>
             
             <div className="grid gap-4">
-              <button onClick={() => setFormData({...formData, daily_prep_mode: 'before'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.daily_prep_mode === 'before' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, daily_prep_mode: 'before'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.daily_prep_mode === 'before' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.daily_prep_mode === 'before' ? 'text-blue-400' : 'text-white'}`}>Before my trading session</span>
               </button>
               
@@ -472,7 +472,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                 </div>
               )}
 
-              <button onClick={() => setFormData({...formData, daily_prep_mode: 'fixed'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.daily_prep_mode === 'fixed' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, daily_prep_mode: 'fixed'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.daily_prep_mode === 'fixed' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.daily_prep_mode === 'fixed' ? 'text-blue-400' : 'text-white'}`}>During a fixed time window</span>
               </button>
 
@@ -486,7 +486,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                 </div>
               )}
 
-              <button onClick={() => setFormData({...formData, daily_prep_mode: 'none'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.daily_prep_mode === 'none' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, daily_prep_mode: 'none'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.daily_prep_mode === 'none' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.daily_prep_mode === 'none' ? 'text-blue-400' : 'text-white'}`}>I do not follow a fixed preparation routine</span>
               </button>
             </div>
@@ -502,7 +502,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
             </div>
             
             <div className="grid gap-4">
-              <button onClick={() => setFormData({...formData, execution_type: 'session'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.execution_type === 'session' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, execution_type: 'session'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.execution_type === 'session' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.execution_type === 'session' ? 'text-blue-400' : 'text-white'}`}>I trade during specific session hours</span>
               </button>
               
@@ -516,7 +516,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                 </div>
               )}
 
-              <button onClick={() => setFormData({...formData, execution_type: 'signal'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.execution_type === 'signal' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, execution_type: 'signal'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.execution_type === 'signal' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.execution_type === 'signal' ? 'text-blue-400' : 'text-white'}`}>I execute trades based on signals and confirmations, regardless of time</span>
               </button>
             </div>
@@ -532,7 +532,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
             </div>
             
             <div className="grid gap-4">
-              <button onClick={() => setFormData({...formData, review_mode: 'weekly'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.review_mode === 'weekly' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, review_mode: 'weekly'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.review_mode === 'weekly' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.review_mode === 'weekly' ? 'text-blue-400' : 'text-white'}`}>I review my trades and behavior weekly</span>
               </button>
               
@@ -551,7 +551,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
                 </div>
               )}
 
-              <button onClick={() => setFormData({...formData, review_mode: 'none'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.review_mode === 'none' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#000000] border-neutral-800 hover:border-neutral-600'}`}>
+              <button onClick={() => setFormData({...formData, review_mode: 'none'})} className={`flex flex-col text-left p-5 rounded-2xl border transition-all ${formData.review_mode === 'none' ? 'bg-blue-500/10 border-blue-500/50 shadow-inner' : 'bg-[#0a0a0a] border-neutral-800 hover:border-neutral-600'}`}>
                 <span className={`text-sm font-black uppercase tracking-wide ${formData.review_mode === 'none' ? 'text-blue-400' : 'text-white'}`}>I do not follow a structured review process</span>
               </button>
             </div>

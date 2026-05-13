@@ -23,7 +23,7 @@ export default async function DiscussionThreadPage({ params }: { params: { id: s
 
   if (!discussion) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-6 text-center">
         <h1 className="text-xl font-semibold mb-3">Transmission Lost</h1>
         <p className="text-neutral-500 text-sm mb-6 max-w-sm">This chatter module could not be found or was deleted by an admin.</p>
         <Link href="/floor" className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors flex items-center">
@@ -41,7 +41,7 @@ export default async function DiscussionThreadPage({ params }: { params: { id: s
     .order('created_at', { ascending: true })
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans p-4 md:p-10">
+    <div className="min-h-screen bg-[#050505] text-white font-sans p-4 md:p-10">
       <div className="max-w-3xl mx-auto">
         
         {/* Navigation */}
@@ -87,7 +87,7 @@ export default async function DiscussionThreadPage({ params }: { params: { id: s
           {comments && comments.length > 0 ? (
             <div className="space-y-3">
               {comments.map((comment) => (
-                <div key={comment.id} className="bg-[#000000] ring-1 ring-white/[0.02] hover:ring-white/[0.05] transition-all rounded-xl p-5 flex space-x-4">
+                <div key={comment.id} className="bg-[#0a0a0a] ring-1 ring-white/[0.02] hover:ring-white/[0.05] transition-all rounded-xl p-5 flex space-x-4">
                   <div className="w-8 h-8 rounded-full bg-white/[0.03] flex items-center justify-center shrink-0 ring-1 ring-white/[0.05]">
                     <User size={14} className="text-neutral-400" />
                   </div>

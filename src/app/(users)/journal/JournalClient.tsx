@@ -371,7 +371,7 @@ export default function JournalClient() {
             <div className="flex-1 flex flex-col min-h-0">
               
               {/* Compressed Autopsy Header */}
-              <div className="p-3 border-b border-zinc-800/50 bg-[#000000] flex flex-col gap-2 shrink-0">
+              <div className="p-3 border-b border-zinc-800/50 bg-[#050505] flex flex-col gap-2 shrink-0">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <h1 className="text-lg font-black text-white tracking-wider">
@@ -417,7 +417,7 @@ export default function JournalClient() {
                 </div>
                 
                 {/* Dynamic Image Display with Pan & Zoom */}
-                <div className="flex-1 bg-[#000000] border border-zinc-800 rounded-xl overflow-hidden relative shadow-inner min-h-0 flex items-center justify-center group">
+                <div className="flex-1 bg-[#0a0a0a] border border-zinc-800 rounded-xl overflow-hidden relative shadow-inner min-h-0 flex items-center justify-center group">
                   <TransformWrapper
                     key={`${activeTrade.id}-${viewMode}`}
                     initialScale={1}
@@ -444,7 +444,7 @@ export default function JournalClient() {
                 </div>
 
                 {/* Dynamic Notes Display */}
-                <div className="h-32 sm:h-40 bg-[#000000] border border-zinc-800 rounded-xl p-4 overflow-y-auto custom-scrollbar shrink-0 shadow-inner">
+                <div className="h-32 sm:h-40 bg-[#0a0a0a] border border-zinc-800 rounded-xl p-4 overflow-y-auto custom-scrollbar shrink-0 shadow-inner">
                   <h3 className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-2 border-b border-zinc-800/50 pb-1">
                     {viewMode === 'BEFORE' ? 'Structural Thesis' : 'Execution Catalysts'}
                   </h3>

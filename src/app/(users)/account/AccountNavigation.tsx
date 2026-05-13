@@ -16,7 +16,7 @@ export default function AccountNavigation() {
   return (
     <>
       {/* DESKTOP SUB-NAV */}
-      <div className="hidden md:flex shrink-0 w-56 lg:w-64 bg-[#000000] border-r border-neutral-900 flex-col overflow-y-auto custom-scrollbar p-5 space-y-2 z-20 shadow-[10px_0_30px_rgba(0,0,0,0.2)]">
+      <div className="hidden md:flex shrink-0 w-56 lg:w-64 bg-[#0a0a0a] border-r border-neutral-900 flex-col overflow-y-auto custom-scrollbar p-5 space-y-2 z-20 shadow-[10px_0_30px_rgba(0,0,0,0.2)]">
         <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 px-3">Account Center</h3>
         {ACCOUNT_LINKS.map((link) => {
           const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
@@ -31,7 +31,7 @@ export default function AccountNavigation() {
       </div>
 
       {/* MOBILE SUB-NAV */}
-      <div className="md:hidden fixed bottom-[65px] left-0 right-0 w-full bg-[#000000]/95 backdrop-blur-xl border-t border-neutral-900 overflow-x-auto scrollbar-hide px-3 py-3 flex items-center space-x-2 z-40 shadow-[0_-15px_30px_rgba(0,0,0,0.6)]">
+      <div className="md:hidden fixed bottom-[65px] left-0 right-0 w-full bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-neutral-900 overflow-x-auto scrollbar-hide px-3 py-3 flex items-center space-x-2 z-40 shadow-[0_-15px_30px_rgba(0,0,0,0.6)]">
         {ACCOUNT_LINKS.map((link) => {
           const isActive = pathname === link.href || pathname.startsWith(link.href + '/')
           const Icon = link.icon

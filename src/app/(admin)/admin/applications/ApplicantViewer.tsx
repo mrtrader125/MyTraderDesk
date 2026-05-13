@@ -32,7 +32,7 @@ export default function ApplicantViewer() {
 
   if (isLoading || !applicants) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center border border-zinc-800 border-dashed rounded-lg bg-[#000000] min-h-[400px]">
+      <div className="flex-1 flex flex-col items-center justify-center border border-zinc-800 border-dashed rounded-lg bg-[#0a0a0a] min-h-[400px]">
         <Loader2 className="animate-spin text-zinc-500 mb-4" size={32} />
         <p className="text-zinc-500 text-sm tracking-widest uppercase">Syncing Queue...</p>
       </div>
@@ -73,14 +73,14 @@ export default function ApplicantViewer() {
 
   if (applicants.length === 0) {
     return (
-      <div className="flex-1 flex items-center justify-center border border-zinc-800 border-dashed rounded-lg bg-[#000000] min-h-[400px]">
+      <div className="flex-1 flex items-center justify-center border border-zinc-800 border-dashed rounded-lg bg-[#0a0a0a] min-h-[400px]">
         <p className="text-zinc-500 text-sm tracking-widest uppercase">No applications in queue.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#000000] border border-zinc-800 rounded-xl overflow-hidden flex flex-col md:flex-row min-h-[700px] shadow-2xl font-sans">
+    <div className="bg-[#0a0a0a] border border-zinc-800 rounded-xl overflow-hidden flex flex-col md:flex-row min-h-[700px] shadow-2xl font-sans">
       
       {/* Left Pane: Applicant List */}
       <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-zinc-800 bg-zinc-900/30 flex flex-col max-h-[400px] md:max-h-[800px] overflow-hidden">
@@ -118,7 +118,7 @@ export default function ApplicantViewer() {
       </div>
 
       {/* Right Pane: Detailed Dossier */}
-      <div className="w-full md:w-2/3 bg-[#000000] flex flex-col max-h-[800px] overflow-y-auto custom-scrollbar">
+      <div className="w-full md:w-2/3 bg-[#0a0a0a] flex flex-col max-h-[800px] overflow-y-auto custom-scrollbar">
         {selectedApplicant ? (
           <div className="flex flex-col h-full animate-in fade-in duration-300">
             {/* Dossier Header */}

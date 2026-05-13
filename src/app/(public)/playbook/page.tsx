@@ -17,7 +17,7 @@ export default async function PlaybookPage() {
     .order('created_at', { ascending: true })
 
   return (
-    <div className="min-h-screen bg-black text-neutral-400 font-sans selection:bg-white selection:text-black flex flex-col">
+    <div className="min-h-screen bg-[#050505] text-neutral-400 font-sans selection:bg-white selection:text-black flex flex-col">
       
       {/* Changed pt-32 to pt-16 to remove the massive top space */}
       <main className="flex-grow max-w-6xl mx-auto w-full pt-16 pb-16 px-6 lg:px-8">
@@ -35,7 +35,7 @@ export default async function PlaybookPage() {
         {/* Clean Protocol Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {error || !articles?.length ? (
-            <div className="col-span-full py-12 text-center bg-[#000000] rounded-2xl border border-neutral-800/60">
+            <div className="col-span-full py-12 text-center bg-[#0A0A0A] rounded-2xl border border-neutral-800/60">
               <p className="text-neutral-500 text-sm">No protocols found in the database.</p>
             </div>
           ) : (
@@ -43,7 +43,7 @@ export default async function PlaybookPage() {
               <Link 
                 key={article.slug} 
                 href={`/playbook/${article.slug}`} 
-                className="group flex flex-col justify-between bg-[#000000] border border-neutral-800/60 rounded-2xl p-6 hover:bg-[#0F0F0F] hover:border-neutral-700 transition-all duration-300 min-h-[220px]"
+                className="group flex flex-col justify-between bg-[#0A0A0A] border border-neutral-800/60 rounded-2xl p-6 hover:bg-[#0F0F0F] hover:border-neutral-700 transition-all duration-300 min-h-[220px]"
               >
                 <div>
                   <div className="flex items-center justify-between mb-6">

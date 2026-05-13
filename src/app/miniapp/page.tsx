@@ -135,13 +135,13 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
       {/* 🚨 FIX: THUMB-FRIENDLY CLOSE BUTTON (Moved to bottom right) */}
       <button 
         onClick={onClose} 
-        className="absolute bottom-24 right-5 z-50 w-12 h-12 bg-black/80 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/10 text-white active:scale-95 shadow-xl pointer-events-auto transition-transform"
+        className="absolute bottom-24 right-5 z-50 w-12 h-12 bg-[#050505]/80 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/10 text-white active:scale-95 shadow-xl pointer-events-auto transition-transform"
       >
         <X size={20} />
       </button>
 
       {/* BOTTOM THESIS DRAWER */}
-      <div className={`absolute bottom-0 left-0 right-0 bg-[#000000] border-t border-white/10 rounded-t-3xl transition-transform duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 ${showThesis ? 'translate-y-0' : 'translate-y-[calc(100%-4.5rem)]'}`}>
+      <div className={`absolute bottom-0 left-0 right-0 bg-[#0a0a0a] border-t border-white/10 rounded-t-3xl transition-transform duration-300 shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-50 ${showThesis ? 'translate-y-0' : 'translate-y-[calc(100%-4.5rem)]'}`}>
         <div 
           className="h-[4.5rem] flex items-center justify-between px-6 cursor-pointer"
           onClick={() => setShowThesis(!showThesis)}
@@ -328,7 +328,7 @@ export default function MiniAppPage() {
 
   if (status === 'loading') {
     return (
-      <div className="w-full h-[100dvh] bg-black flex flex-col items-center justify-center">
+      <div className="w-full h-[100dvh] bg-[#050505] flex flex-col items-center justify-center">
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <Loader2 className="w-8 h-8 text-[#2AABEE] animate-spin mb-4" />
         <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest animate-pulse">Decrypting Identity...</p>
@@ -339,7 +339,7 @@ export default function MiniAppPage() {
   if (status === 'not_linked' || status === 'not_pro' || status === 'error') {
     const isProErr = status === 'not_pro'
     return (
-      <div className="w-full h-[100dvh] bg-black flex flex-col items-center justify-center p-6 text-center">
+      <div className="w-full h-[100dvh] bg-[#050505] flex flex-col items-center justify-center p-6 text-center">
         {isProErr ? <Lock className="w-12 h-12 text-amber-500/80 mb-4 stroke-1" /> : <Smartphone className="w-12 h-12 text-neutral-600 mb-4 stroke-1" />}
         <h2 className="text-xl font-bold text-white mb-2">{isProErr ? 'Pro Access Required' : 'Access Denied'}</h2>
         <p className="text-sm text-neutral-400">
@@ -395,7 +395,7 @@ export default function MiniAppPage() {
                 className={`w-full text-left border rounded-2xl p-4 flex items-center justify-between transition-transform active:scale-95 relative overflow-hidden shadow-sm
                   ${isUnseen 
                     ? 'bg-[#0a1526] border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.15)] animate-pulse' 
-                    : 'bg-[#000000] border-white/[0.04]'}
+                    : 'bg-[#0a0a0a] border-white/[0.04]'}
                 `}
               >
                 {/* 🚨 FIX: BLINKING UNSEEN UI */}

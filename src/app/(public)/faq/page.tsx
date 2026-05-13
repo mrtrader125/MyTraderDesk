@@ -59,7 +59,7 @@ export default function FAQPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-neutral-400 font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#050505] text-neutral-400 font-sans selection:bg-white selection:text-black">
       {/* Injecting the Schema directly into the HTML */}
       <script
         type="application/ld+json"
@@ -83,7 +83,7 @@ export default function FAQPage() {
           {FAQS.map((faq, i) => (
             <div 
               key={i} 
-              className="bg-[#000000] border border-neutral-800/60 hover:border-neutral-700 transition-colors rounded-2xl p-8"
+              className="bg-[#0A0A0A] border border-neutral-800/60 hover:border-neutral-700 transition-colors rounded-2xl p-8"
             >
               <h3 className="text-lg font-medium text-white mb-3 tracking-tight">
                 {faq.q}
@@ -96,7 +96,7 @@ export default function FAQPage() {
         </div>
 
         {/* Professional CTA Block */}
-        <div className="mt-20 p-8 md:p-10 bg-[#000000] border border-neutral-800/60 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+        <div className="mt-20 p-8 md:p-10 bg-[#0A0A0A] border border-neutral-800/60 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
            <div>
              <h3 className="text-xl font-medium text-white mb-2 tracking-tight">
                Ready to execute systematically?

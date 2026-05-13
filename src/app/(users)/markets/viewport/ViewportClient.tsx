@@ -55,7 +55,7 @@ const BeforeAfterSlider = ({ before, after }: { before: string, after: string })
     setSliderPosition((x / rect.width) * 100)
   }
   return (
-    <div className="relative overflow-hidden w-full h-[75%] md:max-w-full md:max-h-full aspect-video bg-[#000000] cursor-ew-resize touch-none select-none group shadow-2xl rounded-sm" onMouseMove={handleMove} onTouchMove={handleMove}>
+    <div className="relative overflow-hidden w-full h-[75%] md:max-w-full md:max-h-full aspect-video bg-[#050505] cursor-ew-resize touch-none select-none group shadow-2xl rounded-sm" onMouseMove={handleMove} onTouchMove={handleMove}>
       <img src={after} alt="After Analysis" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
       <div className="absolute bottom-4 right-4 bg-emerald-500/20 border border-emerald-500/50 backdrop-blur-md px-3 py-1.5 text-[9px] font-black text-emerald-400 uppercase tracking-widest rounded-sm z-0 shadow-lg">After</div>
       <div className="absolute inset-0 w-full h-full z-10 border-r border-blue-500/50 pointer-events-none" style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}>
@@ -63,7 +63,7 @@ const BeforeAfterSlider = ({ before, after }: { before: string, after: string })
         <div className="absolute bottom-4 left-4 bg-black/80 border border-neutral-700 backdrop-blur-md px-3 py-1.5 text-[9px] font-black text-white uppercase tracking-widest rounded-sm shadow-lg">Before</div>
       </div>
       <div className="absolute top-0 bottom-0 w-px bg-blue-500 z-20 pointer-events-none shadow-[0_0_10px_rgba(59,130,246,1)]" style={{ left: `${sliderPosition}%` }}>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-[#000000] border border-blue-500 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(59,130,246,0.8)] group-hover:scale-110 transition-transform">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-[#0a0a0a] border border-blue-500 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(59,130,246,0.8)] group-hover:scale-110 transition-transform">
           <div className="flex gap-1.5"><div className="w-0.5 h-3 bg-blue-500 rounded-full"></div><div className="w-0.5 h-3 bg-blue-500 rounded-full"></div></div>
         </div>
       </div>
@@ -293,10 +293,10 @@ export default function ViewportClient() {
 
   // 🚨 INSTANT SKELETON
   if (isLoading || !data) {
-    return <div className="h-[100dvh] bg-[#000000] flex flex-col items-center justify-center text-white"><Activity size={32} className="text-neutral-700 animate-spin"/></div>
+    return <div className="h-[100dvh] bg-[#050505] flex flex-col items-center justify-center text-white"><Activity size={32} className="text-neutral-700 animate-spin"/></div>
   }
 
-  if (!currentSetup) return <div className="h-[100dvh] bg-[#000000] flex flex-col items-center justify-center text-white"><Star size={32} className="text-neutral-700 mb-4"/><span className="text-neutral-500 text-xs font-black uppercase tracking-widest">No data found for {asset}</span><button onClick={() => router.push(backPath)} className="mt-6 px-6 py-2 bg-[#111] hover:bg-white/5 border border-neutral-800 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors">Go Back</button></div>
+  if (!currentSetup) return <div className="h-[100dvh] bg-[#050505] flex flex-col items-center justify-center text-white"><Star size={32} className="text-neutral-700 mb-4"/><span className="text-neutral-500 text-xs font-black uppercase tracking-widest">No data found for {asset}</span><button onClick={() => router.push(backPath)} className="mt-6 px-6 py-2 bg-[#111] hover:bg-white/5 border border-neutral-800 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors">Go Back</button></div>
 
   const access = getSetupAccess(currentSetup, userPlan)
   const isCurrentBookmarked = watchlist.some(w => w.id === currentSetup.id)
@@ -326,7 +326,7 @@ export default function ViewportClient() {
   }
 
   return (
-    <div className="fixed inset-0 bg-[#000000] flex overflow-hidden text-white select-none touch-none font-sans" style={{ height: '100dvh' }}>
+    <div className="fixed inset-0 bg-[#050505] flex overflow-hidden text-white select-none touch-none font-sans" style={{ height: '100dvh' }}>
        <div 
          className={`absolute inset-0 z-10 flex items-center justify-center md:pl-16 md:pr-20 md:pt-20 md:pb-10 overflow-hidden ${access.hasAccess && !currentSetup.after_image_url ? (isDragging || isPinching ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
          onWheel={access.hasAccess ? handleWheel : undefined}
@@ -357,13 +357,13 @@ export default function ViewportClient() {
              />
            )
          ) : (
-           <div className="w-[90%] md:w-full max-w-4xl aspect-video bg-[#000000] border border-neutral-800/50 rounded-3xl shadow-2xl" style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})` }} />
+           <div className="w-[90%] md:w-full max-w-4xl aspect-video bg-[#0a0a0a] border border-neutral-800/50 rounded-3xl shadow-2xl" style={{ transform: `translate(${pos.x}px, ${pos.y}px) scale(${scale})` }} />
          )}
        </div>
 
        {!access.hasAccess && (
          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none p-4">
-           <div className="w-full max-w-sm bg-[#000000]/95 backdrop-blur-xl border border-neutral-800 rounded-3xl p-6 md:p-8 text-center shadow-2xl relative overflow-hidden pointer-events-auto">
+           <div className="w-full max-w-sm bg-[#0a0a0a]/95 backdrop-blur-xl border border-neutral-800 rounded-3xl p-6 md:p-8 text-center shadow-2xl relative overflow-hidden pointer-events-auto">
              <div className="absolute top-0 right-0 w-32 h-32 blur-[60px] rounded-full pointer-events-none bg-blue-600/20"></div>
              <div className="w-12 h-12 md:w-14 md:h-14 bg-black border border-neutral-800 rounded-2xl flex items-center justify-center mx-auto mb-5 md:mb-6 relative z-10 shadow-lg">
                 <Lock size={20} className="text-blue-500" />
@@ -400,11 +400,11 @@ export default function ViewportClient() {
        <div className="absolute inset-0 z-50 pointer-events-none flex flex-col">
          <div className="absolute top-4 md:top-5 left-4 md:left-5 right-4 md:right-auto flex items-start justify-between md:justify-start pointer-events-none z-50">
            <div className="flex items-center space-x-2 md:space-x-3 pointer-events-auto">
-             <button onClick={() => router.push(backPath)} className="w-10 h-10 md:w-12 md:h-12 bg-[#000000]/90 backdrop-blur-md border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors shadow-lg shrink-0">
+             <button onClick={() => router.push(backPath)} className="w-10 h-10 md:w-12 md:h-12 bg-[#0a0a0a]/90 backdrop-blur-md border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-600 transition-colors shadow-lg shrink-0">
                <ArrowLeft size={16} />
              </button>            
              
-             <div className="h-10 md:h-12 bg-[#000000]/90 backdrop-blur-md border border-neutral-800 px-3 md:px-4 rounded-xl flex items-center space-x-2 md:space-x-3 shadow-lg shrink-0">
+             <div className="h-10 md:h-12 bg-[#0a0a0a]/90 backdrop-blur-md border border-neutral-800 px-3 md:px-4 rounded-xl flex items-center space-x-2 md:space-x-3 shadow-lg shrink-0">
                <span className="text-xs md:text-sm font-black uppercase tracking-widest text-white">{asset}</span>
                <div className="w-px h-4 bg-neutral-800"></div>
                <div className={`flex items-center px-2 py-1 md:py-1.5 rounded-md border backdrop-blur-md ${statusStyle}`}>
@@ -433,12 +433,12 @@ export default function ViewportClient() {
              </div>
            </div>
 
-           <button onClick={() => setIsMobileSidebarOpen(true)} className="md:hidden w-10 h-10 bg-[#000000]/90 backdrop-blur-md border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white transition-colors shadow-lg pointer-events-auto shrink-0"><Menu size={16} /></button>
+           <button onClick={() => setIsMobileSidebarOpen(true)} className="md:hidden w-10 h-10 bg-[#0a0a0a]/90 backdrop-blur-md border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white transition-colors shadow-lg pointer-events-auto shrink-0"><Menu size={16} /></button>
          </div>
 
          {showInfo && access.hasAccess && (
            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm pointer-events-auto">
-             <div className="w-full max-w-sm max-h-[70vh] flex flex-col bg-[#000000] border border-neutral-800 rounded-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+             <div className="w-full max-w-sm max-h-[70vh] flex flex-col bg-[#0a0a0a] border border-neutral-800 rounded-3xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
                <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0">
                  <h3 className="text-xs font-black text-white uppercase tracking-wider">{currentSetup.title || 'Analysis Notes'}</h3>
                  <button onClick={() => setShowInfo(false)} className="text-neutral-500 hover:text-white transition-colors"><X size={16} /></button>
@@ -453,7 +453,7 @@ export default function ViewportClient() {
            </div>
          )}
 
-         <div className="absolute bottom-6 md:bottom-auto md:top-5 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 bg-[#000000]/90 backdrop-blur-md border border-neutral-800 p-1.5 rounded-xl md:rounded-2xl shadow-2xl pointer-events-auto z-40 flex items-center overflow-x-auto scrollbar-hide">
+         <div className="absolute bottom-6 md:bottom-auto md:top-5 left-4 right-4 md:left-1/2 md:right-auto md:-translate-x-1/2 bg-[#0a0a0a]/90 backdrop-blur-md border border-neutral-800 p-1.5 rounded-xl md:rounded-2xl shadow-2xl pointer-events-auto z-40 flex items-center overflow-x-auto scrollbar-hide">
             {timeframes.map(t => {
               const isSelected = selectedTf === t
               return (
@@ -468,12 +468,12 @@ export default function ViewportClient() {
 
          {access.hasAccess && !currentSetup.after_image_url && (
            <div className="md:hidden absolute bottom-24 right-4 flex flex-col space-y-2 pointer-events-auto z-40">
-             <button onClick={zoomIn} className="w-10 h-10 bg-[#000000]/90 backdrop-blur-md border border-neutral-800 rounded-full flex items-center justify-center text-neutral-400 hover:text-white shadow-xl active:scale-95 transition-all"><ZoomIn size={16}/></button>
-             <button onClick={zoomOut} className="w-10 h-10 bg-[#000000]/90 backdrop-blur-md border border-neutral-800 rounded-full flex items-center justify-center text-neutral-400 hover:text-white shadow-xl active:scale-95 transition-all"><ZoomOut size={16}/></button>
+             <button onClick={zoomIn} className="w-10 h-10 bg-[#0a0a0a]/90 backdrop-blur-md border border-neutral-800 rounded-full flex items-center justify-center text-neutral-400 hover:text-white shadow-xl active:scale-95 transition-all"><ZoomIn size={16}/></button>
+             <button onClick={zoomOut} className="w-10 h-10 bg-[#0a0a0a]/90 backdrop-blur-md border border-neutral-800 rounded-full flex items-center justify-center text-neutral-400 hover:text-white shadow-xl active:scale-95 transition-all"><ZoomOut size={16}/></button>
            </div>
          )}
 
-         <div className={`absolute right-0 top-0 bottom-0 z-50 flex flex-col shadow-2xl transition-all duration-300 border-l border-neutral-800 pointer-events-auto ${isMobileSidebarOpen ? 'translate-x-0 w-64 bg-[#000000]/95 backdrop-blur-xl' : 'translate-x-full md:translate-x-0 w-64 md:w-12 md:hover:w-64 bg-[#000000]/95 md:bg-[#000000]/80 md:backdrop-blur-md group/sidebar'} ${isSidebarPinned ? 'md:w-64 md:bg-[#000000]/95' : ''}`}>
+         <div className={`absolute right-0 top-0 bottom-0 z-50 flex flex-col shadow-2xl transition-all duration-300 border-l border-neutral-800 pointer-events-auto ${isMobileSidebarOpen ? 'translate-x-0 w-64 bg-[#0a0a0a]/95 backdrop-blur-xl' : 'translate-x-full md:translate-x-0 w-64 md:w-12 md:hover:w-64 bg-[#0a0a0a]/95 md:bg-[#0a0a0a]/80 md:backdrop-blur-md group/sidebar'} ${isSidebarPinned ? 'md:w-64 md:bg-[#0a0a0a]/95' : ''}`}>
            <div className={`h-14 md:h-16 flex items-center border-b border-neutral-800 transition-all px-4 ${isSidebarPinned ? 'justify-between' : 'justify-between md:justify-center md:group-hover/sidebar:justify-between'}`}>
              <div className="flex items-center">
                <Clock size={14} className="text-neutral-400 shrink-0" />

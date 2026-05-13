@@ -206,7 +206,7 @@ export default async function PublicAnalysisTeaser({ params }: Props) {
           <div className="lg:col-span-3 flex flex-col gap-4 h-full min-h-0">
             {/* Chart Container - Flex 1 scales it to take all available space */}
             <div className="flex-1 bg-[#111113] border border-neutral-800 rounded-lg p-1.5 min-h-0 relative">
-              <div className="w-full h-full bg-black rounded overflow-hidden flex items-center justify-center border border-neutral-900 relative">
+              <div className="w-full h-full bg-[#050505] rounded overflow-hidden flex items-center justify-center border border-neutral-900 relative">
                 {setup.image_url ? (
                   <img 
                     src={setup.image_url} 

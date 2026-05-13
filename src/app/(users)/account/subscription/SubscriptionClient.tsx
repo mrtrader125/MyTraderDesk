@@ -28,9 +28,9 @@ export default function SubscriptionClient() {
   if (isLoading || !data) {
     return (
       <div className="max-w-3xl space-y-6 md:space-y-8 relative">
-        <div><div className="h-6 md:h-7 w-32 bg-[#000000] border border-neutral-800 rounded-md animate-pulse mb-2"></div><div className="h-3 md:h-3.5 w-64 bg-[#000000] border border-neutral-800 rounded-md animate-pulse"></div></div>
-        <div className="bg-[#000000] border border-neutral-800 rounded-2xl md:rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm"><div className="flex flex-col md:flex-row md:items-center justify-between relative z-10 gap-5 md:gap-6"><div className="flex-1 w-full"><div className="h-2.5 w-20 bg-neutral-900 rounded animate-pulse mb-3"></div><div className="flex items-center space-x-2 md:space-x-3 mb-3 md:mb-4"><div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-neutral-900 animate-pulse shrink-0"></div><div className="h-6 md:h-8 w-40 md:w-48 bg-neutral-900 rounded animate-pulse"></div></div><div className="space-y-2 max-w-md"><div className="h-2.5 md:h-3 w-full bg-neutral-900 rounded animate-pulse"></div><div className="h-2.5 md:h-3 w-3/4 bg-neutral-900 rounded animate-pulse"></div></div></div><div className="w-full md:w-40 h-12 md:h-14 bg-neutral-900 rounded-xl animate-pulse shrink-0"></div></div></div>
-        <div className="grid grid-cols-2 gap-3 md:gap-4"><div className="bg-[#000000] border border-neutral-800 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between shadow-sm"><div className="w-full"><div className="h-2.5 w-20 bg-neutral-900 rounded animate-pulse mb-2"></div><div className="h-6 md:h-8 w-12 bg-neutral-900 rounded animate-pulse"></div></div><Bookmark className="text-neutral-800 absolute right-4 bottom-4 md:relative md:right-auto md:bottom-auto w-8 h-8 md:w-10 md:h-10" /></div><div className="bg-[#000000] border border-neutral-800 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between shadow-sm"><div className="w-full"><div className="h-2.5 w-24 bg-neutral-900 rounded animate-pulse mb-2"></div><div className="h-4 w-20 bg-neutral-900 rounded animate-pulse mt-2"></div></div><Activity className="text-neutral-800 absolute right-4 bottom-4 md:relative md:right-auto md:bottom-auto w-8 h-8 md:w-10 md:h-10" /></div></div>
+        <div><div className="h-6 md:h-7 w-32 bg-[#0a0a0a] border border-neutral-800 rounded-md animate-pulse mb-2"></div><div className="h-3 md:h-3.5 w-64 bg-[#0a0a0a] border border-neutral-800 rounded-md animate-pulse"></div></div>
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm"><div className="flex flex-col md:flex-row md:items-center justify-between relative z-10 gap-5 md:gap-6"><div className="flex-1 w-full"><div className="h-2.5 w-20 bg-neutral-900 rounded animate-pulse mb-3"></div><div className="flex items-center space-x-2 md:space-x-3 mb-3 md:mb-4"><div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-neutral-900 animate-pulse shrink-0"></div><div className="h-6 md:h-8 w-40 md:w-48 bg-neutral-900 rounded animate-pulse"></div></div><div className="space-y-2 max-w-md"><div className="h-2.5 md:h-3 w-full bg-neutral-900 rounded animate-pulse"></div><div className="h-2.5 md:h-3 w-3/4 bg-neutral-900 rounded animate-pulse"></div></div></div><div className="w-full md:w-40 h-12 md:h-14 bg-neutral-900 rounded-xl animate-pulse shrink-0"></div></div></div>
+        <div className="grid grid-cols-2 gap-3 md:gap-4"><div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between shadow-sm"><div className="w-full"><div className="h-2.5 w-20 bg-neutral-900 rounded animate-pulse mb-2"></div><div className="h-6 md:h-8 w-12 bg-neutral-900 rounded animate-pulse"></div></div><Bookmark className="text-neutral-800 absolute right-4 bottom-4 md:relative md:right-auto md:bottom-auto w-8 h-8 md:w-10 md:h-10" /></div><div className="bg-[#0a0a0a] border border-neutral-800 rounded-xl md:rounded-2xl p-4 md:p-6 flex flex-col md:flex-row md:items-center justify-between shadow-sm"><div className="w-full"><div className="h-2.5 w-24 bg-neutral-900 rounded animate-pulse mb-2"></div><div className="h-4 w-20 bg-neutral-900 rounded animate-pulse mt-2"></div></div><Activity className="text-neutral-800 absolute right-4 bottom-4 md:relative md:right-auto md:bottom-auto w-8 h-8 md:w-10 md:h-10" /></div></div>
       </div>
     )
   }
@@ -44,7 +44,7 @@ export default function SubscriptionClient() {
         <p className="text-[10px] md:text-xs font-bold text-neutral-500 uppercase tracking-widest leading-relaxed">Manage your active tier and billing statements.</p>
       </div>
 
-      <div className="bg-gradient-to-br from-[#000000] to-[#050505] border border-neutral-800 rounded-2xl md:rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm">
+      <div className="bg-gradient-to-br from-[#0a0a0a] to-[#050505] border border-neutral-800 rounded-2xl md:rounded-3xl p-6 md:p-8 relative overflow-hidden shadow-sm">
         <div className={`absolute top-0 right-0 w-48 h-48 blur-[80px] rounded-full pointer-events-none ${userPlan === 'premium' ? 'bg-amber-500/10' : 'bg-blue-600/5'}`}></div>
         <div className="flex flex-col md:flex-row md:items-center justify-between relative z-10 gap-5">
           <div className="flex-1">
@@ -67,7 +67,7 @@ export default function SubscriptionClient() {
         </div>
       </div>
 
-      <div className="bg-[#000000] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 flex flex-col md:flex-row md:items-center justify-between shadow-sm gap-5">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 flex flex-col md:flex-row md:items-center justify-between shadow-sm gap-5">
         <div className="flex items-start space-x-4">
           <div className="p-3 bg-[#111] border border-neutral-800 rounded-xl shrink-0"><CreditCard className="text-neutral-400 w-6 h-6" /></div>
           <div>
@@ -92,7 +92,7 @@ export default function SubscriptionClient() {
 
       {showPricing && userPlan !== 'premium' && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-md p-3 sm:p-6">
-          <div className="relative w-full max-w-[1200px] h-full max-h-[95dvh] bg-[#000000] border border-neutral-800 rounded-2xl p-4 sm:p-8 shadow-2xl flex flex-col animate-in fade-in">
+          <div className="relative w-full max-w-[1200px] h-full max-h-[95dvh] bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-4 sm:p-8 shadow-2xl flex flex-col animate-in fade-in">
             <button onClick={() => setShowPricing(false)} className="absolute top-4 right-4 p-2 text-neutral-500 hover:text-white bg-[#111] rounded-full z-20"><X size={16} /></button>
             <div className="shrink-0 text-center mb-6 mt-2">
               <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter italic">Select <span className="text-blue-500">Plan</span></h2>

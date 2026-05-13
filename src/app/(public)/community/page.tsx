@@ -28,7 +28,7 @@ export default function PublicTeaserFloor() {
   ]
 
   return (
-    <div className="min-h-screen bg-black text-neutral-200 pt-16 pb-12 px-4 md:px-6 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-[#050505] text-neutral-200 pt-16 pb-12 px-4 md:px-6 font-sans relative overflow-hidden">
       
       {/* Ambient Glows */}
       <div className="fixed top-[-20%] left-[-10%] w-[60%] h-[60%] bg-blue-600/5 blur-[150px] rounded-full pointer-events-none z-0" />
@@ -61,7 +61,7 @@ export default function PublicTeaserFloor() {
               <div key={post.id} className="bg-[#080808] rounded-xl border border-neutral-800 overflow-hidden shadow-xl relative group">
                 
                 {/* BLUR OVERLAY & CALL TO ACTION */}
-                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70 backdrop-blur-[6px] transition-all duration-500 p-6 text-center">
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#050505]/70 backdrop-blur-[6px] transition-all duration-500 p-6 text-center">
                   <div className="bg-[#111] p-3 rounded-full mb-4 border border-neutral-700 shadow-[0_0_20px_rgba(255,255,255,0.05)]">
                     <Lock className="w-6 h-6 text-neutral-300" />
                   </div>
@@ -81,7 +81,7 @@ export default function PublicTeaserFloor() {
                 <div className="opacity-30 select-none pointer-events-none blur-[2px]">
                   
                   {/* Header */}
-                  <div className="px-4 py-2.5 border-b border-neutral-900 flex justify-between items-center bg-[#000000]">
+                  <div className="px-4 py-2.5 border-b border-neutral-900 flex justify-between items-center bg-[#0a0a0a]">
                     <div className="flex items-center gap-2">
                       <span className="px-5 py-2 bg-neutral-800 rounded animate-pulse w-20"></span>
                       <span className="px-3 py-2 bg-neutral-800 rounded animate-pulse w-10"></span>
@@ -130,10 +130,10 @@ export default function PublicTeaserFloor() {
 
           {/* --- RIGHT COLUMN: LOCKED LIVE SQUAWK --- */}
           <div className="lg:col-span-1">
-            <div className="bg-[#000000] rounded-xl border border-neutral-800 overflow-hidden flex flex-col h-[calc(100vh-80px)] sticky top-6 shadow-xl relative">
+            <div className="bg-[#0a0a0a] rounded-xl border border-neutral-800 overflow-hidden flex flex-col h-[calc(100vh-80px)] sticky top-6 shadow-xl relative">
               
               {/* BLUR OVERLAY */}
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/70 backdrop-blur-[6px] p-5 text-center mt-12">
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-[#050505]/70 backdrop-blur-[6px] p-5 text-center mt-12">
                  <Lock className="w-5 h-5 text-neutral-500 mb-3" />
                  <h3 className="text-sm font-black text-white mb-2 tracking-tight uppercase">Squawk Locked</h3>
                  <p className="text-[10px] text-neutral-400 mb-5 leading-relaxed font-medium">
@@ -177,7 +177,7 @@ export default function PublicTeaserFloor() {
               </div>
               
               {/* Footer */}
-              <div className="p-2.5 border-t border-neutral-900 bg-black shrink-0 text-center relative z-30">
+              <div className="p-2.5 border-t border-neutral-900 bg-[#050505] shrink-0 text-center relative z-30">
                  <p className="text-[8px] font-bold text-neutral-600 uppercase tracking-widest flex items-center justify-center gap-1.5">
                    <Shield size={9}/> Connection Secured
                  </p>

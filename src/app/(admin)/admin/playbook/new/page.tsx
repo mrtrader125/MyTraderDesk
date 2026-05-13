@@ -45,7 +45,7 @@ export default function AdminPlaybookPublish() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-8 md:p-12 font-sans">
+    <div className="min-h-screen bg-[#050505] text-white p-8 md:p-12 font-sans">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center space-x-4 mb-10 border-b border-neutral-800 pb-6">
           <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center border border-brand-primary/20">
@@ -78,7 +78,7 @@ export default function AdminPlaybookPublish() {
                 type="text" 
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                className="w-full bg-[#000000] border border-neutral-800 rounded-xl px-4 py-3 text-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl px-4 py-3 text-neutral-500 focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
           </div>

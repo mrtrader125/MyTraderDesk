@@ -49,7 +49,7 @@ export default function ApplicationPage() {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-[#000000] flex items-center justify-center p-6">
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center p-6">
         <div className="max-w-md w-full bg-zinc-900 border border-zinc-800 p-8 rounded-lg text-center space-y-4">
           <h2 className="text-xl font-semibold text-zinc-100">Application Received</h2>
           <p className="text-sm text-zinc-400 leading-relaxed">
@@ -61,7 +61,7 @@ export default function ApplicationPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#000000] py-16 px-6 sm:px-12 font-sans text-zinc-100">
+    <div className="min-h-screen bg-[#0a0a0a] py-16 px-6 sm:px-12 font-sans text-zinc-100">
       <div className="max-w-5xl mx-auto space-y-16">
         
         {/* Page Header */}

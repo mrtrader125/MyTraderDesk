@@ -317,7 +317,7 @@ export default function GeneralDashboard({
                     if (isProUser && userId) supabase.from('activity_logs').insert([{ user_id: userId, action: 'FEED_CLICK', asset_symbol: setup.asset_symbol, timeframe: setup.timeframe }]).then()
                     router.push(`/markets/viewport?asset=${setup.asset_symbol}&tf=${setup.timeframe}&from=dashboard`)
                   }}
-                  className="bg-[#000000] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] cursor-pointer transition-all rounded-xl p-3 md:p-2.5 group flex items-center justify-between shadow-sm overflow-hidden relative"
+                  className="bg-[#0a0a0a] border border-neutral-800 hover:border-neutral-600 hover:bg-white/[0.02] cursor-pointer transition-all rounded-xl p-3 md:p-2.5 group flex items-center justify-between shadow-sm overflow-hidden relative"
                 >
                   <div className="flex flex-col min-w-0 pr-2 z-10">
                     <span className="text-sm font-black text-white tracking-tight truncate">{setup.asset_symbol || 'UNKNOWN'}</span>
@@ -346,20 +346,20 @@ export default function GeneralDashboard({
     )
   }
 
-  if (!mounted) return <div className="w-full min-h-screen bg-[#000000]"></div>
+  if (!mounted) return <div className="w-full min-h-screen bg-[#050505]"></div>
 
   const totalFiltered = groupedSetups.today.length + groupedSetups.yesterday.length + groupedSetups.thisWeek.length + groupedSetups.older.length
   const noFiltersApplied = savedCategories.length === 0 && savedSymbols.length === 0
 
   return (
-    <div className="w-full bg-[#000000] text-white p-3 md:p-6 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
+    <div className="w-full bg-[#050505] text-white p-3 md:p-6 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start h-full min-h-0 max-w-[1800px] mx-auto w-full">
         
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
         <div className="lg:col-span-8 xl:col-span-9 flex flex-col h-full min-h-0 space-y-3 md:space-y-4">
           
           <div className="shrink-0 grid grid-cols-2 md:grid-cols-12 gap-3">
-            <div className="col-span-2 md:col-span-4 xl:col-span-3 bg-[#000000] border border-neutral-800 p-4 md:p-5 rounded-2xl flex items-center justify-between shadow-sm">
+            <div className="col-span-2 md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-4 md:p-5 rounded-2xl flex items-center justify-between shadow-sm">
               <div className="min-w-0 pr-2">
                 <div className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">{setupLabel}</div>
                 <div className="text-2xl md:text-3xl font-black text-white tracking-tighter truncate">{setupCount}</div>
@@ -367,13 +367,13 @@ export default function GeneralDashboard({
               <div className="p-2.5 md:p-3 bg-white/5 rounded-xl text-neutral-400 shrink-0"><Zap size={20} /></div>
             </div>
 
-            <div className="col-span-1 md:col-span-4 xl:col-span-6 bg-[#000000] border border-neutral-800 p-4 md:p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden shadow-sm">
+            <div className="col-span-1 md:col-span-4 xl:col-span-6 bg-[#0a0a0a] border border-neutral-800 p-4 md:p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden shadow-sm">
               <div className="text-neutral-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mb-1">Session</div>
               <div className="text-sm md:text-lg xl:text-xl font-black text-white tracking-tight uppercase italic leading-none truncate">{getActiveSession()}</div>
               <Globe size={40} className="absolute -right-2 -bottom-2 text-white/5 animate-pulse" />
             </div>
             
-            <div className="col-span-1 md:col-span-4 xl:col-span-3 bg-[#000000] border border-neutral-800 p-4 md:p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden shadow-sm">
+            <div className="col-span-1 md:col-span-4 xl:col-span-3 bg-[#0a0a0a] border border-neutral-800 p-4 md:p-5 rounded-2xl flex flex-col justify-center relative overflow-hidden shadow-sm">
               <div className="text-neutral-500 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mb-1 truncate">Current Tier</div>
               <div className={`text-sm md:text-xl font-black uppercase tracking-widest truncate ${isProUser ? 'text-blue-500' : 'text-neutral-400'}`}>
                 {isProUser ? 'Professional' : 'Sandbox Demo'}
@@ -381,7 +381,7 @@ export default function GeneralDashboard({
             </div>
           </div>
 
-          <div className="shrink-0 flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-[#000000] p-1 rounded-xl border border-neutral-800 relative">
+          <div className="shrink-0 flex items-center space-x-1 overflow-x-auto scrollbar-hide w-full bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800 relative">
             {FILTERS.map(f => (
               <button 
                 key={f.name}
@@ -397,7 +397,7 @@ export default function GeneralDashboard({
             ))}
           </div>
 
-          <div className="flex-1 bg-[#000000] border border-neutral-800 rounded-2xl flex flex-col min-h-0 overflow-hidden shadow-2xl relative">
+          <div className="flex-1 bg-[#0a0a0a] border border-neutral-800 rounded-2xl flex flex-col min-h-0 overflow-hidden shadow-2xl relative">
             
             <div className="px-4 md:px-5 py-3 md:py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0 z-10 shadow-sm">
               <h3 className="text-[11px] md:text-xs font-black text-neutral-400 uppercase tracking-widest flex items-center gap-2">
@@ -411,7 +411,7 @@ export default function GeneralDashboard({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-5 custom-scrollbar bg-[#000000]">
+            <div className="flex-1 overflow-y-auto p-4 md:p-5 custom-scrollbar bg-[#050505]">
               {totalFiltered === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-12 opacity-50">
                   <Activity className="w-10 h-10 text-neutral-700 mb-3" />
@@ -443,7 +443,7 @@ export default function GeneralDashboard({
 
       {showFilterModal && (
         <div className="fixed inset-0 z-[99999] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md bg-[#000000] rounded-t-3xl sm:rounded-2xl border-t sm:border border-neutral-800 shadow-[0_-10px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[85vh]">
+          <div className="w-full max-w-md bg-[#0a0a0a] rounded-t-3xl sm:rounded-2xl border-t sm:border border-neutral-800 shadow-[0_-10px_50px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90dvh] sm:max-h-[85vh]">
             
             <div className="px-5 py-4 border-b border-neutral-900 bg-[#0d0d0d] flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2">
@@ -518,7 +518,7 @@ export default function GeneralDashboard({
                     <span className="text-[10px] font-bold text-neutral-600 uppercase tracking-widest m-auto">No specific targets added</span>
                   ) : (
                     savedSymbols.map(sym => (
-                      <span key={sym} className="flex items-center gap-1.5 px-2.5 py-1 bg-[#000000] text-neutral-300 text-[10px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 shadow-sm">
+                      <span key={sym} className="flex items-center gap-1.5 px-2.5 py-1 bg-[#0a0a0a] text-neutral-300 text-[10px] font-black uppercase tracking-widest rounded-lg border border-neutral-700 shadow-sm">
                         {sym}
                         <button onClick={() => setSavedSymbols(savedSymbols.filter(s => s !== sym))} className="text-neutral-500 hover:text-red-400 transition-colors"><X size={12} /></button>
                       </span>
@@ -551,7 +551,7 @@ export default function GeneralDashboard({
 function MobileWidgets({ activeBroadcast, watchlist, router }: any) {
   return (
     <>
-      <div className="bg-[#000000] border border-neutral-800 rounded-2xl p-5 shadow-sm">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
           <div className="flex items-center">
             <Activity size={16} className="text-blue-500 mr-2 animate-pulse" />
@@ -583,7 +583,7 @@ function MobileWidgets({ activeBroadcast, watchlist, router }: any) {
         </div>
       </div>
 
-      <div className="bg-[#000000] border border-neutral-800 rounded-2xl p-5 shadow-sm relative">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 shadow-sm relative">
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-neutral-800">
           <div className="flex items-center">
             <Bookmark size={16} className="text-amber-500 mr-2" />

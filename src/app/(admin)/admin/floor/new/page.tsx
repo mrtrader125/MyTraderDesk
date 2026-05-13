@@ -324,7 +324,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
             <div className="flex-1 flex flex-col h-full min-w-0 relative transition-all duration-500 ease-in-out bg-[#080808] border border-white/[0.04] rounded-2xl shadow-xl">
               
               {/* INTEGRATED HEADER */}
-              <div className="px-4 py-3 border-b border-white/[0.04] bg-[#000000] flex items-center justify-between shrink-0 z-10 rounded-t-2xl">
+              <div className="px-4 py-3 border-b border-white/[0.04] bg-[#0a0a0a] flex items-center justify-between shrink-0 z-10 rounded-t-2xl">
                 
                 {/* Left Controls */}
                 <div className="flex items-center gap-4">
@@ -389,22 +389,22 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                             <div className="flex flex-wrap gap-4 mb-5">
                               <div className="flex-1 min-w-[120px]">
                                 <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Ticker</label>
-                                <input type="text" value={editingPost.ticker} onChange={(e) => setEditingPost({...editingPost, ticker: e.target.value.toUpperCase()})} className="w-full bg-black border border-white/[0.05] rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-blue-500" required />
+                                <input type="text" value={editingPost.ticker} onChange={(e) => setEditingPost({...editingPost, ticker: e.target.value.toUpperCase()})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-blue-500" required />
                               </div>
                               <div className="flex-1 min-w-[120px]">
                                 <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Timeframe</label>
-                                <select value={editingPost.timeframe || '1D'} onChange={(e) => setEditingPost({...editingPost, timeframe: e.target.value})} className="w-full bg-black border border-white/[0.05] rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
+                                <select value={editingPost.timeframe || '1D'} onChange={(e) => setEditingPost({...editingPost, timeframe: e.target.value})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
                                   <option value="15M">15M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option>
                                   <option value="NOW">NOW</option>
                                 </select>
                               </div>
                               <div className="flex-1 min-w-[120px]">
                                 <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Access Tier</label>
-                                <select value={editingPost.tier_access} onChange={e=>setEditingPost({...editingPost, tier_access: e.target.value})} className="w-full bg-black border border-white/[0.05] rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
+                                <select value={editingPost.tier_access} onChange={e=>setEditingPost({...editingPost, tier_access: e.target.value})} className="w-full bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
                                   <option value="free">Free Preview</option><option value="pro">Pro Exclusive</option>
                                 </select>
                               </div>
-                              <div className="bg-black p-2 rounded-xl border border-white/[0.05] flex-1 min-w-[160px]">
+                              <div className="bg-[#050505] p-2 rounded-xl border border-white/[0.05] flex-1 min-w-[160px]">
                                 <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest flex justify-between items-center w-full px-1">
                                   Force Sentiment <input type="checkbox" checked={editingPost.overrideSentiment} onChange={()=>setEditingPost({...editingPost, overrideSentiment: !editingPost.overrideSentiment})} className="accent-blue-500 w-3 h-3" />
                                 </label>
@@ -415,7 +415,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                             </div>
                             
                             <label className="text-[9px] text-neutral-500 uppercase font-bold tracking-widest mb-1.5 block">Thesis / Breakdown</label>
-                            <textarea value={editingPost.thesis} onChange={(e) => setEditingPost({...editingPost, thesis: e.target.value})} className="w-full h-24 bg-black border border-white/[0.05] rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed" required />
+                            <textarea value={editingPost.thesis} onChange={(e) => setEditingPost({...editingPost, thesis: e.target.value})} className="w-full h-24 bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-sm text-white outline-none focus:border-blue-500 custom-scrollbar resize-none leading-relaxed" required />
                             
                             <div className="flex justify-end gap-3 mt-4">
                               <button onClick={() => setEditingPost(null)} className="px-5 py-2 text-[9px] font-black uppercase tracking-widest text-neutral-400 bg-[#111] hover:bg-[#1a1a1a] border border-white/[0.05] rounded-xl transition-all">Cancel</button>
@@ -439,7 +439,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
 
                           {/* TEXT ONLY BROADCAST */}
                           {!isSetup ? (
-                            <div className="bg-[#000000] rounded-2xl border border-white/[0.03] p-5 flex flex-col gap-3 shadow-sm group-hover/post:border-white/[0.08] transition-colors">
+                            <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] p-5 flex flex-col gap-3 shadow-sm group-hover/post:border-white/[0.08] transition-colors">
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
                                   <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center">
@@ -460,7 +460,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                             </div>
                           ) : (
                             /* FULL SETUP POST */
-                            <div className="bg-[#000000] rounded-2xl border border-white/[0.03] overflow-hidden shadow-sm flex flex-col group-hover/post:border-white/[0.08] transition-colors">
+                            <div className="bg-[#0a0a0a] rounded-2xl border border-white/[0.03] overflow-hidden shadow-sm flex flex-col group-hover/post:border-white/[0.08] transition-colors">
                               <div className="flex flex-col lg:flex-row border-b border-white/[0.02]">
                                 
                                 <div className="relative w-full lg:w-[400px] shrink-0 aspect-[16/10] bg-[#000000] cursor-pointer group/img border-r border-white/[0.02]" onClick={() => setExpandedImage(post.image_url)}>
@@ -482,13 +482,13 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                                   </div>
 
                                   <div className="flex flex-col gap-3 mt-auto">
-                                    <div className="flex items-center gap-3 bg-black px-3 py-2 rounded-xl border border-white/[0.02]">
+                                    <div className="flex items-center gap-3 bg-[#050505] px-3 py-2 rounded-xl border border-white/[0.02]">
                                       <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest w-20">Access</span>
                                       <span className={`px-2 py-0.5 text-[8px] font-bold tracking-wider uppercase rounded border ${post.tier_access === 'free' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-purple-500/10 text-purple-400 border-purple-500/20'}`}>
                                         {post.tier_access === 'pro' ? 'Pro Exclusive' : 'Free Preview'}
                                       </span>
                                     </div>
-                                    <div className="flex items-center gap-3 bg-black px-3 py-2 rounded-xl border border-white/[0.02]">
+                                    <div className="flex items-center gap-3 bg-[#050505] px-3 py-2 rounded-xl border border-white/[0.02]">
                                       <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest w-20">Sentiment</span>
                                       {post.admin_align_pct !== null ? (
                                         <span className="px-2 py-0.5 text-[8px] font-bold tracking-wider uppercase rounded border bg-amber-500/10 text-amber-500 border-amber-500/20">
@@ -503,7 +503,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                                 </div>
                               </div>
 
-                              <div className="px-5 lg:px-6 py-5 bg-black">
+                              <div className="px-5 lg:px-6 py-5 bg-[#050505]">
                                 <p className="text-[13px] text-neutral-400 whitespace-pre-wrap leading-relaxed" dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }} />
                               </div>
                             </div>
@@ -517,7 +517,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
               </div>
 
               {/* ADMIN CHAT INPUT BAR (COMPACT & ANCHORED) */}
-              <div className="shrink-0 bg-[#000000] border-t border-white/[0.04] p-3 flex flex-col relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] rounded-b-2xl">
+              <div className="shrink-0 bg-[#0a0a0a] border-t border-white/[0.04] p-3 flex flex-col relative z-20 shadow-[0_-10px_30px_rgba(0,0,0,0.5)] rounded-b-2xl">
                 
                 {/* COMPACT SETUP THUMBNAIL BAR */}
                 {imagePreview && (
@@ -531,21 +531,21 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                     <div className="flex flex-1 gap-3 items-center overflow-x-auto custom-scrollbar pb-1">
                       <div className="w-24 shrink-0">
                         <label className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest mb-1 block">Ticker</label>
-                        <input type="text" value={ticker} onChange={e=>setTicker(e.target.value.toUpperCase())} placeholder="BTCUSD" className="w-full bg-black border border-white/[0.05] rounded-md px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-blue-500" />
+                        <input type="text" value={ticker} onChange={e=>setTicker(e.target.value.toUpperCase())} placeholder="BTCUSD" className="w-full bg-[#050505] border border-white/[0.05] rounded-md px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-blue-500" />
                       </div>
                       <div className="w-24 shrink-0">
                         <label className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest mb-1 block">Timeframe</label>
-                        <select value={timeframe} onChange={e=>setTimeframe(e.target.value)} className="w-full bg-black border border-white/[0.05] rounded-md px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
+                        <select value={timeframe} onChange={e=>setTimeframe(e.target.value)} className="w-full bg-[#050505] border border-white/[0.05] rounded-md px-2 py-1.5 text-xs font-mono text-white outline-none focus:border-blue-500 appearance-none">
                           <option value="15M">15M</option><option value="1H">1H</option><option value="4H">4H</option><option value="1D">1D</option><option value="1W">1W</option>
                         </select>
                       </div>
                       <div className="w-28 shrink-0">
                         <label className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest mb-1 block">Access</label>
-                        <select value={tier} onChange={e=>setTier(e.target.value)} className="w-full bg-black border border-white/[0.05] rounded-md px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
+                        <select value={tier} onChange={e=>setTier(e.target.value)} className="w-full bg-[#050505] border border-white/[0.05] rounded-md px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-white outline-none focus:border-blue-500 appearance-none">
                           <option value="pro">Pro Exclusive</option><option value="free">Free Preview</option>
                         </select>
                       </div>
-                      <div className="bg-black px-3 py-1.5 rounded-md border border-white/[0.05] flex-1 min-w-[140px] max-w-[200px] shrink-0">
+                      <div className="bg-[#050505] px-3 py-1.5 rounded-md border border-white/[0.05] flex-1 min-w-[140px] max-w-[200px] shrink-0">
                         <label className="text-[8px] font-bold text-neutral-500 uppercase tracking-widest flex justify-between items-center w-full mb-1 cursor-pointer">
                           Force Sentiment <input type="checkbox" checked={overrideSentiment} onChange={()=>setOverrideSentiment(!overrideSentiment)} className="accent-blue-500 w-3 h-3" />
                         </label>
@@ -622,7 +622,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                 </div>
 
                 {/* SQUAWK FEED (SCROLLABLE) */}
-                <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar bg-black">
+                <div className="flex-1 overflow-y-auto p-3 space-y-4 custom-scrollbar bg-[#050505]">
                   {squawks.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full opacity-40">
                       <Send className="w-6 h-6 text-neutral-600 mb-2 stroke-1" />
@@ -639,7 +639,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                             <div className="flex items-center gap-2 mb-3 pb-2 border-b border-white/[0.05] text-amber-500 text-[9px] font-bold uppercase tracking-widest">
                               <Edit2 size={12}/> Editing Broadcast
                             </div>
-                            <textarea value={editingSquawk.message} onChange={(e) => setEditingSquawk({...editingSquawk, message: e.target.value})} className="w-full h-20 bg-black border border-white/[0.05] rounded-xl px-3 py-2 text-[12px] text-white outline-none focus:border-amber-500 custom-scrollbar resize-none leading-relaxed" required />
+                            <textarea value={editingSquawk.message} onChange={(e) => setEditingSquawk({...editingSquawk, message: e.target.value})} className="w-full h-20 bg-[#050505] border border-white/[0.05] rounded-xl px-3 py-2 text-[12px] text-white outline-none focus:border-amber-500 custom-scrollbar resize-none leading-relaxed" required />
                             <div className="flex justify-end gap-2 mt-3">
                               <button onClick={() => setEditingSquawk(null)} className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-neutral-400 bg-[#111] hover:bg-[#1a1a1a] rounded-lg border border-white/[0.05]">Cancel</button>
                               <button onClick={handleUpdateSquawk} disabled={isUpdating} className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-black bg-amber-500 hover:bg-amber-400 rounded-lg flex items-center justify-center gap-1.5">
@@ -683,7 +683,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                 </div>
 
                 {/* SQUAWK INPUT BAR */}
-                <div className="p-3 bg-[#000000] border-t border-white/[0.04] shrink-0 rounded-b-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-20">
+                <div className="p-3 bg-[#0a0a0a] border-t border-white/[0.04] shrink-0 rounded-b-2xl shadow-[0_-10px_30px_rgba(0,0,0,0.5)] z-20">
                   <div className="flex items-center gap-2 mb-2 px-1">
                      <select value={commsTag} onChange={e=>setCommsTag(e.target.value)} className="bg-[#111] text-[9px] font-bold uppercase tracking-widest text-neutral-400 border border-white/[0.05] rounded-md px-2 py-1.5 outline-none cursor-pointer appearance-none focus:border-[#2AABEE]">
                        <option value="">No Tag</option>
@@ -717,14 +717,14 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
       {/* ========================================= */}
       {mounted && isLibraryOpen && createPortal(
         <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 md:p-8">
-          <div className="absolute inset-0 bg-black/95 backdrop-blur-sm" onClick={() => setIsLibraryOpen(false)}></div>
-          <div className="relative w-full max-w-6xl h-[85vh] bg-[#000000] rounded-3xl border border-white/[0.05] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="absolute inset-0 bg-[#050505]/95 backdrop-blur-sm" onClick={() => setIsLibraryOpen(false)}></div>
+          <div className="relative w-full max-w-6xl h-[85vh] bg-[#0a0a0a] rounded-3xl border border-white/[0.05] shadow-[0_0_50px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="px-8 py-6 border-b border-white/[0.05] bg-[#0c0c0c] flex justify-between items-center shrink-0">
                <h2 className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-3"><FolderSearch className="text-blue-500 w-5 h-5"/> Master Playbook</h2>
                <button onClick={() => setIsLibraryOpen(false)} className="p-2 bg-[#111] hover:bg-[#1a1a1a] border border-white/[0.05] rounded-xl text-neutral-400 transition-colors"><X size={20}/></button>
             </div>
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-               <div className="w-full md:w-3/5 p-6 md:p-8 overflow-y-auto custom-scrollbar border-r border-white/[0.05] bg-black">
+               <div className="w-full md:w-3/5 p-6 md:p-8 overflow-y-auto custom-scrollbar border-r border-white/[0.05] bg-[#050505]">
                   <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
                      {recentImages.map((item, i) => (
                         <div key={i} onClick={() => setModalPreview(item)} className={`relative aspect-video rounded-xl overflow-hidden cursor-pointer border transition-all ${modalPreview?.url === item.url ? 'border-blue-500 scale-[0.98] shadow-[0_0_20px_rgba(37,99,235,0.2)]' : 'border-white/[0.05] hover:border-white/[0.2] hover:scale-105 shadow-sm'}`}>
@@ -737,7 +737,7 @@ const handleSessionToggle = async (action: 'open' | 'close') => {
                <div className="w-full md:w-2/5 p-8 bg-[#0c0c0c] flex flex-col">
                   {modalPreview ? (
                     <>
-                     <div className="relative w-full flex-1 rounded-2xl overflow-hidden border border-white/[0.05] bg-black min-h-[200px] mb-6 shadow-inner">
+                     <div className="relative w-full flex-1 rounded-2xl overflow-hidden border border-white/[0.05] bg-[#050505] min-h-[200px] mb-6 shadow-inner">
                         <Image src={modalPreview.url} alt="Preview" fill className="object-contain" unoptimized />
                      </div>
                      <button onClick={handleAttachFromLibrary} className="w-full py-4 bg-blue-600 text-white text-[11px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-500 flex justify-center items-center gap-2 shadow-[0_0_20px_rgba(37,99,235,0.3)] transition-all active:scale-[0.98]"><PlusCircle size={18}/> Attach to Input</button>

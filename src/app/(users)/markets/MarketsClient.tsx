@@ -57,11 +57,11 @@ const fetchMarketsData = async () => {
 
 const AssetIcon = ({ symbol, category }: { symbol: string, category: string }) => {
   const cleanSymbol = symbol.toUpperCase().trim();
-  let bgTint = "from-neutral-800/80 to-[#000000]";
-  if (category === 'FOREX') bgTint = "from-blue-900/30 to-[#000000]";
-  else if (category === 'CRYPTO') bgTint = "from-purple-900/30 to-[#000000]";
-  else if (category === 'COMMODITY' || category === 'METALS') bgTint = "from-amber-900/30 to-[#000000]";
-  else if (category === 'INDICES' || category === 'STOCKS') bgTint = "from-emerald-900/30 to-[#000000]";
+  let bgTint = "from-neutral-800/80 to-[#0a0a0a]";
+  if (category === 'FOREX') bgTint = "from-blue-900/30 to-[#0a0a0a]";
+  else if (category === 'CRYPTO') bgTint = "from-purple-900/30 to-[#0a0a0a]";
+  else if (category === 'COMMODITY' || category === 'METALS') bgTint = "from-amber-900/30 to-[#0a0a0a]";
+  else if (category === 'INDICES' || category === 'STOCKS') bgTint = "from-emerald-900/30 to-[#0a0a0a]";
 
   if (cleanSymbol.length === 6) {
     const base = cleanSymbol.substring(0, 3);
@@ -121,12 +121,12 @@ export default function MarketsClient() {
   // 🚨 INSTANT SHELL: Shown for 0.1s on first load, then data pops in
   if (isLoading || !data) {
     return (
-      <div className="w-full bg-[#000000] p-4 md:p-6 lg:p-8 flex flex-col h-[calc(100dvh-65px)]">
+      <div className="w-full bg-[#050505] p-4 md:p-6 lg:p-8 flex flex-col h-[calc(100dvh-65px)]">
         <div className="max-w-[90rem] mx-auto w-full flex flex-col min-h-0">
-          <div className="shrink-0 w-full mb-6 md:mb-8 h-10 bg-[#000000] rounded-xl animate-pulse"></div>
+          <div className="shrink-0 w-full mb-6 md:mb-8 h-10 bg-[#0a0a0a] rounded-xl animate-pulse"></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
-              <div key={i} className="bg-[#000000] border border-neutral-800 rounded-2xl p-5 min-h-[140px] animate-pulse"></div>
+              <div key={i} className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-5 min-h-[140px] animate-pulse"></div>
             ))}
           </div>
         </div>
@@ -142,11 +142,11 @@ export default function MarketsClient() {
   })
 
   return (
-    <div className="w-full bg-[#000000] p-4 md:p-6 lg:p-8 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
+    <div className="w-full bg-[#050505] p-4 md:p-6 lg:p-8 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
       <div className="max-w-[90rem] mx-auto w-full h-full flex flex-col min-h-0">
         
         <div className="shrink-0 w-full mb-6 md:mb-8 flex items-center gap-4">
-          <div className="flex items-center space-x-1.5 bg-[#000000] p-1.5 rounded-xl border border-white/[0.05] overflow-x-auto w-full scrollbar-hide shadow-sm relative">
+          <div className="flex items-center space-x-1.5 bg-[#0a0a0a] p-1.5 rounded-xl border border-white/[0.05] overflow-x-auto w-full scrollbar-hide shadow-sm relative">
             {!isProUser && (
               <div className="absolute inset-0 bg-black/60 backdrop-blur-[1px] z-10 flex items-center justify-center rounded-xl border border-white/[0.02]">
                 <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400 flex items-center gap-1.5"><Lock size={12}/> Global Markets</span>
@@ -176,7 +176,7 @@ export default function MarketsClient() {
                 <div 
                   key={market.symbol}
                   onClick={() => { if (isProUser) router.push(`/markets/viewport?asset=${market.symbol}&from=markets`); }}
-                  className={`bg-[#000000] border rounded-2xl p-5 transition-all duration-300 flex flex-col min-h-[140px] relative overflow-hidden
+                  className={`bg-[#0a0a0a] border rounded-2xl p-5 transition-all duration-300 flex flex-col min-h-[140px] relative overflow-hidden
                     ${!isProUser ? 'opacity-80' : 'cursor-pointer group hover:border-neutral-600'}
                     ${hasUnseen && isProUser ? 'border-blue-500/20 bg-blue-500/[0.02]' : 'border-white/[0.04]'}
                   `}
