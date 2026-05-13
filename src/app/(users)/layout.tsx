@@ -36,7 +36,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const userPlan = session.user.user_metadata?.plan?.toLowerCase() || 'free'
 
   return (
-    <div data-theme={userPlan} className="bg-[#050505] text-white font-sans min-h-screen relative selection:bg-blue-500/30">
+    {/* 🚨 CHANGED: Removed bg-[#050505] and replaced with bg-transparent */}
+    <div data-theme={userPlan} className="bg-transparent text-white font-sans min-h-screen relative selection:bg-blue-500/30">
       <PresenceHeartbeat user={session.user} />
 
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
