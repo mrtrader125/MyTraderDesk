@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import useSWR from 'swr'
 import { createBrowserClient } from '@supabase/ssr'
-import { ArrowRight, Lock, Activity } from 'lucide-react'
+import { ArrowRight, Lock, Activity, Archive } from 'lucide-react'
 import { ASSET_CATEGORIES } from '@/lib/platformConfig'
 
 const supabase = createBrowserClient(
@@ -154,11 +154,15 @@ export default function MarketsClient() {
               // Formatting the symbol nicely
               const cleanSymbol = market.symbol.toUpperCase().trim()
               const isStandardPair = cleanSymbol.length === 6
+              const isArchived = market.activeCount === 0 && market.waitingCount === 0;
               
               return (
                 <div 
                   key={market.symbol}
-                  onClick={() => { if (isProUser) router.push(`/markets/viewport?asset=${market.symbol}&from=markets`); }}
+                  // 🚨 1. CARD CLICK -> ALWAYS GOES TO VIEWPORT
+                  onClick={() => { 
+                    if (isProUser) router.push(`/markets/viewport?asset=${market.symbol}&from=markets`); 
+                  }}
                   className={`bg-[#0a0a0a] border rounded-xl p-4 transition-all duration-200 flex flex-col justify-between min-h-[110px] relative group
                     ${!isProUser ? 'opacity-60 grayscale' : 'cursor-pointer hover:border-white/[0.15] hover:bg-[#0c0c0c]'}
                     ${hasUnseen && isProUser ? 'border-blue-500/30' : 'border-white/[0.04]'}
@@ -186,7 +190,7 @@ export default function MarketsClient() {
 
                   {/* Bottom: Setup Data Density */}
                   <div className="flex items-end justify-between mt-4">
-                    <div className="flex flex-col gap-0.5">
+                    <div className="flex flex-col gap-0.5 pointer-events-none">
                       {market.activeCount > 0 && (
                         <div className="flex items-center gap-1.5 text-[10px] text-blue-400 font-mono tracking-wide">
                           <Activity size={10} /> {market.activeCount} ACTIVE
@@ -197,14 +201,23 @@ export default function MarketsClient() {
                           <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80 ml-0.5" /> {market.waitingCount} WAIT
                         </div>
                       )}
-                      {market.activeCount === 0 && market.waitingCount === 0 && (
-                        <span className="text-[10px] text-neutral-600 font-mono uppercase">Archived</span>
+                      {isArchived && (
+                        <span className="text-[10px] text-neutral-600 font-mono uppercase flex items-center gap-1">
+                          <Archive size={10} /> Archived
+                        </span>
                       )}
                     </div>
                     
-                    <div className="text-neutral-600 group-hover:text-white transition-colors duration-200">
+                    {/* 🚨 2. ARROW CLICK -> GOES TO ARCHIVE */}
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation(); // <-- Stops the card click from triggering
+                        if (isProUser) router.push(`/markets/archive?asset=${market.symbol}`);
+                      }}
+                      className="text-neutral-600 hover:text-white p-2 -mr-2 transition-colors duration-200 cursor-pointer relative z-10"
+                    >
                       {isProUser ? <ArrowRight size={14} /> : <Lock size={12} />}
-                    </div>
+                    </button>
                   </div>
                 </div>
               )
