@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import useSWR from 'swr'
 import { createBrowserClient } from '@supabase/ssr'
-import { ArrowLeft, Lock, Clock, Shield, TrendingUp, TrendingDown, Minus, Target } from 'lucide-react'
+import { ArrowLeft, Lock, Clock, Shield, TrendingUp, TrendingDown, Minus, Target, Archive } from 'lucide-react'
 import { PLAN_CONFIG, getAssetCategory } from '@/lib/platformConfig'
 
 const supabase = createBrowserClient(
@@ -28,16 +28,16 @@ const getSetupAccess = (setup: any, userPlan: string) => {
 
 const getTfWeight = (tf: string) => {
   const cleanTf = (tf || '').trim().toLowerCase();
-  if (cleanTf === '1m' || cleanTf === '1min') return 1;
-  if (cleanTf === '5m' || cleanTf === '5mins' || cleanTf === '5min') return 2;
-  if (cleanTf === '15m' || cleanTf === '15mins' || cleanTf === '15min') return 3;
-  if (cleanTf === '30m' || cleanTf === '30mins' || cleanTf === '30min') return 4;
-  if (cleanTf === '1h' || cleanTf === '1hr' || cleanTf === 'h1') return 5;
-  if (cleanTf === '2h' || cleanTf === '2hr' || cleanTf === 'h2') return 6;
-  if (cleanTf === '4h' || cleanTf === '4hr' || cleanTf === 'h4') return 7;
-  if (cleanTf === 'd' || cleanTf === '1d' || cleanTf === 'daily') return 8;
-  if (cleanTf === 'w' || cleanTf === '1w' || cleanTf === 'weekly') return 9;
-  if (cleanTf === 'm' || cleanTf === '1mo' || cleanTf === 'monthly') return 10;
+  if (['1m', '1min'].includes(cleanTf)) return 1;
+  if (['5m', '5mins', '5min'].includes(cleanTf)) return 2;
+  if (['15m', '15mins', '15min'].includes(cleanTf)) return 3;
+  if (['30m', '30mins', '30min'].includes(cleanTf)) return 4;
+  if (['1h', '1hr', 'h1'].includes(cleanTf)) return 5;
+  if (['2h', '2hr', 'h2'].includes(cleanTf)) return 6;
+  if (['4h', '4hr', 'h4'].includes(cleanTf)) return 7;
+  if (['d', '1d', 'daily'].includes(cleanTf)) return 8;
+  if (['w', '1w', 'weekly'].includes(cleanTf)) return 9;
+  if (['m', '1mo', 'monthly'].includes(cleanTf)) return 10;
   return 99; 
 }
 
@@ -101,12 +101,14 @@ export default function ArchiveClient() {
 
   if (isLoading || !data) {
     return (
-      <div className="w-full bg-[#050505] p-6 lg:p-8 flex flex-col h-[calc(100dvh-65px)]">
-        <div className="h-10 bg-[#0a0a0a] rounded-xl border border-neutral-800 animate-pulse mb-8"></div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
+      <div className="w-full bg-transparent p-4 md:p-8 flex flex-col h-[calc(100dvh-65px)]">
+        <div className="max-w-[90rem] mx-auto w-full flex flex-col min-h-0">
+          <div className="shrink-0 w-64 mb-8 h-8 bg-[#0a0a0a] rounded-md animate-pulse"></div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
             {[1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="bg-[#0a0a0a] border border-neutral-800 rounded-xl min-h-[180px] animate-pulse"></div>
+              <div key={i} className="bg-[#0a0a0a] border border-white/[0.02] rounded-xl h-[160px] animate-pulse"></div>
             ))}
+          </div>
         </div>
       </div>
     )
@@ -155,14 +157,12 @@ export default function ArchiveClient() {
     
     const { hasAccess, requiredTier } = getSetupAccess(setup, data.plan)
     const status = (setup.status || 'WAITING').toUpperCase()
-    let statusLine = "bg-neutral-800 group-hover:bg-neutral-600"
     
-    if (status === 'ACTIVE') statusLine = "bg-blue-500/50 group-hover:bg-blue-400 group-hover:shadow-[-3px_0_10px_rgba(59,130,246,0.5)]"
-    else if (status === 'WAITING') statusLine = "bg-amber-500/50 group-hover:bg-amber-400 group-hover:shadow-[-3px_0_10px_rgba(245,158,11,0.5)]"
-    else if (status === 'DONE') statusLine = "bg-emerald-500/50 group-hover:bg-emerald-400 group-hover:shadow-[-3px_0_10px_rgba(16,185,129,0.5)]"
-    else if (status === 'INVALID') statusLine = "bg-red-500/50 group-hover:bg-red-400 group-hover:shadow-[-3px_0_10px_rgba(239,68,68,0.5)]"
-    else if (status === 'CANCELED') statusLine = "bg-neutral-600/50 group-hover:bg-neutral-400 group-hover:shadow-[-3px_0_10px_rgba(163,163,163,0.5)]"
-    else if (status === 'ARCHIVED') statusLine = "bg-neutral-700/50 group-hover:bg-neutral-500 group-hover:shadow-[-3px_0_10px_rgba(115,115,115,0.5)]"
+    let statusColor = "text-neutral-500"
+    if (status === 'ACTIVE') statusColor = "text-blue-400"
+    else if (status === 'WAITING') statusColor = "text-amber-500/80"
+    else if (status === 'DONE') statusColor = "text-emerald-500/80"
+    else if (status === 'INVALID') statusColor = "text-red-500/80"
 
     const isFaded = status === 'CANCELED' || status === 'ARCHIVED'
 
@@ -176,47 +176,49 @@ export default function ArchiveClient() {
     return (
       <div 
         onClick={handleCardClick}
-        className={`bg-[#0a0a0a] border rounded-xl overflow-hidden flex flex-col transition-all duration-300 relative min-h-[180px] md:min-h-[200px]
-          ${!isProUser ? 'opacity-80' : 'group cursor-pointer'}
-          ${isPrime && isProUser ? 'border-blue-500/30 hover:border-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.05)]' : 'border-neutral-800 hover:border-neutral-600 shadow-sm'}
+        className={`bg-[#0a0a0a] border rounded-xl overflow-hidden flex flex-col transition-all duration-200 relative min-h-[160px]
+          ${!isProUser ? 'opacity-50 grayscale cursor-not-allowed' : 'group cursor-pointer hover:bg-[#0c0c0c] hover:border-white/[0.15]'}
+          ${isPrime && isProUser ? 'border-blue-500/30' : 'border-white/[0.04]'}
           ${isFaded ? 'opacity-60 hover:opacity-100' : ''}
         `}
       >
-        <div className="h-24 md:h-28 w-full bg-[#050505] relative overflow-hidden border-b border-neutral-800/50 shrink-0">
+        <div className="h-20 w-full bg-black relative overflow-hidden border-b border-white/[0.05] shrink-0">
           <img 
             src={setup.image_url} 
             alt={`${asset} Chart`} 
             draggable={false}
-            className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${hasAccess ? 'opacity-50 group-hover:opacity-100' : 'opacity-10 blur-md grayscale'} ${status === 'ARCHIVED' ? 'grayscale-[50%]' : ''}`} 
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${hasAccess ? 'opacity-40 group-hover:opacity-80' : 'opacity-10 blur-sm'} ${status === 'ARCHIVED' ? 'grayscale-[80%]' : ''}`} 
           />
+          
+          {/* Top minimal status indicator */}
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+            <span className={`text-[9px] font-mono font-bold uppercase tracking-widest ${statusColor} bg-black/40 px-1.5 py-0.5 rounded backdrop-blur-sm`}>
+              {status}
+            </span>
+          </div>
+
           {!hasAccess && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-10">
-              <Lock size={14} className="text-blue-500 mb-1" />
-              <span className="text-[8px] font-black text-white uppercase tracking-widest bg-blue-600/20 px-2 py-0.5 rounded border border-blue-500/30 shadow-[0_0_10px_rgba(37,99,235,0.2)]">
-                {requiredTier}
-              </span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px] z-10">
+              <Lock size={12} className="text-neutral-500 mb-1" />
             </div>
           )}
         </div>
 
-        <div className="relative p-3 md:p-4 flex flex-col flex-1 justify-between z-10">
-          <div className={`absolute top-0 right-0 inset-y-0 w-1 transition-all duration-500 z-30 ${statusLine}`} />
-          <div className="flex justify-between items-start mb-2 pr-2">
-            <div className="flex flex-col gap-1.5">
-              <h3 className={`text-[13px] md:text-sm font-black uppercase tracking-wider transition-colors ${hasAccess ? 'text-neutral-200 group-hover:text-white' : 'text-neutral-600'}`}>{asset}</h3>
-              <div className="flex items-center gap-1.5">
-                {hasAccess && <span className="bg-[#111] px-1.5 py-0.5 rounded text-[9px] font-black text-white uppercase tracking-widest border border-white/5 shadow-inner">{setup.timeframe || '-'}</span>}
-                {hasAccess && (
-                  <span className="flex items-center justify-center bg-[#111] w-5 h-5 rounded border border-white/5 shadow-inner">
-                    {isBull ? <TrendingUp size={10} className="text-emerald-400" /> : isBear ? <TrendingDown size={10} className="text-red-400" /> : <Minus size={10} className="text-neutral-500" />}
-                  </span>
-                )}
-                {isPrime && <div className="flex items-center justify-center w-5 h-5 rounded border bg-blue-500/10 border-blue-500/20 shadow-sm" title="Prime Setup"><Target size={10} className="text-blue-400" /></div>}
-              </div>
+        <div className="p-3 flex flex-col flex-1 justify-between z-10">
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex items-center gap-2">
+              {hasAccess && <span className="text-[11px] font-mono text-white tracking-widest">{setup.timeframe || '-'}</span>}
+              {hasAccess && (
+                <span className="flex items-center justify-center">
+                  {isBull ? <TrendingUp size={12} className="text-emerald-400" /> : isBear ? <TrendingDown size={12} className="text-red-400" /> : <Minus size={12} className="text-neutral-500" />}
+                </span>
+              )}
+              {isPrime && <Target size={12} className="text-blue-500" title="Prime Setup" />}
             </div>
           </div>
-          <div className="flex justify-between items-center text-[8px] font-bold uppercase tracking-widest text-neutral-500 pt-2.5 border-t border-neutral-800/50 mt-auto pr-1">
-            <span className="flex items-center"><Clock size={8} className="mr-1.5" /> {formattedDate}</span>
+          
+          <div className="flex justify-between items-center text-[9px] font-mono text-neutral-600 uppercase mt-auto pt-2 border-t border-white/[0.02]">
+            <span>{formattedDate}</span>
             <span>{formattedTime}</span>
           </div>
         </div>
@@ -225,57 +227,73 @@ export default function ArchiveClient() {
   }
 
   return (
-    <div className="w-full bg-[#050505] font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
-      <div className="w-full border-b border-neutral-900 bg-[#0a0a0a]/95 backdrop-blur-md z-20 shadow-sm shrink-0">
-        <div className="max-w-[90rem] mx-auto flex items-center space-x-3 p-3 md:p-5 relative">
-          {!isProUser && (
-            <div className="absolute top-1/2 -translate-y-1/2 right-4 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">
-              Sandbox Mode <Lock size={12} className="stroke-[3]" />
+    <div className="w-full bg-transparent font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
+      
+      <div className="max-w-[90rem] mx-auto w-full h-full flex flex-col min-h-0 p-4 md:p-8">
+        
+        {/* Sleek Minimalist Header */}
+        <div className="shrink-0 w-full mb-6 relative border-b border-white/[0.05] pb-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Link href="/markets" className="text-neutral-500 hover:text-white transition-colors duration-200">
+              <ArrowLeft size={16} />
+            </Link>
+            <div className="flex items-baseline gap-2">
+              <h1 className="text-xl md:text-2xl font-mono font-bold text-white tracking-tight">{asset}</h1>
+              <span className="text-[10px] md:text-xs font-medium text-neutral-500 tracking-widest uppercase">Archive</span>
             </div>
-          )}
-          <Link href="/markets" className="w-8 h-8 md:w-10 md:h-10 rounded-lg bg-[#111] border border-neutral-800 flex items-center justify-center text-neutral-400 hover:bg-neutral-800 hover:text-white hover:border-neutral-600 transition-all shrink-0 shadow-sm">
-            <ArrowLeft size={14} />
-          </Link>
-          <div className="flex flex-col">
-            <h1 className="text-lg md:text-2xl font-black text-white tracking-tighter uppercase italic leading-none mb-1">{asset} <span className="text-blue-500">Archive</span></h1>
-            <p className="text-[8px] md:text-[9px] font-bold text-neutral-500 uppercase tracking-[0.2em] leading-none">Historical Records</p>
           </div>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#050505] p-3 md:p-5 lg:p-6 relative">
-        {!isProUser && <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] z-10 pointer-events-none" />}
-        <div className="max-w-[90rem] mx-auto space-y-8 md:space-y-10 pb-20 md:pb-6 relative z-20">
-          {grouped.today.length > 0 && (
-            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <h2 className="text-[9px] md:text-[10px] font-black text-white uppercase tracking-[0.2em] mb-4 flex items-center">Published Today <div className="ml-3 h-px flex-1 bg-neutral-800"></div></h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
-                {grouped.today.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
-              </div>
-            </section>
-          )}
-          {grouped.yesterday.length > 0 && (
-            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-              <h2 className="text-[9px] md:text-[10px] font-black text-neutral-400 uppercase tracking-[0.2em] mb-4 flex items-center">Yesterday <div className="ml-3 h-px flex-1 bg-neutral-800"></div></h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">
-                {grouped.yesterday.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
-              </div>
-            </section>
-          )}
-          {grouped.older.length > 0 && (
-            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-              <h2 className="text-[9px] md:text-[10px] font-black text-neutral-600 uppercase tracking-[0.2em] mb-4 flex items-center">Older Setups <div className="ml-3 h-px flex-1 bg-neutral-800/50"></div></h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 transition-opacity">
-                {grouped.older.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
-              </div>
-            </section>
-          )}
-          {history.length === 0 && (
-            <div className="py-24 text-center flex flex-col items-center opacity-50">
-              <Shield size={28} className="text-neutral-700 mb-3" />
-              <span className="text-[10px] font-black text-neutral-500 uppercase tracking-[0.2em]">No Historical Data Found</span>
+          
+          {!isProUser && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/[0.03] rounded-md border border-white/[0.05] text-neutral-500">
+              <Lock size={12} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">Read-Only</span>
             </div>
           )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar pr-1 pb-10">
+          <div className="space-y-8 md:space-y-10 relative z-20">
+            
+            {grouped.today.length > 0 && (
+              <section className="animate-in fade-in duration-500">
+                <h2 className="text-[10px] font-mono text-neutral-400 uppercase tracking-widest mb-3 flex items-center gap-3">
+                  Today <div className="h-px flex-1 bg-white/[0.05]"></div>
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+                  {grouped.today.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
+                </div>
+              </section>
+            )}
+            
+            {grouped.yesterday.length > 0 && (
+              <section className="animate-in fade-in duration-500 delay-100">
+                <h2 className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest mb-3 flex items-center gap-3">
+                  Yesterday <div className="h-px flex-1 bg-white/[0.05]"></div>
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4">
+                  {grouped.yesterday.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
+                </div>
+              </section>
+            )}
+            
+            {grouped.older.length > 0 && (
+              <section className="animate-in fade-in duration-500 delay-200">
+                <h2 className="text-[10px] font-mono text-neutral-600 uppercase tracking-widest mb-3 flex items-center gap-3">
+                  Older Records <div className="h-px flex-1 bg-white/[0.02]"></div>
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-4 transition-opacity">
+                  {grouped.older.map(setup => <ArchiveCard key={setup.id} setup={setup} />)}
+                </div>
+              </section>
+            )}
+            
+            {history.length === 0 && (
+              <div className="py-24 text-center flex flex-col items-center opacity-40">
+                <Archive size={24} className="text-neutral-600 mb-3" />
+                <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">No historical records</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
