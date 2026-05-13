@@ -68,7 +68,7 @@ function TopNavContent({ user }: { user: any }) {
   const userInitial = user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || '?'
 
   return (
-    <header className="h-14 md:h-16 w-full border-b border-neutral-900 bg-[#000000]/95 backdrop-blur-md flex items-center justify-between px-3 md:px-6 shrink-0 z-40 sticky top-0">
+    <header className="h-14 md:h-16 w-full border-b border-neutral-900 bg-[#0a0a0a]/95 backdrop-blur-md flex items-center justify-between px-3 md:px-6 shrink-0 z-40 sticky top-0">
       
       <div className="flex items-center h-full">
         {!isAccountPage && (
@@ -139,7 +139,7 @@ function TopNavContent({ user }: { user: any }) {
             {showDropdown && mounted && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)}></div>
-                <div className="absolute right-0 mt-3 w-56 bg-[#000000] border border-neutral-800 rounded-xl shadow-2xl z-20 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-200">
+                <div className="absolute right-0 mt-3 w-56 bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-2xl z-20 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-200">
                   <div className="px-4 py-3 border-b border-neutral-900/50 mb-1">
                     <p className="text-[9px] font-black text-neutral-600 uppercase tracking-widest">Operator</p>
                     <p className="text-xs font-bold text-neutral-200 truncate mt-0.5">{user?.email || '...'}</p>
@@ -170,7 +170,7 @@ function TopNavContent({ user }: { user: any }) {
 
 export default function TopNav({ user }: { user: any }) {
   return (
-    <Suspense fallback={<div className="h-14 md:h-16 w-full border-b border-neutral-900 bg-[#000000] shrink-0 z-40 sticky top-0"></div>}>
+    <Suspense fallback={<div className="h-14 md:h-16 w-full border-b border-neutral-900 bg-[#0a0a0a] shrink-0 z-40 sticky top-0"></div>}>
       <TopNavContent user={user} />
     </Suspense>
   )

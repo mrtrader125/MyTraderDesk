@@ -39,7 +39,7 @@ export default function MarketTravelAnimation() {
     : { title: "3. The Exit", desc: "Target reached. We step out and secure profit. The market continues its endless travel without us.", status: "Profit Secured", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" }
 
   return (
-    <div className="bg-[#000000] border border-neutral-900 rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.5)] font-sans w-full h-full flex flex-col relative overflow-hidden min-h-[500px]">
+    <div className="bg-[#050505] border border-neutral-900 rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.5)] font-sans w-full h-full flex flex-col relative overflow-hidden min-h-[500px]">
       
       {/* CSS Endless Background Grid */}
       <style dangerouslySetInnerHTML={{__html: `
@@ -71,7 +71,7 @@ export default function MarketTravelAnimation() {
           
           {/* LEFT: Dynamic Text Panel */}
           <div className="flex-1 flex flex-col justify-center space-y-6">
-            <div className="bg-[#000000] border border-neutral-800 rounded-lg p-5 transition-all duration-500 relative overflow-hidden min-h-[140px]">
+            <div className="bg-[#0a0a0a] border border-neutral-800 rounded-lg p-5 transition-all duration-500 relative overflow-hidden min-h-[140px]">
                <div className={`absolute top-0 left-0 w-1 h-full transition-colors duration-500 ${phase === 0 ? 'bg-neutral-700' : phase === 1 ? 'bg-blue-500' : 'bg-emerald-500'}`}></div>
                
                {/* Framer Motion Text Crossfade */}
@@ -96,11 +96,11 @@ export default function MarketTravelAnimation() {
             <div className="hidden sm:block">
               <p className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest mb-2">Live Parameters</p>
               <div className="space-y-2">
-                <div className="flex justify-between items-center bg-[#000000] px-3 py-2 rounded-md border border-neutral-900">
+                <div className="flex justify-between items-center bg-[#0a0a0a] px-3 py-2 rounded-md border border-neutral-900">
                   <span className="text-[9px] text-neutral-500 uppercase tracking-widest">Market Flow</span>
                   <span className="text-[10px] font-mono text-neutral-400 flex items-center"><ArrowDown className="w-3 h-3 mr-1"/> Endless</span>
                 </div>
-                <div className="flex justify-between items-center bg-[#000000] px-3 py-2 rounded-md border border-neutral-900">
+                <div className="flex justify-between items-center bg-[#0a0a0a] px-3 py-2 rounded-md border border-neutral-900">
                   <span className="text-[9px] text-neutral-500 uppercase tracking-widest">Our Journey</span>
                   <span className={`text-[10px] font-mono transition-colors duration-300 ${phase === 1 ? 'text-blue-400' : 'text-neutral-600'}`}>
                     {phase === 1 ? `Active Execution` : 'Idle / Flat'}
@@ -111,7 +111,7 @@ export default function MarketTravelAnimation() {
           </div>
 
           {/* RIGHT: THE GPU-ACCELERATED ENDLESS TRACK */}
-          <div className="w-24 md:w-32 shrink-0 relative border-l border-neutral-900 bg-gradient-to-b from-transparent via-[#000000] to-transparent flex justify-center">
+          <div className="w-24 md:w-32 shrink-0 relative border-l border-neutral-900 bg-gradient-to-b from-transparent via-[#0a0a0a] to-transparent flex justify-center">
             
             <div className="absolute top-0 w-[1px] h-full bg-neutral-800"></div>
 

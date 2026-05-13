@@ -35,7 +35,7 @@ export default function BootSequence() {
 
   return (
     <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="bg-[#000000] border border-zinc-800 rounded-2xl p-8 max-w-md w-full flex flex-col items-center text-center shadow-2xl">
+      <div className="bg-[#0a0a0a] border border-zinc-800 rounded-2xl p-8 max-w-md w-full flex flex-col items-center text-center shadow-2xl">
         <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mb-6">
           <ShieldCheck size={32} className="text-blue-500" />
         </div>

@@ -39,19 +39,19 @@ export default function NotificationBell() {
         className={`relative p-2 rounded-xl transition-all duration-300 ${isOpen ? 'bg-white/10 text-white' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
       >
         <Bell size={20} />
-        {hasNew && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full border-2 border-[#000000] animate-pulse" />}
+        {hasNew && <div className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full border-2 border-[#0a0a0a] animate-pulse" />}
       </button>
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute right-0 mt-3 w-80 bg-[#000000] border border-neutral-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-4 py-3 border-b border-neutral-800 flex justify-between items-center bg-[#000000]">
+          <div className="absolute right-0 mt-3 w-80 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-4 py-3 border-b border-neutral-800 flex justify-between items-center bg-[#050505]">
               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Notifications</span>
               {hasNew && <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-[8px] font-black uppercase tracking-widest">New</span>}
             </div>
             
-            <div className="max-h-[350px] overflow-y-auto scrollbar-hide bg-[#000000]">
+            <div className="max-h-[350px] overflow-y-auto scrollbar-hide bg-[#0a0a0a]">
               {notifications.length > 0 ? (
                 notifications.map(n => (
                   <div key={n.id} className="p-4 border-b border-neutral-800/50 hover:bg-white/[0.02] transition-colors group">

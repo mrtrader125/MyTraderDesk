@@ -38,7 +38,7 @@ export default function CommentBox({ discussionId, userId, isFreeUser }: Props) 
 
   if (isFreeUser) {
     return (
-      <div className="bg-[#000000] border border-neutral-800 rounded-2xl p-8 text-center relative overflow-hidden">
+      <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-8 text-center relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] to-transparent opacity-50"></div>
         <Lock size={24} className="text-neutral-500 mx-auto mb-3 relative z-10" />
         <h3 className="text-sm font-black uppercase tracking-widest text-white mb-2 relative z-10">Transmission Locked</h3>
@@ -53,7 +53,7 @@ export default function CommentBox({ discussionId, userId, isFreeUser }: Props) 
   }
 
   return (
-    <form onSubmit={handlePost} className="bg-[#000000] border border-neutral-800 rounded-2xl p-4 flex flex-col gap-3">
+    <form onSubmit={handlePost} className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl p-4 flex flex-col gap-3">
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}

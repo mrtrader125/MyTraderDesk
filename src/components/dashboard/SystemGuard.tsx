@@ -61,7 +61,7 @@ export default function SystemGuard({ children }: { children: React.ReactNode })
   }, [pathname, router, searchParams, supabase]) 
 
   if (isVerifying) {
-    return <div className="min-h-screen bg-[#000000]" />
+    return <div className="min-h-screen bg-[#050505]" />
   }
 
   return <>{children}</>
