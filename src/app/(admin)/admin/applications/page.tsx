@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function AdminApplicationsPage() {
   return (
-    <div className="h-[calc(100vh-70px)] bg-[#050505] font-sans text-zinc-100 flex flex-col p-4 md:p-6">
+    <div className="h-[calc(100vh-70px)] bg-black font-sans text-zinc-100 flex flex-col p-4 md:p-6">
       <div className="max-w-[1400px] w-full mx-auto flex-1 flex flex-col">
         <header className="flex justify-between items-end border-b border-zinc-800 pb-6 mb-8 shrink-0">
           <div>

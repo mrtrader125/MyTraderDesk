@@ -59,7 +59,7 @@ export default function FAQPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-neutral-400 font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-black text-neutral-400 font-sans selection:bg-white selection:text-black">
       {/* Injecting the Schema directly into the HTML */}
       <script
         type="application/ld+json"

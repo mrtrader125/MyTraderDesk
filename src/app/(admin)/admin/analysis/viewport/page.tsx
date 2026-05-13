@@ -92,7 +92,7 @@ function AdminViewportContent() {
             </span>
           </div>
 
-          <div className="relative flex-1 min-h-[60vh] bg-[#050505] flex items-center justify-center p-4">
+          <div className="relative flex-1 min-h-[60vh] bg-black flex items-center justify-center p-4">
             <img 
               src={setup.image_url} 
               alt={setup.asset_symbol}
@@ -141,7 +141,7 @@ function AdminViewportContent() {
 
           <div className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-6 shadow-xl flex-1">
             <h3 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4">Analysis Notes</h3>
-            <div className="bg-[#050505] border border-neutral-800/50 rounded-xl p-4 min-h-[150px]">
+            <div className="bg-black border border-neutral-800/50 rounded-xl p-4 min-h-[150px]">
               {setup.title && <h4 className="text-sm font-black text-white mb-2">{setup.title}</h4>}
               <p className="text-[11px] font-medium text-neutral-400 leading-relaxed whitespace-pre-wrap">
                 {setup.content || "No analysis notes provided for this setup."}

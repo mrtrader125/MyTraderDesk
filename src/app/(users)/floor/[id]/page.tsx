@@ -23,7 +23,7 @@ export default async function DiscussionThreadPage({ params }: { params: { id: s
 
   if (!discussion) {
     return (
-      <div className="min-h-screen bg-[#050505] text-white flex flex-col items-center justify-center p-6 text-center">
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 text-center">
         <h1 className="text-xl font-semibold mb-3">Transmission Lost</h1>
         <p className="text-neutral-500 text-sm mb-6 max-w-sm">This chatter module could not be found or was deleted by an admin.</p>
         <Link href="/floor" className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors flex items-center">
@@ -41,7 +41,7 @@ export default async function DiscussionThreadPage({ params }: { params: { id: s
     .order('created_at', { ascending: true })
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white font-sans p-4 md:p-10">
+    <div className="min-h-screen bg-black text-white font-sans p-4 md:p-10">
       <div className="max-w-3xl mx-auto">
         
         {/* Navigation */}

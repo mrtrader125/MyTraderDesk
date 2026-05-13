@@ -87,7 +87,7 @@ export default async function AdminDashboard() {
         <div className="bg-[#0a0a0a] border border-neutral-800 p-6 rounded-3xl shadow-lg relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 flex flex-col justify-between">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-[50px] rounded-full pointer-events-none group-hover:bg-emerald-500/20 transition-all"></div>
           <div className="relative z-10">
-            <div className="p-2.5 bg-[#050505] border border-neutral-800 rounded-xl w-fit mb-4 text-emerald-500"><DollarSign size={18} /></div>
+            <div className="p-2.5 bg-black border border-neutral-800 rounded-xl w-fit mb-4 text-emerald-500"><DollarSign size={18} /></div>
             <div className="mb-4">
               <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">Monthly MRR</div>
               <div className="text-3xl font-black text-white tracking-tighter">${monthlyRev.toFixed(2)}<span className="text-xs text-neutral-600 font-bold tracking-normal">/mo</span></div>
@@ -167,7 +167,7 @@ export default async function AdminDashboard() {
                   if (log.action === 'PAYWALL_BUMP') { actionColor = "text-red-500"; actionText = "Hit Paywall on"; Icon = AlertTriangle }
                   if (log.action === 'FILTER_CLICK') { actionColor = "text-neutral-400"; actionText = "Filtered by"; Icon = BarChart2 }
                   return (
-                    <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-[#050505] border border-neutral-800/50">
+                    <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-black border border-neutral-800/50">
                       <div className="flex items-center space-x-3 overflow-hidden">
                         <div className={`p-1.5 rounded-lg bg-neutral-900 ${actionColor}`}><Icon size={12} /></div>
                         <div className="flex flex-col min-w-0 pr-2">
@@ -194,7 +194,7 @@ function StatCard({ label, value, subValue, color, icon: Icon }: any) {
   return (
     <div className="bg-[#0a0a0a] border border-neutral-800 p-6 rounded-3xl shadow-lg relative overflow-hidden group hover:border-neutral-600 transition-all duration-500 flex flex-col justify-between">
       <div className="relative z-10">
-        <div className={`p-2.5 bg-[#050505] border border-neutral-800 rounded-xl w-fit mb-4 ${color}`}><Icon size={18} /></div>
+        <div className={`p-2.5 bg-black border border-neutral-800 rounded-xl w-fit mb-4 ${color}`}><Icon size={18} /></div>
         <div className="text-neutral-500 text-[9px] font-black uppercase tracking-[0.2em] mb-1">{label}</div>
         <div className="text-3xl font-black text-white tracking-tighter">{value}</div>
       </div>
@@ -205,7 +205,7 @@ function StatCard({ label, value, subValue, color, icon: Icon }: any) {
 
 function TimeRow({ label, count, highlight = false, dim = false }: any) {
   return (
-    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-colors ${highlight ? 'bg-brand-primary/5 border-brand-primary/20 text-white' : dim ? 'bg-[#050505] border-neutral-900 text-neutral-600' : 'bg-[#050505] border-neutral-800 text-neutral-400'}`}>
+    <div className={`flex items-center justify-between p-4 rounded-2xl border transition-colors ${highlight ? 'bg-brand-primary/5 border-brand-primary/20 text-white' : dim ? 'bg-black border-neutral-900 text-neutral-600' : 'bg-black border-neutral-800 text-neutral-400'}`}>
       <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
       <span className={`text-sm font-black ${highlight ? 'text-brand-primary' : ''}`}>{count} <span className="text-[9px] text-neutral-600">SETUPS</span></span>
     </div>
@@ -214,7 +214,7 @@ function TimeRow({ label, count, highlight = false, dim = false }: any) {
 
 function PlanRow({ label, count, color, icon: Icon }: any) {
   return (
-    <div className="flex items-center justify-between p-4 rounded-2xl bg-[#050505] border border-neutral-800">
+    <div className="flex items-center justify-between p-4 rounded-2xl bg-black border border-neutral-800">
       <div className="flex items-center space-x-3">
         <Icon size={14} className={color} />
         <span className="text-[10px] font-black uppercase tracking-widest text-white">{label}</span>

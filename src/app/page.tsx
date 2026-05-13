@@ -20,7 +20,7 @@ const HoverRevealSlider = ({ before, after }: { before: string, after: string })
 
   return (
     <div 
-      className="relative overflow-hidden rounded-2xl ring-1 ring-white/[0.04] w-full aspect-video bg-[#050505] group cursor-pointer shadow-inner"
+      className="relative overflow-hidden rounded-2xl ring-1 ring-white/[0.04] w-full aspect-video bg-black group cursor-pointer shadow-inner"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={() => setIsHovered(!isHovered)} 
@@ -30,7 +30,7 @@ const HoverRevealSlider = ({ before, after }: { before: string, after: string })
         alt="Result" 
         className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-[800ms]" 
       />
-      <div className={`absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-[#050505]/90 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-[9px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-widest transition-all duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)] z-0 ring-1 ring-white/[0.05] ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+      <div className={`absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-black/90 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-[9px] sm:text-[10px] font-bold text-emerald-400 uppercase tracking-widest transition-all duration-[800ms] ease-[cubic-bezier(0.16,1,0.3,1)] z-0 ring-1 ring-white/[0.05] ${isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
         Result
       </div>
       <div 
@@ -42,7 +42,7 @@ const HoverRevealSlider = ({ before, after }: { before: string, after: string })
           alt="Setup" 
           className="absolute inset-0 w-full h-full object-cover" 
         />
-        <div className={`absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-[#050505]/90 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-[9px] sm:text-[10px] font-bold text-neutral-300 uppercase tracking-widest transition-all duration-500 ring-1 ring-white/[0.05] ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
+        <div className={`absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-black/90 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-[9px] sm:text-[10px] font-bold text-neutral-300 uppercase tracking-widest transition-all duration-500 ring-1 ring-white/[0.05] ${isHovered ? 'opacity-0' : 'opacity-100'}`}>
           Initial Setup
         </div>
       </div>
@@ -121,14 +121,14 @@ export default function Home() {
   const prevFeatured = () => setActiveFeaturedSlide((prev) => (prev - 1 + analyses.length) % analyses.length)
 
   return (
-    <div className="bg-[#050505] text-neutral-200 min-h-screen font-sans selection:bg-blue-500/30 selection:text-white relative overflow-x-hidden">
+    <div className="bg-black text-neutral-200 min-h-screen font-sans selection:bg-blue-500/30 selection:text-white relative overflow-x-hidden">
       
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] h-[50%] bg-blue-600/5 blur-[150px]"></div>
         <div className="absolute bottom-0 right-0 w-[50%] h-[50%] bg-neutral-600/5 blur-[150px]"></div>
       </div>
 
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#050505]/90 border-b border-neutral-800/50 backdrop-blur-md py-3' : 'py-4 sm:py-5'}`}>
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/90 border-b border-neutral-800/50 backdrop-blur-md py-3' : 'py-4 sm:py-5'}`}>
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto px-5 md:px-12 flex items-center justify-between">
           <Link href="/" className="flex items-center shrink-0 group relative w-24 md:w-28 h-6 sm:h-7">
             <Image 
@@ -291,7 +291,7 @@ export default function Home() {
         </div>
       </section>
       
-      <section id="blueprint" className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 overflow-hidden border-t border-neutral-900 bg-[#050505]">
+      <section id="blueprint" className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 overflow-hidden border-t border-neutral-900 bg-black">
         <div className="text-center mb-10 md:mb-14 relative z-20 max-w-3xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">The Operator's Blueprint</h2>
           <p className="text-neutral-500 text-sm mt-2 md:mt-3 font-medium">Explore the mechanics of consistency.</p>
@@ -383,7 +383,7 @@ export default function Home() {
             }
 
             return (
-              <div key={slide.id} onClick={() => setActiveSlide(index)} className={`absolute w-[95%] sm:w-[80%] md:w-[70%] lg:w-[55%] xl:w-[50%] aspect-video transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-2xl border bg-[#050505] overflow-hidden ${styleClass}`}>
+              <div key={slide.id} onClick={() => setActiveSlide(index)} className={`absolute w-[95%] sm:w-[80%] md:w-[70%] lg:w-[55%] xl:w-[50%] aspect-video transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-2xl border bg-black overflow-hidden ${styleClass}`}>
                 <Image src={`/${slide.id}.png`} alt={slide.title} fill className="object-contain" />
               </div>
             );
@@ -403,7 +403,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 overflow-hidden border-t border-neutral-900 bg-[#050505]">
+      <section className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 overflow-hidden border-t border-neutral-900 bg-black">
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto mb-6 sm:mb-8 flex flex-col md:flex-row items-center md:items-end justify-between text-center md:text-left gap-4">
           <div>
             <h2 className="text-xl lg:text-2xl font-extrabold text-white tracking-tight mb-1 sm:mb-2">Featured Analysis</h2>
@@ -436,16 +436,16 @@ export default function Home() {
                 <div key={item.id} onClick={() => { if(!isActive) setActiveFeaturedSlide(index) }} className={`absolute w-[95%] sm:w-[75%] md:w-[65%] lg:w-[55%] xl:w-[48%] p-3 sm:p-5 bg-[#080808] transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] rounded-[1.25rem] sm:rounded-3xl overflow-hidden flex flex-col ${styleClass}`}>
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="text-base sm:text-lg font-bold font-mono tracking-tight text-neutral-200">{item.asset_symbol}</h3>
-                    <span className="text-[8px] sm:text-[9px] text-neutral-500 font-bold tracking-widest uppercase bg-[#050505] px-2 sm:px-2.5 py-1 rounded-lg border border-neutral-800/60">{new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span className="text-[8px] sm:text-[9px] text-neutral-500 font-bold tracking-widest uppercase bg-black px-2 sm:px-2.5 py-1 rounded-lg border border-neutral-800/60">{new Date(item.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                   </div>
                   {item.after_image_url && item.image_url ? (
                     <HoverRevealSlider before={item.image_url} after={item.after_image_url} />
                   ) : item.image_url ? (
-                    <div className="relative overflow-hidden rounded-2xl ring-1 ring-white/[0.04] w-full aspect-video bg-[#050505] shadow-inner">
+                    <div className="relative overflow-hidden rounded-2xl ring-1 ring-white/[0.04] w-full aspect-video bg-black shadow-inner">
                       <img src={item.image_url} alt={`${item.asset_symbol} Analysis`} className="absolute inset-0 w-full h-full object-cover opacity-90" />
                     </div>
                   ) : (
-                    <div className="rounded-2xl w-full aspect-video bg-[#050505] ring-1 ring-white/[0.04] flex items-center justify-center shadow-inner"><BarChart3 className="text-neutral-800 w-6 h-6 sm:w-8 sm:h-8" /></div>
+                    <div className="rounded-2xl w-full aspect-video bg-black ring-1 ring-white/[0.04] flex items-center justify-center shadow-inner"><BarChart3 className="text-neutral-800 w-6 h-6 sm:w-8 sm:h-8" /></div>
                   )}
                 </div>
               );
@@ -543,7 +543,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 border-t border-neutral-900 bg-[#050505]">
+      <section className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 border-t border-neutral-900 bg-black">
         <div className="text-center mb-10 md:mb-14 max-w-5xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Desk Requirements</h2>
         </div>
@@ -629,7 +629,7 @@ export default function Home() {
         </div>
       </section>
       
-      <section className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 border-t border-neutral-900 bg-[#050505]">
+      <section className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 border-t border-neutral-900 bg-black">
         <div className="max-w-3xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white mb-8 md:mb-10 text-center tracking-tight">FAQ</h2>
           <div className="space-y-3">

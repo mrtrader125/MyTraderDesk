@@ -52,7 +52,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      {/* 🚨 CHANGED: Replaced bg-[#050505] with bg-black to enforce the true black background */}
+      {/* 🚨 CHANGED: Replaced bg-black with bg-black to enforce the true black background */}
       <body className="bg-black text-white font-sans antialiased selection:bg-blue-500/30">
         {children}
 

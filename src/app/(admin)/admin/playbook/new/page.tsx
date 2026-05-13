@@ -45,7 +45,7 @@ export default function AdminPlaybookPublish() {
   }
 
   return (
-    <div className="min-h-screen bg-[#050505] text-white p-8 md:p-12 font-sans">
+    <div className="min-h-screen bg-black text-white p-8 md:p-12 font-sans">
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center space-x-4 mb-10 border-b border-neutral-800 pb-6">
           <div className="w-12 h-12 bg-brand-primary/10 rounded-xl flex items-center justify-center border border-brand-primary/20">

@@ -49,7 +49,7 @@ export default async function PlaybookArticlePage({ params }: Props) {
 
   if (error || !article) {
     return (
-      <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-white font-sans">
+      <div className="min-h-screen bg-black flex flex-col items-center justify-center text-white font-sans">
         <h1 className="text-xl font-medium tracking-tight mb-4">Protocol Not Found</h1>
         <Link href="/playbook" className="text-neutral-500 hover:text-white text-xs font-semibold uppercase tracking-widest transition-colors">
           Return to Archive
@@ -59,7 +59,7 @@ export default async function PlaybookArticlePage({ params }: Props) {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#050505] text-neutral-400 font-sans selection:bg-white selection:text-black">
+    <div className="flex min-h-screen bg-black text-neutral-400 font-sans selection:bg-white selection:text-black">
       
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-72 bg-[#080808] border-r border-neutral-800/60 flex-col h-screen sticky top-0 shrink-0">

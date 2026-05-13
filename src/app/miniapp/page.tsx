@@ -135,7 +135,7 @@ function MobileViewport({ setup, isLatest, onClose }: { setup: any, isLatest: bo
       {/* 🚨 FIX: THUMB-FRIENDLY CLOSE BUTTON (Moved to bottom right) */}
       <button 
         onClick={onClose} 
-        className="absolute bottom-24 right-5 z-50 w-12 h-12 bg-[#050505]/80 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/10 text-white active:scale-95 shadow-xl pointer-events-auto transition-transform"
+        className="absolute bottom-24 right-5 z-50 w-12 h-12 bg-black/80 backdrop-blur-xl rounded-full flex items-center justify-center border border-white/10 text-white active:scale-95 shadow-xl pointer-events-auto transition-transform"
       >
         <X size={20} />
       </button>
@@ -328,7 +328,7 @@ export default function MiniAppPage() {
 
   if (status === 'loading') {
     return (
-      <div className="w-full h-[100dvh] bg-[#050505] flex flex-col items-center justify-center">
+      <div className="w-full h-[100dvh] bg-black flex flex-col items-center justify-center">
         <Script src="https://telegram.org/js/telegram-web-app.js" strategy="beforeInteractive" />
         <Loader2 className="w-8 h-8 text-[#2AABEE] animate-spin mb-4" />
         <p className="text-xs text-neutral-500 font-bold uppercase tracking-widest animate-pulse">Decrypting Identity...</p>
@@ -339,7 +339,7 @@ export default function MiniAppPage() {
   if (status === 'not_linked' || status === 'not_pro' || status === 'error') {
     const isProErr = status === 'not_pro'
     return (
-      <div className="w-full h-[100dvh] bg-[#050505] flex flex-col items-center justify-center p-6 text-center">
+      <div className="w-full h-[100dvh] bg-black flex flex-col items-center justify-center p-6 text-center">
         {isProErr ? <Lock className="w-12 h-12 text-amber-500/80 mb-4 stroke-1" /> : <Smartphone className="w-12 h-12 text-neutral-600 mb-4 stroke-1" />}
         <h2 className="text-xl font-bold text-white mb-2">{isProErr ? 'Pro Access Required' : 'Access Denied'}</h2>
         <p className="text-sm text-neutral-400">

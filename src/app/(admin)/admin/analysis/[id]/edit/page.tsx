@@ -144,7 +144,7 @@ export default function EditSetupPage() {
                   value={formData.asset_symbol}
                   onChange={handleSymbolChange}
                   placeholder="e.g. XAUUSD"
-                  className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-sm font-black text-white outline-none focus:border-brand-primary/50 transition-colors uppercase placeholder:normal-case placeholder:font-medium placeholder:text-neutral-600"
+                  className="w-full bg-black border border-neutral-800 rounded-xl py-3 px-4 text-sm font-black text-white outline-none focus:border-brand-primary/50 transition-colors uppercase placeholder:normal-case placeholder:font-medium placeholder:text-neutral-600"
                 />
               </div>
               <div className="space-y-2">
@@ -152,7 +152,7 @@ export default function EditSetupPage() {
                 <select 
                   value={formData.category}
                   onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors appearance-none cursor-pointer"
+                  className="w-full bg-black border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors appearance-none cursor-pointer"
                 >
                   {Object.keys(ASSET_CATEGORIES).map(category => (
                     <option key={category} value={category}>{category.charAt(0) + category.slice(1).toLowerCase()}</option>
@@ -169,7 +169,7 @@ export default function EditSetupPage() {
                   value={formData.timeframe}
                   onChange={(e) => setFormData({...formData, timeframe: e.target.value.toUpperCase()})}
                   placeholder="e.g. 4H, 15M"
-                  className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors uppercase"
+                  className="w-full bg-black border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors uppercase"
                 />
               </div>
             </div>
@@ -177,15 +177,15 @@ export default function EditSetupPage() {
             <div className="space-y-3 pt-2 border-t border-neutral-800/50">
               <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Directional Bias</label>
               <div className="grid grid-cols-3 gap-2">
-                <button onClick={() => setFormData({...formData, bias: 'BULLISH'})} className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${formData.bias === 'BULLISH' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-[#050505] border-neutral-800 text-neutral-500 hover:border-neutral-600'}`}>
+                <button onClick={() => setFormData({...formData, bias: 'BULLISH'})} className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${formData.bias === 'BULLISH' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.2)]' : 'bg-black border-neutral-800 text-neutral-500 hover:border-neutral-600'}`}>
                   <TrendingUp size={16} className="mb-1" />
                   <span className="text-[9px] font-black uppercase tracking-widest">Bullish</span>
                 </button>
-                <button onClick={() => setFormData({...formData, bias: 'NEUTRAL'})} className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${formData.bias === 'NEUTRAL' ? 'bg-neutral-800 border-neutral-500 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' : 'bg-[#050505] border-neutral-800 text-neutral-500 hover:border-neutral-600'}`}>
+                <button onClick={() => setFormData({...formData, bias: 'NEUTRAL'})} className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${formData.bias === 'NEUTRAL' ? 'bg-neutral-800 border-neutral-500 text-white shadow-[0_0_15px_rgba(255,255,255,0.1)]' : 'bg-black border-neutral-800 text-neutral-500 hover:border-neutral-600'}`}>
                   <Minus size={16} className="mb-1" />
                   <span className="text-[9px] font-black uppercase tracking-widest">Neutral</span>
                 </button>
-                <button onClick={() => setFormData({...formData, bias: 'BEARISH'})} className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${formData.bias === 'BEARISH' ? 'bg-red-500/10 border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-[#050505] border-neutral-800 text-neutral-500 hover:border-neutral-600'}`}>
+                <button onClick={() => setFormData({...formData, bias: 'BEARISH'})} className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${formData.bias === 'BEARISH' ? 'bg-red-500/10 border-red-500 text-red-500 shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-black border-neutral-800 text-neutral-500 hover:border-neutral-600'}`}>
                   <TrendingDown size={16} className="mb-1" />
                   <span className="text-[9px] font-black uppercase tracking-widest">Bearish</span>
                 </button>
@@ -194,7 +194,7 @@ export default function EditSetupPage() {
 
             <div className="space-y-2 pt-2 border-t border-neutral-800/50">
               <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Analysis Notes</label>
-              <textarea value={formData.content} onChange={(e) => setFormData({...formData, content: e.target.value})} placeholder="Detail the setup logic..." className="w-full h-24 bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-medium text-white outline-none focus:border-brand-primary/50 transition-colors resize-none" />
+              <textarea value={formData.content} onChange={(e) => setFormData({...formData, content: e.target.value})} placeholder="Detail the setup logic..." className="w-full h-24 bg-black border border-neutral-800 rounded-xl py-3 px-4 text-xs font-medium text-white outline-none focus:border-brand-primary/50 transition-colors resize-none" />
             </div>
           </div>
 
@@ -202,7 +202,7 @@ export default function EditSetupPage() {
             <label className="text-[9px] font-black text-neutral-500 uppercase tracking-widest mb-2 block">Update Chart Image (Optional)</label>
             <div className="flex-1 min-h-[300px] relative">
               <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
-              <div className={`absolute inset-0 border-2 border-dashed rounded-[1.5rem] flex flex-col items-center justify-center transition-all duration-300 overflow-hidden ${previewUrl ? 'border-brand-primary/50 bg-[#050505]' : 'border-neutral-800 bg-[#050505] hover:border-neutral-600 hover:bg-neutral-900/50'}`}>
+              <div className={`absolute inset-0 border-2 border-dashed rounded-[1.5rem] flex flex-col items-center justify-center transition-all duration-300 overflow-hidden ${previewUrl ? 'border-brand-primary/50 bg-black' : 'border-neutral-800 bg-black hover:border-neutral-600 hover:bg-neutral-900/50'}`}>
                 {previewUrl ? (
                   <img src={previewUrl} alt="Preview" className="w-full h-full object-contain p-2 rounded-[1.5rem]" />
                 ) : (

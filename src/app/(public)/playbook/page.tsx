@@ -17,7 +17,7 @@ export default async function PlaybookPage() {
     .order('created_at', { ascending: true })
 
   return (
-    <div className="min-h-screen bg-[#050505] text-neutral-400 font-sans selection:bg-white selection:text-black flex flex-col">
+    <div className="min-h-screen bg-black text-neutral-400 font-sans selection:bg-white selection:text-black flex flex-col">
       
       {/* Changed pt-32 to pt-16 to remove the massive top space */}
       <main className="flex-grow max-w-6xl mx-auto w-full pt-16 pb-16 px-6 lg:px-8">

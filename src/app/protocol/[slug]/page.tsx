@@ -77,19 +77,19 @@ export default function ProtocolPage() {
     }
   }, [params])
 
-  if (!slug) return <div className="min-h-screen bg-[#050505] flex items-center justify-center text-neutral-500"><Activity className="animate-pulse" /></div>
+  if (!slug) return <div className="min-h-screen bg-black flex items-center justify-center text-neutral-500"><Activity className="animate-pulse" /></div>
 
   const content = protocolContent[slug as keyof typeof protocolContent]
 
-  if (!content) return <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center">Protocol Not Found.</div>
+  if (!content) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Protocol Not Found.</div>
 
   const Icon = content.icon
 
   return (
-    <div className="bg-[#050505] text-neutral-200 min-h-screen font-sans selection:bg-blue-500/30 selection:text-white">
+    <div className="bg-black text-neutral-200 min-h-screen font-sans selection:bg-blue-500/30 selection:text-white">
       
       {/* MINIMAL NAVBAR */}
-      <nav className="w-full border-b border-neutral-900 bg-[#050505] py-4">
+      <nav className="w-full border-b border-neutral-900 bg-black py-4">
         <div className="max-w-4xl mx-auto px-6 flex items-center justify-between">
           <Link href="/" className="flex items-center text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">
             <ChevronLeft className="w-4 h-4 mr-1" /> Back to Desk

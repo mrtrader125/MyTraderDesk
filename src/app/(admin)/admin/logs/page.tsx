@@ -189,7 +189,7 @@ export default function SystemLogsPage() {
           </h3>
           <div className="space-y-3">
             {insights.topViews.length > 0 ? insights.topViews.map((item, i) => (
-              <div key={i} className="flex justify-between items-center bg-[#050505] p-3 rounded-xl border border-neutral-800/50">
+              <div key={i} className="flex justify-between items-center bg-black p-3 rounded-xl border border-neutral-800/50">
                 <span className="text-xs font-black text-white">{item.name}</span>
                 <span className="text-[10px] font-bold text-neutral-500 bg-neutral-900 px-2 py-1 rounded-lg">{item.count} views</span>
               </div>
@@ -204,7 +204,7 @@ export default function SystemLogsPage() {
           </h3>
           <div className="space-y-3">
             {insights.topSearches.length > 0 ? insights.topSearches.map((item, i) => (
-              <div key={i} className="flex justify-between items-center bg-[#050505] p-3 rounded-xl border border-neutral-800/50">
+              <div key={i} className="flex justify-between items-center bg-black p-3 rounded-xl border border-neutral-800/50">
                 <span className="text-xs font-black text-white">{item.name}</span>
                 <span className="text-[10px] font-bold text-neutral-500 bg-neutral-900 px-2 py-1 rounded-lg">{item.count} searches</span>
               </div>
@@ -248,7 +248,7 @@ export default function SystemLogsPage() {
             placeholder="Search by user name, ID, or asset (e.g., GOLD)..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3.5 pl-11 pr-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors"
+            className="w-full bg-black border border-neutral-800 rounded-xl py-3.5 pl-11 pr-4 text-xs font-bold text-white outline-none focus:border-brand-primary/50 transition-colors"
           />
         </div>
 
@@ -261,7 +261,7 @@ export default function SystemLogsPage() {
               key={type.id}
               onClick={() => setActionFilter(type.id)}
               className={`flex items-center px-4 py-3.5 rounded-xl border text-[9px] font-black uppercase tracking-widest whitespace-nowrap transition-all
-                ${actionFilter === type.id ? type.color : 'bg-[#050505] border-neutral-800 text-neutral-500 hover:border-neutral-600'}`}
+                ${actionFilter === type.id ? type.color : 'bg-black border-neutral-800 text-neutral-500 hover:border-neutral-600'}`}
             >
               <type.icon size={12} className="mr-2" />
               {type.label}
@@ -274,7 +274,7 @@ export default function SystemLogsPage() {
       <div className="bg-[#0a0a0a] border border-neutral-800 rounded-[2rem] overflow-hidden shadow-2xl flex flex-col h-[600px]">
         <div className="overflow-x-auto flex-1">
           <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead className="sticky top-0 z-10 bg-[#050505] border-b border-neutral-800 shadow-sm">
+            <thead className="sticky top-0 z-10 bg-black border-b border-neutral-800 shadow-sm">
               <tr>
                 <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest w-48">Timestamp (UTC)</th>
                 <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">User Profile</th>
@@ -335,7 +335,7 @@ export default function SystemLogsPage() {
           </table>
         </div>
         
-        <div className="p-4 bg-[#050505] border-t border-neutral-800 flex items-center justify-between shrink-0">
+        <div className="p-4 bg-black border-t border-neutral-800 flex items-center justify-between shrink-0">
           <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Showing {filteredLogs.length} Records</span>
           <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center">
             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-2 animate-pulse"></div> Live Sync Active

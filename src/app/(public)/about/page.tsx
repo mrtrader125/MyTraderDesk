@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-[#050505] text-neutral-400 font-sans selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-black text-neutral-400 font-sans selection:bg-white selection:text-black">
       
       {/* 🚨 Expanded width to max-w-5xl to reduce side margins 🚨 */}
       <div className="max-w-5xl mx-auto pt-24 pb-32 px-6 md:px-10 lg:px-12">

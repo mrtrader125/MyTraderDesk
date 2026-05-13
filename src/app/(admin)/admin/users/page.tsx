@@ -115,7 +115,7 @@ export default function UsersDirectoryPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="border-b border-neutral-800 bg-[#050505]">
+              <tr className="border-b border-neutral-800 bg-black">
                 <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">User Profile</th>
                 <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Active Plan</th>
                 <th className="p-5 text-[10px] font-black text-neutral-500 uppercase tracking-widest">Joined Date</th>
@@ -187,7 +187,7 @@ export default function UsersDirectoryPage() {
           <div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-[#0a0a0a] border-l border-neutral-800 shadow-2xl z-50 flex flex-col animate-in slide-in-from-right duration-300">
             
             {/* Panel Header */}
-            <div className="p-6 border-b border-neutral-800 flex items-start justify-between bg-[#050505]">
+            <div className="p-6 border-b border-neutral-800 flex items-start justify-between bg-black">
               <div>
                 <div className="flex items-center space-x-3 mb-2">
                   <div className="w-10 h-10 rounded-full bg-brand-primary/10 border border-brand-primary/30 flex items-center justify-center text-brand-primary">
@@ -223,17 +223,17 @@ export default function UsersDirectoryPage() {
                 <div>
                   <h4 className="text-[10px] font-black text-neutral-500 uppercase tracking-widest mb-4 border-b border-neutral-800 pb-2">Lifetime Activity</h4>
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-[#050505] border border-neutral-800 rounded-xl p-4 text-center">
+                    <div className="bg-black border border-neutral-800 rounded-xl p-4 text-center">
                       <Bookmark className="mx-auto text-amber-500 mb-2" size={16} />
                       <span className="text-xl font-black text-white block">{userStats.vaultCount}</span>
                       <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Saved</span>
                     </div>
-                    <div className="bg-[#050505] border border-neutral-800 rounded-xl p-4 text-center">
+                    <div className="bg-black border border-neutral-800 rounded-xl p-4 text-center">
                       <Search className="mx-auto text-blue-500 mb-2" size={16} />
                       <span className="text-xl font-black text-white block">{userStats.searchCount}</span>
                       <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Searches</span>
                     </div>
-                    <div className="bg-[#050505] border border-neutral-800 rounded-xl p-4 text-center">
+                    <div className="bg-black border border-neutral-800 rounded-xl p-4 text-center">
                       <AlertTriangle className={`mx-auto mb-2 ${userStats.paywallHits > 0 ? 'text-red-500' : 'text-neutral-600'}`} size={16} />
                       <span className="text-xl font-black text-white block">{userStats.paywallHits}</span>
                       <span className="text-[8px] font-black text-neutral-500 uppercase tracking-widest">Paywalls Hit</span>
@@ -274,7 +274,7 @@ export default function UsersDirectoryPage() {
                         if (log.action === 'FILTER_CLICK') { actionColor = "text-neutral-400"; actionText = "Filtered"; Icon = BarChart2 }
 
                         return (
-                          <div key={log.id} className="flex items-start space-x-3 p-3 bg-[#050505] rounded-xl border border-neutral-800/50">
+                          <div key={log.id} className="flex items-start space-x-3 p-3 bg-black rounded-xl border border-neutral-800/50">
                             <div className={`mt-0.5 p-1.5 rounded-md bg-neutral-900 ${actionColor}`}>
                               <Icon size={10} />
                             </div>
