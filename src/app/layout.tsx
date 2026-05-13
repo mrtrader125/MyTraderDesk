@@ -52,7 +52,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="bg-[#050505] text-white font-sans antialiased selection:bg-blue-500/30">
+      {/* 🚨 CHANGED: Replaced bg-[#050505] with bg-black to enforce the true black background */}
+      <body className="bg-black text-white font-sans antialiased selection:bg-blue-500/30">
         {children}
 
         {/* JSON-LD Schema for Google Rich Results */}
