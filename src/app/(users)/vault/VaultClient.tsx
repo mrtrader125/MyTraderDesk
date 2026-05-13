@@ -101,7 +101,7 @@ export default function VaultClient() {
   // 🚨 NEUTRAL SKELETON: Renders instantly to prevent lag/flashing
   if (isLoading || !data) {
     return (
-      <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden relative">
+      <div className="w-full min-h-screen bg-[#0a0a0a] p-6 md:p-8 font-sans overflow-x-hidden relative">
         <div className="flex flex-col items-center mb-10 mt-1">
           <div className="h-[38px] w-full max-w-lg bg-[#0a0a0a] border border-neutral-800 rounded-xl animate-pulse"></div>
         </div>
@@ -270,7 +270,7 @@ export default function VaultClient() {
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#050505] p-6 md:p-8 font-sans overflow-x-hidden relative">
+    <div className="w-full min-h-screen bg-[#0a0a0a] p-6 md:p-8 font-sans overflow-x-hidden relative">
       
       {!isProUser && (
         <div className="absolute top-4 right-4 z-50 px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[10px] font-black uppercase tracking-widest rounded shadow-sm flex items-center gap-1.5">

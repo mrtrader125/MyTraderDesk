@@ -97,8 +97,8 @@ export default function SettingsClient() {
     return (
       <div className="max-w-3xl space-y-6 md:space-y-8 relative">
         <div><div className="h-6 md:h-7 w-40 bg-[#0a0a0a] border border-neutral-800 rounded-md animate-pulse mb-2"></div><div className="h-3 w-64 bg-[#0a0a0a] border border-neutral-800 rounded-md animate-pulse"></div></div>
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm"><div className="h-4 w-48 bg-neutral-900 rounded animate-pulse mb-5 md:mb-6"></div><div className="space-y-3 md:space-y-4"><div className="flex items-center justify-between gap-4 p-4 md:p-5 bg-[#050505] border border-neutral-800 rounded-xl md:rounded-2xl"><div className="flex-1 space-y-2"><div className="h-3 w-32 bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-full max-w-sm bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-3/4 max-w-xs bg-neutral-900 rounded animate-pulse"></div></div><div className="w-9 h-5 md:w-10 md:h-6 bg-neutral-900 rounded-full animate-pulse shrink-0"></div></div><div className="flex items-center justify-between gap-4 p-4 md:p-5 bg-[#050505] border border-neutral-800 rounded-xl md:rounded-2xl"><div className="flex-1 space-y-2"><div className="h-3 w-32 bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-full max-w-sm bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-3/4 max-w-xs bg-neutral-900 rounded animate-pulse"></div></div><div className="w-9 h-5 md:w-10 md:h-6 bg-neutral-900 rounded-full animate-pulse shrink-0"></div></div></div></div>
-        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm"><div className="h-4 w-32 bg-neutral-900 rounded animate-pulse mb-5 md:mb-6"></div><div className="flex items-center justify-between gap-4 p-4 md:p-5 bg-[#050505] border border-neutral-800 rounded-xl md:rounded-2xl"><div className="flex-1 space-y-2"><div className="h-3 w-24 bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-full max-w-sm bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-3/4 max-w-xs bg-neutral-900 rounded animate-pulse"></div></div><div className="w-24 h-8 bg-neutral-900 rounded-lg animate-pulse shrink-0"></div></div></div>
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm"><div className="h-4 w-48 bg-neutral-900 rounded animate-pulse mb-5 md:mb-6"></div><div className="space-y-3 md:space-y-4"><div className="flex items-center justify-between gap-4 p-4 md:p-5 bg-[#0a0a0a] border border-neutral-800 rounded-xl md:rounded-2xl"><div className="flex-1 space-y-2"><div className="h-3 w-32 bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-full max-w-sm bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-3/4 max-w-xs bg-neutral-900 rounded animate-pulse"></div></div><div className="w-9 h-5 md:w-10 md:h-6 bg-neutral-900 rounded-full animate-pulse shrink-0"></div></div><div className="flex items-center justify-between gap-4 p-4 md:p-5 bg-[#0a0a0a] border border-neutral-800 rounded-xl md:rounded-2xl"><div className="flex-1 space-y-2"><div className="h-3 w-32 bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-full max-w-sm bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-3/4 max-w-xs bg-neutral-900 rounded animate-pulse"></div></div><div className="w-9 h-5 md:w-10 md:h-6 bg-neutral-900 rounded-full animate-pulse shrink-0"></div></div></div></div>
+        <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm"><div className="h-4 w-32 bg-neutral-900 rounded animate-pulse mb-5 md:mb-6"></div><div className="flex items-center justify-between gap-4 p-4 md:p-5 bg-[#0a0a0a] border border-neutral-800 rounded-xl md:rounded-2xl"><div className="flex-1 space-y-2"><div className="h-3 w-24 bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-full max-w-sm bg-neutral-900 rounded animate-pulse"></div><div className="h-2 w-3/4 max-w-xs bg-neutral-900 rounded animate-pulse"></div></div><div className="w-24 h-8 bg-neutral-900 rounded-lg animate-pulse shrink-0"></div></div></div>
       </div>
     )
   }
@@ -113,7 +113,7 @@ export default function SettingsClient() {
       <div className="bg-[#0a0a0a] border border-neutral-800 rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-sm">
         <h3 className="text-xs md:text-sm font-black text-white uppercase tracking-widest mb-4 flex items-center"><ArrowLeftRight className="mr-2 text-neutral-500" size={16} /> Display Terminology</h3>
         <p className="text-[10px] text-neutral-500 font-medium mb-6">Switch between institutional (Long/Short) or retail (Buy/Sell) phrasing.</p>
-        <div className="flex items-center gap-2 bg-[#050505] border border-neutral-800 rounded-xl p-1.5 w-full md:w-fit shadow-inner">
+        <div className="flex items-center gap-2 bg-[#0a0a0a] border border-neutral-800 rounded-xl p-1.5 w-full md:w-fit shadow-inner">
           <button onClick={() => handleTerminologyChange('LONG_SHORT')} className={`flex-1 md:flex-none px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${terminology === 'LONG_SHORT' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-white border border-transparent'}`}>Long / Short</button>
           <button onClick={() => handleTerminologyChange('BUY_SELL')} className={`flex-1 md:flex-none px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${terminology === 'BUY_SELL' ? 'bg-neutral-800 text-white shadow-sm border border-neutral-700/50' : 'text-neutral-500 hover:text-white border border-transparent'}`}>Buy / Sell</button>
         </div>
@@ -125,15 +125,15 @@ export default function SettingsClient() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2 md:col-span-2">
             <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Local Timezone</label>
-            <input type="text" disabled value={formData.timezone} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-zinc-400 opacity-70 cursor-not-allowed" />
+            <input type="text" disabled value={formData.timezone} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-zinc-400 opacity-70 cursor-not-allowed" />
           </div>
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-blue-500 uppercase tracking-widest ml-1">Shift Start</label>
-            <input type="time" value={formData.shift_start} onChange={e => setFormData({...formData, shift_start: e.target.value})} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-blue-500/50 transition-colors" />
+            <input type="time" value={formData.shift_start} onChange={e => setFormData({...formData, shift_start: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-blue-500/50 transition-colors" />
           </div>
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-blue-500 uppercase tracking-widest ml-1">Shift End</label>
-            <input type="time" value={formData.shift_end} onChange={e => setFormData({...formData, shift_end: e.target.value})} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-blue-500/50 transition-colors" />
+            <input type="time" value={formData.shift_end} onChange={e => setFormData({...formData, shift_end: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-blue-500/50 transition-colors" />
           </div>
         </div>
       </div>
@@ -144,11 +144,11 @@ export default function SettingsClient() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-purple-500 uppercase tracking-widest ml-1">Sunday Macro Deadline</label>
-            <input type="time" value={formData.weekly_prep_time} onChange={e => setFormData({...formData, weekly_prep_time: e.target.value})} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-purple-500/50 transition-colors" />
+            <input type="time" value={formData.weekly_prep_time} onChange={e => setFormData({...formData, weekly_prep_time: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-purple-500/50 transition-colors" />
           </div>
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-purple-500 uppercase tracking-widest ml-1">Daily Sniper Deadline</label>
-            <input type="time" value={formData.daily_prep_time} onChange={e => setFormData({...formData, daily_prep_time: e.target.value})} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-purple-500/50 transition-colors" />
+            <input type="time" value={formData.daily_prep_time} onChange={e => setFormData({...formData, daily_prep_time: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-purple-500/50 transition-colors" />
           </div>
         </div>
         <div className="flex justify-end pt-4 border-t border-neutral-900">

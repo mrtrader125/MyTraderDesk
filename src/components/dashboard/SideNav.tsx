@@ -42,7 +42,7 @@ export default function SideNav() {
   return (
     <>
       {/* DESKTOP SIDEBAR */}
-      <aside className={`hidden md:flex ${isOpen ? 'w-56' : 'w-16'} transition-all duration-300 border-r border-neutral-900 bg-[#050505] flex-col h-screen shrink-0 z-50 shadow-[10px_0_30px_rgba(0,0,0,0.5)]`}>
+      <aside className={`hidden md:flex ${isOpen ? 'w-56' : 'w-16'} transition-all duration-300 border-r border-neutral-900 bg-[#0a0a0a] flex-col h-screen shrink-0 z-50 shadow-[10px_0_30px_rgba(0,0,0,0.5)]`}>
         
         <div className="h-16 flex items-center px-4 border-b border-neutral-900 justify-between overflow-hidden shrink-0 bg-[#0a0a0a]">
           {isOpen && (
@@ -94,7 +94,7 @@ export default function SideNav() {
       </aside>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[65px] bg-[#050505]/95 backdrop-blur-xl border-t border-neutral-900 z-[100] flex items-center justify-start overflow-x-auto custom-scrollbar px-4 gap-6 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-[65px] bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-neutral-900 z-[100] flex items-center justify-start overflow-x-auto custom-scrollbar px-4 gap-6 pb-safe shadow-[0_-10px_40px_rgba(0,0,0,0.8)]">
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href.split('/')[1] ? `/${item.href.split('/')[1]}` : item.href))
           

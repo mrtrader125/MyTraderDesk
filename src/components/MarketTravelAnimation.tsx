@@ -39,7 +39,7 @@ export default function MarketTravelAnimation() {
     : { title: "3. The Exit", desc: "Target reached. We step out and secure profit. The market continues its endless travel without us.", status: "Profit Secured", color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/20" }
 
   return (
-    <div className="bg-[#050505] border border-neutral-900 rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.5)] font-sans w-full h-full flex flex-col relative overflow-hidden min-h-[500px]">
+    <div className="bg-[#0a0a0a] border border-neutral-900 rounded-xl shadow-[0_0_40px_rgba(0,0,0,0.5)] font-sans w-full h-full flex flex-col relative overflow-hidden min-h-[500px]">
       
       {/* CSS Endless Background Grid */}
       <style dangerouslySetInnerHTML={{__html: `

@@ -46,7 +46,7 @@ export default function NotificationBell() {
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
           <div className="absolute right-0 mt-3 w-80 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="px-4 py-3 border-b border-neutral-800 flex justify-between items-center bg-[#050505]">
+            <div className="px-4 py-3 border-b border-neutral-800 flex justify-between items-center bg-[#0a0a0a]">
               <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Notifications</span>
               {hasNew && <span className="px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded text-[8px] font-black uppercase tracking-widest">New</span>}
             </div>

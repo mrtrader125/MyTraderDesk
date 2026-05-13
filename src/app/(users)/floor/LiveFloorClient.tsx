@@ -423,7 +423,7 @@ export default function LiveFloorClient({
                                     {/* Sentiment Global Vote */}
                                     <div className="flex items-center gap-4 mb-auto">
                                       <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Sentiment</span>
-                                      <div className="flex items-center bg-[#050505] p-1 rounded-xl border border-white/[0.04]">
+                                      <div className="flex items-center bg-[#0a0a0a] p-1 rounded-xl border border-white/[0.04]">
                                         <button 
                                           onClick={() => handleInteractionUpdate(post.id, { vote: pInt.vote === 'align' ? null : 'align' })}
                                           className={`flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200 ${
@@ -491,7 +491,7 @@ export default function LiveFloorClient({
                                   </div>
                                 </div>
 
-                                <div className="px-6 lg:px-8 py-6 bg-[#050505]">
+                                <div className="px-6 lg:px-8 py-6 bg-[#0a0a0a]">
                                   <p 
                                     className="text-sm text-neutral-400 whitespace-pre-wrap leading-relaxed"
                                     dangerouslySetInnerHTML={{ __html: formatTelegramText(post.thesis) }}
@@ -595,7 +595,7 @@ export default function LiveFloorClient({
                               {takenTrades.map(post => {
                                 const pInt = interactions[post.id]
                                 return (
-                                  <div key={post.id} className="bg-[#050505] rounded-xl p-5 flex flex-col gap-3 group border border-white/[0.02] hover:border-white/[0.05] transition-all duration-300">
+                                  <div key={post.id} className="bg-[#0a0a0a] rounded-xl p-5 flex flex-col gap-3 group border border-white/[0.02] hover:border-white/[0.05] transition-all duration-300">
                                     <div className="flex items-center justify-between">
                                       <div className="flex items-center gap-3">
                                         <span className="text-xs font-bold tracking-wider uppercase text-neutral-200">
@@ -661,7 +661,7 @@ export default function LiveFloorClient({
                   <div className="w-2 h-2 rounded-full bg-[#2AABEE] animate-pulse shadow-[0_0_8px_#2AABEE]" />
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar w-full bg-[#050505] rounded-b-2xl">
+                <div className="flex-1 overflow-y-auto p-5 space-y-6 custom-scrollbar w-full bg-[#0a0a0a] rounded-b-2xl">
                   
                   {/* INLINE LOCKED STATE FOR SQUAWK */}
                   {!isProUser ? (

@@ -676,7 +676,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                 ref={gridRef}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={handleDropOnGrid}
-                className="order-2 lg:order-1 w-full lg:w-[60%] shrink-0 min-h-[300px] lg:min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#050505] rounded-xl border border-zinc-800/20 p-2"
+                className="order-2 lg:order-1 w-full lg:w-[60%] shrink-0 min-h-[300px] lg:min-h-0 grid grid-cols-7 grid-rows-7 gap-1.5 relative bg-[#0a0a0a] rounded-xl border border-zinc-800/20 p-2"
               >
                 {Array.from({ length: 49 }).map((_, i) => (
                   <div key={`slot-${i}`} className="w-full h-full rounded border border-dashed border-zinc-800/10 pointer-events-none" />
@@ -909,7 +909,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
             {/* --- BOTTOM SECTION: ACTIVE FOCUS --- */}
             <div className={`hidden lg:flex shrink-0 flex-col border-t border-zinc-800/60 bg-[#080808] min-h-0 transition-all duration-300 ease-in-out ${isTodayFocusExpanded ? 'w-full h-1/2' : 'w-48 xl:w-56 border-r border-zinc-800/60 h-1/2'}`}>
                   
-              <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#050505]">
+              <div className="h-10 border-b border-zinc-800/60 flex items-center justify-between px-3 sm:px-4 shrink-0 bg-[#0a0a0a]">
                 <div className="flex items-center gap-2 min-w-0">
                   <Crosshair size={14} className="text-blue-500 shrink-0" />
                   <h2 className="text-xs font-bold text-white uppercase tracking-widest truncate">

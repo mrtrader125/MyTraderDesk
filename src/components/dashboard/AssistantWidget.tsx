@@ -104,7 +104,7 @@ export default function AssistantWidget() {
         </div>
 
         {/* Message Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#050505]">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar bg-[#0a0a0a]">
           {messages.length === 0 && (
             <div className="h-full flex flex-col items-center justify-center text-center opacity-50 space-y-3">
               <Bot size={32} className="text-neutral-600" />

@@ -55,7 +55,7 @@ const BeforeAfterSlider = ({ before, after }: { before: string, after: string })
     setSliderPosition((x / rect.width) * 100)
   }
   return (
-    <div className="relative overflow-hidden w-full h-[75%] md:max-w-full md:max-h-full aspect-video bg-[#050505] cursor-ew-resize touch-none select-none group shadow-2xl rounded-sm" onMouseMove={handleMove} onTouchMove={handleMove}>
+    <div className="relative overflow-hidden w-full h-[75%] md:max-w-full md:max-h-full aspect-video bg-[#0a0a0a] cursor-ew-resize touch-none select-none group shadow-2xl rounded-sm" onMouseMove={handleMove} onTouchMove={handleMove}>
       <img src={after} alt="After Analysis" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
       <div className="absolute bottom-4 right-4 bg-emerald-500/20 border border-emerald-500/50 backdrop-blur-md px-3 py-1.5 text-[9px] font-black text-emerald-400 uppercase tracking-widest rounded-sm z-0 shadow-lg">After</div>
       <div className="absolute inset-0 w-full h-full z-10 border-r border-blue-500/50 pointer-events-none" style={{ clipPath: `polygon(0 0, ${sliderPosition}% 0, ${sliderPosition}% 100%, 0 100%)` }}>
@@ -293,10 +293,10 @@ export default function ViewportClient() {
 
   // 🚨 INSTANT SKELETON
   if (isLoading || !data) {
-    return <div className="h-[100dvh] bg-[#050505] flex flex-col items-center justify-center text-white"><Activity size={32} className="text-neutral-700 animate-spin"/></div>
+    return <div className="h-[100dvh] bg-[#0a0a0a] flex flex-col items-center justify-center text-white"><Activity size={32} className="text-neutral-700 animate-spin"/></div>
   }
 
-  if (!currentSetup) return <div className="h-[100dvh] bg-[#050505] flex flex-col items-center justify-center text-white"><Star size={32} className="text-neutral-700 mb-4"/><span className="text-neutral-500 text-xs font-black uppercase tracking-widest">No data found for {asset}</span><button onClick={() => router.push(backPath)} className="mt-6 px-6 py-2 bg-[#111] hover:bg-white/5 border border-neutral-800 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors">Go Back</button></div>
+  if (!currentSetup) return <div className="h-[100dvh] bg-[#0a0a0a] flex flex-col items-center justify-center text-white"><Star size={32} className="text-neutral-700 mb-4"/><span className="text-neutral-500 text-xs font-black uppercase tracking-widest">No data found for {asset}</span><button onClick={() => router.push(backPath)} className="mt-6 px-6 py-2 bg-[#111] hover:bg-white/5 border border-neutral-800 rounded-xl text-[10px] font-black uppercase tracking-widest transition-colors">Go Back</button></div>
 
   const access = getSetupAccess(currentSetup, userPlan)
   const isCurrentBookmarked = watchlist.some(w => w.id === currentSetup.id)
@@ -326,7 +326,7 @@ export default function ViewportClient() {
   }
 
   return (
-    <div className="fixed inset-0 bg-[#050505] flex overflow-hidden text-white select-none touch-none font-sans" style={{ height: '100dvh' }}>
+    <div className="fixed inset-0 bg-[#0a0a0a] flex overflow-hidden text-white select-none touch-none font-sans" style={{ height: '100dvh' }}>
        <div 
          className={`absolute inset-0 z-10 flex items-center justify-center md:pl-16 md:pr-20 md:pt-20 md:pb-10 overflow-hidden ${access.hasAccess && !currentSetup.after_image_url ? (isDragging || isPinching ? 'cursor-grabbing' : 'cursor-grab') : 'cursor-default'}`}
          onWheel={access.hasAccess ? handleWheel : undefined}

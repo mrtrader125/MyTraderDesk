@@ -327,7 +327,7 @@ export default function OnboardingClient({ userId }: { userId: string }) {
   const ASSETS = ['Forex', 'Crypto', 'Commodities', 'Stocks', 'Indices']
 
   return (
-    <div className="min-h-screen bg-[#050505] text-zinc-50 flex flex-col font-sans selection:bg-blue-500/30 relative">
+    <div className="min-h-screen bg-[#0a0a0a] text-zinc-50 flex flex-col font-sans selection:bg-blue-500/30 relative">
       
       {/* PREVIEW BANNER */}
       {isPreviewMode && (

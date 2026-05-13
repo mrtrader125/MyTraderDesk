@@ -91,7 +91,7 @@ export default function SettingsClient({ userId, initialTimezone, initialModule 
           Switch between institutional (Long/Short) or retail (Buy/Sell) phrasing.
         </p>
         
-        <div className="flex items-center gap-2 bg-[#050505] border border-neutral-800 rounded-xl p-1.5 w-full md:w-fit shadow-inner">
+        <div className="flex items-center gap-2 bg-[#0a0a0a] border border-neutral-800 rounded-xl p-1.5 w-full md:w-fit shadow-inner">
           {isTerminologyLoading ? (
              <div className="px-8 py-3 text-[10px] text-neutral-500 font-bold uppercase tracking-widest animate-pulse text-center w-[200px]">Loading...</div>
           ) : (
@@ -113,15 +113,15 @@ export default function SettingsClient({ userId, initialTimezone, initialModule 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2 md:col-span-2">
             <label className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest ml-1">Local Timezone</label>
-            <input type="text" disabled value={formData.timezone} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-zinc-400 opacity-70 cursor-not-allowed" />
+            <input type="text" disabled value={formData.timezone} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-zinc-400 opacity-70 cursor-not-allowed" />
           </div>
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-blue-500 uppercase tracking-widest ml-1">Shift Start</label>
-            <input type="time" value={formData.shift_start} onChange={e => setFormData({...formData, shift_start: e.target.value})} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-blue-500/50 transition-colors" />
+            <input type="time" value={formData.shift_start} onChange={e => setFormData({...formData, shift_start: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-blue-500/50 transition-colors" />
           </div>
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-blue-500 uppercase tracking-widest ml-1">Shift End</label>
-            <input type="time" value={formData.shift_end} onChange={e => setFormData({...formData, shift_end: e.target.value})} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-blue-500/50 transition-colors" />
+            <input type="time" value={formData.shift_end} onChange={e => setFormData({...formData, shift_end: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-blue-500/50 transition-colors" />
           </div>
         </div>
       </div>
@@ -136,11 +136,11 @@ export default function SettingsClient({ userId, initialTimezone, initialModule 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-purple-500 uppercase tracking-widest ml-1">Sunday Macro Deadline</label>
-            <input type="time" value={formData.weekly_prep_time} onChange={e => setFormData({...formData, weekly_prep_time: e.target.value})} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-purple-500/50 transition-colors" />
+            <input type="time" value={formData.weekly_prep_time} onChange={e => setFormData({...formData, weekly_prep_time: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-purple-500/50 transition-colors" />
           </div>
           <div className="space-y-2">
             <label className="text-[9px] font-bold text-purple-500 uppercase tracking-widest ml-1">Daily Sniper Deadline</label>
-            <input type="time" value={formData.daily_prep_time} onChange={e => setFormData({...formData, daily_prep_time: e.target.value})} className="w-full bg-[#050505] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-purple-500/50 transition-colors" />
+            <input type="time" value={formData.daily_prep_time} onChange={e => setFormData({...formData, daily_prep_time: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-800 rounded-xl py-3 px-4 text-xs font-bold text-white outline-none focus:border-purple-500/50 transition-colors" />
           </div>
         </div>
 

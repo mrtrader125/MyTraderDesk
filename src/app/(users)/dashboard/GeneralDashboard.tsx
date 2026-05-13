@@ -346,13 +346,13 @@ export default function GeneralDashboard({
     )
   }
 
-  if (!mounted) return <div className="w-full min-h-screen bg-[#050505]"></div>
+  if (!mounted) return <div className="w-full min-h-screen bg-[#0a0a0a]"></div>
 
   const totalFiltered = groupedSetups.today.length + groupedSetups.yesterday.length + groupedSetups.thisWeek.length + groupedSetups.older.length
   const noFiltersApplied = savedCategories.length === 0 && savedSymbols.length === 0
 
   return (
-    <div className="w-full bg-[#050505] text-white p-3 md:p-6 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
+    <div className="w-full bg-[#0a0a0a] text-white p-3 md:p-6 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start h-full min-h-0 max-w-[1800px] mx-auto w-full">
         
         {/* --- LEFT COLUMN: MAIN CONTENT --- */}
@@ -411,7 +411,7 @@ export default function GeneralDashboard({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 md:p-5 custom-scrollbar bg-[#050505]">
+            <div className="flex-1 overflow-y-auto p-4 md:p-5 custom-scrollbar bg-[#0a0a0a]">
               {totalFiltered === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full py-12 opacity-50">
                   <Activity className="w-10 h-10 text-neutral-700 mb-3" />

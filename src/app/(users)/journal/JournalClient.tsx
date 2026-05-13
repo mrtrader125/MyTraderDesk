@@ -371,7 +371,7 @@ export default function JournalClient() {
             <div className="flex-1 flex flex-col min-h-0">
               
               {/* Compressed Autopsy Header */}
-              <div className="p-3 border-b border-zinc-800/50 bg-[#050505] flex flex-col gap-2 shrink-0">
+              <div className="p-3 border-b border-zinc-800/50 bg-[#0a0a0a] flex flex-col gap-2 shrink-0">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <h1 className="text-lg font-black text-white tracking-wider">

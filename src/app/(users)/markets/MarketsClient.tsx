@@ -121,7 +121,7 @@ export default function MarketsClient() {
   // 🚨 INSTANT SHELL: Shown for 0.1s on first load, then data pops in
   if (isLoading || !data) {
     return (
-      <div className="w-full bg-[#050505] p-4 md:p-6 lg:p-8 flex flex-col h-[calc(100dvh-65px)]">
+      <div className="w-full bg-[#0a0a0a] p-4 md:p-6 lg:p-8 flex flex-col h-[calc(100dvh-65px)]">
         <div className="max-w-[90rem] mx-auto w-full flex flex-col min-h-0">
           <div className="shrink-0 w-full mb-6 md:mb-8 h-10 bg-[#0a0a0a] rounded-xl animate-pulse"></div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5">
@@ -142,7 +142,7 @@ export default function MarketsClient() {
   })
 
   return (
-    <div className="w-full bg-[#050505] p-4 md:p-6 lg:p-8 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
+    <div className="w-full bg-[#0a0a0a] p-4 md:p-6 lg:p-8 font-sans flex flex-col overflow-hidden relative" style={{ height: 'calc(100dvh - 65px)' }}>
       <div className="max-w-[90rem] mx-auto w-full h-full flex flex-col min-h-0">
         
         <div className="shrink-0 w-full mb-6 md:mb-8 flex items-center gap-4">
