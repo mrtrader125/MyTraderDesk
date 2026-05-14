@@ -2,11 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
-import { 
-  ArrowLeft, Target, ShieldCheck, Activity, TerminalSquare, 
-  ArrowRight, CheckCircle2, AlertTriangle, Zap, Users
-} from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react'
 
 export default function BootcampPage() {
   const [email, setEmail] = useState('')
@@ -18,179 +14,171 @@ export default function BootcampPage() {
     if (!email) return
     setIsSubmitting(true)
     
-    // Simulate API call to your backend/Supabase
+    // Simulate API call
     setTimeout(() => {
       setIsSubmitting(false)
       setSubmitted(true)
-    }, 1500)
+    }, 1000)
   }
 
   return (
-    <div className="bg-[#000000] text-neutral-300 min-h-screen font-sans selection:bg-blue-500/30 selection:text-white overflow-x-hidden relative">
+    <div className="bg-[#000000] text-neutral-300 min-h-screen font-sans selection:bg-neutral-800 selection:text-white">
       
-      {/* Subtle Background Glow */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[70%] h-[40%] bg-blue-600/5 blur-[150px]"></div>
-      </div>
-
-      {/* Minimalist Top Nav */}
-      <nav className="relative z-10 w-full py-5 px-6 md:px-12 flex items-center justify-between border-b border-white/[0.04] bg-[#0a0a0a]/50 backdrop-blur-md">
+      {/* Strict Minimalist Nav */}
+      <nav className="w-full py-4 px-6 md:px-12 flex items-center justify-between border-b border-white/[0.08] bg-[#000000]">
         <Link href="/" className="flex items-center text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors gap-2">
-          <ArrowLeft size={14} /> Back to Terminal
+          <ArrowLeft size={14} /> Return
         </Link>
-        <div className="flex items-center gap-3">
-          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shadow-[0_0_10px_rgba(59,130,246,0.8)]"></div>
-          <span className="text-[9px] font-mono text-blue-400 uppercase tracking-widest">Applications Open</span>
-        </div>
+        <span className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest">
+          Doc Ref: BT-001
+        </span>
       </nav>
 
-      <main className="relative z-10 max-w-[900px] mx-auto px-5 sm:px-8 py-16 md:py-24 flex flex-col gap-16 md:gap-24">
+      <main className="max-w-[1000px] mx-auto px-5 sm:px-8 py-12 md:py-20 flex flex-col md:flex-row gap-12 lg:gap-20">
         
-        {/* HERO SECTION */}
-        <section className="text-center flex flex-col items-center">
-          <div className="inline-flex items-center justify-center p-3 mb-6 bg-blue-500/10 border border-blue-500/20 rounded-2xl shadow-[0_0_30px_rgba(59,130,246,0.15)]">
-            <Target size={24} className="text-blue-500" />
-          </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
-            Founding Operator <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">Bootcamp</span>
-          </h1>
-          <p className="text-base md:text-lg text-neutral-400 max-w-2xl leading-relaxed font-medium mb-8">
-            We are stress-testing the Sentinel Vortex infrastructure before public launch. We need disciplined operators to break the terminal, report the leaks, and help us refine the ultimate execution environment.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#0a0a0a] border border-white/[0.04] p-2 rounded-xl shadow-lg w-full max-w-md">
-            <div className="flex-1 flex flex-col items-center sm:items-start px-4 py-2 border-r-0 sm:border-r border-white/[0.04]">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Cohort Limit</span>
-              <span className="text-2xl font-mono font-bold text-white">50 Operators</span>
-            </div>
-            <div className="flex-1 flex flex-col items-center sm:items-start px-4 py-2">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Program Status</span>
-              <span className="text-sm font-bold text-emerald-400 uppercase tracking-widest mt-1.5 flex items-center gap-1.5">
-                <CheckCircle2 size={14} /> Accepting Now
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* THE DEAL SECTION */}
-        <section className="bg-[#0a0a0a] border border-white/[0.08] rounded-2xl p-6 sm:p-10 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
-          
-          <h2 className="text-xl font-bold text-white tracking-tight mb-8 flex items-center gap-3">
-            <TerminalSquare size={18} className="text-neutral-500" /> The Deal (What You Get)
-          </h2>
-          
-          <div className="grid sm:grid-cols-2 gap-6">
-            <div className="flex gap-4 items-start">
-              <div className="mt-1 w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                <Zap size={14} className="text-emerald-500" />
+        {/* LEFT COLUMN: Metadata (Terminal Style) */}
+        <aside className="w-full md:w-64 shrink-0 flex flex-col gap-8">
+          <div>
+            <h1 className="text-2xl font-mono font-bold text-white tracking-tight uppercase mb-6">
+              Operation:<br/> Beta Cohort
+            </h1>
+            <div className="flex flex-col gap-4 border-t border-white/[0.08] pt-4">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">Status</span>
+                <span className="text-[11px] font-mono text-emerald-400 mt-1 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full"></span> Accepting Applications
+                </span>
               </div>
-              <div>
-                <h3 className="text-[13px] font-bold text-white uppercase tracking-widest mb-2">Lifetime Discount</h3>
-                <p className="text-xs text-neutral-400 leading-relaxed font-sans">
-                  Operators who complete the bootcamp phase will lock in <span className="text-white font-semibold">Founding Member pricing forever.</span> When the platform goes public at standard rates, your price never increases.
-                </p>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">Allocation</span>
+                <span className="text-[11px] font-mono text-white mt-1">50 Operators Max</span>
               </div>
-            </div>
-            <div className="flex gap-4 items-start">
-              <div className="mt-1 w-8 h-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-                <ShieldCheck size={14} className="text-blue-500" />
-              </div>
-              <div>
-                <h3 className="text-[13px] font-bold text-white uppercase tracking-widest mb-2">Unrestricted Access</h3>
-                <p className="text-xs text-neutral-400 leading-relaxed font-sans">
-                  Immediate access to the Pro-Tier terminal, including MT5 sync, the Live Floor, custom vault staging, and all macro analytics modules.
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-4 items-start sm:col-span-2">
-              <div className="mt-1 w-8 h-8 rounded-full bg-purple-500/10 border border-purple-500/20 flex items-center justify-center shrink-0">
-                <Users size={14} className="text-purple-500" />
-              </div>
-              <div>
-                <h3 className="text-[13px] font-bold text-white uppercase tracking-widest mb-2">Direct Influence</h3>
-                <p className="text-xs text-neutral-400 leading-relaxed font-sans max-w-2xl">
-                  You will have a direct line to the development team. If a feature is slowing down your workflow, or if you need a specific metric tracked in your journal, you tell us, and we build it.
-                </p>
+              <div className="flex flex-col">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-500">Objective</span>
+                <span className="text-[11px] font-mono text-white mt-1 leading-snug">Infrastructure stress-test & logic validation</span>
               </div>
             </div>
           </div>
-        </section>
+        </aside>
 
-        {/* EXPECTATIONS SECTION */}
-        <section className="bg-[#050505] border border-white/[0.04] rounded-2xl p-6 sm:p-10">
-          <h2 className="text-xl font-bold text-white tracking-tight mb-8 flex items-center gap-3">
-            <Activity size={18} className="text-neutral-500" /> The Expectations (What We Need)
-          </h2>
+        {/* RIGHT COLUMN: The Document */}
+        <div className="flex-1 flex flex-col gap-12">
           
-          <ul className="space-y-6">
-            <li className="flex gap-4 bg-[#0a0a0a] p-4 rounded-xl border border-white/[0.02]">
-              <span className="font-mono text-neutral-600 font-bold mt-0.5">01</span>
-              <div>
-                <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-widest mb-1">Active Usage</h4>
-                <p className="text-[11px] text-neutral-500 leading-relaxed font-sans">You must log your daily focus, journal your trades, and sync your execution data. Dead accounts will be purged to make room for active operators.</p>
-              </div>
-            </li>
-            <li className="flex gap-4 bg-[#0a0a0a] p-4 rounded-xl border border-white/[0.02]">
-              <span className="font-mono text-neutral-600 font-bold mt-0.5">02</span>
-              <div>
-                <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-widest mb-1">Brutal Honesty</h4>
-                <p className="text-[11px] text-neutral-500 leading-relaxed font-sans">If a feature is clunky, if the UI is confusing, or if the MT5 parser breaks on your specific broker statement, you must report it immediately.</p>
-              </div>
-            </li>
-            <li className="flex gap-4 bg-[#0a0a0a] p-4 rounded-xl border border-white/[0.02]">
-              <span className="font-mono text-neutral-600 font-bold mt-0.5">03</span>
-              <div>
-                <h4 className="text-xs font-bold text-neutral-200 uppercase tracking-widest mb-1">Discipline Over PnL</h4>
-                <p className="text-[11px] text-neutral-500 leading-relaxed font-sans">We do not care if you end the month in drawdown. We care that your "Perfect Execution" tag matches your actual broker data.</p>
-              </div>
-            </li>
-          </ul>
-
-          <div className="mt-8 p-4 bg-red-500/5 border border-red-500/20 rounded-xl flex items-start gap-3">
-            <AlertTriangle size={16} className="text-red-500 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-red-400/80 font-medium">
-              At the end of the bootcamp phase, you will be notified. You can choose to walk away, or continue your subscription at the locked-in Founding Member rate.
+          <section>
+            <h2 className="text-[11px] font-bold text-white uppercase tracking-widest border-b border-white/[0.08] pb-3 mb-5">
+              1.0 Overview
+            </h2>
+            <p className="text-sm text-neutral-400 leading-relaxed font-sans mb-4">
+              We are finalizing the Sentinel Vortex infrastructure before opening the gates to the public. To ensure the terminal functions flawlessly under live market conditions, we require a disciplined cohort of 50 active operators to stress-test the environment.
             </p>
-          </div>
-        </section>
+            <p className="text-sm text-neutral-400 leading-relaxed font-sans">
+              This is not a marketing gimmick; this is a technical requirement. We need traders to break the MT5 parser, log edge-case errors in the journaling module, and provide harsh, unfiltered feedback on the UX.
+            </p>
+          </section>
 
-        {/* APPLICATION FORM */}
-        <section className="text-center pt-8 border-t border-white/[0.04]">
-          <h2 className="text-2xl font-extrabold text-white tracking-tight mb-4">Secure Your Spot</h2>
-          <p className="text-xs text-neutral-500 font-medium mb-8 max-w-md mx-auto">
-            Drop your primary email below. If spots are still available, you will receive an invitation link with instructions to access the terminal.
-          </p>
-
-          {submitted ? (
-            <div className="bg-emerald-500/10 border border-emerald-500/30 p-6 rounded-2xl max-w-md mx-auto flex flex-col items-center">
-              <CheckCircle2 size={32} className="text-emerald-500 mb-4" />
-              <h3 className="text-sm font-bold text-white uppercase tracking-widest mb-2">Application Received</h3>
-              <p className="text-xs text-emerald-400/80 text-center">
-                Keep an eye on your inbox. If selected, your access protocol will arrive within 24 hours.
-              </p>
+          <section>
+            <h2 className="text-[11px] font-bold text-white uppercase tracking-widest border-b border-white/[0.08] pb-3 mb-5">
+              2.0 Terms of Access (What You Receive)
+            </h2>
+            <div className="flex flex-col gap-6">
+              <div className="flex gap-4">
+                <span className="font-mono text-[10px] text-neutral-600 font-bold mt-1">[A]</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-1.5">Lifetime Founding Rate</h3>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-sans">Operators who complete the beta phase secure a permanently discounted subscription rate. When public pricing goes live, your rate is locked in perpetuity.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <span className="font-mono text-[10px] text-neutral-600 font-bold mt-1">[B]</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-1.5">Full Pro-Tier Access</h3>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-sans">Immediate, unrestricted access to the complete terminal: MT5 sync, the Live Floor, custom vault staging, and all macro discipline analytics.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <span className="font-mono text-[10px] text-neutral-600 font-bold mt-1">[C]</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-1.5">Direct Development Influence</h3>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-sans">You bypass standard support. If a feature slows your workflow or you require a specific metric tracked in your journal, you dictate the priority to the engineering team.</p>
+                </div>
+              </div>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="max-w-md mx-auto flex flex-col gap-4">
-              <input 
-                type="email" 
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email address..." 
-                className="w-full bg-[#0a0a0a] border border-white/[0.08] rounded-xl px-5 py-4 text-sm text-white outline-none focus:border-blue-500 transition-colors shadow-inner"
-              />
-              <button 
-                type="submit" 
-                disabled={isSubmitting}
-                className="w-full py-4 bg-white text-black text-xs font-bold uppercase tracking-widest rounded-xl hover:bg-neutral-200 transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(255,255,255,0.1)] disabled:opacity-50"
-              >
-                {isSubmitting ? 'Processing...' : 'Apply For Access'} <ArrowRight size={14} />
-              </button>
-            </form>
-          )}
-        </section>
+          </section>
 
+          <section>
+            <h2 className="text-[11px] font-bold text-white uppercase tracking-widest border-b border-white/[0.08] pb-3 mb-5">
+              3.0 Operational Requirements (What We Require)
+            </h2>
+            <div className="flex flex-col gap-6">
+              <div className="flex gap-4">
+                <span className="font-mono text-[10px] text-neutral-600 font-bold mt-1">[1]</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-1.5">Mandatory Usage</h3>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-sans">You must actively log your daily focus and sync your execution data. Inactive accounts will be purged to allocate space for active operators.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <span className="font-mono text-[10px] text-neutral-600 font-bold mt-1">[2]</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-1.5">Unfiltered Feedback</h3>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-sans">If the UI is counter-intuitive, or the parser fails on your broker statement, report it immediately. We require data, not flattery.</p>
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <span className="font-mono text-[10px] text-neutral-600 font-bold mt-1">[3]</span>
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest mb-1.5">Discipline Over PnL</h3>
+                  <p className="text-xs text-neutral-400 leading-relaxed font-sans">We do not judge your drawdown. We require your "Perfect Execution" tags to accurately reflect your broker data. Integrity is the only metric that matters here.</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-8 p-4 bg-[#0a0a0a] border-l-2 border-neutral-500 text-xs text-neutral-400 font-sans leading-relaxed">
+              <strong>Notice:</strong> At the conclusion of the beta phase, you will be notified. You retain the right to terminate access or seamlessly transition to the locked-in Founding Member rate.
+            </div>
+          </section>
+
+          {/* APPLICATION FORM */}
+          <section className="mt-8 pt-8 border-t border-white/[0.08]">
+            <h2 className="text-lg font-mono font-bold text-white tracking-tight mb-3">
+              Request Authorization
+            </h2>
+            <p className="text-xs text-neutral-500 font-sans mb-6">
+              Submit your primary email. If capacity remains, you will receive an invitation protocol within 24 hours.
+            </p>
+
+            {submitted ? (
+              <div className="bg-[#050505] border border-emerald-500/30 p-5 flex items-center gap-4">
+                <Check size={20} className="text-emerald-500" />
+                <div>
+                  <h3 className="text-[11px] font-bold text-white uppercase tracking-widest">Protocol Received</h3>
+                  <p className="text-[11px] text-neutral-400 font-sans mt-0.5">
+                    Monitor your inbox. Instructions will follow if selected.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 max-w-md">
+                <input 
+                  type="email" 
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="operator@domain.com" 
+                  className="flex-1 bg-[#050505] border border-white/[0.15] px-4 py-3 text-sm text-white font-mono outline-none focus:border-white transition-colors"
+                />
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="px-6 py-3 bg-white text-black text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-200 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? 'Verifying...' : 'Submit'} <ArrowRight size={14} />
+                </button>
+              </form>
+            )}
+          </section>
+
+        </div>
       </main>
     </div>
   )
