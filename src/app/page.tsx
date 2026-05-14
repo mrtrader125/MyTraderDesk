@@ -65,8 +65,6 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   
   const [heroProfiles, setHeroProfiles] = useState<string[]>([])
-  
-  // 🚨 NEW: State for Bootcamp Popup
   const [showBootcampPopup, setShowBootcampPopup] = useState(false)
 
   const terminalSlides = [
@@ -99,9 +97,8 @@ export default function Home() {
 
     fetchAnalyses()
     
-    // 🚨 NEW: Trigger the popup 1.5 seconds after page load
+    // Show popup ONCE after 1.5 seconds if they haven't dismissed it
     const popupTimer = setTimeout(() => {
-      // Check if user previously closed it using localStorage (Optional but good UX)
       const hasSeenPopup = localStorage.getItem('bootcampPopupDismissed')
       if (!hasSeenPopup) {
         setShowBootcampPopup(true)
@@ -165,6 +162,12 @@ export default function Home() {
             <Link href="#features" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Features</Link>
             <Link href="#blueprint" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Blueprint</Link>
             <Link href="#pricing" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Pricing</Link>
+            
+            {/* PERMANENT LINK TO BOOTCAMP SO THEY NEVER LOSE IT */}
+            <Link href="/program/bootcamp" className="text-[10px] font-bold uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
+              Beta Cohort
+            </Link>
           </div>
           <div className="flex gap-4 items-center shrink-0">
             <Link href="/login" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors hidden sm:block">Log In</Link>
@@ -175,11 +178,9 @@ export default function Home() {
         </div>
       </nav>
       
-      {/* Reverted Hero Section to exactly match original centered layout */}
       <section className="relative z-10 min-h-screen flex flex-col justify-center pt-28 pb-16 md:pt-28 md:pb-20">
         <div className="flex-1 flex flex-col items-center justify-center max-w-[900px] mx-auto text-center px-5 w-full mt-10 sm:mt-0">
           <h1 className="text-[2.5rem] leading-[1.1] sm:text-5xl lg:text-[4rem] font-extrabold tracking-tight text-white mb-5 flex flex-col items-center justify-center w-full">
-            {/* Fixed horizontal mobile scroll issue by removing hard whitespace-nowrap constraints */}
             <span className="block sm:inline sm:whitespace-nowrap">Systematic Trading Terminal &</span>
             <span className="text-blue-500 block sm:inline sm:whitespace-nowrap mt-1 sm:mt-0">Performance Journal.</span>
           </h1>
@@ -196,7 +197,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Reverted bottom elements back to original layout */}
         <div className="w-full flex flex-col items-center mt-12 sm:mt-auto pt-8 px-5">
           <div className="flex items-center gap-3 mb-5">
             <div className="flex -space-x-2">
@@ -234,7 +234,7 @@ export default function Home() {
         </div>
       </section>
       
-<section id="features" className="relative z-10 w-full py-16 md:py-24 lg:py-28 px-5 sm:px-6 border-t border-neutral-900 bg-[#020202]">
+      <section id="features" className="relative z-10 w-full py-16 md:py-24 lg:py-28 px-5 sm:px-6 border-t border-neutral-900 bg-[#020202]">
         <div className="max-w-[1400px] mx-auto">
           
           <div className="text-center mb-10 md:mb-14">
@@ -248,7 +248,6 @@ export default function Home() {
 
           <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 md:gap-6">
             
-            {/* 1. Trading System */}
             <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-6 sm:p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
               <ShieldCheck className="w-6 h-6 sm:w-7 sm:h-7 text-cyan-500 mb-4 sm:mb-5" />
               <div className="mb-3">
@@ -258,7 +257,6 @@ export default function Home() {
               <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">Build a personalized execution system around your existing strategy and edge to reduce mental overload and impulsive trades.</p>
             </div>
 
-            {/* 2. Psychological Context */}
             <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-6 sm:p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
               <Activity className="w-6 h-6 sm:w-7 sm:h-7 text-rose-500 mb-4 sm:mb-5" />
               <div className="mb-3">
@@ -268,7 +266,6 @@ export default function Home() {
               <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">Identify emotional execution problems such as FOMO, hesitation, revenge trading, and impulsive behavior while improving discipline.</p>
             </div>
 
-            {/* 3. Market Context */}
             <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-6 sm:p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
               <Map className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500 mb-4 sm:mb-5" />
               <div className="mb-3">
@@ -278,7 +275,6 @@ export default function Home() {
               <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">Receive higher-timeframe market structure, directional perspectives, and execution context designed to support independent decisions.</p>
             </div>
 
-            {/* 4. Behavioral Journaling */}
             <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-6 sm:p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
               <BookOpen className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-500 mb-4 sm:mb-5" />
               <div className="mb-3">
@@ -288,7 +284,6 @@ export default function Home() {
               <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">Go beyond PnL. Track execution quality, emotional discipline, and behavioral mistakes while assigning measurable costs to inconsistency.</p>
             </div>
 
-            {/* 5. The Live Floor */}
             <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-6 sm:p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
               <TerminalSquare className="w-6 h-6 sm:w-7 sm:h-7 text-purple-500 mb-4 sm:mb-5" />
               <div className="mb-3">
@@ -298,7 +293,6 @@ export default function Home() {
               <p className="text-xs sm:text-sm text-neutral-400 leading-relaxed">Access institutional-grade structural analysis, directional bias, and key invalidation zones before executing your own setups.</p>
             </div>
 
-            {/* 6. MT5 Data Sync */}
             <div className="bg-[#080808] border border-neutral-800/60 rounded-2xl p-6 sm:p-7 hover:border-neutral-700 transition-all duration-300 shadow-lg shadow-black/20">
               <Workflow className="w-6 h-6 sm:w-7 sm:h-7 text-blue-500 mb-4 sm:mb-5" />
               <div className="mb-3">
@@ -734,7 +728,7 @@ export default function Home() {
         </div>
       </footer>
 
-{/* 🚨 NEW: Institutional Toast Popup */}
+      {/* 🚨 THE INSTITUTIONAL TOAST POPUP */}
       {showBootcampPopup && (
         <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] w-[calc(100%-2rem)] sm:w-[340px] animate-in fade-in duration-300">
           <div className="bg-[#050505] border border-white/[0.15] p-5 shadow-2xl relative">
@@ -754,12 +748,12 @@ export default function Home() {
             </p>
             
             <Link href="/program/bootcamp" className="inline-flex items-center justify-center w-full border border-white/[0.15] bg-[#0a0a0a] hover:bg-white text-neutral-300 hover:text-black py-2 text-[10px] font-bold uppercase tracking-widest transition-colors">
-              View Program Details
+              View Access Protocol
             </Link>
           </div>
         </div>
       )}
-      
+
     </div>
   )
 }
