@@ -1084,7 +1084,7 @@ export default function DeskClient() {
             {/* The Colored Top Accent */}
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-blue-500/40 to-transparent z-10"></div>
             
-            <div className="h-12 border-b border-white/[0.08] flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
+           <div className="h-12 border-b border-white/[0.08] flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
               <div className="flex items-center gap-4">
                 <h2 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
                   <Crosshair size={14} className="text-blue-500" /> Today's Focus
@@ -1098,12 +1098,16 @@ export default function DeskClient() {
                   </span>
                 )}
               </div>
-              <button 
-                onClick={() => setIsVaultOpen(!isVaultOpen)} 
-                className="hidden lg:block text-neutral-500 hover:text-white p-1.5 transition-colors"
-              >
-                <Menu size={16} />
-              </button>
+              
+              {/* Only show here if the Vault is CLOSED */}
+              {!isVaultOpen && (
+                <button 
+                  onClick={() => setIsVaultOpen(true)} 
+                  className="hidden lg:block text-neutral-500 hover:text-white p-1.5 transition-colors"
+                >
+                  <Menu size={16} />
+                </button>
+              )}
             </div>
 
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
@@ -1330,9 +1334,27 @@ export default function DeskClient() {
         <div className={`hidden lg:flex fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-[#0a0a0a] border border-white/[0.08] lg:rounded-xl shadow-2xl transition-all duration-300 flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[350px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-purple-500/40 to-transparent z-10"></div>
           
-          <div className="h-14 lg:h-12 border-b border-white/[0.08] flex items-center justify-between px-4 shrink-0 text-white bg-[#0a0a0a]">
-            <h2 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-purple-500" /> Weekly Vault <span className="text-[9px] text-neutral-600 font-mono ml-1 opacity-70">[V]</span></h2>
-            <button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-neutral-500 hover:text-white p-1"><X size={18} /></button>
+<div className="h-14 lg:h-12 border-b border-white/[0.08] flex items-center justify-between px-4 shrink-0 text-white bg-[#0a0a0a]">
+            <h2 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
+              <UploadCloud size={14} className="text-purple-500" /> Weekly Vault <span className="text-[9px] text-neutral-600 font-mono ml-1 opacity-70">[V]</span>
+            </h2>
+            
+            <div className="flex items-center gap-2">
+              {/* Mobile Close Button (X) */}
+              <button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-neutral-500 hover:text-white p-1">
+                <X size={18} />
+              </button>
+              
+              {/* Desktop Close Button (Menu) - Appears when Vault is OPEN */}
+              {isVaultOpen && (
+                <button 
+                  onClick={() => setIsVaultOpen(false)} 
+                  className="hidden lg:block text-neutral-500 hover:text-white p-1.5 transition-colors"
+                >
+                  <Menu size={16} />
+                </button>
+              )}
+            </div>
           </div>
           
           {/* LEVEL 2 INSET: Vault List */}
