@@ -32,6 +32,16 @@ type DraftSetup = {
   notes: string;
 }
 
+// Helper for institutional ticker display
+const formatTicker = (symbol: string) => {
+  const cleanSymbol = (symbol || '').toUpperCase().trim()
+  const isStandardPair = cleanSymbol.length === 6
+  if (isStandardPair) {
+    return <><span className="text-white">{cleanSymbol.substring(0,3)}</span><span className="text-neutral-500">{cleanSymbol.substring(3,6)}</span></>
+  }
+  return <span className="text-white">{cleanSymbol}</span>
+}
+
 // --- MT5 SYNC MODAL ---
 function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm, displayDirection }: { isOpen: boolean, onClose: () => void, file: File | null, pendingLogs: any[], onConfirm: (matches: any[]) => void, displayDirection: (d: string | null | undefined) => string }) {
   const [offsetHours, setOffsetHours] = useState(0)
@@ -132,53 +142,53 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm, displayDi
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4">
-      <div className="bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl w-full max-w-3xl flex flex-col h-[80vh]">
-        <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#050505]/90 backdrop-blur-sm p-4">
+      <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl shadow-2xl w-full max-w-3xl flex flex-col h-[80vh]">
+        <div className="p-4 border-b border-white/[0.05] flex justify-between items-center bg-white/[0.02]">
           <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
             <DownloadCloud size={16} className="text-blue-500" /> MT5 Data Staging
           </h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white"><X size={18}/></button>
+          <button onClick={onClose} className="text-neutral-500 hover:text-white"><X size={18}/></button>
         </div>
-        <div className="p-4 border-b border-zinc-800 bg-black flex items-center justify-between sm:justify-start gap-4">
+        <div className="p-4 border-b border-white/[0.05] bg-[#050505] flex items-center justify-between sm:justify-start gap-4">
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Broker Timezone Offset</span>
-            <span className="text-[9px] text-zinc-600 hidden sm:block">Adjust to align MT5 time with your local time.</span>
+            <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Broker Timezone Offset</span>
+            <span className="text-[9px] text-neutral-600 hidden sm:block">Adjust to align MT5 time with your local time.</span>
           </div>
-          <div className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
-            <button onClick={() => setOffsetHours(p => p - 1)} className="px-3 py-1 hover:bg-zinc-800 rounded text-zinc-300 font-mono">-</button>
+          <div className="flex items-center gap-2 bg-[#0a0a0a] border border-white/[0.05] rounded-lg p-1">
+            <button onClick={() => setOffsetHours(p => p - 1)} className="px-3 py-1 hover:bg-white/[0.05] rounded text-neutral-300 font-mono">-</button>
             <span className="font-mono text-sm font-bold w-8 text-center text-white">{offsetHours > 0 ? `+${offsetHours}` : offsetHours}</span>
-            <button onClick={() => setOffsetHours(p => p + 1)} className="px-3 py-1 hover:bg-zinc-800 rounded text-zinc-300 font-mono">+</button>
+            <button onClick={() => setOffsetHours(p => p + 1)} className="px-3 py-1 hover:bg-white/[0.05] rounded text-neutral-300 font-mono">+</button>
           </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-black">
+        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-[#050505]">
           {isParsing ? (
-            <div className="flex items-center justify-center h-full text-zinc-500 text-sm uppercase tracking-widest font-bold">Parsing MT5 History...</div>
+            <div className="flex items-center justify-center h-full text-neutral-500 text-sm uppercase tracking-widest font-bold">Parsing MT5 History...</div>
           ) : (
             <div className="flex flex-col gap-3">
               {matches.map((m, i) => (
-                <div key={i} className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-center bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                  <div className="flex-1 w-full flex flex-col p-3 bg-zinc-900/30 rounded-lg border border-zinc-800/50">
-                    <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">Logged Reality</span>
+                <div key={i} className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-center bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-3">
+                  <div className="flex-1 w-full flex flex-col p-3 bg-white/[0.02] rounded-lg border border-white/[0.02]">
+                    <span className="text-[9px] font-bold uppercase text-neutral-500 tracking-widest mb-1">Logged Reality</span>
                     <div className="flex items-center gap-2">
-                      <span className="font-black text-white">{m.log.symbol}</span>
+                      <span className="font-mono text-base font-bold tracking-tight">{formatTicker(m.log.symbol)}</span>
                       <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${m.log.direction === 'LONG' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{displayDirection(m.log.direction)}</span>
                     </div>
-                    <span className="text-[10px] text-zinc-400 mt-1">{new Date(m.log.created_at).toLocaleTimeString()}</span>
+                    <span className="text-[10px] text-neutral-400 mt-1">{new Date(m.log.created_at).toLocaleTimeString()}</span>
                   </div>
-                  <ArrowRight size={16} className="text-zinc-600 hidden sm:block rotate-90 sm:rotate-0" />
-                  <div className={`flex-1 w-full flex flex-col p-3 rounded-lg border ${m.match ? 'bg-blue-500/5 border-blue-500/30' : 'bg-zinc-900/30 border-dashed border-zinc-800'}`}>
-                    <span className="text-[9px] font-bold uppercase text-zinc-500 tracking-widest mb-1">MT5 Broker Data</span>
+                  <ArrowRight size={16} className="text-neutral-600 hidden sm:block rotate-90 sm:rotate-0" />
+                  <div className={`flex-1 w-full flex flex-col p-3 rounded-lg border ${m.match ? 'bg-blue-500/5 border-blue-500/30' : 'bg-white/[0.02] border-dashed border-white/[0.05]'}`}>
+                    <span className="text-[9px] font-bold uppercase text-neutral-500 tracking-widest mb-1">MT5 Broker Data</span>
                     {m.match ? (
                       <>
                         <div className="flex items-center justify-between">
-                          <span className="font-black text-white">{m.match.symbol}</span>
+                          <span className="font-mono text-base font-bold tracking-tight">{formatTicker(m.match.symbol)}</span>
                           <span className={`text-xs font-mono font-bold ${m.match.profit > 0 ? 'text-emerald-400' : 'text-red-400'}`}>${m.match.profit.toFixed(2)}</span>
                         </div>
-                        <span className="text-[10px] text-zinc-400 mt-1">Ticket: {m.match.ticket} • Auto: {m.match.outcome}</span>
+                        <span className="text-[10px] text-neutral-400 mt-1">Ticket: {m.match.ticket} • Auto: {m.match.outcome}</span>
                       </>
                     ) : (
-                      <span className="text-xs font-bold text-zinc-600 mt-1">No Match Found</span>
+                      <span className="text-xs font-bold text-neutral-600 mt-1">No Match Found</span>
                     )}
                   </div>
                 </div>
@@ -186,8 +196,8 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm, displayDi
             </div>
           )}
         </div>
-        <div className="p-4 border-t border-zinc-800 bg-zinc-900/50 flex justify-end">
-          <button onClick={() => { onConfirm(matches); onClose(); }} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold uppercase tracking-widest rounded-lg transition-colors flex items-center gap-2"><Check size={14} /> Sync Matches</button>
+        <div className="p-4 border-t border-white/[0.05] bg-white/[0.02] flex justify-end">
+          <button onClick={() => { onConfirm(matches); onClose(); }} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest rounded transition-colors flex items-center gap-2"><Check size={14} /> Sync Matches</button>
         </div>
       </div>
     </div>
@@ -302,86 +312,86 @@ function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpe
 
   return (
     <>
-      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleBackdropClick}>
-        <div className="w-full max-w-4xl bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px] relative" onClick={e => e.stopPropagation()}>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#050505]/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleBackdropClick}>
+        <div className="w-full max-w-4xl bg-[#0a0a0a] border border-white/[0.05] rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px] relative" onClick={e => e.stopPropagation()}>
           {isDragging && (
             <div className="absolute inset-0 z-50 bg-purple-500/10 border-4 border-purple-500/50 border-dashed rounded-xl flex items-center justify-center pointer-events-none backdrop-blur-sm m-2">
-              <div className="bg-black/90 px-8 py-6 rounded-2xl flex flex-col items-center shadow-2xl">
+              <div className="bg-[#050505]/90 px-8 py-6 rounded-xl flex flex-col items-center shadow-2xl">
                 <UploadCloud size={48} className="text-purple-500 mb-3 animate-bounce" />
-                <p className="text-white font-black text-xl tracking-widest uppercase">Drop Images to Stage</p>
+                <p className="text-white font-mono text-lg tracking-widest uppercase">Drop Images to Stage</p>
               </div>
             </div>
           )}
-          <div className="flex items-center justify-between p-4 border-b border-zinc-800/50 bg-zinc-900/50 shrink-0">
-            <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2"><UploadCloud size={16} className="text-purple-500" /> Vault Upload</h2>
-            <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors" disabled={isUploading}><X size={18} /></button>
+          <div className="flex items-center justify-between p-4 border-b border-white/[0.05] bg-white/[0.02] shrink-0">
+            <h2 className="text-sm font-bold text-neutral-200 uppercase tracking-widest flex items-center gap-2"><UploadCloud size={16} className="text-purple-500" /> Vault Upload</h2>
+            <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors" disabled={isUploading}><X size={18} /></button>
           </div>
           <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
-            <div className="w-full lg:w-[200px] border-b lg:border-b-0 lg:border-r border-zinc-800/50 bg-zinc-900/20 flex flex-col shrink-0">
-              <div className="p-3 border-b border-zinc-800/50 flex flex-col gap-2 shrink-0">
-                <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white rounded transition-colors flex items-center justify-center gap-1.5" disabled={isUploading}><Plus size={14} /> Add Images</button>
+            <div className="w-full lg:w-[200px] border-b lg:border-b-0 lg:border-r border-white/[0.05] bg-white/[0.01] flex flex-col shrink-0">
+              <div className="p-3 border-b border-white/[0.05] flex flex-col gap-2 shrink-0">
+                <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-[#050505] border border-white/[0.05] hover:border-white/[0.15] text-[10px] font-bold tracking-widest uppercase text-white rounded transition-colors flex items-center justify-center gap-1.5" disabled={isUploading}><Plus size={14} /> Add Images</button>
                 <div className="flex gap-1">
-                  <input type="text" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddLink()} placeholder="Paste URL..." className="flex-1 min-w-0 bg-zinc-950 border border-zinc-800 rounded px-2 text-[10px] text-zinc-300 outline-none focus:border-purple-500 transition-colors" disabled={isUploading} />
-                  <button onClick={handlePasteClick} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white px-2 rounded transition-colors" disabled={isUploading} title="Paste Text"><Clipboard size={12}/></button>
-                  <button onClick={handleAddLink} className="bg-zinc-800 hover:bg-zinc-700 text-white px-2 rounded transition-colors" disabled={isUploading} title="Add"><Plus size={12}/></button>
+                  <input type="text" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddLink()} placeholder="Paste URL..." className="flex-1 min-w-0 bg-[#050505] border border-white/[0.05] rounded px-2 text-[10px] text-neutral-300 outline-none focus:border-purple-500 transition-colors" disabled={isUploading} />
+                  <button onClick={handlePasteClick} className="bg-[#050505] border border-white/[0.05] hover:border-white/[0.15] text-neutral-400 hover:text-white px-2 rounded transition-colors" disabled={isUploading} title="Paste Text"><Clipboard size={12}/></button>
+                  <button onClick={handleAddLink} className="bg-[#050505] border border-white/[0.05] hover:border-white/[0.15] text-white px-2 rounded transition-colors" disabled={isUploading} title="Add"><Plus size={12}/></button>
                 </div>
                 <input type="file" multiple ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
               </div>
               <div className="flex-1 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-2 flex flex-row lg:flex-col gap-2 text-white">
                 {drafts.map((draft, idx) => (
-                  <div key={draft.id} onClick={() => setActiveIndex(idx)} className={`min-w-[150px] lg:min-w-0 p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-zinc-800 border-zinc-600' : 'bg-zinc-950 border-zinc-800/50 hover:bg-zinc-900'}`}>
-                    <div className="flex-1 min-w-0"><p className="text-xs font-bold truncate">{draft.instrument || 'UNKNOWN'}</p><p className="text-[9px] text-zinc-500 truncate">{draft.direction ? displayDirection(draft.direction) : 'Incomplete'}</p></div>
-                    <button onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} className="text-zinc-600 hover:text-red-400 p-1" disabled={isUploading}><X size={12}/></button>
+                  <div key={draft.id} onClick={() => setActiveIndex(idx)} className={`min-w-[150px] lg:min-w-0 p-2 rounded border cursor-pointer flex items-center gap-2 transition-all ${activeIndex === idx ? 'bg-[#0c0c0c] border-white/[0.15]' : 'bg-[#050505] border-white/[0.02] hover:bg-[#0c0c0c]'}`}>
+                    <div className="flex-1 min-w-0"><p className="text-xs font-mono font-bold tracking-tight truncate">{draft.instrument || 'UNKNOWN'}</p><p className="text-[9px] text-neutral-500 uppercase tracking-widest truncate">{draft.direction ? displayDirection(draft.direction) : 'Incomplete'}</p></div>
+                    <button onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} className="text-neutral-600 hover:text-red-400 p-1" disabled={isUploading}><X size={12}/></button>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="flex-1 flex flex-col bg-zinc-950 min-w-0 overflow-y-auto custom-scrollbar">
+            <div className="flex-1 flex flex-col bg-[#050505] min-w-0 overflow-y-auto custom-scrollbar">
               {drafts.length > 0 && drafts[activeIndex] ? (
                 <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full text-white">
-                  <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-zinc-800 rounded-lg overflow-hidden flex items-center justify-center mb-2 relative" onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}>
-                    {drafts[activeIndex].imageSource ? <img src={drafts[activeIndex].imageSource!} alt="Preview" loading="eager" decoding="async" className="w-full h-full object-contain p-2 cursor-pointer" draggable={false} /> : <ImageIcon className="w-10 h-10 text-zinc-700" />}
+                  <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-white/[0.05] rounded-lg overflow-hidden flex items-center justify-center mb-2 relative" onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}>
+                    {drafts[activeIndex].imageSource ? <img src={drafts[activeIndex].imageSource!} alt="Preview" loading="eager" decoding="async" className="w-full h-full object-contain p-2 cursor-pointer" draggable={false} /> : <ImageIcon className="w-10 h-10 text-neutral-700" />}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Instrument Ticker</label>
-                      <input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-colors uppercase font-bold" disabled={isUploading}/>
+                      <label className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Instrument Ticker</label>
+                      <input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-lg px-3 py-2 text-sm text-neutral-200 outline-none focus:border-white/[0.15] transition-colors uppercase font-mono tracking-tight" disabled={isUploading}/>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Macro Bias</label>
+                      <label className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Macro Bias</label>
                       <div className="flex gap-2">
-                        <button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>{displayDirection('LONG')}</button>
-                        <button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-black border-zinc-800 text-zinc-500'}`}>{displayDirection('SHORT')}</button>
+                        <button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded text-[10px] uppercase tracking-widest font-bold transition-all border ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-[#0a0a0a] border-white/[0.05] text-neutral-500 hover:border-white/[0.15]'}`}>{displayDirection('LONG')}</button>
+                        <button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded text-[10px] uppercase tracking-widest font-bold transition-all border ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-[#0a0a0a] border-white/[0.05] text-neutral-500 hover:border-white/[0.15]'}`}>{displayDirection('SHORT')}</button>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Playbook & Catalysts</label>
-                    <select onChange={(e) => { if (e.target.value) { const currentNotes = drafts[activeIndex].notes; updateActiveDraft('notes', currentNotes ? `${currentNotes}\n[${e.target.value}]` : `[${e.target.value}]`); e.target.value = ""; } }} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500" disabled={isUploading}>
+                    <label className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Playbook & Catalysts</label>
+                    <select onChange={(e) => { if (e.target.value) { const currentNotes = drafts[activeIndex].notes; updateActiveDraft('notes', currentNotes ? `${currentNotes}\n[${e.target.value}]` : `[${e.target.value}]`); e.target.value = ""; } }} className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded-lg px-3 py-2 text-sm text-neutral-200 outline-none focus:border-white/[0.15]" disabled={isUploading}>
                       <option value="">Insert Tag...</option>
                       <optgroup label="Playbooks">{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</optgroup>
                       <optgroup label="Perfect Catalysts">{DEFAULT_PERFECT_CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}</optgroup>
                     </select>
                   </div>
                   <div className="flex flex-col gap-2 flex-1 mt-2">
-                    <label className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Structural Thesis</label>
-                    <textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 outline-none focus:border-purple-500 transition-colors resize-none custom-scrollbar" disabled={isUploading}/>
+                    <label className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Structural Thesis</label>
+                    <textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-[#0a0a0a] border border-white/[0.05] rounded-lg px-3 py-2 text-sm text-neutral-200 outline-none focus:border-white/[0.15] transition-colors resize-none custom-scrollbar font-sans" disabled={isUploading}/>
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 p-6"><UploadCloud size={40} className="mb-4 opacity-50" /><p className="text-sm font-medium text-center">Drag & Drop images anywhere<br/><span className="text-[10px] opacity-70">or use Ctrl+V to paste a screenshot</span></p></div>
+                <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 p-6"><UploadCloud size={40} className="mb-4 opacity-50 stroke-1" /><p className="text-xs font-mono text-center">Drag & Drop images anywhere<br/><span className="text-[10px] opacity-70 font-sans tracking-widest uppercase">or use Ctrl+V to paste a screenshot</span></p></div>
               )}
             </div>
           </div>
-          <div className="p-4 border-t border-zinc-800/50 bg-zinc-900/50 flex justify-between items-center shrink-0">
-            <span className="text-xs font-medium text-zinc-500">{drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged</span>
-            <button onClick={handleSaveAll} disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction) || isUploading} className="px-6 py-2 rounded-lg bg-purple-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-purple-500 transition-colors disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-500">{isUploading ? 'Saving...' : 'Save to Vault'}</button>
+          <div className="p-4 border-t border-white/[0.05] bg-white/[0.02] flex justify-between items-center shrink-0">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">{drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged</span>
+            <button onClick={handleSaveAll} disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction) || isUploading} className="px-6 py-2 rounded bg-white text-black text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{isUploading ? 'Saving...' : 'Save to Vault'}</button>
           </div>
         </div>
       </div>
       {isPeeking && drafts.length > 0 && drafts[activeIndex]?.imageSource && (
-        <div className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 pointer-events-none animate-in fade-in duration-150">
-          <img src={drafts[activeIndex].imageSource!} alt="Peek" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+        <div className="fixed inset-0 z-[9999] bg-[#050505]/95 flex items-center justify-center p-4 sm:p-8 pointer-events-none animate-in fade-in duration-150">
+          <img src={drafts[activeIndex].imageSource!} alt="Peek" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" />
         </div>
       )}
     </>
@@ -393,22 +403,22 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   const editor = useEditor({
     extensions: [StarterKit],
     content: activeSetup?.notes || '',
-    editorProps: { attributes: { class: 'flex-1 w-full bg-transparent border-none focus:outline-none text-xs text-zinc-300 leading-relaxed font-medium custom-scrollbar overflow-y-auto min-h-0' } },
+    editorProps: { attributes: { class: 'flex-1 w-full bg-transparent border-none focus:outline-none text-xs text-neutral-300 leading-relaxed font-sans custom-scrollbar overflow-y-auto min-h-0' } },
     onUpdate: ({ editor }) => { if (activeSetup) onUpdate(activeSetup.id, editor.getHTML()) },
   })
 
   useEffect(() => { if (editor && activeSetup && editor.getHTML() !== activeSetup.notes) editor.commands.setContent(activeSetup.notes || '') }, [activeSetup?.id, editor])
 
-  if (!activeSetup) return <div className="w-full h-full flex items-center justify-center text-center"><p className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">No active notes</p></div>;
+  if (!activeSetup) return <div className="w-full h-full flex items-center justify-center text-center"><p className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest">No active notes</p></div>;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden tiptap-wrapper">
-      <div className="flex items-center gap-1 pb-2 mb-2 border-b border-zinc-800/60 shrink-0">
-        <button onClick={() => editor?.chain().focus().toggleBold().run()} className={`p-1.5 rounded transition-colors ${editor?.isActive('bold') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}><Bold size={14} /></button>
-        <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={`p-1.5 rounded transition-colors ${editor?.isActive('bulletList') ? 'bg-zinc-800 text-white' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}><List size={14} /></button>
+      <div className="flex items-center gap-1 pb-2 mb-2 border-b border-white/[0.05] shrink-0">
+        <button onClick={() => editor?.chain().focus().toggleBold().run()} className={`p-1.5 rounded transition-colors ${editor?.isActive('bold') ? 'bg-white/[0.1] text-white' : 'text-neutral-500 hover:text-white hover:bg-white/[0.05]'}`}><Bold size={14} /></button>
+        <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={`p-1.5 rounded transition-colors ${editor?.isActive('bulletList') ? 'bg-white/[0.1] text-white' : 'text-neutral-500 hover:text-white hover:bg-white/[0.05]'}`}><List size={14} /></button>
       </div>
       <EditorContent editor={editor} className="flex-1 flex flex-col min-h-0 overflow-hidden" />
-      <style dangerouslySetInnerHTML={{__html: `.tiptap-wrapper .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; } .tiptap-wrapper .ProseMirror li { margin-bottom: 0.25rem; } .tiptap-wrapper .ProseMirror b, .tiptap-wrapper .ProseMirror strong { color: #f4f4f5; font-weight: 800; } .tiptap-wrapper .ProseMirror p.is-editor-empty:first-child::before { content: "Type structural notes here..."; color: #52525b; float: left; height: 0; pointer-events: none; }`}} />
+      <style dangerouslySetInnerHTML={{__html: `.tiptap-wrapper .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; } .tiptap-wrapper .ProseMirror li { margin-bottom: 0.25rem; } .tiptap-wrapper .ProseMirror b, .tiptap-wrapper .ProseMirror strong { color: #ffffff; font-weight: 700; } .tiptap-wrapper .ProseMirror p.is-editor-empty:first-child::before { content: "Type structural notes here..."; color: #52525b; float: left; height: 0; pointer-events: none; }`}} />
     </div>
   )
 }
@@ -462,44 +472,44 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
   const isMt5Synced = trade.outcome && trade.rr !== undefined
 
   return (
-    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col gap-4 shadow-sm shrink-0 hover:border-zinc-700 transition-colors">
-      <div className="flex justify-between items-center border-b border-zinc-800/50 pb-3">
+    <div className="bg-[#050505] border border-white/[0.04] rounded-xl p-4 flex flex-col gap-4 shadow-sm shrink-0 hover:border-white/[0.15] transition-colors">
+      <div className="flex justify-between items-center border-b border-white/[0.04] pb-3">
         <div className="flex items-center gap-3">
-          <span className="text-[13px] font-black text-white">{trade.symbol}</span>
+          <span className="text-[13px] font-mono font-bold tracking-tight text-white">{formatTicker(trade.symbol)}</span>
           <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>{displayDirection(trade.direction)}</span>
-          {trade.reason && <span className="text-[10px] text-zinc-400 font-medium">• {trade.reason.replace(/\n/g, ', ')}</span>}
+          {trade.reason && <span className="text-[10px] text-neutral-500 font-sans truncate max-w-[150px] sm:max-w-none">• {trade.reason.replace(/\n/g, ', ')}</span>}
           {isMt5Synced && <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded ml-2 flex items-center gap-1"><DownloadCloud size={10}/> MT5 Synced</span>}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-zinc-500 hidden sm:block">{trade.day}</span>
+          <span className="text-[10px] font-bold text-neutral-500 hidden sm:block uppercase tracking-widest">{trade.day}</span>
           <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{trade.execution}</span>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <select value={outcome} onChange={e => setOutcome(e.target.value)} onWheel={handleWheel} className={`w-full sm:w-28 bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-blue-500 cursor-ns-resize`} title="Scroll to change">
+        <select value={outcome} onChange={e => setOutcome(e.target.value)} onWheel={handleWheel} className={`w-full sm:w-28 bg-[#0a0a0a] border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-white/[0.05] text-neutral-300'} rounded px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-white/[0.15] cursor-ns-resize`} title="Scroll to change">
           <option value="">Outcome</option><option value="TP">Hit TP</option><option value="SL">Hit SL</option><option value="BE">Break Even</option><option value="HOLD">Hold (Carry)</option>
         </select>
         
         {!showHoldConfirm && (
           <>
             <div className="relative w-full sm:w-24 shrink-0">
-              <input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className={`w-full bg-black border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-zinc-800 text-zinc-300'} rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-blue-500`} />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-zinc-500 uppercase">RR</span>
+              <input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className={`w-full bg-[#0a0a0a] border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-white/[0.05] text-neutral-300'} rounded pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-white/[0.15]`} />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-neutral-500 uppercase tracking-widest">RR</span>
             </div>
-            <div className="relative flex-1 flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1 pr-2 focus-within:border-blue-500 transition-all min-w-0">
+            <div className="relative flex-1 flex items-center gap-1 bg-[#0a0a0a] border border-white/[0.05] rounded p-1 pr-2 focus-within:border-white/[0.15] transition-all min-w-0">
                {afterPreview ? (
                  <div className="flex-1 flex items-center gap-2 pl-2 overflow-hidden">
-                   <img src={afterPreview} loading="eager" decoding="async" className="h-6 w-6 object-cover rounded border border-zinc-700 shrink-0" />
-                   <span className="text-[10px] font-bold text-zinc-400 truncate tracking-widest uppercase">Image Attached</span>
-                   <button onClick={() => { setAfterFile(null); setAfterPreview(null); }} className="ml-auto text-zinc-500 hover:text-red-400 p-1"><X size={12}/></button>
+                   <img src={afterPreview} loading="eager" decoding="async" className="h-6 w-6 object-cover rounded border border-white/[0.1] shrink-0" />
+                   <span className="text-[10px] font-bold text-neutral-400 truncate tracking-widest uppercase">Image Attached</span>
+                   <button onClick={() => { setAfterFile(null); setAfterPreview(null); }} className="ml-auto text-neutral-500 hover:text-red-400 p-1"><X size={12}/></button>
                  </div>
                ) : (
                  <>
-                   <LinkIcon size={12} className="text-zinc-500 ml-2 shrink-0" />
-                   <input type="text" value={afterInput} onChange={e => setAfterInput(e.target.value)} placeholder="TV URL or Paste Image..." className="w-full bg-transparent border-none text-[10px] font-bold text-zinc-300 outline-none placeholder:text-zinc-600 px-2" />
-                   <button onClick={handlePaste} className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" title="Paste URL or Image"><Clipboard size={12}/></button>
-                   <button onClick={() => fileInputRef.current?.click()} className="p-1 hover:bg-zinc-800 rounded text-zinc-400 hover:text-white transition-colors shrink-0" title="Upload Image"><ImageIcon size={12}/></button>
+                   <LinkIcon size={12} className="text-neutral-500 ml-2 shrink-0" />
+                   <input type="text" value={afterInput} onChange={e => setAfterInput(e.target.value)} placeholder="TV URL or Paste Image..." className="w-full bg-transparent border-none text-[10px] font-bold text-neutral-300 outline-none placeholder:text-neutral-600 px-2" />
+                   <button onClick={handlePaste} className="p-1 hover:bg-white/[0.05] rounded text-neutral-400 hover:text-white transition-colors shrink-0" title="Paste URL or Image"><Clipboard size={12}/></button>
+                   <button onClick={() => fileInputRef.current?.click()} className="p-1 hover:bg-white/[0.05] rounded text-neutral-400 hover:text-white transition-colors shrink-0" title="Upload Image"><ImageIcon size={12}/></button>
                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                  </>
                )}
@@ -510,12 +520,12 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
         {showHoldConfirm ? (
           <div className="flex items-center justify-end gap-2 w-full sm:w-auto flex-1 animate-in fade-in zoom-in-95 duration-200">
             <span className="text-[10px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden lg:block truncate">Holding or avoiding loss?</span>
-            <button onClick={() => setShowHoldConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors whitespace-nowrap shrink-0">Cancel</button>
-            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors shadow-[0_0_15px_rgba(217,119,6,0.3)] whitespace-nowrap shrink-0">{isSaving ? '...' : 'Confirm'}</button>
+            <button onClick={() => setShowHoldConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-[#0a0a0a] hover:bg-white/[0.05] text-neutral-400 text-[10px] font-bold uppercase tracking-widest rounded transition-colors whitespace-nowrap shrink-0 border border-white/[0.05]">Cancel</button>
+            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded transition-colors whitespace-nowrap shrink-0">{isSaving ? '...' : 'Confirm'}</button>
           </div>
         ) : (
           <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
-            <button disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} className="w-full sm:w-auto px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-zinc-800 rounded-lg transition-colors shrink-0 whitespace-nowrap">{isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}</button>
+            <button disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} className="w-full sm:w-auto px-6 py-2 bg-white text-black hover:bg-neutral-200 text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-neutral-800 disabled:text-neutral-500 rounded transition-colors shrink-0 whitespace-nowrap">{isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}</button>
           </div>
         )}
       </div>
@@ -534,28 +544,28 @@ function CatalystSettingsModal({ isOpen, onClose, perfect, setPerfect, imperfect
   const addImperfect = () => { if (newImperfect.trim() && !imperfect.includes(newImperfect.trim())) { setImperfect([...imperfect, newImperfect.trim()]); setNewImperfect(''); } }
 
   return (
-    <div className="fixed inset-0 z-[300] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-zinc-950 border border-zinc-800 rounded-xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="p-4 border-b border-zinc-800 flex justify-between items-center bg-zinc-900/50">
-          <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2"><Settings size={16} className="text-zinc-400" /> Catalyst Settings</h2>
-          <button onClick={onClose} className="text-zinc-500 hover:text-white"><X size={18} /></button>
+    <div className="fixed inset-0 z-[300] bg-[#050505]/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="p-4 border-b border-white/[0.05] flex justify-between items-center bg-white/[0.02]">
+          <h2 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2"><Settings size={14} className="text-neutral-400" /> Catalyst Settings</h2>
+          <button onClick={onClose} className="text-neutral-500 hover:text-white"><X size={16} /></button>
         </div>
-        <div className="p-6 flex flex-col gap-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+        <div className="p-6 flex flex-col gap-8 max-h-[60vh] overflow-y-auto custom-scrollbar bg-[#050505]">
           <div>
-            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3 border-b border-emerald-500/20 pb-1">Perfect Execution Catalysts</h3>
+            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3 border-b border-white/[0.05] pb-2">Perfect Execution Catalysts</h3>
             <div className="flex gap-2 mb-3">
-              <input type="text" value={newPerfect} onChange={e => setNewPerfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPerfect()} className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-emerald-500 transition-colors" placeholder="Add new catalyst..." />
-              <button onClick={addPerfect} className="px-3 bg-emerald-600 hover:bg-emerald-500 rounded text-white transition-colors"><Plus size={14}/></button>
+              <input type="text" value={newPerfect} onChange={e => setNewPerfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPerfect()} className="flex-1 bg-[#0a0a0a] border border-white/[0.05] rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-white/[0.15] transition-colors" placeholder="Add new catalyst..." />
+              <button onClick={addPerfect} className="px-3 bg-white/[0.05] border border-white/[0.05] hover:bg-white/[0.1] rounded text-white transition-colors"><Plus size={14}/></button>
             </div>
-            <div className="flex flex-wrap gap-2">{perfect.map((c: string) => (<span key={c} className="text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded flex items-center gap-1.5">{c} <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setPerfect(perfect.filter((item: string) => item !== c))}/></span>))}</div>
+            <div className="flex flex-wrap gap-2">{perfect.map((c: string) => (<span key={c} className="text-[10px] font-bold bg-[#0a0a0a] text-neutral-300 border border-white/[0.05] px-2 py-1 rounded flex items-center gap-1.5">{c} <X size={10} className="cursor-pointer hover:text-red-400 transition-colors" onClick={() => setPerfect(perfect.filter((item: string) => item !== c))}/></span>))}</div>
           </div>
           <div>
-            <h3 className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3 border-b border-red-500/20 pb-1">Imperfect Execution Catalysts</h3>
+            <h3 className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3 border-b border-white/[0.05] pb-2">Imperfect Execution Catalysts</h3>
             <div className="flex gap-2 mb-3">
-              <input type="text" value={newImperfect} onChange={e => setNewImperfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addImperfect()} className="flex-1 bg-zinc-900 border border-zinc-800 rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-red-500 transition-colors" placeholder="Add new catalyst..." />
-              <button onClick={addImperfect} className="px-3 bg-red-600 hover:bg-red-500 rounded text-white transition-colors"><Plus size={14}/></button>
+              <input type="text" value={newImperfect} onChange={e => setNewImperfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addImperfect()} className="flex-1 bg-[#0a0a0a] border border-white/[0.05] rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-white/[0.15] transition-colors" placeholder="Add new catalyst..." />
+              <button onClick={addImperfect} className="px-3 bg-white/[0.05] border border-white/[0.05] hover:bg-white/[0.1] rounded text-white transition-colors"><Plus size={14}/></button>
             </div>
-            <div className="flex flex-wrap gap-2">{imperfect.map((c: string) => (<span key={c} className="text-[10px] font-bold bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-1 rounded flex items-center gap-1.5">{c} <X size={10} className="cursor-pointer hover:text-white transition-colors" onClick={() => setImperfect(imperfect.filter((item: string) => item !== c))}/></span>))}</div>
+            <div className="flex flex-wrap gap-2">{imperfect.map((c: string) => (<span key={c} className="text-[10px] font-bold bg-[#0a0a0a] text-neutral-300 border border-white/[0.05] px-2 py-1 rounded flex items-center gap-1.5">{c} <X size={10} className="cursor-pointer hover:text-red-400 transition-colors" onClick={() => setImperfect(imperfect.filter((item: string) => item !== c))}/></span>))}</div>
           </div>
         </div>
       </div>
@@ -754,7 +764,6 @@ export default function DeskClient() {
       
       setUser(user)
 
-      // 🚨 INJECTED LOGIC 1: Admin Bypass Re-Applied
       const { data: profile } = await supabase.from('profiles').select('plan, role').eq('id', user.id).single();
       const isProUser = profile?.plan === 'pro' || profile?.role === 'admin';
       setIsPro(isProUser);
@@ -765,7 +774,6 @@ export default function DeskClient() {
       if (user.user_metadata?.desk_imperfect_catalysts) setImperfectCatalysts(user.user_metadata.desk_imperfect_catalysts);
       else { const saved = localStorage.getItem('desk_imperfect_catalysts'); if (saved) setImperfectCatalysts(JSON.parse(saved)); }
 
-      // 🚨 MOCK DATA INJECTION FOR DEMO USERS
       if (!isProUser) {
          const demoNow = Date.now();
          setSetups(DEMO_SETUPS.map(s => ({
@@ -780,7 +788,7 @@ export default function DeskClient() {
          })));
          setExecutedSymbols(['GBPUSD']);
          setTradesTakenToday(1);
-         return; // Skip real database fetching
+         return; 
       }
 
       const { data: logsData } = await supabase.from('user_desk_logs').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
@@ -842,10 +850,8 @@ export default function DeskClient() {
     else if (todaySetups.length === 0) { setActiveTodayId(null); if(logPair) { setLogPair(''); setLogSetupId(null); } }
   }, [todaySetups.length, activeTodayId])
 
-  // 🚨 INJECTED LOGIC 2: Playbook + Alert Error check merged perfectly into your layout
   const handleLockEntry = useCallback(async () => {
     if (tradesTakenToday < 2 && logPair && logDirection && logExecution && user) {
-      // 🚨 DEMO TIER DB INTERCEPT
       if (!isPro) {
         setTradesTakenToday(prev => prev + 1);
         const spoofedNow = getISTDate();
@@ -938,7 +944,6 @@ export default function DeskClient() {
     }
   }, [setups, activeTodayId, user, isPro])
 
-  // 🚨 4. EVENT HANDLERS
   const handleDebriefChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => { setWeeklyDebrief(e.target.value); localStorage.setItem(debriefKey, e.target.value); };
 
   const handleConfirmPush = async () => {
@@ -975,7 +980,6 @@ export default function DeskClient() {
   const handleBulkUpload = async (draftsToSave: any[]) => {
     if (!user) return alert("Authentication Error: No active user session found.")
     
-    // 🚨 DEMO TIER DB INTERCEPT
     if (!isPro) {
        const newFakeSetups = draftsToSave.map(draft => ({
           id: 'demo-' + Math.random(),
@@ -1011,7 +1015,6 @@ export default function DeskClient() {
         imageUrl: d.image_url, isToday: false, addedToTodayAt: null, createdAt: adjustDbToIST(d.created_at).getTime()
       })), ...prev]);
 
-      // --- THE TRIPWIRE: Check if they are supposed to be off the desk ---
       const { data: moduleData } = await supabase
         .from('user_trading_modules')
         .select('status')
@@ -1019,14 +1022,12 @@ export default function DeskClient() {
         .single();
 
       if (moduleData?.status === 'ON_LEAVE') {
-        // Fire silent ping to backend to trigger the Telegram intervention
         fetch('/api/telegram/intervene', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id })
-        }).catch(() => {}); // Catch to prevent UI crash if it fails
+        }).catch(() => {});
       }
-      // --- END TRIPWIRE ---
     }
   }
 
@@ -1068,46 +1069,47 @@ export default function DeskClient() {
 
   return (
     <>
-      <div className="relative flex flex-col lg:flex-row h-[100dvh] lg:min-h-[calc(100vh-70px)] lg:h-[calc(100vh-70px)] w-full bg-black text-zinc-300 font-sans p-2 gap-2 overflow-y-auto lg:overflow-hidden">
+      <div className="relative flex flex-col lg:flex-row h-[100dvh] lg:min-h-[calc(100vh-65px)] lg:h-[calc(100vh-65px)] w-full bg-transparent p-2 md:p-4 max-w-[90rem] mx-auto text-neutral-300 font-sans gap-2 overflow-y-auto lg:overflow-hidden">
         
         {isVaultOpen && (
-          <div className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[40]" onClick={() => setIsVaultOpen(false)} />
+          <div className="lg:hidden fixed inset-0 bg-[#050505]/80 backdrop-blur-sm z-[40]" onClick={() => setIsVaultOpen(false)} />
         )}
 
-        <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 relative">
+        <div className="flex-1 flex flex-col min-w-0 min-h-0 gap-2 md:gap-4 relative">
           
-          <div className="flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative min-h-0 shrink-0 h-full lg:h-[calc(50%-4px)]">
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-600/50 to-transparent"></div>
+          {/* TOP SECTION: Today's Focus & Viewer */}
+          <div className="flex flex-col bg-[#0a0a0a] border border-white/[0.04] rounded-xl overflow-hidden relative min-h-0 shrink-0 h-full lg:h-[calc(50%-8px)]">
             
-            <div className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0">
+            <div className="h-12 border-b border-white/[0.04] flex items-center justify-between px-4 shrink-0">
               <div className="flex items-center gap-4">
-                <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                  <Crosshair size={14} className="text-blue-500" /> Today's Focus
+                <h2 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                  <Crosshair size={14} className="text-white opacity-70" /> Today's Focus
                 </h2>
-                <span className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest bg-black border border-zinc-800 px-2 py-0.5 rounded shadow-inner">
-                  {todaySetups.length} Pairs Locked
+                <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest bg-white/[0.03] border border-white/[0.05] px-2 py-0.5 rounded">
+                  {todaySetups.length} Pairs
                 </span>
                 {!isPro && (
-                  <span className="hidden md:inline-block text-[9px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded tracking-widest uppercase">
+                  <span className="hidden md:inline-block text-[9px] font-bold text-neutral-400 bg-white/[0.03] border border-white/[0.05] px-2 py-0.5 rounded tracking-widest uppercase">
                     Sandbox Mode
                   </span>
                 )}
               </div>
               <button 
                 onClick={() => setIsVaultOpen(!isVaultOpen)} 
-                className="hidden lg:block text-zinc-400 hover:text-white p-1.5 bg-black border border-zinc-800 rounded-md shadow-sm"
+                className="hidden lg:block text-neutral-500 hover:text-white p-1.5 transition-colors"
               >
-                <Menu size={14} />
+                <Menu size={16} />
               </button>
             </div>
 
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
               
-              <div className="order-2 lg:order-1 w-full lg:w-56 shrink-0 flex-1 lg:flex-none border-t lg:border-t-0 lg:border-r border-zinc-800 flex flex-col bg-zinc-950/50 overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white relative">
+              {/* SIDEBAR: Active Pairs */}
+              <div className="order-2 lg:order-1 w-full lg:w-56 shrink-0 flex-1 lg:flex-none border-t lg:border-t-0 lg:border-r border-white/[0.04] flex flex-col bg-[#050505] overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white relative">
                 {todaySetups.length === 0 ? (
-                  <div className="flex-1 flex flex-col items-center justify-center text-zinc-600 text-center p-4">
-                    <Target size={20} className="mb-2 opacity-50" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">No Pairs Selected</span>
+                  <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 text-center p-4">
+                    <Target size={20} className="mb-2 opacity-50 stroke-1" />
+                    <span className="text-[10px] font-mono uppercase tracking-widest">No Pairs Selected</span>
                   </div>
                 ) : (
                   todaySetups.map(setup => {
@@ -1117,35 +1119,35 @@ export default function DeskClient() {
                       <div 
                         key={`today-${setup.id}`} 
                         onClick={() => setActiveTodayId(setup.id)} 
-                        className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-zinc-800 border-zinc-600 shadow-md' : 'bg-black border-zinc-800 hover:bg-zinc-900 hover:border-zinc-700'}`}
+                        className={`p-3 rounded-lg border flex flex-col cursor-pointer transition-all group shrink-0 ${activeTodayId === setup.id ? 'bg-[#0c0c0c] border-white/[0.15] shadow-sm' : 'bg-[#050505] border-white/[0.04] hover:bg-[#0c0c0c] hover:border-white/[0.1]'}`}
                       >
-                        <div className="flex justify-between items-center mb-1">
-                          <span className={`text-sm font-bold tracking-wider ${activeTodayId === setup.id ? 'text-white' : 'text-zinc-400 group-hover:text-zinc-200'}`}>
-                            {setup.symbol}
+                        <div className="flex justify-between items-center mb-2">
+                          <span className={`text-[13px] font-mono font-bold tracking-tight ${activeTodayId === setup.id ? 'text-white' : 'text-neutral-400 group-hover:text-neutral-200'}`}>
+                            {formatTicker(setup.symbol)}
                           </span>
                           <div className="flex items-center gap-1 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
                             {activeTodayId === setup.id && (
-                              <button onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} className="lg:hidden p-1 rounded hover:bg-blue-500/20 text-zinc-400 hover:text-blue-400" title="View Notes">
+                              <button onClick={(e) => { e.stopPropagation(); setIsMobileNotesOpen(true); }} className="lg:hidden p-1 rounded hover:bg-white/[0.1] text-neutral-400 hover:text-white" title="View Notes">
                                 <Info size={14} />
                               </button>
                             )}
                             {!isExecuted && (
-                              <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setLogSetupId(setup.id); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-zinc-500 hover:text-emerald-400" title="Stage Execution">
+                              <button onClick={(e) => { e.stopPropagation(); setLogPair(setup.symbol); setLogDirection(setup.direction); setLogSetupId(setup.id); setIsAuditOpen(true); }} className="hidden lg:block p-1 rounded hover:bg-emerald-500/20 text-neutral-500 hover:text-emerald-400" title="Stage Execution">
                                 <Target size={12} />
                               </button>
                             )}
                             {canRemove && (
-                              <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-zinc-500 hover:text-red-400" title="Remove (1hr limit)">
+                              <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-neutral-500 hover:text-red-400" title="Remove (1hr limit)">
                                 <ArrowLeft size={12} />
                               </button>
                             )}
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5">
-                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border ${setup.direction === 'LONG' ? 'bg-emerald-500/30 text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'bg-red-500/30 text-red-400 bg-red-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-900'}`}>
+                          <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${setup.direction === 'LONG' ? 'text-emerald-400 bg-emerald-500/10' : setup.direction === 'SHORT' ? 'text-red-400 bg-red-500/10' : 'text-neutral-500 bg-white/[0.05]'}`}>
                             {displayDirection(setup.direction)}
                           </span>
-                          {isExecuted && <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20 font-bold uppercase truncate">Executed</span>}
+                          {isExecuted && <span className="text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded font-bold uppercase truncate border border-emerald-500/20">Executed</span>}
                         </div>
                       </div>
                     )
@@ -1153,8 +1155,9 @@ export default function DeskClient() {
                 )}
               </div>
 
+              {/* MAIN VIEWER: Chart */}
               <div 
-                className="order-1 lg:order-2 w-full flex-[1.5] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-black relative shadow-inner overflow-hidden group"
+                className="order-1 lg:order-2 w-full flex-[1.5] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-[#050505] relative overflow-hidden group"
                 onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}
               >
                 {activeSetup?.imageUrl ? (
@@ -1178,37 +1181,38 @@ export default function DeskClient() {
                           alt={activeSetup.symbol} 
                           loading="eager" 
                           decoding="async" 
-                          className="max-w-full max-h-full object-contain rounded-xl border border-zinc-800/60 shadow-2xl cursor-grab active:cursor-grabbing pointer-events-auto" 
+                          className="max-w-full max-h-full object-contain cursor-grab active:cursor-grabbing pointer-events-auto" 
                           draggable={false} 
                         />
                       </TransformComponent>
                     </TransformWrapper>
                     {chartScale !== 1 && (
-                      <button onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }} className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/90 text-white rounded-lg transition-all backdrop-blur-md border border-white/10 shadow-xl opacity-0 group-hover:opacity-100" title="View Full Screen"><Maximize size={16} /></button>
+                      <button onClick={(e) => { e.stopPropagation(); setIsFullScreen(true); }} className="absolute bottom-4 right-4 z-10 p-2.5 bg-[#0a0a0a]/80 hover:bg-[#0a0a0a] text-white rounded transition-all backdrop-blur-md border border-white/[0.05] shadow-xl opacity-0 group-hover:opacity-100" title="View Full Screen"><Maximize size={14} /></button>
                     )}
                   </>
                 ) : (
-                  <div className="flex-1 flex items-center justify-center text-zinc-700 min-h-0"><span className="text-[10px] font-bold uppercase tracking-widest">Select a pair</span></div>
+                  <div className="flex-1 flex items-center justify-center text-neutral-600 min-h-0"><span className="text-[10px] font-mono uppercase tracking-widest">Select a pair</span></div>
                 )}
               </div>
 
-              <div className="hidden lg:flex order-3 w-full lg:w-80 shrink-0 flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-zinc-800 bg-zinc-950/50">
-                <div className="flex-1 bg-black border border-zinc-800 rounded-xl p-4 shadow-inner flex flex-col min-h-0 relative">
+              {/* SIDEBAR: Notes */}
+              <div className="hidden lg:flex order-3 w-full lg:w-80 shrink-0 flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-white/[0.04] bg-[#050505]">
+                <div className="flex-1 bg-[#0a0a0a] border border-white/[0.04] rounded-xl p-4 flex flex-col min-h-0 relative">
                   <RichNotesEditor activeSetup={activeSetup} onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} />
                 </div>
               </div>
             </div>
           </div>
           
-          <div className={`hidden lg:flex flex-col bg-zinc-950 border border-zinc-800 rounded-xl overflow-hidden shadow-2xl relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-4px)]' : 'h-12'}`}>
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-600/50 to-transparent"></div>
-            <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 cursor-pointer hover:bg-zinc-800/40">
-              <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
-                <Activity size={14} className="text-emerald-500" /> Action Logs <span className="text-[10px] text-zinc-600 font-mono ml-1 opacity-70">[A]</span>
+          {/* BOTTOM SECTION: Audit & Execution Logs */}
+          <div className={`hidden lg:flex flex-col bg-[#0a0a0a] border border-white/[0.04] rounded-xl overflow-hidden relative transition-all duration-300 shrink-0 ${isAuditOpen ? 'h-auto lg:h-[calc(50%-8px)]' : 'h-12'}`}>
+            <div onClick={() => setIsAuditOpen(!isAuditOpen)} className="h-12 border-b border-white/[0.04] flex items-center justify-between px-4 shrink-0 cursor-pointer hover:bg-white/[0.02]">
+              <h2 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                <Activity size={14} className="text-white opacity-70" /> Action Logs <span className="text-[9px] text-neutral-600 font-mono ml-1 opacity-70">[A]</span>
               </h2>
-              <button className="text-zinc-500 hover:text-white flex items-center gap-2">
+              <button className="text-neutral-500 hover:text-white flex items-center gap-2 transition-colors">
                 {pendingReconciliation.length > 0 && !isAuditOpen && (
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-zinc-400 bg-black border border-zinc-800 px-2 py-0.5 rounded">{pendingReconciliation.length} Pending</span>
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 bg-white/[0.03] border border-white/[0.05] px-2 py-0.5 rounded">{pendingReconciliation.length} Pending</span>
                 )}
                 {isAuditOpen ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
               </button>
@@ -1216,54 +1220,55 @@ export default function DeskClient() {
 
             <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
               
-              <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-zinc-800 p-4 lg:p-6 flex flex-col items-center justify-center relative bg-zinc-950/50">
-                <div className="w-full max-w-sm flex flex-col gap-3 m-auto shrink-0 text-white">
+              {/* Log Entry Panel */}
+              <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-white/[0.04] p-4 lg:p-6 flex flex-col items-center justify-center relative bg-[#050505]">
+                <div className="w-full max-w-sm flex flex-col gap-4 m-auto shrink-0 text-white">
                   <div className="flex justify-between items-end">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-[13px] font-bold text-zinc-200">Log Execution Reality</h3>
-                      <button onClick={() => setIsCatalystSettingsOpen(true)} className="text-zinc-500 hover:text-white transition-colors" title="Edit Custom Catalysts"><Settings size={12} /></button>
+                      <h3 className="text-[11px] font-bold text-neutral-300 uppercase tracking-widest">Log Execution Reality</h3>
+                      <button onClick={() => setIsCatalystSettingsOpen(true)} className="text-neutral-500 hover:text-white transition-colors" title="Edit Custom Catalysts"><Settings size={12} /></button>
                     </div>
-                    <span className={`text-[9px] font-bold tracking-widest px-2 py-1 rounded bg-black border shadow-inner ${tradesTakenToday >= 2 ? 'border-red-500/50 text-red-400' : 'border-zinc-800 text-zinc-400'}`}>
+                    <span className={`text-[9px] font-bold tracking-widest px-2 py-0.5 rounded border ${tradesTakenToday >= 2 ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-white/[0.03] border-white/[0.05] text-neutral-400'}`}>
                       {tradesTakenToday}/2 TRADES
                     </span>
                   </div>
 
                   {!logPair ? (
-                    <div className="py-2.5 border border-dashed border-zinc-800 rounded-lg flex items-center justify-center bg-black">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Stage a pair from Today's Focus</span>
+                    <div className="py-3 border border-dashed border-white/[0.05] rounded-xl flex items-center justify-center bg-[#0a0a0a]">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">Stage a pair from Today's Focus</span>
                     </div>
                   ) : (
-                    <div className="bg-black border border-zinc-700 rounded-xl p-4 shadow-inner flex flex-col gap-3">
+                    <div className="bg-[#0a0a0a] border border-white/[0.04] rounded-xl p-4 flex flex-col gap-4">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-[16px] font-black text-white tracking-wider">{logPair}</span>
-                        <button onClick={() => { setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); setLogSetupId(null); }} className="text-zinc-500 hover:text-red-400 transition-colors"><X size={14}/></button>
+                        <span className="text-xl font-mono font-bold tracking-tight text-white">{formatTicker(logPair)}</span>
+                        <button onClick={() => { setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); setLogSetupId(null); }} className="text-neutral-500 hover:text-red-400 transition-colors"><X size={16}/></button>
                       </div>
                       
                       <div className="flex gap-3">
                         <div className="flex-[1.5] flex flex-col gap-2">
                           <div className="flex gap-2">
-                            <button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>
+                            <button onClick={() => setLogDirection('LONG')} className={`flex-1 py-2 rounded text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' : 'bg-[#050505] border-white/[0.05] text-neutral-500 hover:border-white/[0.15]'}`}>
                               {displayDirection('LONG')}
                             </button>
-                            <button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-zinc-900 border-zinc-800 text-zinc-500 hover:border-zinc-600'}`}>
+                            <button onClick={() => setLogDirection('SHORT')} className={`flex-1 py-2 rounded text-[10px] font-bold tracking-widest uppercase transition-all border ${logDirection === 'SHORT' ? 'bg-red-500/10 border-red-500/50 text-red-400' : 'bg-[#050505] border-white/[0.05] text-neutral-500 hover:border-white/[0.15]'}`}>
                               {displayDirection('SHORT')}
                             </button>
                           </div>
                           <div className="flex flex-col gap-2 mt-1">
-                            <button onClick={() => setLogExecution('Perfect')} className={`py-2 px-3 border rounded-lg flex items-center justify-between transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}><span className="font-mono text-[10px] opacity-60">[1]</span><span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span><CheckCircle size={13} /></button>
-                            <button onClick={() => setLogExecution('Imperfect')} className={`py-2 px-3 border rounded-lg flex items-center justify-between transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/10 border-red-500 text-red-400 shadow-[0_0_15px_rgba(239,68,68,0.15)]' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}><span className="font-mono text-[10px] opacity-60">[2]</span><span className="text-[9px] font-bold uppercase tracking-widest">Imperfect</span><AlertTriangle size={13} /></button>
+                            <button onClick={() => setLogExecution('Perfect')} className={`py-2 px-3 border rounded flex items-center justify-between transition-all ${logExecution === 'Perfect' ? 'bg-emerald-500/5 border-emerald-500/50 text-emerald-400' : 'bg-[#050505] border-white/[0.05] hover:border-white/[0.15] text-neutral-400'}`}><span className="font-mono text-[9px] opacity-60">[1]</span><span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span><CheckCircle size={12} /></button>
+                            <button onClick={() => setLogExecution('Imperfect')} className={`py-2 px-3 border rounded flex items-center justify-between transition-all ${logExecution === 'Imperfect' ? 'bg-red-500/5 border-red-500/50 text-red-400' : 'bg-[#050505] border-white/[0.05] hover:border-white/[0.15] text-neutral-400'}`}><span className="font-mono text-[9px] opacity-60">[2]</span><span className="text-[9px] font-bold uppercase tracking-widest">Imperfect</span><AlertTriangle size={12} /></button>
                           </div>
                         </div>
                         <div className="flex-[2] flex flex-col gap-2">
-                          <select value="" onChange={(e) => { if (e.target.value) setLogCatalystText(prev => prev ? `${prev}\n[${e.target.value}]` : `[${e.target.value}]`); }} disabled={!logExecution} className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none uppercase focus:border-blue-500 transition-colors">
+                          <select value="" onChange={(e) => { if (e.target.value) setLogCatalystText(prev => prev ? `${prev}\n[${e.target.value}]` : `[${e.target.value}]`); }} disabled={!logExecution} className="w-full bg-[#050505] border border-white/[0.05] rounded px-3 py-2 text-[10px] font-bold text-neutral-300 outline-none uppercase focus:border-white/[0.15] transition-colors">
                             <option value="" disabled>{logExecution ? "Add Tag..." : "Select Execution..."}</option>
                             {activeCatalystList.map((c: string) => <option key={c} value={c}>{c}</option>)}
                           </select>
-                          <textarea value={logCatalystText} onChange={(e) => setLogCatalystText(e.target.value)} placeholder="Select tags above or type manually..." className="w-full flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-[10px] font-bold text-zinc-300 outline-none resize-none custom-scrollbar focus:border-blue-500 transition-colors" />
+                          <textarea value={logCatalystText} onChange={(e) => setLogCatalystText(e.target.value)} placeholder="Select tags above or type manually..." className="w-full flex-1 bg-[#050505] border border-white/[0.05] rounded px-3 py-2 text-[10px] font-sans text-neutral-300 outline-none resize-none custom-scrollbar focus:border-white/[0.15] transition-colors" />
                         </div>
                       </div>
 
-                      <button disabled={!logDirection || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} onClick={handleLockEntry} className={`w-full py-2.5 rounded-lg text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 flex items-center justify-center gap-2 ${isAlreadyLogged ? 'bg-zinc-900 text-zinc-500 border border-zinc-800 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-md disabled:bg-zinc-900 disabled:text-zinc-600 disabled:border disabled:border-zinc-800 disabled:shadow-none'}`}>
+                      <button disabled={!logDirection || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} onClick={handleLockEntry} className={`w-full py-2.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 flex items-center justify-center gap-2 ${isAlreadyLogged ? 'bg-[#050505] text-neutral-600 border border-white/[0.02] cursor-not-allowed' : 'bg-white text-black hover:bg-neutral-200 disabled:bg-neutral-800 disabled:text-neutral-500'}`}>
                         {isAlreadyLogged ? 'Already Logged Today' : <>Lock Entry <span className="font-mono text-[9px] opacity-70">[ENTER]</span></>}
                       </button>
                     </div>
@@ -1271,25 +1276,25 @@ export default function DeskClient() {
                 </div>
               </div>
 
-              <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-black shadow-inner min-h-0 min-w-0 text-white relative">
-                
+              {/* Settlement Queue */}
+              <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-[#0a0a0a] min-h-0 min-w-0 text-white relative">
                 <div className="flex flex-col gap-6">
                   <div>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 shrink-0">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Post-Trade Settlement Queue</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Post-Trade Settlement Queue</span>
                       {currentWeekPending.length > 0 && (
-                        <div onDragOver={e => e.preventDefault()} onDrop={handleMT5Drop} className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 border border-blue-500/20 border-dashed rounded-lg hover:bg-blue-500/10 transition-colors cursor-pointer" onClick={() => mt5InputRef.current?.click()}><DownloadCloud size={14} className="text-blue-500" /><span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Sync MT5 Report</span><input type="file" ref={mt5InputRef} accept=".csv, .htm, .html" className="hidden" onChange={handleMT5Select} /></div>
+                        <div onDragOver={e => e.preventDefault()} onDrop={handleMT5Drop} className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/5 border border-blue-500/20 rounded hover:bg-blue-500/10 transition-colors cursor-pointer" onClick={() => mt5InputRef.current?.click()}><DownloadCloud size={14} className="text-blue-500" /><span className="text-[9px] font-bold uppercase tracking-widest text-blue-400">Sync MT5 Report</span><input type="file" ref={mt5InputRef} accept=".csv, .htm, .html" className="hidden" onChange={handleMT5Select} /></div>
                       )}
                     </div>
                     <div className="flex flex-col gap-2.5">
                       {currentWeekPending.length === 0 && isWeekendNow ? (
-                        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-4 flex flex-col gap-3">
-                           <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><CheckCircle2 size={14}/> Week Cleared</h3>
-                           <textarea value={weeklyDebrief} onChange={handleDebriefChange} placeholder="Log your main behavioral takeaways for the week..." className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-zinc-300 outline-none resize-none min-h-[80px] custom-scrollbar focus:border-emerald-500 transition-colors" />
-                           <p className="text-[9px] text-zinc-500 font-bold uppercase">Vault is unlocked for next week's prep.</p>
+                        <div className="bg-[#050505] border border-white/[0.04] rounded-xl p-4 flex flex-col gap-3">
+                           <h3 className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-2"><CheckCircle2 size={14}/> Week Cleared</h3>
+                           <textarea value={weeklyDebrief} onChange={handleDebriefChange} placeholder="Log your main behavioral takeaways for the week..." className="w-full bg-[#0a0a0a] border border-white/[0.05] rounded px-3 py-2 text-xs text-neutral-300 font-sans outline-none resize-none min-h-[80px] custom-scrollbar focus:border-white/[0.15] transition-colors" />
+                           <p className="text-[9px] text-neutral-500 font-bold uppercase tracking-widest">Vault is unlocked for next week's prep.</p>
                         </div>
                       ) : currentWeekPending.length === 0 ? (
-                        <div className="text-center py-10 bg-zinc-950 border border-dashed border-zinc-800 rounded-xl mx-2"><span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">No pending setups this week</span></div>
+                        <div className="text-center py-10 border border-dashed border-white/[0.05] rounded-xl bg-[#050505] mx-2"><span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">No pending setups this week</span></div>
                       ) : (
                         currentWeekPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} displayDirection={displayDirection} />)
                       )}
@@ -1297,9 +1302,9 @@ export default function DeskClient() {
                   </div>
 
                   {heldOverPending.length > 0 && (
-                    <div className="pt-4 border-t border-zinc-800/50 mt-2">
+                    <div className="pt-4 border-t border-white/[0.05] mt-2">
                       <div className="flex items-center gap-2 mb-4 shrink-0">
-                        <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Legacy / Carried Over</span>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-600">Legacy / Carried Over</span>
                       </div>
                       <div className="flex flex-col gap-2.5 opacity-80 hover:opacity-100 transition-opacity">
                         {heldOverPending.map((trade) => <ReconciliationItem key={trade.id} trade={trade} user={user} onSave={handleSaveReconciliation} displayDirection={displayDirection} />)}
@@ -1307,39 +1312,38 @@ export default function DeskClient() {
                     </div>
                   )}
                 </div>
-
               </div>
             </div>
           </div>
         </div>
         
-        <div className={`hidden lg:flex fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-zinc-950 border-l border-zinc-800 lg:rounded-xl shadow-2xl transition-transform lg:transition-all duration-300 flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
-          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-600/50 to-transparent"></div>
-          <div className="h-14 lg:h-12 border-b border-zinc-800 bg-zinc-900/40 flex items-center justify-between px-5 shrink-0 text-white">
-            <h2 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-purple-400" /> Weekly Vault <span className="text-[10px] text-zinc-600 font-mono ml-1 opacity-70">[V]</span></h2>
-            <button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-zinc-500 hover:text-white p-1"><X size={18} /></button>
+        {/* RIGHT PANEL: Weekly Vault */}
+        <div className={`hidden lg:flex fixed lg:static top-0 right-0 bottom-0 z-[50] lg:z-auto h-[100dvh] lg:h-full bg-[#0a0a0a] border-l border-white/[0.04] lg:border lg:rounded-xl transition-all duration-300 flex-col overflow-hidden shrink-0 ${isVaultOpen ? 'translate-x-0 w-[85%] sm:w-[320px] lg:w-[340px] lg:opacity-100' : 'translate-x-full lg:translate-x-0 lg:w-0 lg:opacity-0 lg:border-none'}`}>
+          <div className="h-14 lg:h-12 border-b border-white/[0.04] flex items-center justify-between px-4 shrink-0 text-white">
+            <h2 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-white opacity-70" /> Weekly Vault <span className="text-[9px] text-neutral-600 font-mono ml-1 opacity-70">[V]</span></h2>
+            <button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-neutral-500 hover:text-white p-1"><X size={18} /></button>
           </div>
           
           <div className="flex flex-col gap-2 flex-1 overflow-y-auto custom-scrollbar p-3 text-white relative">
             {weeklySetups.length === 0 ? (
-              <div className="text-center p-6 text-zinc-600"><span className="text-[10px] font-bold uppercase tracking-widest">Vault is empty</span></div>
+              <div className="text-center p-6 text-neutral-600"><span className="text-[10px] font-mono uppercase tracking-widest">Vault is empty</span></div>
             ) : (
               weeklySetups.map((setup) => {
                 const isExecuted = executedSymbols.includes(setup.symbol);
                 const isPushedToToday = setup.isToday;
 
                 return (
-                  <div key={`weekly-${setup.id}`} className="w-full p-3 border border-zinc-800/80 bg-black rounded-lg flex flex-col justify-between group hover:border-zinc-600 transition-colors shrink-0 shadow-sm gap-2">
+                  <div key={`weekly-${setup.id}`} className="w-full p-3 border border-white/[0.04] bg-[#050505] rounded-lg flex flex-col justify-between group hover:border-white/[0.15] transition-colors shrink-0 gap-2">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col min-w-0 pr-2">
-                        <span className="text-[13px] font-bold tracking-wide text-zinc-300 group-hover:text-white transition-colors truncate">{setup.symbol}</span>
-                        <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest truncate">{setup.notes ? 'Notes Logged' : 'No Notes'}</span>
+                        <span className="text-[13px] font-mono font-bold tracking-tight text-neutral-300 group-hover:text-white transition-colors truncate">{formatTicker(setup.symbol)}</span>
+                        <span className="text-[9px] font-bold text-neutral-600 uppercase tracking-widest truncate mt-0.5">{setup.notes ? 'Notes Logged' : 'No Notes'}</span>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-500 hover:text-white" title="View Details"><Eye size={14} /></button>
+                        <button onClick={() => setPreviewSetup(setup)} className="p-1.5 rounded hover:bg-white/[0.05] text-neutral-500 hover:text-white" title="View Details"><Eye size={14} /></button>
                         
                         {!isExecuted && (
-                           <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-zinc-600 hover:text-red-400"><Trash2 size={14} /></button>
+                           <button onClick={() => deleteSetup(setup.id)} className="p-1.5 rounded hover:bg-red-500/10 text-neutral-600 hover:text-red-400"><Trash2 size={14} /></button>
                         )}
                         
                         {!isPushedToToday && !isExecuted && (
@@ -1348,7 +1352,7 @@ export default function DeskClient() {
                               if (!canPushMore) alert("Daily Sniper Limit Reached: You have already pushed 5 pairs today.");
                               else setConfirmPushId(setup.id);
                             }} 
-                            className="text-[10px] font-bold text-zinc-400 hover:text-white uppercase tracking-widest bg-zinc-900 border border-zinc-700 hover:bg-blue-600 px-2.5 py-1.5 rounded flex items-center gap-1 shadow-sm"
+                            className="text-[10px] font-bold text-neutral-400 hover:text-white uppercase tracking-widest bg-[#0a0a0a] border border-white/[0.05] hover:border-white/[0.2] px-2.5 py-1.5 rounded flex items-center gap-1"
                           >
                             Push <ArrowRight size={12} />
                           </button>
@@ -1357,8 +1361,8 @@ export default function DeskClient() {
                     </div>
                     
                     <div className="flex gap-1.5">
-                      {isExecuted && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-emerald-500/30 text-emerald-400 bg-emerald-500/10 tracking-widest w-fit">Executed</span>}
-                      {isPushedToToday && !isExecuted && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded border border-blue-500/30 text-blue-400 bg-blue-500/10 tracking-widest w-fit">Active Today</span>}
+                      {isExecuted && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded text-emerald-400 bg-emerald-500/10 tracking-widest w-fit">Executed</span>}
+                      {isPushedToToday && !isExecuted && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded text-blue-400 bg-blue-500/10 tracking-widest w-fit">Active Today</span>}
                     </div>
 
                   </div>
@@ -1367,7 +1371,7 @@ export default function DeskClient() {
             )}
           </div>
           
-          <div className="p-4 border-t border-zinc-800 bg-zinc-900/40 shrink-0 pb-8 lg:pb-4">
+          <div className="p-4 border-t border-white/[0.04] bg-[#050505] shrink-0 pb-8 lg:pb-4">
             <button 
               onClick={() => {
                 if (isVaultLocked) {
@@ -1376,16 +1380,16 @@ export default function DeskClient() {
                 }
                 setIsUploadModalOpen(true);
               }} 
-              className={`w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all shadow-inner hover:shadow-none ${
+              className={`w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed rounded text-[10px] font-bold uppercase tracking-widest transition-all ${
                 isVaultLocked 
-                  ? 'bg-zinc-900 border-red-500/30 text-red-500/50 cursor-not-allowed' 
-                  : 'bg-black border-zinc-700 text-zinc-400 hover:text-white hover:border-blue-500/50'
+                  ? 'bg-[#0a0a0a] border-red-500/20 text-red-500/40 cursor-not-allowed' 
+                  : 'bg-[#050505] border-white/[0.1] text-neutral-400 hover:text-white hover:border-white/[0.3]'
               }`}
             >
                {isVaultLocked ? (
                 <><Lock size={14} /> {!isPrepWindow ? 'Locked Until Weekend' : 'Settle Trades to Unlock'}</>
               ) : (
-                <><Plus size={14} /> Add Weekly Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></>
+                <><Plus size={14} /> Add Setups <span className="font-mono opacity-70 ml-1">[ALT+V]</span></>
               )}
             </button>
           </div>
@@ -1395,11 +1399,11 @@ export default function DeskClient() {
         <SetupUploadModal isOpen={isUploadModalOpen} onClose={() => setIsUploadModalOpen(false)} onSave={handleBulkUpload} displayDirection={displayDirection} />
         
         {confirmPushId && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
-            <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-6 max-w-sm w-full shadow-2xl">
-              <h3 className="text-sm font-bold text-white mb-2 uppercase tracking-widest">Confirm Push</h3>
-              <p className="text-xs text-zinc-400 mb-6 leading-relaxed">Lock this setup into Today's Focus? Removal is only allowed for the first 60 minutes.</p>
-              <div className="flex gap-3"><button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 text-[10px] font-bold uppercase hover:bg-zinc-800">Cancel</button><button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-blue-600 text-white text-[10px] font-bold uppercase shadow-md hover:bg-blue-500">Push to Today</button></div>
+          <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#050505]/90 backdrop-blur-sm px-4">
+            <div className="bg-[#0a0a0a] border border-white/[0.05] rounded-xl p-6 max-w-sm w-full shadow-2xl">
+              <h3 className="text-[11px] font-bold text-white mb-2 uppercase tracking-widest">Confirm Push</h3>
+              <p className="text-xs text-neutral-400 font-sans mb-6 leading-relaxed">Lock this setup into Today's Focus? Removal is only allowed for the first 60 minutes.</p>
+              <div className="flex gap-3"><button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded bg-[#050505] border border-white/[0.05] text-neutral-300 text-[10px] font-bold uppercase hover:bg-white/[0.05]">Cancel</button><button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded bg-white text-black text-[10px] font-bold uppercase hover:bg-neutral-200">Push to Today</button></div>
             </div>
           </div>
         )}
@@ -1407,29 +1411,29 @@ export default function DeskClient() {
         <CatalystSettingsModal isOpen={isCatalystSettingsOpen} onClose={() => setIsCatalystSettingsOpen(false)} perfect={perfectCatalysts} setPerfect={setPerfectCatalysts} imperfect={imperfectCatalysts} setImperfect={setImperfectCatalysts} />
 
         {isMobileNotesOpen && activeSetup && (
-          <div className="lg:hidden fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200" onClick={() => setIsMobileNotesOpen(false)}>
-            <div className="w-full h-[50vh] bg-zinc-950 border-t border-zinc-800 rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300" onClick={e => e.stopPropagation()}>
-              <div className="p-4 border-b border-zinc-800/60 flex justify-between items-center bg-zinc-900/40 rounded-t-2xl">
-                <h3 className="text-xs font-bold text-zinc-200 uppercase tracking-widest flex items-center gap-2"><BookOpen size={14} className="text-blue-500" />{activeSetup.symbol} Thesis</h3>
-                <button onClick={() => setIsMobileNotesOpen(false)} className="text-zinc-500 hover:text-white p-1"><X size={16}/></button>
+          <div className="lg:hidden fixed inset-0 z-[9999] bg-[#050505]/80 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200" onClick={() => setIsMobileNotesOpen(false)}>
+            <div className="w-full h-[50vh] bg-[#0a0a0a] border-t border-white/[0.05] rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.5)] flex flex-col animate-in slide-in-from-bottom-full duration-300" onClick={e => e.stopPropagation()}>
+              <div className="p-4 border-b border-white/[0.05] flex justify-between items-center bg-white/[0.02] rounded-t-2xl">
+                <h3 className="text-xs font-bold text-neutral-200 uppercase tracking-widest flex items-center gap-2"><BookOpen size={14} className="text-white opacity-70" />{activeSetup.symbol} Thesis</h3>
+                <button onClick={() => setIsMobileNotesOpen(false)} className="text-neutral-500 hover:text-white p-1"><X size={16}/></button>
               </div>
-              <div className="p-5 overflow-y-auto custom-scrollbar flex-1 text-sm text-zinc-300 leading-relaxed font-medium">
-                 <div dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-zinc-600 italic">No notes logged.</p>' }} />
+              <div className="p-5 overflow-y-auto custom-scrollbar flex-1 text-sm text-neutral-300 leading-relaxed font-sans">
+                 <div dangerouslySetInnerHTML={{ __html: activeSetup.notes || '<p class="text-neutral-600 italic">No notes logged.</p>' }} />
               </div>
             </div>
           </div>
         )}
 
         {previewSetup && (
-          <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150" onClick={() => setPreviewSetup(null)}>
-            <div className="absolute top-4 right-4 z-10"><button onClick={() => setPreviewSetup(null)} className="p-2 bg-black/50 text-white rounded-full hover:bg-zinc-800 transition-colors"><X size={20}/></button></div>
+          <div className="fixed inset-0 z-[9999] bg-[#050505]/95 backdrop-blur-sm flex flex-col items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150" onClick={() => setPreviewSetup(null)}>
+            <div className="absolute top-4 right-4 z-10"><button onClick={() => setPreviewSetup(null)} className="p-2 bg-[#0a0a0a]/80 border border-white/[0.05] text-white rounded-md hover:bg-white/[0.1] transition-colors"><X size={20}/></button></div>
             <img src={previewSetup.imageUrl} alt="Preview" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl cursor-default" onClick={(e) => e.stopPropagation()} />
           </div>
         )}
 
         {(isPeeking || isFullScreen) && activeSetup?.imageUrl && (
-          <div className={`fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`} onClick={() => { if (isFullScreen) setIsFullScreen(false); }}>
-            <img src={activeSetup.imageUrl} alt="Peek" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl" />
+          <div className={`fixed inset-0 z-[9999] bg-[#050505]/95 flex items-center justify-center p-4 sm:p-8 animate-in fade-in duration-150 ${isFullScreen ? 'cursor-pointer' : 'pointer-events-none'}`} onClick={() => { if (isFullScreen) setIsFullScreen(false); }}>
+            <img src={activeSetup.imageUrl} alt="Peek" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" />
           </div>
         )}
       </div>
