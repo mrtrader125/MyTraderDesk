@@ -728,7 +728,7 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* PROFESSIONAL BOOTCAMP POPUP */}
+{/* PROFESSIONAL BOOTCAMP POPUP */}
 {showBootcampPopup && (
   <div className="fixed bottom-5 right-5 sm:bottom-8 sm:right-8 z-[100] w-[calc(100%-2.5rem)] sm:w-[380px] animate-in fade-in slide-in-from-bottom-2 duration-500">
     
@@ -791,4 +791,7 @@ export default function Home() {
     </div>
   </div>
 )}
-)}
+
+    </div>
+  )
+}
