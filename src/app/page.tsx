@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   User, Map, ShieldCheck, Filter, ArrowRight, Activity, 
   ChevronLeft, ChevronRight, Lock, ChevronDown, Globe2, BarChart3, Database,
-  TerminalSquare, BookOpen, Workflow, Target, Star, Quote
+  TerminalSquare, BookOpen, Workflow, Target, Star, Quote, X
 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
@@ -65,6 +65,9 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   
   const [heroProfiles, setHeroProfiles] = useState<string[]>([])
+  
+  // 🚨 NEW: State for Bootcamp Popup
+  const [showBootcampPopup, setShowBootcampPopup] = useState(false)
 
   const terminalSlides = [
   { id: 'mtd1', title: 'Market Feed', desc: 'Your central hub for daily market structure, active setups, and system broadcasts.' },
@@ -95,8 +98,26 @@ export default function Home() {
     setHeroProfiles(shuffledProfiles.slice(0, 3))
 
     fetchAnalyses()
-    return () => window.removeEventListener('scroll', handleScroll)
+    
+    // 🚨 NEW: Trigger the popup 1.5 seconds after page load
+    const popupTimer = setTimeout(() => {
+      // Check if user previously closed it using localStorage (Optional but good UX)
+      const hasSeenPopup = localStorage.getItem('bootcampPopupDismissed')
+      if (!hasSeenPopup) {
+        setShowBootcampPopup(true)
+      }
+    }, 1500)
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      clearTimeout(popupTimer)
+    }
   }, [])
+
+  const handleClosePopup = () => {
+    setShowBootcampPopup(false)
+    localStorage.setItem('bootcampPopupDismissed', 'true')
+  }
 
   const fetchAnalyses = async () => {
     try {
@@ -712,6 +733,38 @@ export default function Home() {
           </p>
         </div>
       </footer>
+
+      {/* 🚨 NEW: The Bootcamp Toast Popup */}
+      {showBootcampPopup && (
+        <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100] w-[calc(100%-2rem)] sm:w-[380px] animate-in slide-in-from-bottom-8 fade-in duration-500 ease-out">
+          <div className="bg-[#0a0a0a] border border-blue-500/30 rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.8)] relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
+            
+            <button onClick={handleClosePopup} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors">
+              <X size={16} />
+            </button>
+            
+            <div className="flex items-center gap-3 mb-4 mt-1">
+              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                <Target size={14} className="text-blue-500" />
+              </div>
+              <div>
+                <h3 className="text-xs font-bold text-white uppercase tracking-widest">Founding Operator Bootcamp</h3>
+                <p className="text-[10px] text-blue-400 font-mono tracking-tight mt-0.5">50 Spots Available</p>
+              </div>
+            </div>
+            
+            <p className="text-[11px] text-neutral-400 font-medium leading-relaxed mb-5 pr-2">
+              We are stress-testing our infrastructure. Join the beta cohort to help refine the terminal, and lock in lifetime <span className="text-neutral-200">Founding Member pricing.</span>
+            </p>
+            
+            <Link href="/program/bootcamp" className="block w-full text-center py-2.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-neutral-200 transition-colors shadow-md">
+              View Program Details
+            </Link>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
