@@ -44,20 +44,21 @@ export default function SideNav() {
       {/* DESKTOP SIDEBAR */}
       <aside className={`hidden md:flex ${isOpen ? 'w-56' : 'w-16'} transition-all duration-300 border-r border-neutral-900 bg-[#050505] flex-col h-screen shrink-0 z-50 shadow-[10px_0_30px_rgba(0,0,0,0.5)]`}>
         
-        <div className="h-16 flex items-center px-4 border-b border-neutral-900 justify-between overflow-hidden shrink-0 bg-[#0a0a0a]">
-          {isOpen && (
-            <div className="relative h-14 w-30 flex items-center">
-              <Image src="/logo.png" alt="My Trader Desk" fill className="object-contain object-left" priority unoptimized />
-            </div>
-          )}
+<div className="h-16 flex items-center px-4 border-b border-neutral-900 overflow-hidden shrink-0 bg-[#0a0a0a]">
           <button 
             onClick={() => setIsOpen(!isOpen)} 
-            className="p-2 hover:bg-neutral-800 rounded-lg text-neutral-500 hover:text-white transition-colors mx-auto shrink-0"
+            className="p-2 hover:bg-neutral-800 rounded-lg text-neutral-500 hover:text-white transition-colors shrink-0"
           >
             <Menu size={20} />
           </button>
-        </div>
 
+          {isOpen && (
+            <div className="relative h-14 ml-3 flex-1 flex items-center">
+              <Image src="/logo.png" alt="My Trader Desk" fill className="object-contain object-left" priority unoptimized />
+            </div>
+          )}
+        </div>
+        
         <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto custom-scrollbar">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname?.startsWith(item.href.split('/')[1] ? `/${item.href.split('/')[1]}` : item.href))
