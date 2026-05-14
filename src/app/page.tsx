@@ -734,37 +734,32 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* 🚨 NEW: The Bootcamp Toast Popup */}
+{/* 🚨 NEW: Institutional Toast Popup */}
       {showBootcampPopup && (
-        <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-[100] w-[calc(100%-2rem)] sm:w-[380px] animate-in slide-in-from-bottom-8 fade-in duration-500 ease-out">
-          <div className="bg-[#0a0a0a] border border-blue-500/30 rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.8)] relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-blue-500 to-transparent"></div>
-            
+        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] w-[calc(100%-2rem)] sm:w-[340px] animate-in fade-in duration-300">
+          <div className="bg-[#050505] border border-white/[0.15] p-5 shadow-2xl relative">
             <button onClick={handleClosePopup} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors">
-              <X size={16} />
+              <X size={14} />
             </button>
             
-            <div className="flex items-center gap-3 mb-4 mt-1">
-              <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20 shrink-0 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-                <Target size={14} className="text-blue-500" />
-              </div>
-              <div>
-                <h3 className="text-xs font-bold text-white uppercase tracking-widest">Founding Operator Bootcamp</h3>
-                <p className="text-[10px] text-blue-400 font-mono tracking-tight mt-0.5">50 Spots Available</p>
-              </div>
+            <div className="mb-3">
+              <span className="text-[9px] font-mono text-neutral-500 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                <span className="w-1.5 h-1.5 bg-blue-500"></span> System Broadcast
+              </span>
+              <h3 className="text-sm font-bold text-white uppercase tracking-tight">Founding Operator Cohort</h3>
             </div>
             
-            <p className="text-[11px] text-neutral-400 font-medium leading-relaxed mb-5 pr-2">
-              We are stress-testing our infrastructure. Join the beta cohort to help refine the terminal, and lock in lifetime <span className="text-neutral-200">Founding Member pricing.</span>
+            <p className="text-[11px] text-neutral-400 font-sans leading-relaxed mb-5">
+              Infrastructure stress-test initiated. We are allocating 50 seats for beta operators. Secure lifetime founding rates in exchange for feedback.
             </p>
             
-            <Link href="/program/bootcamp" className="block w-full text-center py-2.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-neutral-200 transition-colors shadow-md">
+            <Link href="/program/bootcamp" className="inline-flex items-center justify-center w-full border border-white/[0.15] bg-[#0a0a0a] hover:bg-white text-neutral-300 hover:text-black py-2 text-[10px] font-bold uppercase tracking-widest transition-colors">
               View Program Details
             </Link>
           </div>
         </div>
       )}
-
+      
     </div>
   )
 }
