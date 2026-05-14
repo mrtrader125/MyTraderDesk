@@ -728,32 +728,66 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* 🚨 THE INSTITUTIONAL TOAST POPUP */}
-      {showBootcampPopup && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[100] w-[calc(100%-2rem)] sm:w-[340px] animate-in fade-in duration-300">
-          <div className="bg-[#050505] border border-white/[0.15] p-5 shadow-2xl relative">
-            <button onClick={handleClosePopup} className="absolute top-4 right-4 text-neutral-500 hover:text-white transition-colors">
-              <X size={14} />
-            </button>
-            
-            <div className="mb-3">
-              <span className="text-[9px] font-mono text-neutral-500 uppercase tracking-widest flex items-center gap-1.5 mb-1">
-                <span className="w-1.5 h-1.5 bg-blue-500"></span> System Broadcast
-              </span>
-              <h3 className="text-sm font-bold text-white uppercase tracking-tight">Founding Operator Cohort</h3>
-            </div>
-            
-            <p className="text-[11px] text-neutral-400 font-sans leading-relaxed mb-5">
-              Infrastructure stress-test initiated. We are allocating 50 seats for beta operators. Secure lifetime founding rates in exchange for feedback.
-            </p>
-            
-            <Link href="/program/bootcamp" className="inline-flex items-center justify-center w-full border border-white/[0.15] bg-[#0a0a0a] hover:bg-white text-neutral-300 hover:text-black py-2 text-[10px] font-bold uppercase tracking-widest transition-colors">
-              View Access Protocol
-            </Link>
-          </div>
-        </div>
-      )}
+      {/* PROFESSIONAL BOOTCAMP POPUP */}
+{showBootcampPopup && (
+  <div className="fixed bottom-5 right-5 sm:bottom-8 sm:right-8 z-[100] w-[calc(100%-2.5rem)] sm:w-[380px] animate-in fade-in slide-in-from-bottom-2 duration-500">
+    
+    <div className="bg-[#0B0B0B] border border-neutral-800 rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl relative overflow-hidden">
+      
+      {/* subtle top line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neutral-700 to-transparent"></div>
 
+      <button
+        onClick={handleClosePopup}
+        className="absolute top-5 right-5 text-neutral-600 hover:text-neutral-300 transition-colors"
+      >
+        <X size={15} />
+      </button>
+
+      <div className="mb-5">
+        <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-neutral-500 mb-3">
+          Professional Development Program
+        </p>
+
+        <h3 className="text-[22px] leading-tight font-semibold text-white tracking-tight max-w-[260px]">
+          Trader Bootcamp Cohort
+        </h3>
+      </div>
+
+      <p className="text-[13px] leading-[1.7] text-neutral-400 mb-6">
+        A structured operator development program focused on execution,
+        routine, behavioral discipline, and systematic decision-making.
+      </p>
+
+      <div className="flex items-center justify-between mb-6 pb-5 border-b border-neutral-800">
+        
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-neutral-600 mb-1">
+            Cohort Size
+          </p>
+          <p className="text-sm font-medium text-neutral-200">
+            Limited Intake
+          </p>
+        </div>
+
+        <div className="w-px h-10 bg-neutral-800"></div>
+
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.18em] text-neutral-600 mb-1">
+            Format
+          </p>
+          <p className="text-sm font-medium text-neutral-200">
+            Guided Training
+          </p>
+        </div>
+      </div>
+
+      <Link
+        href="/program/bootcamp"
+        className="flex items-center justify-center w-full h-11 rounded-xl bg-white text-black text-[11px] font-semibold tracking-[0.16em] uppercase hover:bg-neutral-200 transition-colors"
+      >
+        View Program
+      </Link>
     </div>
-  )
-}
+  </div>
+)}
