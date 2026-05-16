@@ -275,7 +275,7 @@ export default function SideNav() {
 </div>
           
           {/* ACCOUNT */}
-          <div className="mt-6">
+          <div className="mt-2">
             <Link
               href="/account/profile"
               prefetch={true}
