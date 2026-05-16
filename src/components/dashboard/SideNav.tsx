@@ -39,6 +39,11 @@ export default function SideNav() {
       href: '/dashboard',
       icon: LayoutDashboard,
     },
+     {
+      name: 'My Desk',
+      href: '/desk',
+      icon: Briefcase,
+    },
     {
       name: 'Journal',
       href: '/journal',
@@ -48,11 +53,6 @@ export default function SideNav() {
       name: 'Analytics',
       href: '/analytics',
       icon: Activity,
-    },
-    {
-      name: 'My Desk',
-      href: '/desk',
-      icon: Briefcase,
     },
   ]
 
