@@ -153,10 +153,14 @@ export default function SideNav() {
           </div>
 
 {/* INTEL SECTION */}
-<div className="mt-2">
-
+<div
+  className="relative mt-2 group"
+  onMouseEnter={() => !isOpen && setIntelOpen(true)}
+  onMouseLeave={() => !isOpen && setIntelOpen(false)}
+>
+  {/* MAIN INTEL BUTTON */}
   <button
-    onClick={() => setIntelOpen(!intelOpen)}
+    onClick={() => isOpen && setIntelOpen(!intelOpen)}
     className={`flex items-center justify-between w-full p-3 rounded-xl transition-all
     ${
       pathname?.startsWith('/markets') ||
@@ -195,15 +199,9 @@ export default function SideNav() {
     )}
   </button>
 
-  {/* SUB ITEMS */}
-  {(intelOpen || !isOpen) && (
-    <div
-      className={`space-y-1 ${
-        isOpen
-          ? 'mt-1 ml-4 pl-3 border-l border-neutral-800'
-          : 'mt-2'
-      }`}
-    >
+  {/* OPEN SIDEBAR MODE */}
+  {isOpen && intelOpen && (
+    <div className="mt-1 ml-4 pl-3 border-l border-neutral-800 space-y-1">
       {intelItems.map((item) => {
         const isActive = pathname?.startsWith(item.href)
 
@@ -215,30 +213,67 @@ export default function SideNav() {
             onMouseEnter={() => router.prefetch(item.href)}
           >
             <div
-              className={`flex items-center ${
-                isOpen ? 'gap-2 px-2' : 'justify-center'
-              } py-2 rounded-lg transition-all
+              className={`flex items-center gap-2 px-2 py-2 rounded-lg transition-all
               ${
                 isActive
                   ? 'text-blue-400 bg-blue-500/10'
                   : 'text-neutral-500 hover:text-neutral-300 hover:bg-[#111]'
               }`}
             >
-              <item.icon size={16} className="shrink-0" />
+              <item.icon size={15} />
 
-              {isOpen && (
-                <span className="text-[10px] uppercase tracking-widest font-black">
-                  {item.name}
-                </span>
-              )}
+              <span className="text-[10px] uppercase tracking-widest font-black">
+                {item.name}
+              </span>
             </div>
           </Link>
         )
       })}
     </div>
   )}
-</div>
 
+  {/* COLLAPSED FLOATING MENU */}
+  {!isOpen && intelOpen && (
+    <div className="absolute left-16 top-0 w-48 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.6)] p-2 z-[999] animate-in fade-in zoom-in-95 duration-150">
+      <div className="mb-2 px-2 pt-1">
+        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-500">
+          Intel
+        </span>
+      </div>
+
+      <div className="space-y-1">
+        {intelItems.map((item) => {
+          const isActive = pathname?.startsWith(item.href)
+
+          return (
+            <Link
+              key={item.name}
+              href={item.href}
+              prefetch={true}
+              onMouseEnter={() => router.prefetch(item.href)}
+            >
+              <div
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all
+                ${
+                  isActive
+                    ? 'bg-blue-500/10 text-blue-400'
+                    : 'text-neutral-400 hover:bg-[#111] hover:text-white'
+                }`}
+              >
+                <item.icon size={16} />
+
+                <span className="text-[11px] font-black uppercase tracking-widest">
+                  {item.name}
+                </span>
+              </div>
+            </Link>
+          )
+        })}
+      </div>
+    </div>
+  )}
+</div>
+          
           {/* ACCOUNT */}
           <div className="mt-6">
             <Link
