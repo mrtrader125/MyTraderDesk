@@ -152,66 +152,92 @@ export default function SideNav() {
             })}
           </div>
 
-          {/* INTEL SECTION */}
-          <div className="mt-6">
-            <button
-              onClick={() => setIntelOpen(!intelOpen)}
-              className={`flex items-center justify-between w-full p-3 rounded-xl transition-all
+{/* INTEL SECTION */}
+<div className="mt-2">
+
+  <button
+    onClick={() => setIntelOpen(!intelOpen)}
+    className={`flex items-center justify-between w-full p-3 rounded-xl transition-all
+    ${
+      pathname?.startsWith('/markets') ||
+      pathname?.startsWith('/vault') ||
+      pathname?.startsWith('/floor')
+        ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20'
+        : 'text-neutral-500 border border-transparent hover:bg-[#111] hover:text-neutral-300'
+    }`}
+  >
+    <div className="flex items-center">
+      <LineChart size={20} className="shrink-0" />
+
+      {isOpen && (
+        <span className="ml-3 font-black text-xs uppercase tracking-widest">
+          Intel
+        </span>
+      )}
+    </div>
+
+    {isOpen && (
+      <svg
+        className={`w-4 h-4 transition-transform duration-200 ${
+          intelOpen ? 'rotate-90' : ''
+        }`}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          d="M9 5l7 7-7 7"
+        />
+      </svg>
+    )}
+  </button>
+
+  {/* SUB ITEMS */}
+  {(intelOpen || !isOpen) && (
+    <div
+      className={`space-y-1 ${
+        isOpen
+          ? 'mt-1 ml-4 pl-3 border-l border-neutral-800'
+          : 'mt-2'
+      }`}
+    >
+      {intelItems.map((item) => {
+        const isActive = pathname?.startsWith(item.href)
+
+        return (
+          <Link
+            key={item.name}
+            href={item.href}
+            prefetch={true}
+            onMouseEnter={() => router.prefetch(item.href)}
+          >
+            <div
+              className={`flex items-center ${
+                isOpen ? 'gap-2 px-2' : 'justify-center'
+              } py-2 rounded-lg transition-all
               ${
-                pathname?.startsWith('/markets') ||
-                pathname?.startsWith('/vault') ||
-                pathname?.startsWith('/floor')
-                  ? 'bg-blue-600/10 text-blue-500 border border-blue-500/20'
-                  : 'text-neutral-500 hover:bg-[#111] hover:text-neutral-300'
+                isActive
+                  ? 'text-blue-400 bg-blue-500/10'
+                  : 'text-neutral-500 hover:text-neutral-300 hover:bg-[#111]'
               }`}
             >
-              <div className="flex items-center">
-                <LineChart size={20} className="shrink-0" />
-
-                {isOpen && (
-                  <span className="ml-3 font-black text-xs uppercase tracking-widest">
-                    Intel
-                  </span>
-                )}
-              </div>
+              <item.icon size={16} className="shrink-0" />
 
               {isOpen && (
-                <span className="text-xs font-black">
-                  {intelOpen ? '−' : '+'}
+                <span className="text-[10px] uppercase tracking-widest font-black">
+                  {item.name}
                 </span>
               )}
-            </button>
-
-            {/* INTEL SUB ITEMS */}
-            {intelOpen && isOpen && (
-              <div className="mt-2 ml-4 border-l border-neutral-800 pl-3 space-y-1">
-                {intelItems.map((item) => {
-                  const isActive = pathname?.startsWith(item.href)
-
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      prefetch={true}
-                      onMouseEnter={() => router.prefetch(item.href)}
-                    >
-                      <div
-                        className={`flex items-center gap-2 p-2 rounded-lg text-xs uppercase tracking-widest font-bold transition-all
-                        ${
-                          isActive
-                            ? 'text-blue-400 bg-blue-500/10'
-                            : 'text-neutral-500 hover:text-neutral-300 hover:bg-[#111]'
-                        }`}
-                      >
-                        <item.icon size={14} />
-                        {item.name}
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+            </div>
+          </Link>
+        )
+      })}
+    </div>
+  )}
+</div>
 
           {/* ACCOUNT */}
           <div className="mt-6">
