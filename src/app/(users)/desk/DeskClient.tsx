@@ -509,6 +509,7 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
               <input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className={`w-full bg-[#0a0a0a] border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-white/[0.08] text-neutral-300'} rounded-sm pl-8 pr-2 py-2 text-[10px] font-mono font-bold outline-none focus:border-white/[0.2]`} />
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-mono font-bold text-neutral-500 uppercase tracking-widest">RR</span>
             </div>
+            
             <div className="relative flex-1 flex items-center gap-1 bg-[#0a0a0a] border border-white/[0.08] rounded-sm p-1 pr-2 focus-within:border-white/[0.2] transition-all min-w-0">
                {afterPreview ? (
                  <div className="flex-1 flex items-center gap-2 pl-2 overflow-hidden">
@@ -519,7 +520,8 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
                ) : (
                  <>
                    <LinkIcon size={12} className="text-neutral-500 ml-2 shrink-0" />
-                   <input type="text" value={afterInput} onChange={e => setAfterInput(e.target.value)} placeholder="TV URL or Paste Image..." className="w-full bg-transparent border-none text-[10px] font-sans font-medium text-neutral-300 outline-none placeholder:text-neutral-600 px-2" />
+                   {/* 🚨 FIX: Replaced w-full with flex-1 min-w-0 on this input */}
+                   <input type="text" value={afterInput} onChange={e => setAfterInput(e.target.value)} placeholder="TV URL or Paste Image..." className="flex-1 min-w-0 bg-transparent border-none text-[10px] font-sans font-medium text-neutral-300 outline-none placeholder:text-neutral-600 px-2" />
                    <button onClick={handlePaste} className="p-1 hover:bg-white/[0.05] rounded-sm text-neutral-400 hover:text-white transition-colors shrink-0" title="Paste URL or Image"><Clipboard size={12}/></button>
                    <button onClick={() => fileInputRef.current?.click()} className="p-1 hover:bg-white/[0.05] rounded-sm text-neutral-400 hover:text-white transition-colors shrink-0" title="Upload Image"><ImageIcon size={12}/></button>
                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
@@ -529,6 +531,7 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
           </>
         )}
 
+        {/* INLINE TERMINAL CONFIRMATIONS */}
         {showFlushConfirm ? (
           <div className="flex items-center justify-end gap-2 w-full sm:w-auto flex-1 animate-in fade-in zoom-in-95 duration-200">
             <span className="text-[10px] text-red-500 font-mono font-bold uppercase tracking-widest text-right leading-tight hidden lg:block truncate pr-2">Confirm -2R Penalty?</span>
@@ -553,14 +556,13 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
               Flush Trade
             </button>
             
-            <button disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} className="flex-1 sm:flex-none w-full sm:w-auto px-6 py-2 bg-[#0a0a0a] border border-white/[0.15] text-neutral-300 hover:bg-white hover:text-black hover:border-white text-[10px] font-mono font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-[#121212] disabled:border-white/[0.04] disabled:text-neutral-600 rounded-sm transition-colors shrink-0 whitespace-nowrap">{isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}</button>
+            <button disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} className="flex-1 sm:flex-none px-6 py-2 bg-[#0a0a0a] border border-white/[0.15] text-neutral-300 hover:bg-white hover:text-black hover:border-white text-[10px] font-mono font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-[#121212] disabled:border-white/[0.04] disabled:text-neutral-600 rounded-sm transition-colors shrink-0 whitespace-nowrap">{isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}</button>
           </div>
         )}
       </div>
     </div>
   )
 }
-
 // --- SETTINGS MODAL ---
 function CatalystSettingsModal({ isOpen, onClose, perfect, setPerfect, imperfect, setImperfect }: any) {
   const [newPerfect, setNewPerfect] = useState('')
