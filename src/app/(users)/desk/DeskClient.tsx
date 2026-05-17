@@ -8,13 +8,13 @@ import Papa from 'papaparse'
 import { TransformWrapper, TransformComponent, ReactZoomPanPinchRef } from 'react-zoom-pan-pinch'
 import { 
   Plus, X, UploadCloud, Crosshair, Target, ArrowRight, ArrowLeft, Eye, Bold, List,
-  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, CheckCircle2, Save, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock
+  Image as ImageIcon, Trash2, Menu, Activity, AlertTriangle, CheckCircle, CheckCircle2, ChevronUp, ChevronDown, Link as LinkIcon, DownloadCloud, Check, Maximize, Clipboard, Settings, Info, BookOpen, Lock, Flame
 } from 'lucide-react'
 
-// 🚨 CONSTANTS MUST BE AT THE TOP
+// 🚨 CONSTANTS
 const PLAYBOOKS = ["Liquidity Sweep", "Trend Continuation", "Range Play", "Breakout / Retest", "News Catalyst"]
 const DEFAULT_PERFECT_CATALYSTS = ["Followed Plan", "Extreme Patience", "A+ Setup", "Perfect Risk Management"]
-const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan"]
+const DEFAULT_IMPERFECT_CATALYSTS = ["FOMO / Rushed Entry", "Revenge Trading", "Boredom / Forced Setup", "Ignored Trading Plan", "Cap Override / Overtrading"]
 
 // 🚨 GLOBAL SUPABASE CLIENT
 const supabase = createBrowserClient(
@@ -98,7 +98,7 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm, displayDi
         const finalParsed = Object.values(positions)
         setParsedData(finalParsed)
         
-        // 🚨 MT5 FIX: Auto-Detect Timezone Offset
+        // MT5 Auto-Detect Timezone Offset
         if (finalParsed.length > 0 && pendingLogs.length > 0) {
            const lastMT5 = new Date(finalParsed[0].time.replace(/\./g, '/')).getTime();
            const lastLog = new Date(pendingLogs[0].created_at).getTime();
@@ -529,6 +529,7 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
           </>
         )}
 
+        {/* INLINE TERMINAL CONFIRMATIONS */}
         {showFlushConfirm ? (
           <div className="flex items-center justify-end gap-2 w-full sm:w-auto flex-1 animate-in fade-in zoom-in-95 duration-200">
             <span className="text-[10px] text-red-500 font-mono font-bold uppercase tracking-widest text-right leading-tight hidden lg:block truncate pr-2">Confirm -2R Penalty?</span>
@@ -629,6 +630,7 @@ const DEMO_LOGS = [
     id: 'log-1',
     symbol: 'GBPUSD',
     direction: 'SHORT',
+    setup_id: 'demo-55',
     reason: '[Perfect Risk Management]\nFollowed all rules.',
     execution_type: 'Perfect',
     rr: '', outcome: ''
@@ -644,7 +646,10 @@ export default function DeskClient() {
   const [setups, setSetups] = useState<any[]>([])
   const [pendingReconciliation, setPendingReconciliation] = useState<any[]>([])
   const [tradesTakenToday, setTradesTakenToday] = useState(0)
-  const [executedSymbols, setExecutedSymbols] = useState<string[]>([])
+  
+  // 🚨 SYMBOL LOCKING FIX: Track Setup IDs instead of Symbols
+  const [executedSetupIds, setExecutedSetupIds] = useState<string[]>([])
+  
   const [previewSetup, setPreviewSetup] = useState<any>(null);
 
   const [isVaultOpen, setIsVaultOpen] = useState(false)
@@ -679,8 +684,9 @@ export default function DeskClient() {
   
   const [terminology, setTerminology] = useState<'LONG_SHORT' | 'BUY_SELL'>('LONG_SHORT')
   
-  // 🚨 AUDIBLES FIX
+  // 🚨 AUDIBLES & STREAK FIXES
   const [audiblesUsed, setAudiblesUsed] = useState(0);
+  const [disciplineStreak, setDisciplineStreak] = useState(0);
 
   const displayDirection = useCallback((dir: string | null | undefined) => {
     if (!dir) return 'N/A';
@@ -724,8 +730,8 @@ export default function DeskClient() {
   const weeklySetups = [...setups]
     .filter(s => s.createdAt >= mostRecentSaturday) 
     .sort((a, b) => {
-      const aExec = executedSymbols.includes(a.symbol);
-      const bExec = executedSymbols.includes(b.symbol);
+      const aExec = executedSetupIds.includes(a.id);
+      const bExec = executedSetupIds.includes(b.id);
       if (aExec && !bExec) return 1; 
       if (!aExec && bExec) return -1;
       return 0;
@@ -737,11 +743,11 @@ export default function DeskClient() {
   const heldOverPending = pendingReconciliation.filter(t => adjustDbToIST(t.created_at).getTime() < startOfCurrentWeek.getTime() || t.outcome === 'HOLD');
 
   const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
-  
-  // 🚨 AUDIBLES FIX
   const isVaultLocked = (!isPrepWindow && audiblesUsed >= 2) || currentWeekPending.length > 0;
   
-  const isAlreadyLogged = pendingReconciliation.some(t => t.symbol === logPair) || executedSymbols.includes(logPair);
+  // 🚨 SYMBOL LOCKING FIX: Lock based on setup_id, not just the ticker symbol
+  const isAlreadyLogged = pendingReconciliation.some(t => t.setup_id === logSetupId) || (logSetupId && executedSetupIds.includes(logSetupId));
+  const isOverCap = tradesTakenToday >= 2;
   const activeCatalystList = logExecution === 'Perfect' ? perfectCatalysts : logExecution === 'Imperfect' ? imperfectCatalysts : [];
 
   useEffect(() => {
@@ -809,8 +815,23 @@ export default function DeskClient() {
       if (user.user_metadata?.desk_imperfect_catalysts) setImperfectCatalysts(user.user_metadata.desk_imperfect_catalysts);
       else { const saved = localStorage.getItem('desk_imperfect_catalysts'); if (saved) setImperfectCatalysts(JSON.parse(saved)); }
       
-      // 🚨 AUDIBLES FIX: Set state
       setAudiblesUsed(user.user_metadata?.weekly_audibles_used || 0);
+
+      // 🚨 STREAK FIX: Increment streak on new day login
+      const today = getISTDate().toDateString();
+      const lastActive = user.user_metadata?.last_active_day || localStorage.getItem('last_active_day');
+      let currentStreak = user.user_metadata?.discipline_streak !== undefined ? user.user_metadata.discipline_streak : parseInt(localStorage.getItem('discipline_streak') || '0');
+      
+      if (lastActive && lastActive !== today) {
+          currentStreak += 1;
+          if (isProUser) supabase.auth.updateUser({ data: { discipline_streak: currentStreak, last_active_day: today } });
+          localStorage.setItem('discipline_streak', currentStreak.toString());
+          localStorage.setItem('last_active_day', today);
+      } else if (!lastActive) {
+          if (isProUser) supabase.auth.updateUser({ data: { discipline_streak: currentStreak, last_active_day: today } });
+          localStorage.setItem('last_active_day', today);
+      }
+      setDisciplineStreak(currentStreak);
 
       if (!isProUser) {
          const demoNow = Date.now();
@@ -824,7 +845,7 @@ export default function DeskClient() {
          setPendingReconciliation(DEMO_LOGS.map(l => ({
             ...l, day: demoDay, created_at: new Date(demoNow).toISOString()
          })));
-         setExecutedSymbols(['GBPUSD']);
+         setExecutedSetupIds(['demo-55']);
          setTradesTakenToday(1);
          return; 
       }
@@ -835,11 +856,11 @@ export default function DeskClient() {
         setPendingReconciliation(logsData.filter(d => !d.is_reconciled || d.outcome === 'HOLD').map(d => ({ 
           id: d.id, day: adjustDbToIST(d.created_at).toLocaleDateString('en-US', { weekday: 'short' }), 
           symbol: d.symbol, direction: d.direction, reason: d.reason, execution: d.execution_type, 
-          rr: d.rr, outcome: d.outcome, created_at: d.created_at 
+          setup_id: d.setup_id, rr: d.rr, outcome: d.outcome, created_at: d.created_at 
         })))
         
+        // 🚨 BE REFUND FIX: Exclude BE trades from daily cap
         const todayStr = getISTDate().toDateString()
-        // 🚨 BREAK EVEN REFUND FIX: Don't count BE trades
         const activeOrRiskedTrades = logsData.filter(d => 
           adjustDbToIST(d.created_at).toDateString() === todayStr && 
           d.outcome !== 'BE'
@@ -853,14 +874,15 @@ export default function DeskClient() {
         initStartOfWeek.setDate(initDiffToMon);
         initStartOfWeek.setHours(0, 0, 0, 0);
         
-        const executedThisWeek = logsData.filter(l => adjustDbToIST(l.created_at).getTime() >= initStartOfWeek.getTime()).map(l => l.symbol)
-        setExecutedSymbols(executedThisWeek)
+        // 🚨 SYMBOL LOCK FIX: Track setup_id
+        const executedThisWeek = logsData.filter(l => adjustDbToIST(l.created_at).getTime() >= initStartOfWeek.getTime()).map(l => l.setup_id).filter(Boolean);
+        setExecutedSetupIds(executedThisWeek as string[])
       }
 
       const { data: setupsData } = await supabase.from('user_desk_setups').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
       
       if (setupsData) {
-        const todayStr = getTrueUTC().toDateString();
+        const todayStr = getISTDate().toDateString(); // 🚨 MIDNIGHT UTC WIPE FIX
         const expiredSetups = setupsData.filter(s => s.is_today && s.added_to_today_at && new Date(s.added_to_today_at).toDateString() !== todayStr);
         
         if (expiredSetups.length > 0) {
@@ -879,14 +901,15 @@ export default function DeskClient() {
     initData()
   }, [getISTDate, getTrueUTC, timeOffset])
 
+  // 🚨 MIDNIGHT UTC WIPE FIX: Check using IST Date
   useEffect(() => {
     const checkMidnightWipe = setInterval(() => {
-      const todayStr = getTrueUTC().toDateString();
+      const todayStr = getISTDate().toDateString();
       const hasStaleSetups = setups.some(s => s.isToday && s.addedToTodayAt && new Date(s.addedToTodayAt).toDateString() !== todayStr);
       if (hasStaleSetups) window.location.reload();
     }, 60000); 
     return () => clearInterval(checkMidnightWipe);
-  }, [setups, getTrueUTC]);
+  }, [setups, getISTDate]);
 
   useEffect(() => {
     if (todaySetups.length > 0 && (!activeTodayId || !todaySetups.find(s => s.id === activeTodayId))) setActiveTodayId(todaySetups[0].id)
@@ -894,16 +917,25 @@ export default function DeskClient() {
   }, [todaySetups.length, activeTodayId])
 
   const handleLockEntry = useCallback(async () => {
-    if (tradesTakenToday < 2 && logPair && logDirection && logExecution && user) {
+    // 🚨 OVERRIDE CAP FIX: Removed hard tradesTakenToday < 2 block
+    if (logPair && logDirection && logExecution && user) {
+      
+      // If taking a 3rd trade, punish the streak
+      if (isOverCap) {
+         setDisciplineStreak(0);
+         if (isPro) supabase.auth.updateUser({ data: { discipline_streak: 0 } });
+         localStorage.setItem('discipline_streak', '0');
+      }
+
       if (!isPro) {
         setTradesTakenToday(prev => prev + 1);
         const spoofedNow = getISTDate();
         setPendingReconciliation(prev => [{ 
           id: 'demo-log-' + Date.now(), day: spoofedNow.toLocaleDateString('en-US', { weekday: 'short' }), 
           symbol: logPair, direction: logDirection, reason: logCatalystText || null, execution: logExecution, 
-          rr: '', outcome: '', created_at: spoofedNow.toISOString() 
+          setup_id: logSetupId, rr: '', outcome: '', created_at: spoofedNow.toISOString() 
         }, ...prev]);
-        setExecutedSymbols(prev => [...prev, logPair]);
+        if (logSetupId) setExecutedSetupIds(prev => [...prev, logSetupId]);
         setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); setLogSetupId(null); setIsAuditOpen(false); 
         return;
       }
@@ -933,13 +965,13 @@ export default function DeskClient() {
         setPendingReconciliation(prev => [{ 
           id: data[0].id, day: spoofedNow.toLocaleDateString('en-US', { weekday: 'short' }), 
           symbol: data[0].symbol, direction: data[0].direction, reason: data[0].reason, execution: data[0].execution_type, 
-          rr: '', outcome: '', created_at: data[0].created_at 
+          setup_id: data[0].setup_id, rr: '', outcome: '', created_at: data[0].created_at 
         }, ...prev]);
-        setExecutedSymbols(prev => [...prev, data[0].symbol]);
+        if (data[0].setup_id) setExecutedSetupIds(prev => [...prev, data[0].setup_id]);
       }
       setLogPair(''); setLogDirection(null); setLogCatalystText(''); setLogExecution(null); setLogSetupId(null); setIsAuditOpen(false); 
     }
-  }, [tradesTakenToday, logPair, logDirection, logCatalystText, logExecution, logSetupId, user, getISTDate, isPro, setups]);
+  }, [tradesTakenToday, isOverCap, logPair, logDirection, logCatalystText, logExecution, logSetupId, user, getISTDate, isPro, setups]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -960,8 +992,9 @@ export default function DeskClient() {
       if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setIsVaultOpen(prev => !prev); }
       if (e.code === 'KeyA' && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); setIsAuditOpen(prev => !prev); }
 
-      if (logPair && !isAlreadyLogged && tradesTakenToday < 2) {
-        if (e.code === 'Digit1' || e.code === 'Numpad1') { e.preventDefault(); setLogExecution('Perfect'); }
+      // Updated block for Overrides
+      if (logPair && !isAlreadyLogged) {
+        if (e.code === 'Digit1' || e.code === 'Numpad1') { e.preventDefault(); if (!isOverCap) setLogExecution('Perfect'); }
         if (e.code === 'Digit2' || e.code === 'Numpad2') { e.preventDefault(); setLogExecution('Imperfect'); }
         if (e.code === 'Enter' || e.code === 'NumpadEnter') { if (logDirection && logExecution) { e.preventDefault(); handleLockEntry(); } }
       }
@@ -978,14 +1011,29 @@ export default function DeskClient() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, tradesTakenToday, isCatalystSettingsOpen, isMobileNotesOpen, isVaultLocked, handleLockEntry, previewSetup]);
+  }, [todaySetups, activeTodayId, logPair, logDirection, logCatalystText, logExecution, isAlreadyLogged, isOverCap, isCatalystSettingsOpen, isMobileNotesOpen, isVaultLocked, handleLockEntry, previewSetup]);
 
+  // 🚨 NOTES DEBOUNCE FLUSH FIX: Ensures old notes are saved immediately when switching active setups
+  const prevSetupRef = useRef(activeSetup);
   useEffect(() => {
-    if (activeSetup && user && isPro) {
-      const timeoutId = setTimeout(() => supabase.from('user_desk_setups').update({ notes: activeSetup.notes }).eq('id', activeSetup.id).then(), 1500)
-      return () => clearTimeout(timeoutId)
-    }
-  }, [setups, activeTodayId, user, isPro])
+      // If ID changed, flush the old notes immediately
+      if (prevSetupRef.current && activeSetup && prevSetupRef.current.id !== activeSetup.id) {
+          const oldSetup = prevSetupRef.current;
+          if (isPro && user) {
+              supabase.from('user_desk_setups').update({ notes: oldSetup.notes }).eq('id', oldSetup.id).then();
+          }
+      }
+      prevSetupRef.current = activeSetup;
+  }, [activeSetup, isPro, user]);
+
+  // Standard typing debounce
+  useEffect(() => {
+    if (!activeSetup || !user || !isPro) return;
+    const timer = setTimeout(() => {
+        supabase.from('user_desk_setups').update({ notes: activeSetup.notes }).eq('id', activeSetup.id).then();
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [activeSetup?.notes, activeSetup?.id, user, isPro])
 
   const handleDebriefChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => { setWeeklyDebrief(e.target.value); localStorage.setItem(debriefKey, e.target.value); };
 
@@ -998,7 +1046,6 @@ export default function DeskClient() {
     }
   }
 
-  // 🚨 AUDIBLES FIX: Handle Open Upload Logic
   const handleOpenUpload = async () => {
     if (isVaultLocked) {
       alert(!isPrepWindow ? "Vault is locked. Weekly prep is only allowed from Saturday to Monday 5:30 AM." : "You must settle all trades in the Post-Trade Settlement Queue before prepping for the new week.");
@@ -1023,7 +1070,6 @@ export default function DeskClient() {
     if (isPro) await supabase.from('user_desk_setups').update({ is_today: !setup.isToday, added_to_today_at: null }).eq('id', id)
   }
 
-  // 🚨 60-MIN TRAP FIX: Invalidate Setup
   const invalidateSetup = async (id: string) => {
     if (!user) return;
     const setup = setups.find(s => s.id === id);
@@ -1112,7 +1158,6 @@ export default function DeskClient() {
     if (isReconciled) setPendingReconciliation(prev => prev.filter(p => p.id !== id))
     else setPendingReconciliation(prev => prev.map(p => p.id === id ? { ...p, outcome: 'HOLD' } : p))
 
-    // 🚨 BE REFUND FIX: Refund daily slot if settled as BE today
     if (outcome === 'BE') {
       const tradeData = pendingReconciliation.find(p => p.id === id);
       if (tradeData && new Date(tradeData.created_at).toDateString() === getTrueUTC().toDateString()) {
@@ -1151,7 +1196,6 @@ export default function DeskClient() {
 
   return (
     <>
-      {/* LEVEL 0: Pure Black Canvas for maximum contrast */}
       <div className="relative flex flex-col lg:flex-row h-[100dvh] lg:min-h-[calc(100vh-65px)] lg:h-[calc(100vh-65px)] w-full bg-[#000000] p-2 md:p-4 max-w-[100rem] mx-auto text-neutral-300 font-sans gap-4 overflow-y-auto lg:overflow-hidden">
         
         {isVaultOpen && (
@@ -1163,7 +1207,6 @@ export default function DeskClient() {
           
           {/* LEVEL 1 PANEL: Today's Focus */}
           <div className="flex flex-col bg-[#0a0a0a] border border-white/[0.08] rounded-xl overflow-hidden relative min-h-0 shrink-0 h-full lg:h-[calc(55%-8px)] shadow-2xl">
-            {/* The Colored Top Accent */}
             <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-blue-500/40 to-transparent z-10"></div>
             
             <div className="h-12 border-b border-white/[0.08] flex items-center justify-between px-4 shrink-0 bg-[#0a0a0a]">
@@ -1174,6 +1217,13 @@ export default function DeskClient() {
                 <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest bg-white/[0.03] border border-white/[0.08] px-2 py-0.5 rounded shadow-sm">
                   {todaySetups.length} Pairs
                 </span>
+                
+                {/* 🚨 STREAK TRACKING UI */}
+                <span className={`text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded shadow-sm ${disciplineStreak > 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/[0.03] text-neutral-500 border border-white/[0.08]'}`}>
+                  <Flame size={10} className="inline mr-1 -mt-0.5" /> 
+                  STREAK: {disciplineStreak} {disciplineStreak === 1 ? 'DAY' : 'DAYS'}
+                </span>
+
                 {!isPro && (
                   <span className="hidden md:inline-block text-[9px] font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded tracking-widest uppercase">
                     Sandbox Mode
@@ -1181,12 +1231,8 @@ export default function DeskClient() {
                 )}
               </div>
               
-              {/* Only show here if the Vault is CLOSED */}
               {!isVaultOpen && (
-                <button 
-                  onClick={() => setIsVaultOpen(true)} 
-                  className="hidden lg:block text-neutral-500 hover:text-white p-1.5 transition-colors"
-                >
+                <button onClick={() => setIsVaultOpen(true)} className="hidden lg:block text-neutral-500 hover:text-white p-1.5 transition-colors">
                   <Menu size={16} />
                 </button>
               )}
@@ -1194,7 +1240,7 @@ export default function DeskClient() {
 
             <div className="flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden">
               
-              {/* LEVEL 2 INSET: Sidebar Active Pairs */}
+              {/* Sidebar Active Pairs */}
               <div className="order-2 lg:order-1 w-full lg:w-64 shrink-0 flex-1 lg:flex-none border-t lg:border-t-0 lg:border-r border-white/[0.04] flex flex-col bg-[#050505] overflow-y-auto custom-scrollbar p-3 gap-2 min-h-0 text-white relative">
                 {todaySetups.length === 0 ? (
                   <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 text-center p-4">
@@ -1205,10 +1251,9 @@ export default function DeskClient() {
                   todaySetups.map(setup => {
                     const minutesSincePush = setup.addedToTodayAt ? (getTrueUTC().getTime() - setup.addedToTodayAt) / 60000 : 0;
                     const canRemove = minutesSincePush < 60;
-                    const isExecuted = executedSymbols.includes(setup.symbol);
+                    const isExecuted = executedSetupIds.includes(setup.id);
 
                     return (
-                      // LEVEL 3 RAISED CARDS
                       <div 
                         key={`today-${setup.id}`} 
                         onClick={() => setActiveTodayId(setup.id)} 
@@ -1230,7 +1275,6 @@ export default function DeskClient() {
                               </button>
                             )}
                             
-                            {/* 🚨 60-MIN TRAP FIX: Swap Remove for Invalidate */}
                             {canRemove ? (
                               <button onClick={(e) => { e.stopPropagation(); toggleTodayStatus(setup.id); }} className="p-1 rounded hover:bg-red-500/20 text-neutral-500 hover:text-red-400" title="Remove (1hr limit)">
                                 <ArrowLeft size={12} />
@@ -1254,7 +1298,7 @@ export default function DeskClient() {
                 )}
               </div>
 
-              {/* MAIN VIEWER: Chart (Level 0 pure black for focus) */}
+              {/* MAIN VIEWER: Chart */}
               <div 
                 className="order-1 lg:order-2 w-full flex-[1.5] lg:h-auto lg:flex-1 flex flex-col min-w-0 min-h-0 bg-[#000000] relative shadow-inner overflow-hidden group"
                 onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}
@@ -1294,9 +1338,8 @@ export default function DeskClient() {
                 )}
               </div>
 
-              {/* LEVEL 2 INSET: Notes */}
+              {/* Notes */}
               <div className="hidden lg:flex order-3 w-full lg:w-80 shrink-0 flex-col min-h-[250px] lg:min-h-0 p-4 border-t lg:border-t-0 lg:border-l border-white/[0.04] bg-[#050505]">
-                {/* Level 3 active note card */}
                 <div className="flex-1 bg-[#121212] border border-white/[0.08] shadow-sm rounded-xl p-4 flex flex-col min-h-0 relative">
                   <RichNotesEditor activeSetup={activeSetup} onUpdate={(id, n) => setSetups(prev => prev.map(s => s.id === id ? { ...s, notes: n } : s))} />
                 </div>
@@ -1322,7 +1365,7 @@ export default function DeskClient() {
 
             <div className={`flex flex-col lg:flex-row flex-1 min-h-0 min-w-0 overflow-hidden transition-opacity duration-200 ${isAuditOpen ? 'opacity-100 delay-100' : 'opacity-0 hidden lg:flex'}`}>
               
-              {/* LEVEL 2 INSET: Log Entry Panel */}
+              {/* Log Entry Panel */}
               <div className="w-full lg:flex-[1.2] border-b lg:border-b-0 lg:border-r border-white/[0.04] p-4 lg:p-6 flex flex-col items-center justify-center relative bg-[#050505]">
                 <div className="w-full max-w-sm flex flex-col gap-4 m-auto shrink-0 text-white">
                   <div className="flex justify-between items-end">
@@ -1330,8 +1373,9 @@ export default function DeskClient() {
                       <h3 className="text-[11px] font-bold text-neutral-300 uppercase tracking-widest">Log Execution Reality</h3>
                       <button onClick={() => setIsCatalystSettingsOpen(true)} className="text-neutral-500 hover:text-white transition-colors" title="Edit Custom Catalysts"><Settings size={12} /></button>
                     </div>
-                    <span className={`text-[9px] font-bold tracking-widest px-2 py-0.5 rounded border shadow-sm ${tradesTakenToday >= 2 ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#121212] border-white/[0.08] text-neutral-400'}`}>
-                      {tradesTakenToday}/2 TRADES
+                    {/* 🚨 OVERRIDE CAP FIX: Red styling if cap exceeded */}
+                    <span className={`text-[9px] font-bold tracking-widest px-2 py-0.5 rounded-sm border shadow-sm ${isOverCap ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-[#121212] border-white/[0.08] text-neutral-400'}`}>
+                      {tradesTakenToday}/2 TRADES {isOverCap && '(CAP EXCEEDED)'}
                     </span>
                   </div>
 
@@ -1340,7 +1384,6 @@ export default function DeskClient() {
                       <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">Stage a pair from Today's Focus</span>
                     </div>
                   ) : (
-                    // LEVEL 3 RAISED: Active Log Card
                     <div className="bg-[#121212] border border-white/[0.08] rounded-xl p-5 flex flex-col gap-4 shadow-md">
                       <div className="flex justify-between items-center mb-1">
                         <span className="text-xl font-mono font-bold tracking-tight text-white">{formatTicker(logPair)}</span>
@@ -1358,7 +1401,8 @@ export default function DeskClient() {
                             </button>
                           </div>
                           <div className="flex flex-col gap-2 mt-1">
-                            <button onClick={() => setLogExecution('Perfect')} className={`py-2 px-3 border rounded flex items-center justify-between transition-all shadow-sm ${logExecution === 'Perfect' ? 'bg-emerald-500/5 border-emerald-500/50 text-emerald-400' : 'bg-[#0a0a0a] border-white/[0.08] hover:border-white/[0.15] text-neutral-400'}`}><span className="font-mono text-[9px] opacity-60">[1]</span><span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span><CheckCircle size={12} /></button>
+                            {/* 🚨 OVERRIDE CAP FIX: Disable Perfect Execution if over cap */}
+                            <button disabled={isOverCap} onClick={() => setLogExecution('Perfect')} className={`py-2 px-3 border rounded flex items-center justify-between transition-all shadow-sm ${isOverCap ? 'opacity-30 cursor-not-allowed bg-[#050505] border-white/[0.04]' : logExecution === 'Perfect' ? 'bg-emerald-500/5 border-emerald-500/50 text-emerald-400' : 'bg-[#0a0a0a] border-white/[0.08] hover:border-white/[0.15] text-neutral-400'}`}><span className="font-mono text-[9px] opacity-60">[1]</span><span className="text-[9px] font-bold uppercase tracking-widest">Perfect</span><CheckCircle size={12} /></button>
                             <button onClick={() => setLogExecution('Imperfect')} className={`py-2 px-3 border rounded flex items-center justify-between transition-all shadow-sm ${logExecution === 'Imperfect' ? 'bg-red-500/5 border-red-500/50 text-red-400' : 'bg-[#0a0a0a] border-white/[0.08] hover:border-white/[0.15] text-neutral-400'}`}><span className="font-mono text-[9px] opacity-60">[2]</span><span className="text-[9px] font-bold uppercase tracking-widest">Imperfect</span><AlertTriangle size={12} /></button>
                           </div>
                         </div>
@@ -1371,15 +1415,16 @@ export default function DeskClient() {
                         </div>
                       </div>
 
-                      <button disabled={!logDirection || !logExecution || tradesTakenToday >= 2 || isAlreadyLogged} onClick={handleLockEntry} className={`w-full py-2.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 flex items-center justify-center gap-2 shadow-md ${isAlreadyLogged ? 'bg-[#050505] text-neutral-600 border border-white/[0.04] cursor-not-allowed shadow-none' : 'bg-white text-black hover:bg-neutral-200 disabled:bg-[#121212] disabled:border disabled:border-white/[0.04] disabled:text-neutral-500 disabled:shadow-none'}`}>
-                        {isAlreadyLogged ? 'Already Logged Today' : <>Lock Entry <span className="font-mono text-[9px] opacity-70">[ENTER]</span></>}
+                      {/* 🚨 OVERRIDE CAP FIX: Red Override Button */}
+                      <button disabled={!logDirection || !logExecution || isAlreadyLogged || (isOverCap && logExecution === 'Perfect')} onClick={handleLockEntry} className={`w-full py-2.5 rounded text-[10px] font-bold uppercase tracking-widest transition-colors mt-2 flex items-center justify-center gap-2 shadow-md ${isAlreadyLogged ? 'bg-[#050505] text-neutral-600 border border-white/[0.04] cursor-not-allowed shadow-none' : isOverCap ? 'bg-[#3b0a0a] text-red-400 border border-red-500/50 hover:bg-[#4b0f0f] shadow-[0_0_15px_rgba(239,68,68,0.2)]' : 'bg-white text-black hover:bg-neutral-200 disabled:bg-[#121212] disabled:border disabled:border-white/[0.04] disabled:text-neutral-500 disabled:shadow-none'}`}>
+                        {isAlreadyLogged ? 'Already Logged Today' : isOverCap ? 'OVERRIDE CAP (LOSE STREAK)' : <>Lock Entry <span className="font-mono text-[9px] opacity-70">[ENTER]</span></>}
                       </button>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* LEVEL 0 INSET: Settlement Queue */}
+              {/* Settlement Queue */}
               <div className="w-full lg:flex-[1.5] p-4 lg:p-6 h-[300px] lg:h-auto overflow-y-auto custom-scrollbar bg-[#000000] min-h-0 min-w-0 text-white relative shadow-inner">
                 <div className="flex flex-col gap-6">
                   <div>
@@ -1430,34 +1475,27 @@ export default function DeskClient() {
             </h2>
             
             <div className="flex items-center gap-2">
-              {/* Mobile Close Button (X) */}
               <button onClick={() => setIsVaultOpen(false)} className="lg:hidden text-neutral-500 hover:text-white p-1">
                 <X size={18} />
               </button>
-              
-              {/* Desktop Close Button (Menu) - Appears when Vault is OPEN */}
               {isVaultOpen && (
-                <button 
-                  onClick={() => setIsVaultOpen(false)} 
-                  className="hidden lg:block text-neutral-500 hover:text-white p-1.5 transition-colors"
-                >
+                <button onClick={() => setIsVaultOpen(false)} className="hidden lg:block text-neutral-500 hover:text-white p-1.5 transition-colors">
                   <Menu size={16} />
                 </button>
               )}
             </div>
           </div>
           
-          {/* LEVEL 2 INSET: Vault List */}
+          {/* Vault List */}
           <div className="flex flex-col gap-3 flex-1 overflow-y-auto custom-scrollbar p-3 text-white relative bg-[#050505]">
             {weeklySetups.length === 0 ? (
               <div className="text-center p-6 text-neutral-600"><span className="text-[10px] font-mono uppercase tracking-widest">Vault is empty</span></div>
             ) : (
               weeklySetups.map((setup) => {
-                const isExecuted = executedSymbols.includes(setup.symbol);
+                const isExecuted = executedSetupIds.includes(setup.id);
                 const isPushedToToday = setup.isToday;
 
                 return (
-                  // LEVEL 3 RAISED: Vault Cards
                   <div key={`weekly-${setup.id}`} className="w-full p-3 border border-white/[0.08] bg-[#121212] rounded-lg flex flex-col justify-between group hover:border-white/[0.2] transition-colors shrink-0 gap-2 shadow-sm">
                     <div className="flex justify-between items-start">
                       <div className="flex flex-col min-w-0 pr-2">
@@ -1489,7 +1527,6 @@ export default function DeskClient() {
                       {isExecuted && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 tracking-widest w-fit">Executed</span>}
                       {isPushedToToday && !isExecuted && <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded text-blue-400 bg-blue-500/10 border border-blue-500/20 tracking-widest w-fit">Active Today</span>}
                     </div>
-
                   </div>
                 )
               })
@@ -1497,7 +1534,6 @@ export default function DeskClient() {
           </div>
           
           <div className="p-4 border-t border-white/[0.08] bg-[#0a0a0a] shrink-0 pb-8 lg:pb-4">
-            {/* 🚨 AUDIBLES FIX: Dynamic Button Text */}
             <button 
               onClick={handleOpenUpload} 
               className={`w-full py-3 px-4 flex items-center justify-center gap-2 border border-dashed rounded-lg text-[10px] font-bold uppercase tracking-widest transition-all ${
@@ -1537,18 +1573,8 @@ export default function DeskClient() {
               </p>
               
               <div className="flex gap-3">
-                <button 
-                  onClick={() => setConfirmPushId(null)} 
-                  className="flex-1 py-2.5 bg-transparent border border-white/[0.08] text-neutral-500 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/[0.05] hover:text-white transition-colors rounded-sm"
-                >
-                  Abort
-                </button>
-                <button 
-                  onClick={handleConfirmPush} 
-                  className="flex-1 py-2.5 bg-[#0a0a0a] border border-white/[0.15] text-neutral-300 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-colors rounded-sm"
-                >
-                  Execute Push
-                </button>
+                <button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 bg-transparent border border-white/[0.08] text-neutral-500 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/[0.05] hover:text-white transition-colors rounded-sm">Abort</button>
+                <button onClick={handleConfirmPush} className="flex-1 py-2.5 bg-[#0a0a0a] border border-white/[0.15] text-neutral-300 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-colors rounded-sm">Execute Push</button>
               </div>
             </div>
           </div>
