@@ -498,8 +498,9 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <select value={outcome} onChange={e => setOutcome(e.target.value)} onWheel={handleWheel} className={`w-full sm:w-28 bg-[#0a0a0a] border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-white/[0.08] text-neutral-300'} rounded-sm px-3 py-2 text-[10px] font-mono font-bold outline-none uppercase focus:border-white/[0.2] cursor-ns-resize`} title="Scroll to change">
+      {/* 🚨 FIX 1: Added flex-wrap so the row gracefully wraps instead of squishing elements out of bounds */}
+      <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+        <select value={outcome} onChange={e => setOutcome(e.target.value)} onWheel={handleWheel} className={`w-full sm:w-28 shrink-0 bg-[#0a0a0a] border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-white/[0.08] text-neutral-300'} rounded-sm px-3 py-2 text-[10px] font-mono font-bold outline-none uppercase focus:border-white/[0.2] cursor-ns-resize`} title="Scroll to change">
           <option value="">Outcome</option><option value="TP">Hit TP</option><option value="SL">Hit SL</option><option value="BE">Break Even</option><option value="HOLD">Hold (Carry)</option>
         </select>
         
@@ -510,7 +511,8 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-mono font-bold text-neutral-500 uppercase tracking-widest">RR</span>
             </div>
             
-            <div className="relative flex-1 flex items-center gap-1 bg-[#0a0a0a] border border-white/[0.08] rounded-sm p-1 pr-2 focus-within:border-white/[0.2] transition-all min-w-0">
+            {/* 🚨 FIX 2: Added min-w-[160px] to enforce a hard boundary so icons are never pushed out */}
+            <div className="relative flex-1 flex items-center gap-1 bg-[#0a0a0a] border border-white/[0.08] rounded-sm p-1 pr-2 focus-within:border-white/[0.2] transition-all min-w-[160px]">
                {afterPreview ? (
                  <div className="flex-1 flex items-center gap-2 pl-2 overflow-hidden">
                    <img src={afterPreview} loading="eager" decoding="async" className="h-6 w-6 object-cover rounded-sm border border-white/[0.1] shrink-0" />
@@ -520,8 +522,8 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
                ) : (
                  <>
                    <LinkIcon size={12} className="text-neutral-500 ml-2 shrink-0" />
-                   {/* 🚨 FIX: Replaced w-full with flex-1 min-w-0 on this input */}
-                   <input type="text" value={afterInput} onChange={e => setAfterInput(e.target.value)} placeholder="TV URL or Paste Image..." className="flex-1 min-w-0 bg-transparent border-none text-[10px] font-sans font-medium text-neutral-300 outline-none placeholder:text-neutral-600 px-2" />
+                   {/* 🚨 FIX 3: Added min-w-0 w-0 to prevent the placeholder text from dominating the width */}
+                   <input type="text" value={afterInput} onChange={e => setAfterInput(e.target.value)} placeholder="TV URL or Paste Image..." className="flex-1 min-w-0 w-0 bg-transparent border-none text-[10px] font-sans font-medium text-neutral-300 outline-none placeholder:text-neutral-600 px-2" />
                    <button onClick={handlePaste} className="p-1 hover:bg-white/[0.05] rounded-sm text-neutral-400 hover:text-white transition-colors shrink-0" title="Paste URL or Image"><Clipboard size={12}/></button>
                    <button onClick={() => fileInputRef.current?.click()} className="p-1 hover:bg-white/[0.05] rounded-sm text-neutral-400 hover:text-white transition-colors shrink-0" title="Upload Image"><ImageIcon size={12}/></button>
                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
@@ -563,6 +565,7 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
     </div>
   )
 }
+
 // --- SETTINGS MODAL ---
 function CatalystSettingsModal({ isOpen, onClose, perfect, setPerfect, imperfect, setImperfect }: any) {
   const [newPerfect, setNewPerfect] = useState('')
