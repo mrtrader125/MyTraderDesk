@@ -4,8 +4,23 @@ import { ArrowUpRight } from 'lucide-react'
 
 // SEO: Metadata and OpenGraph tags
 export const metadata: Metadata = {
-  title: 'FAQ | MyTraderDesk',
-  description: 'Everything you need to know about our trading philosophy and how our terminal enforces discipline.',
+  title: "Trading FAQ | MyTraderDesk",
+
+  description:
+    "Frequently asked questions about trader discipline, execution tracking, MT5 journaling, accountability, and trading systems.",
+
+  alternates: {
+    canonical: "https://mytraderdesk.com/faq",
+  },
+
+  openGraph: {
+    title: "MyTraderDesk FAQ",
+    description:
+      "Answers about trading consistency, discipline systems, journaling, and execution workflows.",
+    url: "https://mytraderdesk.com/faq",
+    siteName: "MyTraderDesk",
+    type: "website",
+  },
 }
 
 const FAQS = [
