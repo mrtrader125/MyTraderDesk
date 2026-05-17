@@ -509,7 +509,9 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
               <input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className={`w-full bg-[#0a0a0a] border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-white/[0.08] text-neutral-300'} rounded-sm pl-8 pr-2 py-2 text-[10px] font-mono font-bold outline-none focus:border-white/[0.2]`} />
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-mono font-bold text-neutral-500 uppercase tracking-widest">RR</span>
             </div>
-            <div className="relative flex-1 flex items-center gap-1 bg-[#0a0a0a] border border-white/[0.08] rounded-sm p-1 pr-2 focus-within:border-white/[0.2] transition-all min-w-0">
+            
+            {/* 🚨 FIX: Added w-full sm:flex-1 so the input resizes correctly without shrinking to 0 on small screens */}
+            <div className="relative w-full sm:flex-1 flex items-center gap-1 bg-[#0a0a0a] border border-white/[0.08] rounded-sm p-1 pr-2 focus-within:border-white/[0.2] transition-all min-w-0">
                {afterPreview ? (
                  <div className="flex-1 flex items-center gap-2 pl-2 overflow-hidden">
                    <img src={afterPreview} loading="eager" decoding="async" className="h-6 w-6 object-cover rounded-sm border border-white/[0.1] shrink-0" />
@@ -529,7 +531,6 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
           </>
         )}
 
-        {/* INLINE TERMINAL CONFIRMATIONS */}
         {showFlushConfirm ? (
           <div className="flex items-center justify-end gap-2 w-full sm:w-auto flex-1 animate-in fade-in zoom-in-95 duration-200">
             <span className="text-[10px] text-red-500 font-mono font-bold uppercase tracking-widest text-right leading-tight hidden lg:block truncate pr-2">Confirm -2R Penalty?</span>
@@ -543,18 +544,19 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
             <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-[#0a0a0a] border border-white/[0.15] text-amber-500 hover:bg-amber-500/10 hover:border-amber-500/30 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors whitespace-nowrap shrink-0 rounded-sm">{isSaving ? '...' : 'Execute Carry'}</button>
           </div>
         ) : (
-          <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
+          {/* 🚨 FIX: Replaced w-full with flex-1 sm:flex-none on the buttons so they neatly share 50% width on mobile */}
+          <div className="flex gap-2 w-full sm:w-auto sm:ml-auto shrink-0">
             <button 
               onClick={(e) => {
                 e.preventDefault();
                 setShowFlushConfirm(true);
               }}
-              className="px-4 py-2 bg-transparent border border-white/[0.08] text-red-500/80 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-500 text-[10px] font-mono font-bold uppercase rounded-sm transition-colors whitespace-nowrap shrink-0"
+              className="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-white/[0.08] text-red-500/80 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-500 text-[10px] font-mono font-bold uppercase rounded-sm transition-colors whitespace-nowrap shrink-0"
             >
               Flush Trade
             </button>
             
-            <button disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} className="w-full sm:w-auto px-6 py-2 bg-[#0a0a0a] border border-white/[0.15] text-neutral-300 hover:bg-white hover:text-black hover:border-white text-[10px] font-mono font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-[#121212] disabled:border-white/[0.04] disabled:text-neutral-600 rounded-sm transition-colors shrink-0 whitespace-nowrap">{isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}</button>
+            <button disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} className="flex-1 sm:flex-none px-6 py-2 bg-[#0a0a0a] border border-white/[0.15] text-neutral-300 hover:bg-white hover:text-black hover:border-white text-[10px] font-mono font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-[#121212] disabled:border-white/[0.04] disabled:text-neutral-600 rounded-sm transition-colors shrink-0 whitespace-nowrap">{isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}</button>
           </div>
         )}
       </div>
