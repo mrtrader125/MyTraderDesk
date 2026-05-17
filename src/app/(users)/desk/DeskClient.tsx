@@ -154,7 +154,7 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm, displayDi
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#000000]/90 backdrop-blur-sm p-4">
-      <div className="bg-[#0a0a0a] border border-white/[0.08] rounded-xl shadow-2xl w-full max-w-3xl flex flex-col h-[80vh]">
+      <div className="bg-[#0a0a0a] border border-white/[0.08] rounded-sm shadow-2xl w-full max-w-3xl flex flex-col h-[80vh]">
         <div className="p-4 border-b border-white/[0.08] flex justify-between items-center bg-[#0a0a0a]">
           <h2 className="text-sm font-bold text-white uppercase tracking-widest flex items-center gap-2">
             <DownloadCloud size={16} className="text-blue-500" /> MT5 Data Staging
@@ -166,10 +166,10 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm, displayDi
             <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest">Broker Timezone Offset</span>
             <span className="text-[9px] text-neutral-600 hidden sm:block">Auto-detected. Adjust if matching fails.</span>
           </div>
-          <div className="flex items-center gap-2 bg-[#121212] border border-white/[0.08] rounded-lg p-1">
-            <button onClick={() => setOffsetHours(p => p - 1)} className="px-3 py-1 hover:bg-white/[0.05] rounded text-neutral-300 font-mono">-</button>
+          <div className="flex items-center gap-2 bg-[#121212] border border-white/[0.08] rounded-sm p-1">
+            <button onClick={() => setOffsetHours(p => p - 1)} className="px-3 py-1 hover:bg-white/[0.05] rounded-sm text-neutral-300 font-mono">-</button>
             <span className="font-mono text-sm font-bold w-8 text-center text-white">{offsetHours > 0 ? `+${offsetHours}` : offsetHours}</span>
-            <button onClick={() => setOffsetHours(p => p + 1)} className="px-3 py-1 hover:bg-white/[0.05] rounded text-neutral-300 font-mono">+</button>
+            <button onClick={() => setOffsetHours(p => p + 1)} className="px-3 py-1 hover:bg-white/[0.05] rounded-sm text-neutral-300 font-mono">+</button>
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-[#050505]">
@@ -178,17 +178,17 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm, displayDi
           ) : (
             <div className="flex flex-col gap-3">
               {matches.map((m, i) => (
-                <div key={i} className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-center bg-[#121212] border border-white/[0.08] rounded-xl p-3">
-                  <div className="flex-1 w-full flex flex-col p-3 bg-white/[0.02] rounded-lg border border-white/[0.02]">
+                <div key={i} className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-center bg-[#121212] border border-white/[0.08] rounded-sm p-3">
+                  <div className="flex-1 w-full flex flex-col p-3 bg-white/[0.02] rounded-sm border border-white/[0.02]">
                     <span className="text-[9px] font-bold uppercase text-neutral-500 tracking-widest mb-1">Logged Reality</span>
                     <div className="flex items-center gap-2">
                       <span className="font-mono text-base font-bold tracking-tight">{formatTicker(m.log.symbol)}</span>
-                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded ${m.log.direction === 'LONG' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{displayDirection(m.log.direction)}</span>
+                      <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-sm ${m.log.direction === 'LONG' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{displayDirection(m.log.direction)}</span>
                     </div>
                     <span className="text-[10px] text-neutral-400 mt-1">{new Date(m.log.created_at).toLocaleTimeString()}</span>
                   </div>
                   <ArrowRight size={16} className="text-neutral-600 hidden sm:block rotate-90 sm:rotate-0" />
-                  <div className={`flex-1 w-full flex flex-col p-3 rounded-lg border ${m.match ? 'bg-blue-500/5 border-blue-500/30' : 'bg-white/[0.02] border-dashed border-white/[0.05]'}`}>
+                  <div className={`flex-1 w-full flex flex-col p-3 rounded-sm border ${m.match ? 'bg-blue-500/5 border-blue-500/30' : 'bg-white/[0.02] border-dashed border-white/[0.05]'}`}>
                     <span className="text-[9px] font-bold uppercase text-neutral-500 tracking-widest mb-1">MT5 Broker Data</span>
                     {m.match ? (
                       <>
@@ -208,7 +208,7 @@ function MT5SyncModal({ isOpen, onClose, file, pendingLogs, onConfirm, displayDi
           )}
         </div>
         <div className="p-4 border-t border-white/[0.08] bg-[#0a0a0a] flex justify-end">
-          <button onClick={() => { onConfirm(matches); onClose(); }} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold uppercase tracking-widest rounded transition-colors flex items-center gap-2"><Check size={14} /> Sync Matches</button>
+          <button onClick={() => { onConfirm(matches); onClose(); }} className="px-6 py-2 bg-[#0a0a0a] border border-white/[0.15] text-neutral-300 hover:text-black hover:bg-white text-[10px] font-mono font-bold uppercase tracking-widest rounded-sm transition-colors flex items-center gap-2"><Check size={14} /> Sync Matches</button>
         </div>
       </div>
     </div>
@@ -324,34 +324,34 @@ function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpe
   return (
     <>
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#000000]/90 backdrop-blur-sm p-2 sm:p-4 animate-in fade-in duration-200" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop} onClick={handleBackdropClick}>
-        <div className="w-full max-w-4xl bg-[#0a0a0a] border border-white/[0.08] rounded-xl shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px] relative" onClick={e => e.stopPropagation()}>
+        <div className="w-full max-w-4xl bg-[#0a0a0a] border border-white/[0.08] rounded-sm shadow-2xl flex flex-col overflow-hidden h-[90vh] lg:h-[80vh] min-h-[500px] relative" onClick={e => e.stopPropagation()}>
           {isDragging && (
-            <div className="absolute inset-0 z-50 bg-purple-500/10 border-4 border-purple-500/50 border-dashed rounded-xl flex items-center justify-center pointer-events-none backdrop-blur-sm m-2">
-              <div className="bg-[#050505]/90 px-8 py-6 rounded-xl flex flex-col items-center shadow-2xl">
+            <div className="absolute inset-0 z-50 bg-purple-500/10 border-4 border-purple-500/50 border-dashed rounded-sm flex items-center justify-center pointer-events-none backdrop-blur-sm m-2">
+              <div className="bg-[#050505]/90 px-8 py-6 rounded-sm flex flex-col items-center shadow-2xl">
                 <UploadCloud size={48} className="text-purple-500 mb-3 animate-bounce" />
                 <p className="text-white font-mono text-lg tracking-widest uppercase">Drop Images to Stage</p>
               </div>
             </div>
           )}
           <div className="flex items-center justify-between p-4 border-b border-white/[0.08] bg-[#0a0a0a] shrink-0">
-            <h2 className="text-sm font-bold text-neutral-200 uppercase tracking-widest flex items-center gap-2"><UploadCloud size={16} className="text-purple-500" /> Vault Upload</h2>
+            <h2 className="text-[11px] font-mono font-bold text-neutral-200 uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-purple-500" /> Vault Upload</h2>
             <button onClick={onClose} className="text-neutral-500 hover:text-white transition-colors" disabled={isUploading}><X size={18} /></button>
           </div>
           <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
             <div className="w-full lg:w-[200px] border-b lg:border-b-0 lg:border-r border-white/[0.04] bg-[#050505] flex flex-col shrink-0">
               <div className="p-3 border-b border-white/[0.04] flex flex-col gap-2 shrink-0">
-                <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-[#121212] border border-white/[0.08] hover:border-white/[0.15] text-[10px] font-bold tracking-widest uppercase text-white rounded transition-colors flex items-center justify-center gap-1.5 shadow-sm" disabled={isUploading}><Plus size={14} /> Add Images</button>
+                <button onClick={() => fileInputRef.current?.click()} className="w-full py-2 bg-[#121212] border border-white/[0.08] hover:border-white/[0.15] text-[10px] font-mono font-bold tracking-widest uppercase text-white rounded-sm transition-colors flex items-center justify-center gap-1.5 shadow-sm" disabled={isUploading}><Plus size={14} /> Add Images</button>
                 <div className="flex gap-1">
-                  <input type="text" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddLink()} placeholder="Paste URL..." className="flex-1 min-w-0 bg-[#121212] border border-white/[0.08] rounded px-2 text-[10px] text-neutral-300 outline-none focus:border-purple-500 transition-colors shadow-sm" disabled={isUploading} />
-                  <button onClick={handlePasteClick} className="bg-[#121212] border border-white/[0.08] hover:border-white/[0.15] text-neutral-400 hover:text-white px-2 rounded transition-colors shadow-sm" disabled={isUploading} title="Paste Text"><Clipboard size={12}/></button>
-                  <button onClick={handleAddLink} className="bg-[#121212] border border-white/[0.08] hover:border-white/[0.15] text-white px-2 rounded transition-colors shadow-sm" disabled={isUploading} title="Add"><Plus size={12}/></button>
+                  <input type="text" value={linkInput} onChange={(e) => setLinkInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleAddLink()} placeholder="Paste URL..." className="flex-1 min-w-0 bg-[#121212] border border-white/[0.08] rounded-sm px-2 text-[10px] font-mono text-neutral-300 outline-none focus:border-purple-500 transition-colors shadow-sm" disabled={isUploading} />
+                  <button onClick={handlePasteClick} className="bg-[#121212] border border-white/[0.08] hover:border-white/[0.15] text-neutral-400 hover:text-white px-2 rounded-sm transition-colors shadow-sm" disabled={isUploading} title="Paste Text"><Clipboard size={12}/></button>
+                  <button onClick={handleAddLink} className="bg-[#121212] border border-white/[0.08] hover:border-white/[0.15] text-white px-2 rounded-sm transition-colors shadow-sm" disabled={isUploading} title="Add"><Plus size={12}/></button>
                 </div>
                 <input type="file" multiple ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
               </div>
               <div className="flex-1 overflow-x-auto lg:overflow-y-auto custom-scrollbar p-2 flex flex-row lg:flex-col gap-2 text-white">
                 {drafts.map((draft, idx) => (
-                  <div key={draft.id} onClick={() => setActiveIndex(idx)} className={`min-w-[150px] lg:min-w-0 p-2 rounded-lg border cursor-pointer flex items-center gap-2 transition-all shadow-sm ${activeIndex === idx ? 'bg-[#1a1a1a] border-white/[0.2]' : 'bg-[#121212] border-white/[0.08] hover:bg-[#1a1a1a]'}`}>
-                    <div className="flex-1 min-w-0"><p className="text-xs font-mono font-bold tracking-tight truncate">{draft.instrument || 'UNKNOWN'}</p><p className="text-[9px] text-neutral-500 uppercase tracking-widest truncate">{draft.direction ? displayDirection(draft.direction) : 'Incomplete'}</p></div>
+                  <div key={draft.id} onClick={() => setActiveIndex(idx)} className={`min-w-[150px] lg:min-w-0 p-2 rounded-sm border cursor-pointer flex items-center gap-2 transition-all shadow-sm ${activeIndex === idx ? 'bg-[#1a1a1a] border-white/[0.2]' : 'bg-[#121212] border-white/[0.08] hover:bg-[#1a1a1a]'}`}>
+                    <div className="flex-1 min-w-0"><p className="text-[11px] font-mono font-bold tracking-tight truncate">{draft.instrument || 'UNKNOWN'}</p><p className="text-[9px] text-neutral-500 font-mono uppercase tracking-widest truncate">{draft.direction ? displayDirection(draft.direction) : 'Incomplete'}</p></div>
                     <button onClick={(e) => { e.stopPropagation(); removeDraft(idx); }} className="text-neutral-600 hover:text-red-400 p-1" disabled={isUploading}><X size={12}/></button>
                   </div>
                 ))}
@@ -360,49 +360,49 @@ function SetupUploadModal({ isOpen, onClose, onSave, displayDirection }: { isOpe
             <div className="flex-1 flex flex-col bg-[#000000] min-w-0 overflow-y-auto custom-scrollbar shadow-inner">
               {drafts.length > 0 && drafts[activeIndex] ? (
                 <div className="p-4 lg:p-6 flex flex-col gap-4 max-w-2xl mx-auto w-full text-white">
-                  <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-white/[0.08] rounded-xl overflow-hidden flex items-center justify-center mb-2 relative shadow-lg" onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}>
+                  <div className="w-full aspect-[16/9] bg-[#0a0a0a] border border-white/[0.08] rounded-sm overflow-hidden flex items-center justify-center mb-2 relative shadow-lg" onMouseDown={handlePeekStart} onMouseUp={handlePeekEnd} onMouseLeave={handlePeekEnd} onTouchStart={handlePeekStart} onTouchEnd={handlePeekEnd}>
                     {drafts[activeIndex].imageSource ? <img src={drafts[activeIndex].imageSource!} alt="Preview" loading="eager" decoding="async" className="w-full h-full object-contain p-2 cursor-pointer" draggable={false} /> : <ImageIcon className="w-10 h-10 text-neutral-700" />}
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
-                      <label className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Instrument Ticker</label>
-                      <input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-[#121212] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-neutral-200 outline-none focus:border-white/[0.2] transition-colors uppercase font-mono tracking-tight shadow-sm" disabled={isUploading}/>
+                      <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest font-bold">Instrument Ticker</label>
+                      <input type="text" value={drafts[activeIndex].instrument} onChange={(e) => updateActiveDraft('instrument', e.target.value.toUpperCase())} placeholder="e.g. GBPUSD" className="w-full bg-[#121212] border border-white/[0.08] rounded-sm px-3 py-2 text-[11px] text-neutral-200 outline-none focus:border-white/[0.2] transition-colors uppercase font-mono tracking-tight shadow-sm" disabled={isUploading}/>
                     </div>
                     <div className="flex flex-col gap-2">
-                      <label className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Macro Bias</label>
+                      <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest font-bold">Macro Bias</label>
                       <div className="flex gap-2">
-                        <button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all border shadow-sm ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-[#121212] border-white/[0.08] text-neutral-500 hover:border-white/[0.2]'}`}>{displayDirection('LONG')}</button>
-                        <button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded-lg text-[10px] uppercase tracking-widest font-bold transition-all border shadow-sm ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-[#121212] border-white/[0.08] text-neutral-500 hover:border-white/[0.2]'}`}>{displayDirection('SHORT')}</button>
+                        <button onClick={() => updateActiveDraft('direction', 'LONG')} className={`flex-1 py-2 rounded-sm text-[10px] font-mono uppercase tracking-widest font-bold transition-all border shadow-sm ${drafts[activeIndex].direction === 'LONG' ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400' : 'bg-[#121212] border-white/[0.08] text-neutral-500 hover:border-white/[0.2]'}`}>{displayDirection('LONG')}</button>
+                        <button onClick={() => updateActiveDraft('direction', 'SHORT')} className={`flex-1 py-2 rounded-sm text-[10px] font-mono uppercase tracking-widest font-bold transition-all border shadow-sm ${drafts[activeIndex].direction === 'SHORT' ? 'bg-red-500/20 border-red-500/50 text-red-400' : 'bg-[#121212] border-white/[0.08] text-neutral-500 hover:border-white/[0.2]'}`}>{displayDirection('SHORT')}</button>
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <label className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Playbook & Catalysts</label>
-                    <select onChange={(e) => { if (e.target.value) { const currentNotes = drafts[activeIndex].notes; updateActiveDraft('notes', currentNotes ? `${currentNotes}\n[${e.target.value}]` : `[${e.target.value}]`); e.target.value = ""; } }} className="w-full bg-[#121212] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-neutral-200 outline-none focus:border-white/[0.2] shadow-sm" disabled={isUploading}>
+                    <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest font-bold">Playbook & Catalysts</label>
+                    <select onChange={(e) => { if (e.target.value) { const currentNotes = drafts[activeIndex].notes; updateActiveDraft('notes', currentNotes ? `${currentNotes}\n[${e.target.value}]` : `[${e.target.value}]`); e.target.value = ""; } }} className="w-full bg-[#121212] border border-white/[0.08] rounded-sm px-3 py-2 text-[11px] font-mono text-neutral-200 outline-none focus:border-white/[0.2] shadow-sm" disabled={isUploading}>
                       <option value="">Insert Tag...</option>
                       <optgroup label="Playbooks">{PLAYBOOKS.map(p => <option key={p} value={p}>{p}</option>)}</optgroup>
                       <optgroup label="Perfect Catalysts">{DEFAULT_PERFECT_CATALYSTS.map(c => <option key={c} value={c}>{c}</option>)}</optgroup>
                     </select>
                   </div>
                   <div className="flex flex-col gap-2 flex-1 mt-2">
-                    <label className="text-[10px] text-neutral-500 uppercase tracking-widest font-bold">Structural Thesis</label>
-                    <textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-[#121212] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-neutral-200 outline-none focus:border-white/[0.2] transition-colors resize-none custom-scrollbar font-sans shadow-sm" disabled={isUploading}/>
+                    <label className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest font-bold">Structural Thesis</label>
+                    <textarea value={drafts[activeIndex].notes} onChange={(e) => updateActiveDraft('notes', e.target.value)} placeholder="Log structural bias, liquidity sweeps, or entry triggers..." className="w-full min-h-[100px] flex-1 bg-[#121212] border border-white/[0.08] rounded-sm px-3 py-2 text-[11px] font-sans text-neutral-200 outline-none focus:border-white/[0.2] transition-colors resize-none custom-scrollbar shadow-sm" disabled={isUploading}/>
                   </div>
                 </div>
               ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 p-6"><UploadCloud size={40} className="mb-4 opacity-50 stroke-1" /><p className="text-xs font-mono text-center">Drag & Drop images anywhere<br/><span className="text-[10px] opacity-70 font-sans tracking-widest uppercase">or use Ctrl+V to paste a screenshot</span></p></div>
+                <div className="flex-1 flex flex-col items-center justify-center text-neutral-600 p-6"><UploadCloud size={40} className="mb-4 opacity-50 stroke-1" /><p className="text-[11px] font-mono text-center">Drag & Drop images anywhere<br/><span className="text-[9px] opacity-70 font-mono tracking-widest uppercase mt-1 block">or use Ctrl+V to paste a screenshot</span></p></div>
               )}
             </div>
           </div>
           <div className="p-4 border-t border-white/[0.08] bg-[#0a0a0a] flex justify-between items-center shrink-0">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">{drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged</span>
-            <button onClick={handleSaveAll} disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction) || isUploading} className="px-6 py-2 rounded bg-white text-black text-[10px] font-bold uppercase tracking-widest hover:bg-neutral-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{isUploading ? 'Saving...' : 'Save to Vault'}</button>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-neutral-500">{drafts.length} {drafts.length === 1 ? 'setup' : 'setups'} staged</span>
+            <button onClick={handleSaveAll} disabled={drafts.length === 0 || drafts.some(d => d.instrument.trim() === '' || !d.direction) || isUploading} className="px-6 py-2 rounded-sm bg-[#0a0a0a] border border-white/[0.15] text-neutral-300 hover:text-black hover:bg-white text-[10px] font-mono font-bold uppercase tracking-widest transition-colors disabled:opacity-50 disabled:cursor-not-allowed">{isUploading ? 'Saving...' : 'Save to Vault'}</button>
           </div>
         </div>
       </div>
       {isPeeking && drafts.length > 0 && drafts[activeIndex]?.imageSource && (
         <div className="fixed inset-0 z-[9999] bg-[#000000]/95 flex items-center justify-center p-4 sm:p-8 pointer-events-none animate-in fade-in duration-150">
-          <img src={drafts[activeIndex].imageSource!} alt="Peek" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" />
+          <img src={drafts[activeIndex].imageSource!} alt="Peek" loading="eager" decoding="async" className="max-w-full max-h-full object-contain rounded-sm shadow-2xl" />
         </div>
       )}
     </>
@@ -414,19 +414,19 @@ function RichNotesEditor({ activeSetup, onUpdate }: { activeSetup: any, onUpdate
   const editor = useEditor({
     extensions: [StarterKit],
     content: activeSetup?.notes || '',
-    editorProps: { attributes: { class: 'flex-1 w-full bg-transparent border-none focus:outline-none text-xs text-neutral-300 leading-relaxed font-sans custom-scrollbar overflow-y-auto min-h-0' } },
+    editorProps: { attributes: { class: 'flex-1 w-full bg-transparent border-none focus:outline-none text-[11px] text-neutral-300 leading-relaxed font-sans custom-scrollbar overflow-y-auto min-h-0' } },
     onUpdate: ({ editor }) => { if (activeSetup) onUpdate(activeSetup.id, editor.getHTML()) },
   })
 
   useEffect(() => { if (editor && activeSetup && editor.getHTML() !== activeSetup.notes) editor.commands.setContent(activeSetup.notes || '') }, [activeSetup?.id, editor])
 
-  if (!activeSetup) return <div className="w-full h-full flex items-center justify-center text-center"><p className="text-[10px] text-neutral-600 font-bold uppercase tracking-widest">No active notes</p></div>;
+  if (!activeSetup) return <div className="w-full h-full flex items-center justify-center text-center"><p className="text-[10px] font-mono text-neutral-600 font-bold uppercase tracking-widest">No active notes</p></div>;
 
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden tiptap-wrapper">
       <div className="flex items-center gap-1 pb-2 mb-2 border-b border-white/[0.08] shrink-0">
-        <button onClick={() => editor?.chain().focus().toggleBold().run()} className={`p-1.5 rounded transition-colors ${editor?.isActive('bold') ? 'bg-white/[0.1] text-white' : 'text-neutral-500 hover:text-white hover:bg-white/[0.05]'}`}><Bold size={14} /></button>
-        <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={`p-1.5 rounded transition-colors ${editor?.isActive('bulletList') ? 'bg-white/[0.1] text-white' : 'text-neutral-500 hover:text-white hover:bg-white/[0.05]'}`}><List size={14} /></button>
+        <button onClick={() => editor?.chain().focus().toggleBold().run()} className={`p-1.5 rounded-sm transition-colors ${editor?.isActive('bold') ? 'bg-white/[0.1] text-white' : 'text-neutral-500 hover:text-white hover:bg-white/[0.05]'}`}><Bold size={14} /></button>
+        <button onClick={() => editor?.chain().focus().toggleBulletList().run()} className={`p-1.5 rounded-sm transition-colors ${editor?.isActive('bulletList') ? 'bg-white/[0.1] text-white' : 'text-neutral-500 hover:text-white hover:bg-white/[0.05]'}`}><List size={14} /></button>
       </div>
       <EditorContent editor={editor} className="flex-1 flex flex-col min-h-0 overflow-hidden" />
       <style dangerouslySetInnerHTML={{__html: `.tiptap-wrapper .ProseMirror ul { list-style-type: disc; padding-left: 1.5rem; margin-top: 0.5rem; margin-bottom: 0.5rem; } .tiptap-wrapper .ProseMirror li { margin-bottom: 0.25rem; } .tiptap-wrapper .ProseMirror b, .tiptap-wrapper .ProseMirror strong { color: #ffffff; font-weight: 700; } .tiptap-wrapper .ProseMirror p.is-editor-empty:first-child::before { content: "Type structural notes here..."; color: #52525b; float: left; height: 0; pointer-events: none; }`}} />
@@ -443,10 +443,11 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
   const [afterPreview, setAfterPreview] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [showHoldConfirm, setShowHoldConfirm] = useState(false)
+  const [showFlushConfirm, setShowFlushConfirm] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { setOutcome(trade.outcome || ''); setRr(trade.rr ? trade.rr.toString() : ''); }, [trade.outcome, trade.rr])
-  useEffect(() => { setShowHoldConfirm(false); }, [outcome])
+  useEffect(() => { setShowHoldConfirm(false); setShowFlushConfirm(false); }, [outcome])
 
   const handleWheel = (e: React.WheelEvent<HTMLSelectElement>) => {
     const outcomes = ['', 'TP', 'SL', 'BE', 'HOLD'];
@@ -479,48 +480,48 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
     }
   }
 
-  const executeSave = async () => { setIsSaving(true); await onSave(trade.id, outcome, rr, afterInput, afterFile); setIsSaving(false); setShowHoldConfirm(false); }
+  const executeSave = async () => { setIsSaving(true); await onSave(trade.id, outcome, rr, afterInput, afterFile); setIsSaving(false); setShowHoldConfirm(false); setShowFlushConfirm(false); }
   const isMt5Synced = trade.outcome && trade.rr !== undefined
 
   return (
-    <div className="bg-[#121212] border border-white/[0.08] rounded-xl p-4 flex flex-col gap-4 shadow-sm shrink-0 hover:border-white/[0.15] transition-colors">
+    <div className="bg-[#121212] border border-white/[0.08] rounded-sm p-4 flex flex-col gap-4 shadow-sm shrink-0 hover:border-white/[0.15] transition-colors">
       <div className="flex justify-between items-center border-b border-white/[0.08] pb-3">
         <div className="flex items-center gap-3">
           <span className="text-[13px] font-mono font-bold tracking-tight text-white">{formatTicker(trade.symbol)}</span>
-          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>{displayDirection(trade.direction)}</span>
-          {trade.reason && <span className="text-[10px] text-neutral-500 font-sans truncate max-w-[150px] sm:max-w-none">• {trade.reason.replace(/\n/g, ', ')}</span>}
-          {isMt5Synced && <span className="text-[9px] font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded ml-2 flex items-center gap-1"><DownloadCloud size={10}/> MT5 Synced</span>}
+          <span className={`text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm border ${trade.direction === 'LONG' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' : 'bg-red-500/10 border-red-500/30 text-red-400'}`}>{displayDirection(trade.direction)}</span>
+          {trade.reason && <span className="text-[10px] font-sans text-neutral-500 truncate max-w-[150px] sm:max-w-none">• {trade.reason.replace(/\n/g, ', ')}</span>}
+          {isMt5Synced && <span className="text-[9px] font-mono font-bold text-blue-400 uppercase tracking-widest bg-blue-500/10 px-1.5 py-0.5 rounded-sm ml-2 flex items-center gap-1"><DownloadCloud size={10}/> MT5 Synced</span>}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-bold text-neutral-500 hidden sm:block uppercase tracking-widest">{trade.day}</span>
-          <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{trade.execution}</span>
+          <span className="text-[10px] font-mono font-bold text-neutral-500 hidden sm:block uppercase tracking-widest">{trade.day}</span>
+          <span className={`text-[9px] font-mono font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm ${trade.execution === 'Perfect' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>{trade.execution}</span>
         </div>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        <select value={outcome} onChange={e => setOutcome(e.target.value)} onWheel={handleWheel} className={`w-full sm:w-28 bg-[#0a0a0a] border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-white/[0.08] text-neutral-300'} rounded-lg px-3 py-2 text-[10px] font-bold outline-none uppercase focus:border-white/[0.2] cursor-ns-resize`} title="Scroll to change">
+        <select value={outcome} onChange={e => setOutcome(e.target.value)} onWheel={handleWheel} className={`w-full sm:w-28 bg-[#0a0a0a] border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-white/[0.08] text-neutral-300'} rounded-sm px-3 py-2 text-[10px] font-mono font-bold outline-none uppercase focus:border-white/[0.2] cursor-ns-resize`} title="Scroll to change">
           <option value="">Outcome</option><option value="TP">Hit TP</option><option value="SL">Hit SL</option><option value="BE">Break Even</option><option value="HOLD">Hold (Carry)</option>
         </select>
         
-        {!showHoldConfirm && (
+        {!showHoldConfirm && !showFlushConfirm && (
           <>
             <div className="relative w-full sm:w-24 shrink-0">
-              <input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className={`w-full bg-[#0a0a0a] border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-white/[0.08] text-neutral-300'} rounded-lg pl-8 pr-2 py-2 text-[10px] font-bold outline-none focus:border-white/[0.2]`} />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-bold text-neutral-500 uppercase tracking-widest">RR</span>
+              <input type="number" value={rr} onChange={e => setRr(e.target.value)} placeholder="0.0" className={`w-full bg-[#0a0a0a] border ${isMt5Synced ? 'border-blue-500/30 text-blue-300' : 'border-white/[0.08] text-neutral-300'} rounded-sm pl-8 pr-2 py-2 text-[10px] font-mono font-bold outline-none focus:border-white/[0.2]`} />
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[9px] font-mono font-bold text-neutral-500 uppercase tracking-widest">RR</span>
             </div>
-            <div className="relative flex-1 flex items-center gap-1 bg-[#0a0a0a] border border-white/[0.08] rounded-lg p-1 pr-2 focus-within:border-white/[0.2] transition-all min-w-0">
+            <div className="relative flex-1 flex items-center gap-1 bg-[#0a0a0a] border border-white/[0.08] rounded-sm p-1 pr-2 focus-within:border-white/[0.2] transition-all min-w-0">
                {afterPreview ? (
                  <div className="flex-1 flex items-center gap-2 pl-2 overflow-hidden">
-                   <img src={afterPreview} loading="eager" decoding="async" className="h-6 w-6 object-cover rounded border border-white/[0.1] shrink-0" />
-                   <span className="text-[10px] font-bold text-neutral-400 truncate tracking-widest uppercase">Image Attached</span>
+                   <img src={afterPreview} loading="eager" decoding="async" className="h-6 w-6 object-cover rounded-sm border border-white/[0.1] shrink-0" />
+                   <span className="text-[10px] font-mono font-bold text-neutral-400 truncate tracking-widest uppercase">Image Attached</span>
                    <button onClick={() => { setAfterFile(null); setAfterPreview(null); }} className="ml-auto text-neutral-500 hover:text-red-400 p-1"><X size={12}/></button>
                  </div>
                ) : (
                  <>
                    <LinkIcon size={12} className="text-neutral-500 ml-2 shrink-0" />
-                   <input type="text" value={afterInput} onChange={e => setAfterInput(e.target.value)} placeholder="TV URL or Paste Image..." className="w-full bg-transparent border-none text-[10px] font-bold text-neutral-300 outline-none placeholder:text-neutral-600 px-2" />
-                   <button onClick={handlePaste} className="p-1 hover:bg-white/[0.05] rounded text-neutral-400 hover:text-white transition-colors shrink-0" title="Paste URL or Image"><Clipboard size={12}/></button>
-                   <button onClick={() => fileInputRef.current?.click()} className="p-1 hover:bg-white/[0.05] rounded text-neutral-400 hover:text-white transition-colors shrink-0" title="Upload Image"><ImageIcon size={12}/></button>
+                   <input type="text" value={afterInput} onChange={e => setAfterInput(e.target.value)} placeholder="TV URL or Paste Image..." className="w-full bg-transparent border-none text-[10px] font-sans font-medium text-neutral-300 outline-none placeholder:text-neutral-600 px-2" />
+                   <button onClick={handlePaste} className="p-1 hover:bg-white/[0.05] rounded-sm text-neutral-400 hover:text-white transition-colors shrink-0" title="Paste URL or Image"><Clipboard size={12}/></button>
+                   <button onClick={() => fileInputRef.current?.click()} className="p-1 hover:bg-white/[0.05] rounded-sm text-neutral-400 hover:text-white transition-colors shrink-0" title="Upload Image"><ImageIcon size={12}/></button>
                    <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                  </>
                )}
@@ -528,30 +529,31 @@ function ReconciliationItem({ trade, onSave, user, displayDirection }: { trade: 
           </>
         )}
 
-        {/* 🚨 FLUSH TRADE & CONFIRMATION FIXES */}
-        {showHoldConfirm ? (
+        {showFlushConfirm ? (
           <div className="flex items-center justify-end gap-2 w-full sm:w-auto flex-1 animate-in fade-in zoom-in-95 duration-200">
-            <span className="text-[10px] text-amber-500 font-bold uppercase tracking-widest text-right leading-tight hidden lg:block truncate">Holding or avoiding loss?</span>
-            <button onClick={() => setShowHoldConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-[#0a0a0a] hover:bg-white/[0.05] text-neutral-400 text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors whitespace-nowrap shrink-0 border border-white/[0.08]">Cancel</button>
-            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg transition-colors whitespace-nowrap shrink-0">{isSaving ? '...' : 'Confirm'}</button>
+            <span className="text-[10px] text-red-500 font-mono font-bold uppercase tracking-widest text-right leading-tight hidden lg:block truncate pr-2">Confirm -2R Penalty?</span>
+            <button onClick={() => setShowFlushConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-white/[0.08] text-neutral-500 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/[0.05] hover:text-white transition-colors whitespace-nowrap shrink-0 rounded-sm">Abort</button>
+            <button onClick={() => { setIsSaving(true); onSave(trade.id, 'SL', '-2', '', null); setShowFlushConfirm(false); }} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-[#0a0a0a] border border-white/[0.15] text-red-500 hover:bg-red-500/10 hover:border-red-500/30 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors whitespace-nowrap shrink-0 rounded-sm">{isSaving ? '...' : 'Execute Flush'}</button>
+          </div>
+        ) : showHoldConfirm ? (
+          <div className="flex items-center justify-end gap-2 w-full sm:w-auto flex-1 animate-in fade-in zoom-in-95 duration-200">
+            <span className="text-[10px] text-amber-500 font-mono font-bold uppercase tracking-widest text-right leading-tight hidden lg:block truncate pr-2">Carry trade over?</span>
+            <button onClick={() => setShowHoldConfirm(false)} className="flex-1 sm:flex-none px-4 py-2 bg-transparent border border-white/[0.08] text-neutral-500 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/[0.05] hover:text-white transition-colors whitespace-nowrap shrink-0 rounded-sm">Abort</button>
+            <button onClick={executeSave} disabled={isSaving} className="flex-1 sm:flex-none px-4 py-2 bg-[#0a0a0a] border border-white/[0.15] text-amber-500 hover:bg-amber-500/10 hover:border-amber-500/30 text-[10px] font-mono font-bold uppercase tracking-widest transition-colors whitespace-nowrap shrink-0 rounded-sm">{isSaving ? '...' : 'Execute Carry'}</button>
           </div>
         ) : (
           <div className="flex gap-2 w-full sm:w-auto sm:ml-auto">
-            {/* SURRENDER BUTTON (Flush Trade) */}
             <button 
               onClick={(e) => {
                 e.preventDefault();
-                if(confirm("Flush this trade? This will automatically log as a -2R loss and flag a severe discipline failure.")) {
-                  setIsSaving(true);
-                  onSave(trade.id, 'SL', '-2', '', null);
-                }
+                setShowFlushConfirm(true);
               }}
-              className="px-4 py-2 bg-[#050505] border border-red-500/30 text-red-500 hover:bg-red-500/10 text-[10px] font-bold uppercase rounded-lg transition-colors whitespace-nowrap shrink-0"
+              className="px-4 py-2 bg-transparent border border-white/[0.08] text-red-500/80 hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-500 text-[10px] font-mono font-bold uppercase rounded-sm transition-colors whitespace-nowrap shrink-0"
             >
               Flush Trade
             </button>
             
-            <button disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} className="w-full sm:w-auto px-6 py-2 bg-white text-black hover:bg-neutral-200 text-[10px] font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-neutral-800 disabled:text-neutral-500 rounded-lg transition-colors shrink-0 whitespace-nowrap">{isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}</button>
+            <button disabled={!outcome || (outcome !== 'HOLD' && !rr) || isSaving} onClick={() => outcome === 'HOLD' ? setShowHoldConfirm(true) : executeSave()} className="w-full sm:w-auto px-6 py-2 bg-[#0a0a0a] border border-white/[0.15] text-neutral-300 hover:bg-white hover:text-black hover:border-white text-[10px] font-mono font-bold uppercase tracking-widest disabled:opacity-50 disabled:bg-[#121212] disabled:border-white/[0.04] disabled:text-neutral-600 rounded-sm transition-colors shrink-0 whitespace-nowrap">{isSaving ? 'Saving...' : outcome === 'HOLD' ? 'Carry Over' : 'Settle Trade'}</button>
           </div>
         )}
       </div>
@@ -571,27 +573,28 @@ function CatalystSettingsModal({ isOpen, onClose, perfect, setPerfect, imperfect
 
   return (
     <div className="fixed inset-0 z-[300] bg-[#000000]/90 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-[#0a0a0a] border border-white/[0.08] rounded-xl w-full max-w-md flex flex-col overflow-hidden shadow-2xl" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#0a0a0a] border border-white/[0.08] rounded-sm w-full max-w-md flex flex-col overflow-hidden shadow-2xl relative" onClick={e => e.stopPropagation()}>
+        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-neutral-500/50 to-transparent"></div>
         <div className="p-4 border-b border-white/[0.08] flex justify-between items-center bg-[#0a0a0a]">
-          <h2 className="text-[11px] font-bold text-white uppercase tracking-widest flex items-center gap-2"><Settings size={14} className="text-neutral-400" /> Catalyst Settings</h2>
+          <h2 className="text-[11px] font-mono font-bold text-white uppercase tracking-widest flex items-center gap-2"><Settings size={14} className="text-neutral-400" /> Catalyst Settings</h2>
           <button onClick={onClose} className="text-neutral-500 hover:text-white"><X size={16} /></button>
         </div>
         <div className="p-6 flex flex-col gap-8 max-h-[60vh] overflow-y-auto custom-scrollbar bg-[#050505]">
           <div>
-            <h3 className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-3 border-b border-white/[0.08] pb-2">Perfect Execution Catalysts</h3>
+            <h3 className="text-[10px] font-mono font-bold text-emerald-400 uppercase tracking-widest mb-3 border-b border-white/[0.08] pb-2">Perfect Execution Catalysts</h3>
             <div className="flex gap-2 mb-3">
-              <input type="text" value={newPerfect} onChange={e => setNewPerfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPerfect()} className="flex-1 bg-[#121212] border border-white/[0.08] rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-white/[0.2] transition-colors" placeholder="Add new catalyst..." />
-              <button onClick={addPerfect} className="px-3 bg-[#121212] border border-white/[0.08] hover:bg-white/[0.1] rounded text-white transition-colors"><Plus size={14}/></button>
+              <input type="text" value={newPerfect} onChange={e => setNewPerfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addPerfect()} className="flex-1 bg-[#121212] border border-white/[0.08] rounded-sm px-3 py-2 text-[10px] font-mono font-bold text-white outline-none focus:border-white/[0.2] transition-colors" placeholder="Add new catalyst..." />
+              <button onClick={addPerfect} className="px-3 bg-[#121212] border border-white/[0.08] hover:bg-white/[0.1] rounded-sm text-white transition-colors"><Plus size={14}/></button>
             </div>
-            <div className="flex flex-wrap gap-2">{perfect.map((c: string) => (<span key={c} className="text-[10px] font-bold bg-[#121212] text-neutral-300 border border-white/[0.08] px-2 py-1 rounded flex items-center gap-1.5 shadow-sm">{c} <X size={10} className="cursor-pointer hover:text-red-400 transition-colors" onClick={() => setPerfect(perfect.filter((item: string) => item !== c))}/></span>))}</div>
+            <div className="flex flex-wrap gap-2">{perfect.map((c: string) => (<span key={c} className="text-[10px] font-mono font-bold bg-[#121212] text-neutral-300 border border-white/[0.08] px-2 py-1 rounded-sm flex items-center gap-1.5 shadow-sm">{c} <X size={10} className="cursor-pointer hover:text-red-400 transition-colors" onClick={() => setPerfect(perfect.filter((item: string) => item !== c))}/></span>))}</div>
           </div>
           <div>
-            <h3 className="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-3 border-b border-white/[0.08] pb-2">Imperfect Execution Catalysts</h3>
+            <h3 className="text-[10px] font-mono font-bold text-red-400 uppercase tracking-widest mb-3 border-b border-white/[0.08] pb-2">Imperfect Execution Catalysts</h3>
             <div className="flex gap-2 mb-3">
-              <input type="text" value={newImperfect} onChange={e => setNewImperfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addImperfect()} className="flex-1 bg-[#121212] border border-white/[0.08] rounded px-3 py-2 text-[10px] font-bold text-white outline-none focus:border-white/[0.2] transition-colors" placeholder="Add new catalyst..." />
-              <button onClick={addImperfect} className="px-3 bg-[#121212] border border-white/[0.08] hover:bg-white/[0.1] rounded text-white transition-colors"><Plus size={14}/></button>
+              <input type="text" value={newImperfect} onChange={e => setNewImperfect(e.target.value)} onKeyDown={e => e.key === 'Enter' && addImperfect()} className="flex-1 bg-[#121212] border border-white/[0.08] rounded-sm px-3 py-2 text-[10px] font-mono font-bold text-white outline-none focus:border-white/[0.2] transition-colors" placeholder="Add new catalyst..." />
+              <button onClick={addImperfect} className="px-3 bg-[#121212] border border-white/[0.08] hover:bg-white/[0.1] rounded-sm text-white transition-colors"><Plus size={14}/></button>
             </div>
-            <div className="flex flex-wrap gap-2">{imperfect.map((c: string) => (<span key={c} className="text-[10px] font-bold bg-[#121212] text-neutral-300 border border-white/[0.08] px-2 py-1 rounded flex items-center gap-1.5 shadow-sm">{c} <X size={10} className="cursor-pointer hover:text-red-400 transition-colors" onClick={() => setImperfect(imperfect.filter((item: string) => item !== c))}/></span>))}</div>
+            <div className="flex flex-wrap gap-2">{imperfect.map((c: string) => (<span key={c} className="text-[10px] font-mono font-bold bg-[#121212] text-neutral-300 border border-white/[0.08] px-2 py-1 rounded-sm flex items-center gap-1.5 shadow-sm">{c} <X size={10} className="cursor-pointer hover:text-red-400 transition-colors" onClick={() => setImperfect(imperfect.filter((item: string) => item !== c))}/></span>))}</div>
           </div>
         </div>
       </div>
@@ -1522,10 +1525,31 @@ export default function DeskClient() {
         
         {confirmPushId && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#000000]/90 backdrop-blur-sm px-4">
-            <div className="bg-[#0a0a0a] border border-white/[0.08] rounded-xl p-6 max-w-sm w-full shadow-2xl">
-              <h3 className="text-[11px] font-bold text-white mb-2 uppercase tracking-widest">Confirm Push</h3>
-              <p className="text-xs text-neutral-400 font-sans mb-6 leading-relaxed">Lock this setup into Today's Focus? Removal is only allowed for the first 60 minutes.</p>
-              <div className="flex gap-3"><button onClick={() => setConfirmPushId(null)} className="flex-1 py-2.5 rounded-lg bg-[#050505] border border-white/[0.08] text-neutral-300 text-[10px] font-bold uppercase hover:bg-white/[0.05]">Cancel</button><button onClick={handleConfirmPush} className="flex-1 py-2.5 rounded-lg bg-white text-black text-[10px] font-bold uppercase hover:bg-neutral-200 shadow-md">Push to Today</button></div>
+            <div className="bg-[#050505] border border-white/[0.15] p-6 max-w-sm w-full shadow-2xl relative rounded-sm">
+              <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
+              
+              <h3 className="text-[11px] font-mono font-bold text-white mb-3 uppercase tracking-widest">
+                Confirm Action: Push
+              </h3>
+              
+              <p className="text-[11px] text-neutral-400 font-sans mb-8 leading-relaxed">
+                Lock this setup into Today's Focus? Reversal is only permitted within a strict 60-minute window.
+              </p>
+              
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setConfirmPushId(null)} 
+                  className="flex-1 py-2.5 bg-transparent border border-white/[0.08] text-neutral-500 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white/[0.05] hover:text-white transition-colors rounded-sm"
+                >
+                  Abort
+                </button>
+                <button 
+                  onClick={handleConfirmPush} 
+                  className="flex-1 py-2.5 bg-[#0a0a0a] border border-white/[0.15] text-neutral-300 text-[10px] font-mono font-bold uppercase tracking-widest hover:bg-white hover:text-black transition-colors rounded-sm"
+                >
+                  Execute Push
+                </button>
+              </div>
             </div>
           </div>
         )}
