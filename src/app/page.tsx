@@ -7,6 +7,18 @@ export const metadata: Metadata = {
   description:
     "MyTraderDesk helps traders build consistency through execution tracking, behavioral journaling, accountability systems, and structured trading routines.",
 
+  keywords: [
+    "trader operating system",
+    "trading consistency",
+    "trader psychology",
+    "execution tracking",
+    "behavioral journaling",
+    "trading accountability",
+    "prop firm discipline",
+    "trading workflow",
+    "MT5 journaling",
+  ],
+
   alternates: {
     canonical: "https://mytraderdesk.com",
   },
@@ -42,6 +54,11 @@ export const metadata: Metadata = {
       "Trader operating system focused on execution discipline and consistency.",
 
     images: ["/og-image.jpg"],
+  },
+
+  robots: {
+    index: true,
+    follow: true,
   },
 };
 
