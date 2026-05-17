@@ -104,7 +104,8 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   const [sessionInfo, setSessionInfo] = useState({ 
     name: 'Determining...', 
     localTime: '--:--:--',
-    isOverlap: false 
+    isOverlap: false,
+    isLondonNyOverlap: false // 🚨 ADDED: Track specific London/NY Overlap
   })
 
   const [widgets, setWidgets] = useState<{local: Widget, session: Widget}>({
@@ -151,11 +152,11 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   
   const now = getBaseDate()
   const dayOfWeek = now.getDay() 
-  const isWeekendNow = dayOfWeek === 6 || dayOfWeek === 0 
-  const isPrepWindow = isWeekendNow || (dayOfWeek === 1 && (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30)));
-  const isVaultLocked = !isPrepWindow || (isPrepWindow && pendingReconciliationsCount > 0);
   
-  const pastDays = weekProgress.filter(d => d.isPast || d.isToday)
+  // 🚨 DAY SPECIFIC BOOLEANS FOR UI RENDERING
+  const isSunday = dayOfWeek === 0;
+  const isSaturday = dayOfWeek === 6;
+  const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
 
   useEffect(() => {
     const fetchTime = async () => {
@@ -175,10 +176,8 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     fetchTime();
   }, []);
 
-  // 🚨 THE FIX: Read from Local Storage First (0ms speed), then sync from Supabase if empty
   useEffect(() => {
     const loadLayout = async () => {
-      // 1. FASTEST: Read from the user's device memory first
       const savedLayout = localStorage.getItem(LAYOUT_STORAGE_KEY)
       if (savedLayout) {
         try {
@@ -187,12 +186,11 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
           if (sanitized) {
             setWidgets(sanitized)
             setLayoutLoaded(true)
-            return // Exit instantly! The layout is loaded in 0ms.
+            return 
           }
         } catch (e) {}
       }
 
-      // 2. FALLBACK: Read from Supabase (Only happens if they login on a new device)
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user?.user_metadata?.desk_layout) {
@@ -209,14 +207,9 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     loadLayout()
   }, [])
 
-  // 🚨 THE FIX: Instant save to device, quiet backup to cloud
   useEffect(() => {
     if (!layoutLoaded) return;
-    
-    // Instantly save to local storage (immune to unmounting)
     localStorage.setItem(LAYOUT_STORAGE_KEY, JSON.stringify(widgets))
-
-    // Backup to cloud in background
     if (!isPro) return;
     const timeoutId = setTimeout(async () => {
       try {
@@ -241,6 +234,9 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
       const isLondon = utcHour >= 8 && utcHour < 17
       const isNY = utcHour >= 13 && utcHour < 22
 
+      // 🚨 LONDON/NEW YORK OVERLAP CALCULATION (13:00 UTC - 17:00 UTC)
+      const isLondonNyOverlap = utcHour >= 13 && utcHour < 17;
+
       const activeCount = [isSydney, isTokyo, isLondon, isNY].filter(Boolean).length
       const isOverlap = activeCount > 1
 
@@ -255,7 +251,8 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
       setSessionInfo({
         name: sName,
         localTime: trueUTC.toLocaleTimeString('en-US', { timeZone: tz, hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        isOverlap
+        isOverlap,
+        isLondonNyOverlap
       })
     }, 1000)
     return () => clearInterval(timer)
@@ -263,7 +260,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
   const loadDashboardData = useCallback(async (activeUser: any, isUserPro: boolean) => {
     
-    // INJECT MOCK DATA FOR DEMO USERS
     if (!isUserPro) {
         const demoNow = Date.now();
         setSetups(DEMO_SETUPS.map(s => ({ ...s, addedToTodayAt: s.isToday ? demoNow - 100000 : null, createdAt: demoNow })));
@@ -811,73 +807,118 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
 
                 <div className="flex flex-col overflow-y-visible lg:overflow-y-auto custom-scrollbar flex-1 pr-2 pl-1 relative gap-8">
                       
-                  {/* Vertical Connecting Line */}
-                  <div className="absolute left-[13px] top-2 bottom-6 w-px bg-zinc-800/60 z-0" />
+                  {/* Vertical Connecting Line - Only show when multiple items exist (Weekdays/Saturday) */}
+                  {(isWeekday || isSaturday) && <div className="absolute left-[13px] top-2 bottom-6 w-px bg-zinc-800/60 z-0" />}
 
-                  {/* Phase 1: Weekly Prep */}
-                  <div className="flex items-start gap-4 relative z-10">
-                    <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${vaultSetupCount > 0 ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-zinc-700 text-transparent'}`}>
-                      {vaultSetupCount > 0 && <CheckCircle2 size={12} />}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className={`text-xs font-bold tracking-wide ${vaultSetupCount > 0 ? 'text-zinc-500' : 'text-zinc-200'}`}>Weekly Prep</span>
-                      {vaultSetupCount > 0 ? (
-                        <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mt-0.5">DONE</span>
-                      ) : (
-                        <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">Awaiting Vault Upload</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Phase 2: Daily Focus */}
-                  <div className="flex items-start gap-4 relative z-10">
-                    <div className="w-5 h-5 mt-0.5 rounded-full border border-zinc-700 bg-[#0a0a0a] flex items-center justify-center shrink-0">
-                      <Target size={10} className="text-zinc-500" />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold tracking-wide text-zinc-200">Daily Focus</span>
-                      <div className="flex items-center gap-2 mt-1.5">
-                        {/* Rendering Previous Days Dots */}
-                        {weekProgress.filter(d => d.isPast).map((day, i) => {
-                          const isDone = day.status !== 'missed' && day.status !== 'pending';
-                          return (
-                            <div 
-                              key={day.day} 
-                              className={`w-2.5 h-2.5 rounded-full border ${isDone ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-[#0a0a0a] border-zinc-500'}`}
-                              title={`${day.day} - ${isDone ? 'Completed' : 'Missed'}`}
-                            />
-                          )
-                        })}
-                        {/* Rendering Current Day Text */}
-                        {weekProgress.find(d => d.isToday) && (
-                          <span className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest ml-0.5">
-                            {weekProgress.find(d => d.isToday)?.day}
-                          </span>
+                  {/* 🚨 SUNDAY ONLY: Weekly Prep */}
+                  {isSunday && (
+                    <div className="flex items-start gap-4 relative z-10">
+                      <div className={`w-5 h-5 mt-0.5 rounded-full border flex items-center justify-center shrink-0 bg-[#0a0a0a] ${vaultSetupCount > 0 ? 'border-emerald-500 text-emerald-400 bg-emerald-500/10' : 'border-zinc-700 text-transparent'}`}>
+                        {vaultSetupCount > 0 && <CheckCircle2 size={12} />}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className={`text-xs font-bold tracking-wide ${vaultSetupCount > 0 ? 'text-zinc-500' : 'text-zinc-200'}`}>Weekly Prep</span>
+                        {vaultSetupCount > 0 ? (
+                          <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mt-0.5">DONE</span>
+                        ) : (
+                          <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">Awaiting Vault Upload</span>
                         )}
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Phase 3: Execution */}
-                  <div className="flex items-start gap-4 relative z-10">
-                    <div className="w-5 h-5 mt-0.5 rounded-full border border-zinc-700 bg-[#0a0a0a] flex items-center justify-center shrink-0">
-                      <Crosshair size={10} className="text-zinc-500" />
+                  {/* 🚨 MONDAY - SATURDAY: Daily Focus */}
+                  {(isWeekday || isSaturday) && (
+                    <div className="flex items-start gap-4 relative z-10">
+                      <div className="w-5 h-5 mt-0.5 rounded-full border border-zinc-700 bg-[#0a0a0a] flex items-center justify-center shrink-0">
+                        <Target size={10} className="text-zinc-500" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold tracking-wide text-zinc-200">Daily Focus</span>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          {weekProgress.map((day) => {
+                            // Saturday displays strictly past dots for all 5 days
+                            if (isSaturday) {
+                              const isDone = day.status === 'perfect';
+                              return (
+                                <div 
+                                  key={`sat-${day.day}`} 
+                                  className={`w-2.5 h-2.5 rounded-full border ${isDone ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-red-500 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]'}`}
+                                  title={`${day.day}`}
+                                />
+                              )
+                            }
+
+                            // Weekday logic (Past, Current, Future)
+                            if (isWeekday) {
+                              if (day.isPast) {
+                                const isDone = day.status === 'perfect';
+                                return (
+                                  <div 
+                                    key={`past-${day.day}`} 
+                                    className={`w-2.5 h-2.5 rounded-full border ${isDone ? 'bg-emerald-500 border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' : 'bg-red-500 border-red-500 shadow-[0_0_8px_rgba(239,68,68,0.4)]'}`}
+                                    title={day.day}
+                                  />
+                                )
+                              }
+                              if (day.isToday) {
+                                return (
+                                  <div key={`current-${day.day}`} className="px-2 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-[9px] font-bold text-white uppercase tracking-widest shadow-sm">
+                                    {day.day}
+                                  </div>
+                                )
+                              }
+                              // Future days show as empty hollow circles
+                              return (
+                                <div key={`future-${day.day}`} className="w-2.5 h-2.5 rounded-full border border-zinc-700 bg-transparent" title={day.day} />
+                              )
+                            }
+                            return null;
+                          })}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold tracking-wide text-zinc-200">Execution</span>
-                        {/* Verifying if an active session is running (not Interbank) */}
-                        {sessionInfo.name !== 'Interbank' && (
-                          <span className="text-[9px] text-blue-400 font-black uppercase tracking-widest px-1.5 py-0.5 bg-blue-500/10 rounded border border-blue-500/20">
-                            ACTIVE
-                          </span>
+                  )}
+
+                  {/* 🚨 MONDAY - FRIDAY ONLY: Execution */}
+                  {isWeekday && (
+                    <div className="flex items-start gap-4 relative z-10">
+                      <div className="w-5 h-5 mt-0.5 rounded-full border border-zinc-700 bg-[#0a0a0a] flex items-center justify-center shrink-0">
+                        <Crosshair size={10} className="text-zinc-500" />
+                      </div>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs font-bold tracking-wide text-zinc-200">Execution</span>
+                          {/* Active state triggered exclusively by London/NY overlap */}
+                          {sessionInfo.isLondonNyOverlap && (
+                            <span className="text-[9px] text-blue-400 font-black uppercase tracking-widest px-1.5 py-0.5 bg-blue-500/10 rounded border border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.3)]">
+                              ACTIVE (LDN/NY)
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">
+                          Session Status
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 🚨 SATURDAY ONLY: Week Closure */}
+                  {isSaturday && (
+                    <div className="flex items-start gap-4 relative z-10">
+                      <div className="w-5 h-5 mt-0.5 rounded-full border border-zinc-700 bg-[#0a0a0a] flex items-center justify-center shrink-0">
+                        <CheckCircle2 size={10} className="text-zinc-500" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-bold tracking-wide text-zinc-200">Week Closure</span>
+                        {(pendingReconciliationsCount === 0 && tradesTakenToday > 0) ? (
+                          <span className="text-[9px] text-emerald-400 font-bold uppercase tracking-widest mt-0.5">COMPLETED</span>
+                        ) : (
+                          <span className="text-[9px] text-amber-500 font-bold uppercase tracking-widest mt-0.5">PENDING RECONCILIATION</span>
                         )}
                       </div>
-                      <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">
-                        Session Status
-                      </span>
                     </div>
-                  </div>
+                  )}
 
                 </div>
               </div>
