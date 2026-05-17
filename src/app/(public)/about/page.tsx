@@ -1,8 +1,23 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Our Story | MyTraderDesk',
-  description: 'The origin of MyTraderDesk and the transition to a systematic trading desk.',
+  title: "About MyTraderDesk | Why We Built A Trader Operating System",
+
+  description:
+    "Learn why MyTraderDesk was built to solve trading inconsistency, emotional execution, and lack of trader accountability.",
+
+  alternates: {
+    canonical: "https://mytraderdesk.com/about",
+  },
+
+  openGraph: {
+    title: "About MyTraderDesk",
+    description:
+      "The story behind building a systematic trader operating system.",
+    url: "https://mytraderdesk.com/about",
+    siteName: "MyTraderDesk",
+    type: "article",
+  },
 }
 
 export default function AboutPage() {
