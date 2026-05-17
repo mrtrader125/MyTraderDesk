@@ -105,8 +105,12 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     name: 'Determining...', 
     localTime: '--:--:--',
     isOverlap: false,
-    isLondonNyOverlap: false // 🚨 ADDED: Track specific London/NY Overlap
+    isLondonNyOverlap: false
   })
+
+  // 🧪 DEBUG STATES FOR TESTING
+  const [debugDay, setDebugDay] = useState<number | null>(null);
+  const [debugOverlap, setDebugOverlap] = useState<boolean | null>(null);
 
   const [widgets, setWidgets] = useState<{local: Widget, session: Widget}>({
     local: { id: 'local', x: 0, y: 0, w: 3, h: 3, fontIdx: 0 },
@@ -122,7 +126,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   const peekTimer = useRef<NodeJS.Timeout | null>(null)
   const transformRef = useRef<ReactZoomPanPinchRef>(null)
 
-  // 🚨 ROBUST TIME ENGINE 
   const [timeOffset, setTimeOffset] = useState(0);
   const timeOffsetRef = useRef(0);
   
@@ -151,12 +154,14 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
   const pushesToday = setups.filter(s => s.addedToTodayAt && getBaseDateString(s.addedToTodayAt) === getBaseDate().toDateString()).length;
   
   const now = getBaseDate()
-  const dayOfWeek = now.getDay() 
   
-  // 🚨 DAY SPECIFIC BOOLEANS FOR UI RENDERING
-  const isSunday = dayOfWeek === 0;
-  const isSaturday = dayOfWeek === 6;
-  const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+  // 🚨 OVERRIDE LOGIC FOR DEBUGGING
+  const effectiveDayOfWeek = debugDay !== null ? debugDay : now.getDay();
+  const effectiveOverlap = debugOverlap !== null ? debugOverlap : sessionInfo.isLondonNyOverlap;
+
+  const isSunday = effectiveDayOfWeek === 0;
+  const isSaturday = effectiveDayOfWeek === 6;
+  const isWeekday = effectiveDayOfWeek >= 1 && effectiveDayOfWeek <= 5;
 
   useEffect(() => {
     const fetchTime = async () => {
@@ -234,7 +239,6 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
       const isLondon = utcHour >= 8 && utcHour < 17
       const isNY = utcHour >= 13 && utcHour < 22
 
-      // 🚨 LONDON/NEW YORK OVERLAP CALCULATION (13:00 UTC - 17:00 UTC)
       const isLondonNyOverlap = utcHour >= 13 && utcHour < 17;
 
       const activeCount = [isSydney, isTokyo, isLondon, isNY].filter(Boolean).length
@@ -647,10 +651,49 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
     )
   }
 
-
   return (
-    <div className="flex h-full w-full bg-[#030303] text-zinc-300 font-sans overflow-y-auto lg:overflow-hidden">
-      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative">
+    <div className="flex flex-col h-full w-full bg-[#030303] text-zinc-300 font-sans overflow-hidden">
+      
+      {/* 🧪 TEMPORARY DEBUG PANEL */}
+      <div className="bg-zinc-950 border-b border-zinc-800/60 p-2 flex flex-wrap gap-3 items-center justify-center z-50 text-xs shadow-sm">
+        <span className="text-zinc-500 font-mono tracking-widest uppercase font-bold text-[10px]">Testing UI:</span>
+        <div className="flex gap-1">
+          {[0,1,2,3,4,5,6].map(d => (
+            <button
+              key={d}
+              onClick={() => setDebugDay(d)}
+              className={`px-2 py-1 rounded font-mono text-[10px] tracking-wider uppercase transition-colors ${debugDay === d ? 'bg-blue-500/20 border border-blue-500/50 text-blue-400' : 'bg-[#0a0a0a] border border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+            >
+              {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d]}
+            </button>
+          ))}
+          <button
+            onClick={() => setDebugDay(null)}
+            className="px-2 py-1 rounded bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-zinc-300 ml-1 font-mono text-[10px] tracking-wider uppercase transition-colors"
+          >
+            Reset Day
+          </button>
+        </div>
+
+        <div className="w-px h-4 bg-zinc-800 mx-1" />
+
+        <div className="flex gap-1">
+          <button
+            onClick={() => setDebugOverlap(prev => prev === null ? true : !prev)}
+            className={`px-2 py-1 rounded font-mono text-[10px] tracking-wider uppercase transition-colors border ${effectiveOverlap ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-400' : 'bg-[#0a0a0a] border-zinc-800 hover:border-zinc-600 text-zinc-400'}`}
+          >
+            LDN/NY Toggle
+          </button>
+          <button
+            onClick={() => setDebugOverlap(null)}
+            className="px-2 py-1 rounded bg-zinc-900 border border-zinc-700 hover:bg-zinc-800 text-zinc-300 font-mono text-[10px] tracking-wider uppercase transition-colors"
+          >
+            Reset Session
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col min-w-0 transition-all duration-300 relative overflow-y-auto lg:overflow-hidden">
         {isLoading || !layoutLoaded ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -890,7 +933,7 @@ export default function PersonalDashboard({ userId }: { userId?: string }) {
                         <div className="flex items-center gap-3">
                           <span className="text-xs font-bold tracking-wide text-zinc-200">Execution</span>
                           {/* Active state triggered exclusively by London/NY overlap */}
-                          {sessionInfo.isLondonNyOverlap && (
+                          {effectiveOverlap && (
                             <span className="text-[9px] text-blue-400 font-black uppercase tracking-widest px-1.5 py-0.5 bg-blue-500/10 rounded border border-blue-500/20 shadow-[0_0_8px_rgba(59,130,246,0.3)]">
                               ACTIVE (LDN/NY)
                             </span>
