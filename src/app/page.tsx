@@ -1,5 +1,33 @@
 'use client'
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trader Operating System For Consistent Traders",
+  description:
+    "MyTraderDesk helps traders build consistency through execution tracking, behavioral journaling, accountability systems, and structured routines.",
+    
+  alternates: {
+    canonical: "https://mytraderdesk.com",
+  },
+
+  openGraph: {
+    title: "Trader Operating System For Consistent Traders",
+    description:
+      "Build discipline, execution consistency, and structured workflows with MyTraderDesk.",
+    url: "https://mytraderdesk.com",
+    siteName: "MyTraderDesk",
+    images: [
+      {
+        url: "/og-image.jpg",
+        width: 1200,
+        height: 630,
+        alt: "MyTraderDesk",
+      },
+    ],
+    type: "website",
+  },
+};
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
