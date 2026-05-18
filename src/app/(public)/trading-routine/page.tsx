@@ -46,10 +46,10 @@ export default function TradingRoutinePage() {
               Willpower is a finite resource. If you spend your mental energy deciding when to trade, what to trade, and how much to risk, you will have no psychological capital left for execution. Routines automate the operational side of trading so your focus remains exclusively on the chart.
             </p>
             
-            {/* Terminal-style quote block */}
+            {/* Terminal-style quote block (FIXED JSX SYNTAX) */}
             <div className="border-l border-blue-900/50 pl-4 py-1 my-4 bg-blue-950/10 rounded-r-sm">
               <p className="text-blue-400/80 font-mono text-xs tracking-tight">
-                > "The market is chaotic. Your routine is the only controlled variable."
+                {">"} "The market is chaotic. Your routine is the only controlled variable."
               </p>
             </div>
           </section>
