@@ -739,70 +739,58 @@ export default function Home() {
         </div>
       </footer>
 
-{/* PROFESSIONAL BOOTCAMP POPUP */}
+{/* PROFESSIONAL BOOTCAMP NOTIFICATION SYSTEM */}
 {showBootcampPopup && (
-  <div className="fixed bottom-5 right-5 sm:bottom-8 sm:right-8 z-[100] w-[calc(100%-2.5rem)] sm:w-[380px] animate-in fade-in slide-in-from-bottom-2 duration-500">
+  <div className="fixed bottom-6 right-6 z-[100] w-[calc(100%-3rem)] sm:w-[360px] bg-[#090909] border border-neutral-800 rounded-none p-5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] font-mono selection:bg-blue-900">
     
-    <div className="bg-[#0B0B0B] border border-neutral-800 rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.45)] backdrop-blur-xl relative overflow-hidden">
-      
-      {/* subtle top line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neutral-700 to-transparent"></div>
-
-      <button
+    {/* Top status indicator header */}
+    <div className="flex items-center justify-between mb-4 pb-2 border-b border-neutral-900 text-[10px] uppercase tracking-widest text-neutral-500">
+      <div className="flex items-center gap-2">
+        <span className="w-1.5 h-1.5 bg-blue-500 rounded-none animate-pulse"></span>
+        <span>SYSTEM_BROADCAST // COHORT_BETA</span>
+      </div>
+      <button 
         onClick={handleClosePopup}
-        className="absolute top-5 right-5 text-neutral-600 hover:text-neutral-300 transition-colors"
+        className="text-neutral-600 hover:text-neutral-300 font-sans transition-colors p-1"
+        aria-label="Close Notification"
       >
-        <X size={15} />
+        [X]
       </button>
-
-      <div className="mb-5">
-        <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-neutral-500 mb-3">
-          Professional Development Program
-        </p>
-
-        <h3 className="text-[22px] leading-tight font-semibold text-white tracking-tight max-w-[260px]">
-          Trader Bootcamp Cohort
-        </h3>
-      </div>
-
-      <p className="text-[13px] leading-[1.7] text-neutral-400 mb-6">
-        A structured operator development program focused on execution,
-        routine, behavioral discipline, and systematic decision-making.
-      </p>
-
-      <div className="flex items-center justify-between mb-6 pb-5 border-b border-neutral-800">
-        
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.18em] text-neutral-600 mb-1">
-            Cohort Size
-          </p>
-          <p className="text-sm font-medium text-neutral-200">
-            Limited Intake
-          </p>
-        </div>
-
-        <div className="w-px h-10 bg-neutral-800"></div>
-
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.18em] text-neutral-600 mb-1">
-            Format
-          </p>
-          <p className="text-sm font-medium text-neutral-200">
-            Guided Training
-          </p>
-        </div>
-      </div>
-
-      <Link
-        href="/program/bootcamp"
-        className="flex items-center justify-center w-full h-11 rounded-xl bg-white text-black text-[11px] font-semibold tracking-[0.16em] uppercase hover:bg-neutral-200 transition-colors"
-      >
-        View Program
-      </Link>
     </div>
+
+    {/* Header info */}
+    <div className="mb-4">
+      <h3 className="text-sm font-semibold uppercase tracking-wider text-neutral-100 font-sans">
+        Trader Bootcamp Intake Active
+      </h3>
+    </div>
+
+    {/* Informational Body text using high-density line heights */}
+    <p className="text-xs text-neutral-400 font-sans leading-relaxed mb-5">
+      A comprehensive operator initialization program targeting mechanical execution, strict multi-timeframe routine development, and raw compliance tracking.
+    </p>
+
+    {/* Grid specifications */}
+    <div className="grid grid-cols-2 gap-4 mb-5 border-y border-neutral-900 py-3 text-[11px]">
+      <div>
+        <span className="block text-neutral-600 uppercase text-[9px] tracking-wider mb-0.5">Parameters:</span>
+        <span className="font-medium text-neutral-300">Limited Seat Capacity</span>
+      </div>
+      <div>
+        <span className="block text-neutral-600 uppercase text-[9px] tracking-wider mb-0.5">Instruction:</span>
+        <span className="font-medium text-neutral-300">Structured Sandbox</span>
+      </div>
+    </div>
+
+    {/* No-nonsense tactical execution button */}
+    <Link
+      href="/program/bootcamp"
+      className="flex items-center justify-center w-full h-10 bg-neutral-200 text-black text-[10px] font-bold uppercase tracking-widest hover:bg-white transition-colors duration-150 rounded-none"
+    >
+      Initialize Program Review
+    </Link>
   </div>
 )}
-
     </div>
   )
 }
