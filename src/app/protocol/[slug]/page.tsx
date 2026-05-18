@@ -1,187 +1,162 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowRight, User, Map, ShieldCheck, Filter, ChevronLeft } from "lucide-react";
 
-// 1. DATA MAP FOR THE PROTOCOLS
-const protocolData = {
+// --- CONTENT DATABASE (YOUR EXACT COPY) ---
+const protocolContent = {
   identity: {
-    metaTitle: "Protocol 01: Trader Identity | MyTraderDesk",
-    metaDesc: "Shift your identity from retail gambler to systematic operator. Detach your self-worth from PnL and focus entirely on execution.",
-    label: "Core Protocol // 01",
-    h1: "The Operator Identity",
-    intro: "Amateurs trade to feel something. Professionals trade to execute a mathematical edge. Your first transition must be a complete shift in psychological identity.",
-    nextLink: "/protocol/strategy",
-    nextText: "Next: Protocol 02 // Strategy →",
-    sections: [
-      {
-        title: "Killing The Retail Mindset",
-        content: [
-          "The retail industry wants you to believe trading is about predicting the future. It is not. Trading is about managing probabilities in a completely random environment. If your ego is attached to whether a specific trade wins or loses, you have already lost.",
-          "An Operator detaches entirely from the outcome. Their only source of pride is how flawlessly they executed their system parameters."
-        ]
-      },
-      {
-        title: "Accepting The Drawdown",
-        content: [
-          "Losing streaks are mathematically guaranteed. Your response to a drawdown defines your identity. A gambler revenge-trades to win it back; an Operator recognizes the statistical variance, lowers their risk parameters, and continues executing without hesitation."
-        ]
-      }
-    ]
+    metaTitle: "Trader vs. Operator | MyTraderDesk",
+    metaDesc: "The 3-Year Trap: Why You're Still Not Profitable. Transition from a reactive trader to a systematic operator.",
+    icon: User,
+    color: "text-blue-500",
+    bgLight: "bg-blue-500/10",
+    title: "Trader vs. Operator",
+    subtitle: "The 3-Year Trap: Why You're Still Not Profitable",
+    paragraphs: [
+      "If you have been in the markets for years, you already know the technicals. You’ve studied the charts, you have a strategy, and you know what a good setup looks like. Yet, you are still inconsistent.",
+      "Why? Because your trading is entirely out of your control.",
+      "As long as you act like a 'Trader'—waking up, hunting for setups, reacting emotionally to green and red candles—you will remain trapped. To become profitable, you must transition from a Learner to an Operator.",
+      "An Operator does not guess. An Operator does not feel FOMO. An Operator has only one job: to flawlessly execute a pre-written system. You don't need a new execution method or a new guru. You need to cage your impulses and operate the machinery you’ve already built."
+    ],
+    nextNode: { slug: "strategy", name: "The Strategy" }
   },
   strategy: {
-    metaTitle: "Protocol 02: Strategy Engineering | MyTraderDesk",
-    metaDesc: "A strategy is not magic; it is a probabilistic edge. Learn how to engineer mechanical rules that eliminate subjectivity.",
-    label: "Core Protocol // 02",
-    h1: "Strategy Engineering",
-    intro: "Remove discretion. If your trading strategy cannot be translated into a rigid, algorithmic checklist, it is not a strategy—it is a guess.",
-    nextLink: "/protocol/system",
-    nextText: "Next: Protocol 03 // System →",
-    sections: [
-      {
-        title: "Mechanical Over Subjective",
-        content: [
-          "If you put five traders in a room with the same 'subjective' strategy, you will get five different executions. A true operational strategy has zero ambiguity. The conditions are either met, or they are not."
-        ]
-      }
+    metaTitle: "Strategy Simplification | MyTraderDesk",
+    metaDesc: "Taking a calculated ride. Learn how to simplify your trading strategy down to structure, direction, and entry signals.",
+    icon: Map,
+    color: "text-cyan-500",
+    bgLight: "bg-cyan-500/10",
+    title: "Strategy Simplification",
+    subtitle: "Taking a Calculated Ride",
+    paragraphs: [
+      "What is trading at its core? It is simply identifying an endless journey in the market and taking a very small, calculated ride in the right direction.",
+      "Your strategy is the vehicle for that ride. It doesn't need to be complex; it just needs to answer these four questions:",
+      "1. Structure: How has the market moved, and how is it likely to move next?\n2. Direction: Based on that structure, are we strictly looking for buys or sells?\n3. Entry Zone: Where is the precise area of value? (Determining this eliminates Buy/Sell confusion).\n4. Entry Signal: What exact micro-movement (e.g., an engulfing candle or LTF rejection) must happen in the zone before we pull the trigger?",
+      "If you know these four things, you have a strategy. Now, you need the system to protect it."
     ],
-    tactical: {
-      title: "Binary Confluence Model",
-      items: [
-        "HTF Trend Alignment: [TRUE/FALSE]",
-        "Liquidity Sweep: [TRUE/FALSE]",
-        "Time Window Active: [TRUE/FALSE]"
-      ]
-    }
+    nextNode: { slug: "system", name: "The System" }
   },
   system: {
-    metaTitle: "Protocol 03: System Architecture | MyTraderDesk",
-    metaDesc: "Your strategy tells you when to buy. Your system tells you how to survive. Build an institutional framework around your edge.",
-    label: "Core Protocol // 03",
-    h1: "System Architecture",
-    intro: "A strategy without a system is dangerous. The system is the defensive infrastructure that protects you from yourself.",
-    nextLink: "/protocol/routine",
-    nextText: "Next: Protocol 04 // Routine →",
-    sections: [
-      {
-        title: "The Three Pillars",
-        content: [
-          "An institutional system requires three locked pillars: Strategy (the edge), Risk Management (the math), and Psychology (the operational adherence).",
-          "If any of these pillars break, the system collapses. MyTraderDesk is built to monitor system health, flagging imperfect execution the moment it occurs."
-        ]
-      }
-    ]
+    metaTitle: "The Trading System Blueprint | MyTraderDesk",
+    metaDesc: "Having a strategy is common. Having a system is rare. Build the blueprint for survival in the markets.",
+    icon: ShieldCheck,
+    color: "text-emerald-500",
+    bgLight: "bg-emerald-500/10",
+    title: "The System",
+    subtitle: "Your Blueprint for Survival",
+    paragraphs: [
+      "Having a strategy is common. Having a system is rare.",
+      "Your strategy tells you how to trade. Your system tells you exactly how to do it properly. It bridges the gap between theory and actual, cold execution.",
+      "When you fail, it is rarely because your strategy was wrong. It is because you broke your system. The system dictates your risk, your session times, and your compliance. It is the invisible wall between you and the casino mentality.",
+      "To turn your strategy into a functioning system, you must lock it inside a strict, unbreakable daily routine."
+    ],
+    nextNode: { slug: "routine", name: "The Routine" }
   },
   routine: {
-    metaTitle: "Protocol 04: Operational Routine | MyTraderDesk",
-    metaDesc: "Automate your discipline. Master the pre-market, execution window, and post-market review processes.",
-    label: "Core Protocol // 04",
-    h1: "Operational Routine",
-    intro: "The market is chaos. Your routine is the only controlled variable. Standardize your daily operations to eliminate emotional randomness.",
-    nextLink: "/apply",
-    nextText: "Apply For Platform Access",
-    sections: [
-      {
-        title: "Zero Tolerance For Missed Prep",
-        content: [
-          "If you fail to execute your pre-market analysis, you forfeit the right to trade that session. Missed prep guarantees poor decision-making. Your routine must be a non-negotiable prerequisite to unlocking your terminal."
-        ]
-      }
-    ]
+    metaTitle: "The 3-Level Trading Routine | MyTraderDesk",
+    metaDesc: "Cage the chaos with 3 levels of control. Master the Macro Filter, Micro Filter, and Execution Wait.",
+    icon: Filter,
+    color: "text-purple-500",
+    bgLight: "bg-purple-500/10",
+    title: "The Routine",
+    subtitle: "Caging the Chaos with 3 Levels of Control",
+    paragraphs: [
+      "This is where profitability is actually manufactured. To stop overtrading and eliminate 'what to trade' confusion, Operators use a strict 3-Level Filtration Routine.",
+      "Level 1: The Macro Filter (Weekend). Get away from the noise. Over the weekend, analyze the broader market and isolate a watchlist of just 10 to 20 instruments that meet your structural criteria.",
+      "Level 2: The Micro Filter (Daily Selection). Every single day, after the Asian or early London session, look at your weekly watchlist and select only 2 instruments to play during the New York or late London session. Ignore everything else.",
+      "Level 3: The Execution (The Wait). On those 2 chosen charts, map your Entry Zone. Now, you are free. You do absolutely nothing unless the price comes into your zone and prints your specific Entry Signal. You are no longer trading the market; you are executing a routine."
+    ],
+    nextNode: { slug: "identity", name: "The Identity" }
   }
 };
 
-type ValidSlug = keyof typeof protocolData;
+type ValidSlug = keyof typeof protocolContent;
 
-// 2. GENERATE STATIC PARAMS FOR SEO (Tells Next.js to pre-build these 4 pages)
+// --- SEO GENERATION ---
 export function generateStaticParams() {
-  return Object.keys(protocolData).map((slug) => ({
+  return Object.keys(protocolContent).map((slug) => ({
     slug: slug,
   }));
 }
 
-// 3. DYNAMIC METADATA FOR SEO
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const data = protocolData[params.slug as ValidSlug];
+  const content = protocolContent[params.slug as ValidSlug];
   
-  if (!data) {
+  if (!content) {
     return { title: "Protocol Not Found | MyTraderDesk" };
   }
 
   return {
-    title: data.metaTitle,
-    description: data.metaDesc,
+    title: content.metaTitle,
+    description: content.metaDesc,
     alternates: {
-      canonical: `/protocol/${params.slug}`,
+      canonical: `https://mytraderdesk.com/protocol/${params.slug}`,
     },
   };
 }
 
-// 4. THE PAGE UI
+// --- SERVER COMPONENT UI ---
 export default function ProtocolPage({ params }: { params: { slug: string } }) {
-  const data = protocolData[params.slug as ValidSlug];
+  const content = protocolContent[params.slug as ValidSlug];
 
-  if (!data) {
+  if (!content) {
     notFound();
   }
 
+  const Icon = content.icon;
+
   return (
-    <main className="bg-[#050505] text-white min-h-screen selection:bg-blue-900 selection:text-white">
-      <section className="max-w-5xl mx-auto px-6 pt-32 pb-24 text-center">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-blue-500 font-bold mb-6">
-          {data.label}
-        </p>
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-8">
-          {data.h1}
-        </h1>
-        <p className="text-neutral-400 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-          {data.intro}
-        </p>
-      </section>
+    <div className="bg-[#050505] text-neutral-200 min-h-screen font-sans selection:bg-blue-500/30 selection:text-white">
+      
+      {/* MINIMAL NAVBAR */}
+      <nav className="w-full border-b border-neutral-900 bg-[#050505] py-4">
+        <div className="max-w-4xl mx-auto px-6 flex items-center justify-between">
+          <Link href="/" className="flex items-center text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">
+            <ChevronLeft className="w-4 h-4 mr-1" /> Back to Desk
+          </Link>
+          <Image src="/logo.png" alt="MyTraderDesk" width={100} height={24} className="object-contain opacity-50" />
+        </div>
+      </nav>
 
-      <section className="max-w-4xl mx-auto px-6 pb-24 space-y-12">
-        {data.sections.map((section, index) => (
-          <div key={index} className="border border-neutral-800 bg-[#080808] rounded-2xl p-8 md:p-10">
-            <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-tight">
-              {section.title}
-            </h2>
-            <div className="space-y-4 text-neutral-400 leading-relaxed">
-              {section.content.map((paragraph, pIndex) => (
-                <p key={pIndex}>{paragraph}</p>
-              ))}
-            </div>
-
-            {/* Render tactical checklist only if it exists in the data */}
-            {data.tactical && index === 0 && (
-              <div className="bg-[#050505] border border-neutral-900 rounded-xl p-6 mt-6">
-                <p className="text-xs uppercase tracking-widest text-blue-500 font-bold mb-4">
-                  {data.tactical.title}
-                </p>
-                <ul className="space-y-3 text-sm text-neutral-300 font-mono">
-                  {data.tactical.items.map((item, iIndex) => (
-                    <li key={iIndex} className="flex items-center gap-3">
-                      <span className="w-2 h-2 rounded-full bg-neutral-700"></span>
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+      <main className="max-w-3xl mx-auto px-6 py-20">
+        
+        {/* HEADER */}
+        <div className="mb-16">
+          <div className={`inline-flex items-center justify-center w-12 h-12 rounded-sm mb-8 ${content.bgLight} border border-neutral-800`}>
+            <Icon className={`w-6 h-6 ${content.color}`} />
           </div>
-        ))}
+          <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tight mb-4">
+            {content.title}
+          </h1>
+          <h2 className="text-lg text-neutral-400 font-medium tracking-wide">
+            {content.subtitle}
+          </h2>
+        </div>
 
-        <div className="mt-16 pt-16 border-t border-neutral-900 text-center">
-          <Link 
-            href={data.nextLink} 
-            className={`inline-block px-8 py-3 font-semibold rounded-lg transition-colors duration-200 ${
-              params.slug === "routine" 
-                ? "bg-white text-black hover:bg-neutral-200" 
-                : "border border-neutral-700 text-white hover:bg-neutral-900"
-            }`}
-          >
-            {data.nextText}
+        {/* CONTENT BODY */}
+        <div className="space-y-8 mb-24">
+          {content.paragraphs.map((text, idx) => (
+            <p key={idx} className="text-neutral-300 leading-relaxed font-medium text-sm md:text-base">
+              {text.includes('\n') ? (
+                text.split('\n').map((line, i) => <span key={i} className="block mb-2">{line}</span>)
+              ) : text}
+            </p>
+          ))}
+        </div>
+
+        {/* NEXT PROTOCOL LINK */}
+        <div className="mt-16 pt-8 border-t border-neutral-900 flex justify-end">
+          <Link href={`/protocol/${content.nextNode.slug}`} className="group flex flex-col items-end text-right">
+            <span className="text-[9px] font-black text-neutral-600 uppercase tracking-widest mb-2 group-hover:text-neutral-400 transition-colors">Next Module</span>
+            <span className="flex items-center text-sm font-bold text-white uppercase tracking-wider">
+              {content.nextNode.name} <ArrowRight className="ml-2 w-4 h-4 text-neutral-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
+            </span>
           </Link>
         </div>
-      </section>
-    </main>
+
+      </main>
+    </div>
   );
 }
