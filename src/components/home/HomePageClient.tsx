@@ -664,7 +664,7 @@ export default function Home() {
       </section>
 
       <footer className="w-full bg-[#020202] border-t border-neutral-900 pt-16 md:pt-20 pb-8 md:pb-10 px-5 md:px-12">
-        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-x-8 gap-y-10 md:gap-y-12 mb-12 md:mb-16">
+        <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-x-8 gap-y-10 md:gap-y-12 mb-12 md:mb-16">
           <div className="sm:col-span-2 lg:col-span-1">
             <Link href="/" className="flex items-center shrink-0 group mb-5 sm:mb-6 relative w-28 sm:w-32 h-7 sm:h-8">
               <Image 
@@ -687,6 +687,17 @@ export default function Home() {
               <li><Link href="/protocol/strategy" className="text-[11px] sm:text-xs font-medium text-neutral-500 hover:text-neutral-200 transition-colors">Strategy Simplification</Link></li>
               <li><Link href="/protocol/system" className="text-[11px] sm:text-xs font-medium text-neutral-500 hover:text-neutral-200 transition-colors">System Building</Link></li>
               <li><Link href="/protocol/routine" className="text-[11px] sm:text-xs font-medium text-neutral-500 hover:text-neutral-200 transition-colors">The 3-Level Routine</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-neutral-200 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest mb-4 sm:mb-5">Core Concepts</h4>
+            <ul className="space-y-3 sm:space-y-4">
+              <li><Link href="/trading-consistency" className="text-[11px] sm:text-xs font-medium text-neutral-500 hover:text-neutral-200 transition-colors">Trading Consistency</Link></li>
+              <li><Link href="/trader-psychology" className="text-[11px] sm:text-xs font-medium text-neutral-500 hover:text-neutral-200 transition-colors">Trader Psychology</Link></li>
+              <li><Link href="/prop-firm-consistency" className="text-[11px] sm:text-xs font-medium text-neutral-500 hover:text-neutral-200 transition-colors">Prop Firm Survival</Link></li>
+              <li><Link href="/behavioral-journaling" className="text-[11px] sm:text-xs font-medium text-neutral-500 hover:text-neutral-200 transition-colors">Behavioral Journaling</Link></li>
+              <li><Link href="/trading-system" className="text-[11px] sm:text-xs font-medium text-neutral-500 hover:text-neutral-200 transition-colors">Trading Systems</Link></li>
             </ul>
           </div>
 
@@ -720,7 +731,7 @@ export default function Home() {
 
         <div className="max-w-[1600px] 2xl:max-w-[1920px] mx-auto border-t border-neutral-800/50 pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <p className="text-[9px] sm:text-[10px] font-bold text-neutral-600 uppercase tracking-widest text-center sm:text-left">
-            &copy; {new Date().getFullYear()} Sentinel Vortex. All rights reserved.
+            &copy; {new Date().getFullYear()} MyTraderDesk. All rights reserved.
           </p>
           <p className="text-[9px] sm:text-[10px] font-bold text-neutral-600 uppercase tracking-widest text-center sm:text-right">
             Trading involves significant risk of loss.
