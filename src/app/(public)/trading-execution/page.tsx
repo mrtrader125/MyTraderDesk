@@ -9,47 +9,55 @@ export const metadata: Metadata = {
 
 export default function TradingExecutionPage() {
   return (
-    <main className="bg-[#050505] text-white min-h-screen selection:bg-blue-900 selection:text-white">
-      <section className="max-w-5xl mx-auto px-6 pt-32 pb-24 text-center">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-blue-500 font-bold mb-6">Protocol 07 // Execution</p>
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-8">Flawless Trading Execution: Eliminating Imperfect Entries</h1>
-        <p className="text-neutral-400 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-          Being right on the chart does not matter if you cannot pull the trigger. Master the operational gap between analysis and flawless execution.
-        </p>
-      </section>
+    <main className="flex-grow">
+      <article className="max-w-3xl mx-auto px-6 pt-16 pb-20">
+        <header className="mb-8">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-mono text-neutral-500 mb-4">
+            <span>Protocol_07</span>
+            <span className="text-neutral-700">/</span>
+            <span>Execution</span>
+          </div>
+          <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight text-neutral-100 mb-4">Flawless Trading Execution: Eliminating Imperfect Entries</h1>
+          <p className="text-sm sm:text-base text-neutral-400 leading-relaxed">
+            Being right on the chart does not matter if you cannot pull the trigger. Master the operational gap between analysis and flawless execution.
+          </p>
+        </header>
 
-      <section className="max-w-4xl mx-auto px-6 pb-24 space-y-12">
-        <div className="border border-neutral-800 bg-[#080808] rounded-2xl p-8 md:p-10">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-tight">The Gap Between Analysis and Execution</h2>
-          <div className="space-y-4 text-neutral-400 leading-relaxed">
-            <p>Amateurs spend years perfecting their technical analysis, completely ignoring the fact that analysis is only 10% of the game. The actual profit is extracted in the execution.</p>
+        <div className="w-full h-px bg-neutral-900 mb-8"></div>
+
+        <div className="space-y-8 text-[13px] sm:text-sm text-neutral-400 leading-relaxed">
+          <section>
+            <h2 className="text-base sm:text-lg font-medium text-neutral-200 mb-2 tracking-tight">The Gap Between Analysis and Execution</h2>
+            <p className="mb-3">Amateurs spend years perfecting their technical analysis, completely ignoring the fact that analysis is only 10% of the game. The actual profit is extracted in the execution.</p>
             <p>If you can predict market direction but consistently enter late, exit early, or freeze when your setup appears, your analysis is functionally useless.</p>
-          </div>
+          </section>
+
+          <section>
+            <h2 className="text-base sm:text-lg font-medium text-neutral-200 mb-2 tracking-tight">Operator Protocols & Triggers</h2>
+            <p className="mb-3">Execution hesitation stems from ambiguity. If you do not have a binary trigger, your brain has to make a subjective decision in a high-stress environment.</p>
+            <div className="mt-4 p-4 border border-neutral-900 rounded-md bg-[#080808]">
+              <p className="text-xs uppercase tracking-widest text-neutral-500 font-mono mb-3">Tactical Checklist // Execution</p>
+              <ul className="space-y-2 text-neutral-300 font-mono text-[11px] sm:text-xs">
+                <li>- If setup confirms, market execute immediately.</li>
+                <li>- No manual stop adjustments.</li>
+                <li>- Limit terminal time to 90 minutes.</li>
+              </ul>
+            </div>
+          </section>
         </div>
 
-        <div className="border border-neutral-800 bg-[#080808] rounded-2xl p-8 md:p-10">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-tight">Operator Protocols & Triggers</h2>
-          <div className="space-y-4 text-neutral-400 leading-relaxed mb-8">
-            <p>Execution hesitation stems from ambiguity. If you do not have a binary trigger, your brain has to make a subjective decision in a high-stress environment.</p>
-          </div>
-          <div className="bg-[#050505] border border-neutral-900 rounded-xl p-6">
-            <p className="text-xs uppercase tracking-widest text-blue-500 font-bold mb-4">Tactical Checklist // Execution</p>
-            <ul className="space-y-3 text-sm text-neutral-300 font-mono">
-              <li className="flex items-center gap-3"><span className="w-2 h-2 rounded-full bg-neutral-700"></span> If setup confirms, market execute immediately.</li>
-              <li className="flex items-center gap-3"><span className="w-2 h-2 rounded-full bg-neutral-700"></span> No manual stop adjustments.</li>
-              <li className="flex items-center gap-3"><span className="w-2 h-2 rounded-full bg-neutral-700"></span> Limit terminal time to 90 minutes.</li>
-            </ul>
-          </div>
-        </div>
+        <div className="w-full h-px bg-neutral-900 my-10"></div>
 
-        <div className="mt-16 pt-16 border-t border-neutral-900 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">Execute Like A Machine</h2>
-          <p className="text-neutral-400 mb-8 max-w-xl mx-auto">Build rigid execution rules and track your compliance with MyTraderDesk.</p>
-          <div className="flex justify-center gap-4">
-            <button className="px-8 py-3 bg-white text-black font-semibold rounded-lg hover:bg-neutral-200 transition-colors">Apply For Access</button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#080808] border border-neutral-900 p-5 rounded-md gap-4 shadow-lg shadow-black/50">
+          <div>
+            <h3 className="text-sm font-medium text-neutral-200">Execute Like A Machine</h3>
+            <p className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest mt-1">Build rigid execution rules.</p>
           </div>
+          <Link href="/apply" className="px-6 py-3 bg-neutral-200 text-[#050505] text-[10px] font-bold uppercase tracking-widest hover:bg-white transition-colors rounded-sm w-full sm:w-auto text-center">
+            Apply For Access
+          </Link>
         </div>
-      </section>
+      </article>
     </main>
   );
 }

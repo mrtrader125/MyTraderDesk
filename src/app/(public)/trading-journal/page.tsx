@@ -9,46 +9,58 @@ export const metadata: Metadata = {
 
 export default function TradingJournalPage() {
   return (
-    <main className="bg-[#050505] text-white min-h-screen selection:bg-blue-900 selection:text-white">
-      <section className="max-w-5xl mx-auto px-6 pt-32 pb-24 text-center">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-blue-500 font-bold mb-6">Protocol 10 // Data & Analytics</p>
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-8">Building A Journal That Actually Improves Performance</h1>
-        <p className="text-neutral-400 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-          Spreadsheets tracking entry and exit prices are dead. Professional journals track operational discipline and behavioral analytics.
-        </p>
-      </section>
-
-      <section className="max-w-4xl mx-auto px-6 pb-24 space-y-12">
-        <div className="border border-neutral-800 bg-[#080808] rounded-2xl p-8 md:p-10">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-tight">Behavioral Logs vs. Financial Logs</h2>
-          <div className="space-y-4 text-neutral-400 leading-relaxed">
-            <p>If you only log your PnL, you are only treating the symptoms of bad trading. To fix the root cause, your journal must track missed prep, broken rules, and session fatigue.</p>
+    <main className="flex-grow">
+      <article className="max-w-3xl mx-auto px-6 pt-16 pb-20">
+        <header className="mb-8">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-mono text-neutral-500 mb-4">
+            <span>Protocol_10</span>
+            <span className="text-neutral-700">/</span>
+            <span>Data & Analytics</span>
           </div>
-          <blockquote className="mt-8 border-l-2 border-blue-500 pl-6 py-2">
-            <p className="text-lg text-neutral-200 italic">"Data solves emotion. If you look at a 100-trade sample size of flawless execution, the fear of an individual loss disappears."</p>
-          </blockquote>
+          <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight text-neutral-100 mb-4">Building A Journal That Actually Improves Performance</h1>
+          <p className="text-sm sm:text-base text-neutral-400 leading-relaxed">
+            Spreadsheets tracking entry and exit prices are dead. Professional journals track operational discipline and behavioral analytics.
+          </p>
+        </header>
+
+        <div className="w-full h-px bg-neutral-900 mb-8"></div>
+
+        <div className="space-y-8 text-[13px] sm:text-sm text-neutral-400 leading-relaxed">
+          <section>
+            <h2 className="text-base sm:text-lg font-medium text-neutral-200 mb-2 tracking-tight">Behavioral Logs vs. Financial Logs</h2>
+            <p className="mb-3">If you only log your PnL, you are only treating the symptoms of bad trading. To fix the root cause, your journal must track missed prep, broken rules, and session fatigue.</p>
+            <div className="border-l border-blue-900/50 pl-4 py-1 my-5 bg-blue-950/10 rounded-r-sm">
+              <p className="text-blue-400/80 font-mono text-xs tracking-tight">
+                {">"} "Data solves emotion. If you look at a 100-trade sample size of flawless execution, the fear of an individual loss disappears."
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-base sm:text-lg font-medium text-neutral-200 mb-2 tracking-tight">Capturing The Right Metrics</h2>
+            <div className="mt-4 p-4 border border-neutral-900 rounded-md bg-[#080808]">
+              <p className="text-xs uppercase tracking-widest text-neutral-500 font-mono mb-3">Essential Logging Framework</p>
+              <ul className="space-y-2 text-neutral-300 font-mono text-[11px] sm:text-xs">
+                <li>- Execution Grade (A, B, C, F)</li>
+                <li>- Emotional State Baseline</li>
+                <li>- Confluence Factors Present</li>
+              </ul>
+            </div>
+          </section>
         </div>
 
-        <div className="border border-neutral-800 bg-[#080808] rounded-2xl p-8 md:p-10">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-tight">Capturing The Right Metrics</h2>
-          <div className="bg-[#050505] border border-neutral-900 rounded-xl p-6 mt-6">
-            <p className="text-xs uppercase tracking-widest text-blue-500 font-bold mb-4">Essential Logging Framework</p>
-            <ul className="space-y-3 text-sm text-neutral-300 font-mono">
-              <li className="flex items-center gap-3"><span className="w-2 h-2 rounded-full bg-neutral-700"></span> Execution Grade (A, B, C, F)</li>
-              <li className="flex items-center gap-3"><span className="w-2 h-2 rounded-full bg-neutral-700"></span> Emotional State Baseline</li>
-              <li className="flex items-center gap-3"><span className="w-2 h-2 rounded-full bg-neutral-700"></span> Confluence Factors Present</li>
-            </ul>
-          </div>
-        </div>
+        <div className="w-full h-px bg-neutral-900 my-10"></div>
 
-        <div className="mt-16 pt-16 border-t border-neutral-900 text-center">
-          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">Digitize Your Operations</h2>
-          <p className="text-neutral-400 mb-8 max-w-xl mx-auto">Stop using broken spreadsheets. Let MyTraderDesk track your behavioral analytics automatically.</p>
-          <div className="flex justify-center gap-4">
-            <button className="px-8 py-3 bg-white text-black font-semibold rounded-lg hover:bg-neutral-200 transition-colors">Apply For Access</button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#080808] border border-neutral-900 p-5 rounded-md gap-4 shadow-lg shadow-black/50">
+          <div>
+            <h3 className="text-sm font-medium text-neutral-200">Digitize Your Operations</h3>
+            <p className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest mt-1">Let MyTraderDesk track behavior.</p>
           </div>
+          <Link href="/apply" className="px-6 py-3 bg-neutral-200 text-[#050505] text-[10px] font-bold uppercase tracking-widest hover:bg-white transition-colors rounded-sm w-full sm:w-auto text-center">
+            Apply For Access
+          </Link>
         </div>
-      </section>
+      </article>
     </main>
   );
 }

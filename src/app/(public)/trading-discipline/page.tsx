@@ -9,40 +9,52 @@ export const metadata: Metadata = {
 
 export default function TradingDisciplinePage() {
   return (
-    <main className="bg-[#050505] text-white min-h-screen selection:bg-blue-900 selection:text-white">
-      <section className="max-w-5xl mx-auto px-6 pt-32 pb-24 text-center">
-        <p className="text-[10px] uppercase tracking-[0.25em] text-blue-500 font-bold mb-6">Protocol 08 // Discipline</p>
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight leading-tight mb-8">Trading Discipline Is An Engineering Problem</h1>
-        <p className="text-neutral-400 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-          Stop relying on motivation. Consistent profitability requires hard behavioral guardrails and unshakeable operational routines.
-        </p>
-      </section>
-
-      <section className="max-w-4xl mx-auto px-6 pb-24 space-y-12">
-        <div className="border border-neutral-800 bg-[#080808] rounded-2xl p-8 md:p-10">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-tight">The Anti-Guru Reality</h2>
-          <div className="space-y-4 text-neutral-400 leading-relaxed">
-            <p>Listening to motivational podcasts will not stop you from revenge trading. Reading trading psychology books will not stop you from moving your stop loss. Discipline is not a mindset; it is an engineered framework.</p>
+    <main className="flex-grow">
+      <article className="max-w-3xl mx-auto px-6 pt-16 pb-20">
+        <header className="mb-8">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-mono text-neutral-500 mb-4">
+            <span>Protocol_08</span>
+            <span className="text-neutral-700">/</span>
+            <span>Discipline</span>
           </div>
-          <blockquote className="mt-8 border-l-2 border-blue-500 pl-6 py-2">
-            <p className="text-lg text-neutral-200 italic">"You do not rise to the level of your goals. You fall to the level of your systems."</p>
-          </blockquote>
+          <h1 className="text-2xl sm:text-4xl font-semibold tracking-tight text-neutral-100 mb-4">Trading Discipline Is An Engineering Problem</h1>
+          <p className="text-sm sm:text-base text-neutral-400 leading-relaxed">
+            Stop relying on motivation. Consistent profitability requires hard behavioral guardrails and unshakeable operational routines.
+          </p>
+        </header>
+
+        <div className="w-full h-px bg-neutral-900 mb-8"></div>
+
+        <div className="space-y-8 text-[13px] sm:text-sm text-neutral-400 leading-relaxed">
+          <section>
+            <h2 className="text-base sm:text-lg font-medium text-neutral-200 mb-2 tracking-tight">The Anti-Guru Reality</h2>
+            <p className="mb-3">Listening to motivational podcasts will not stop you from revenge trading. Reading trading psychology books will not stop you from moving your stop loss. Discipline is not a mindset; it is an engineered framework.</p>
+            <div className="border-l border-blue-900/50 pl-4 py-1 my-5 bg-blue-950/10 rounded-r-sm">
+              <p className="text-blue-400/80 font-mono text-xs tracking-tight">
+                {">"} "You do not rise to the level of your goals. You fall to the level of your systems."
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-base sm:text-lg font-medium text-neutral-200 mb-2 tracking-tight">The "Missed Prep" Red Flag</h2>
+            <p className="mb-3">The first sign of a discipline collapse is skipping the routine. If you sit down at the terminal and execute a trade without completing your pre-market checklist, you are already trading on tilt.</p>
+            <Link href="/trading-routine" className="inline-block mt-2 text-xs font-mono text-blue-400 hover:text-blue-300 transition-colors border-b border-blue-900/50 hover:border-blue-400">Review Protocol_02: Routine -{">"}</Link>
+          </section>
         </div>
 
-        <div className="border border-neutral-800 bg-[#080808] rounded-2xl p-8 md:p-10">
-          <h2 className="text-2xl md:text-3xl font-bold mb-6 tracking-tight">The "Missed Prep" Red Flag</h2>
-          <div className="space-y-4 text-neutral-400 leading-relaxed">
-            <p>The first sign of a discipline collapse is skipping the routine. If you sit down at the terminal and execute a trade without completing your pre-market checklist, you are already trading on tilt.</p>
-            <Link href="/trading-routine" className="inline-block mt-4 text-sm text-blue-400 hover:text-blue-300 border-b border-blue-900">Review the routine protocol →</Link>
-          </div>
-        </div>
+        <div className="w-full h-px bg-neutral-900 my-10"></div>
 
-        <div className="mt-16 pt-16 border-t border-neutral-900 text-center">
-          <div className="flex justify-center gap-4">
-            <button className="px-8 py-3 bg-white text-black font-semibold rounded-lg hover:bg-neutral-200 transition-colors">Apply For Access</button>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-[#080808] border border-neutral-900 p-5 rounded-md gap-4 shadow-lg shadow-black/50">
+          <div>
+            <h3 className="text-sm font-medium text-neutral-200">Engineer Your Discipline</h3>
+            <p className="text-[10px] text-neutral-500 font-mono uppercase tracking-widest mt-1">Replace motivation with structure.</p>
           </div>
+          <Link href="/apply" className="px-6 py-3 bg-neutral-200 text-[#050505] text-[10px] font-bold uppercase tracking-widest hover:bg-white transition-colors rounded-sm w-full sm:w-auto text-center">
+            Apply For Access
+          </Link>
         </div>
-      </section>
+      </article>
     </main>
   );
 }
