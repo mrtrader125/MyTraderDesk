@@ -41,18 +41,18 @@ export default function TraderVoicesPage() {
           <div>
             <h1 className="text-3xl font-semibold tracking-tight text-zinc-100 mb-2">Trader Voices</h1>
             <p className="text-zinc-400 max-w-xl text-sm leading-relaxed">
-              Log your execution friction, identify structural bottlenecks, and view real-time data from operators facing the exact same variables.
+              Share what's holding you back, what support you need, and learn from traders facing similar challenges.
             </p>
           </div>
           <button 
             onClick={() => setIsModalOpen(true)}
             className="bg-zinc-100 text-zinc-950 px-5 py-2.5 rounded-md font-medium text-sm hover:bg-white transition-colors whitespace-nowrap"
           >
-            Log Your Diagnostics
+            Share Your Voice
           </button>
         </div>
 
-        {/* Global Stats - Now passes real data */}
+        {/* Global Stats */}
         <InsightsWidget voices={voices} />
 
         {/* Navigation Tabs */}
@@ -67,7 +67,7 @@ export default function TraderVoicesPage() {
             onClick={() => setActiveTab('success')}
             className={`pb-3 text-sm font-medium transition-colors ${activeTab === 'success' ? 'text-zinc-100 border-b-2 border-zinc-100' : 'text-zinc-500 hover:text-zinc-300'}`}
           >
-            Success Logs
+            Success Stories
           </button>
         </div>
 
@@ -79,7 +79,7 @@ export default function TraderVoicesPage() {
             </div>
           ) : voices.length === 0 ? (
             <div className="text-center py-20 border border-zinc-800 border-dashed rounded-lg">
-              <p className="text-zinc-500">No logs found. Be the first operator to submit diagnostics.</p>
+              <p className="text-zinc-500">No stories yet. Be the first to share your voice.</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -92,7 +92,7 @@ export default function TraderVoicesPage() {
 
         {activeTab === 'success' && (
           <div className="text-center py-20 border border-zinc-800 border-dashed rounded-lg">
-            <p className="text-zinc-500">Success logs are currently filtering. Check back after next session.</p>
+            <p className="text-zinc-500">Success stories are coming soon.</p>
           </div>
         )}
 
