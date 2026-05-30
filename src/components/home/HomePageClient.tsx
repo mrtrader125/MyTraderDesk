@@ -54,7 +54,7 @@ const HoverRevealSlider = ({ before, after }: { before: string, after: string })
   )
 }
 
-export default function Home() {
+export default function HomePageClient() {
   const [scrolled, setScrolled] = useState(false)
   const [analyses, setAnalyses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -150,12 +150,11 @@ export default function Home() {
           </div>
           <div className="flex gap-4 items-center shrink-0">
             
-            {/* --- NEW TRADER VOICES BUTTON --- */}
+            {/* TRADER VOICES BUTTON INJECTED HERE */}
             <Link href="/trader-voices" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-[#080808] border border-neutral-800/60 rounded-lg text-[9px] font-bold uppercase tracking-widest text-neutral-400 hover:text-white hover:border-neutral-500 transition-colors">
               <Activity className="w-3 h-3 text-blue-500" />
               Trader Voices
             </Link>
-            {/* -------------------------------- */}
 
             <Link href="/login" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors hidden sm:block">Log In</Link>
             <Link href="/signup" className="px-4 sm:px-5 py-2 text-[8px] sm:text-[9px] uppercase tracking-widest font-extrabold bg-white text-black rounded-lg hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.05)]">
@@ -568,67 +567,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      {/* <section id="pricing" className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 bg-[#020202] border-t border-neutral-900">
-        <div className="text-center mb-8 md:mb-10 max-w-5xl mx-auto">
-          <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight mb-2 sm:mb-3">Terminal Access</h2>
-        </div>
-
-        <div className="flex justify-center mb-10 md:mb-12">
-          <div className="bg-[#080808] p-1.5 rounded-xl border border-neutral-800/60 flex w-full sm:w-auto shadow-lg overflow-hidden">
-            <button onClick={() => setBillingCycle('monthly')} className={`flex-1 sm:flex-none px-4 sm:px-8 py-3 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-colors ${billingCycle === 'monthly' ? 'bg-[#1a1a1a] text-white' : 'text-neutral-500 hover:text-neutral-200'}`}>Monthly</button>
-            <button onClick={() => setBillingCycle('annual')} className={`flex-1 sm:flex-none px-4 sm:px-8 py-3 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-widest transition-colors flex justify-center items-center gap-2 sm:gap-3 ${billingCycle === 'annual' ? 'bg-blue-600 text-white' : 'text-neutral-500 hover:text-neutral-200'}`}>
-              Annually <span className="bg-white text-blue-600 px-1.5 sm:px-2 py-0.5 rounded-md text-[8px] sm:text-[9px] inline-block">SAVE</span>
-            </button>
-          </div>
-        </div>
-        
-        <div className="grid md:grid-cols-2 gap-5 md:gap-6 items-start max-w-[1000px] mx-auto">
-          <div className="bg-[#080808] p-6 sm:p-8 lg:p-10 rounded-3xl border border-neutral-800/60 text-left shadow-lg shadow-black/10 flex flex-col h-full">
-            <h3 className="text-[11px] sm:text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2 sm:mb-3 text-center sm:text-left">Terminal Demo</h3>
-            <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-white my-4 sm:my-6 text-center sm:text-left">$0</p>
-            <p className="text-neutral-400 text-xs sm:text-sm font-medium mb-6 sm:mb-8 text-center sm:text-left">Take a risk-free tour of the terminal interface and see the operational protocol in action.</p>
-            
-            <ul className="space-y-4 text-neutral-500 text-[11px] sm:text-xs font-medium mb-8 sm:mb-10 flex-1">
-              <li className="flex items-start"><span className="text-neutral-700 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Platform UI walkthrough</li>
-              <li className="flex items-start"><span className="text-neutral-700 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Read-only historical setups</li>
-              <li className="flex items-start"><span className="text-neutral-700 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Journaling mechanism preview</li>
-            </ul>
-
-            <Link href="/signup" className="block w-full py-3.5 sm:py-4 px-6 bg-[#111] text-neutral-200 font-bold rounded-xl border border-neutral-800 hover:bg-[#1a1a1a] transition-colors uppercase tracking-widest text-[9px] sm:text-[10px] text-center mt-auto">
-              Sign Up
-            </Link>
-          </div>
-
-          <div className="bg-[#080808] p-6 sm:p-8 lg:p-10 rounded-3xl border border-blue-500/30 relative text-left shadow-lg shadow-blue-900/5 flex flex-col h-full">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
-            
-            <h3 className="text-[11px] sm:text-xs font-bold text-blue-500 uppercase tracking-widest mb-2 sm:mb-3 text-center sm:text-left">Pro Operator</h3>
-            <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-white my-4 sm:my-6 text-center sm:text-left">
-              ${billingCycle === 'monthly' ? '50' : '500'}
-              <span className="text-xs sm:text-sm text-neutral-500 font-medium tracking-normal">/{billingCycle === 'monthly' ? 'mo' : 'yr'}</span>
-            </p>
-            <p className="text-neutral-300 text-xs sm:text-sm font-medium mb-6 sm:mb-8 text-center sm:text-left">The complete institutional-grade toolkit and behavioral enforcement system.</p>
-            
-            <ul className="space-y-4 text-neutral-400 text-[11px] sm:text-xs font-medium mb-8 sm:mb-10 flex-1">
-              <li className="flex items-start"><span className="text-blue-500 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Guided routine & system setup</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Sunday macro & invalidation levels</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Personal Vault for pair tracking</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Daily 4H & LTF chart updates</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Live Floor trade validation</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Strict mechanical execution rules</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Pre-outcome behavioral journaling</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Saturday data-driven reviews</li>
-              <li className="flex items-start"><span className="text-blue-500 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Active mentor accountability</li>
-            </ul>
-
-            <Link href="/signup" className="block w-full py-3.5 sm:py-4 px-6 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors uppercase tracking-widest text-[9px] sm:text-[10px] text-center mt-auto shadow-[0_0_20px_rgba(59,130,246,0.15)]">
-              Sign Up
-            </Link>
-          </div>
-        </div>
-      </section>
-      */}
       
       <section className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 border-t border-neutral-900 bg-[#050505]">
         <div className="max-w-3xl mx-auto">
