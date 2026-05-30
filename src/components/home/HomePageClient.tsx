@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { 
   User, Map, ShieldCheck, Filter, ArrowRight, Activity, 
   ChevronLeft, ChevronRight, Lock, ChevronDown, Globe2, BarChart3, Database,
-  TerminalSquare, BookOpen, Workflow, Target, Star, Quote, X
+  TerminalSquare, BookOpen, Workflow, Target, Star, Quote
 } from 'lucide-react'
 import { createClient } from '@supabase/supabase-js'
 
@@ -65,7 +65,6 @@ export default function Home() {
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   
   const [heroProfiles, setHeroProfiles] = useState<string[]>([])
-  const [showBootcampPopup, setShowBootcampPopup] = useState(false)
 
   const terminalSlides = [
   { id: 'mtd1', title: 'Market Feed', desc: 'Your central hub for daily market structure, active setups, and system broadcasts.' },
@@ -97,24 +96,10 @@ export default function Home() {
 
     fetchAnalyses()
     
-    // Show popup ONCE after 1.5 seconds if they haven't dismissed it
-    const popupTimer = setTimeout(() => {
-      const hasSeenPopup = localStorage.getItem('bootcampPopupDismissed')
-      if (!hasSeenPopup) {
-        setShowBootcampPopup(true)
-      }
-    }, 1500)
-
     return () => {
       window.removeEventListener('scroll', handleScroll)
-      clearTimeout(popupTimer)
     }
   }, [])
-
-  const handleClosePopup = () => {
-    setShowBootcampPopup(false)
-    localStorage.setItem('bootcampPopupDismissed', 'true')
-  }
 
   const fetchAnalyses = async () => {
     try {
@@ -161,18 +146,20 @@ export default function Home() {
           <div className="hidden md:flex items-center space-x-8 shrink-0">
             <Link href="#features" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Features</Link>
             <Link href="#blueprint" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Blueprint</Link>
-            <Link href="#pricing" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Pricing</Link>
-            
-            {/* PERMANENT LINK TO BOOTCAMP SO THEY NEVER LOSE IT */}
-            <Link href="/program/bootcamp" className="text-[10px] font-bold uppercase tracking-widest text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
-              Beta Cohort
-            </Link>
+            {/* <Link href="#pricing" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors">Pricing</Link> */}
           </div>
           <div className="flex gap-4 items-center shrink-0">
+            
+            {/* --- NEW TRADER VOICES BUTTON --- */}
+            <Link href="/trader-voices" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-[#080808] border border-neutral-800/60 rounded-lg text-[9px] font-bold uppercase tracking-widest text-neutral-400 hover:text-white hover:border-neutral-500 transition-colors">
+              <Activity className="w-3 h-3 text-blue-500" />
+              Trader Voices
+            </Link>
+            {/* -------------------------------- */}
+
             <Link href="/login" className="text-[10px] font-bold uppercase tracking-widest text-neutral-500 hover:text-white transition-colors hidden sm:block">Log In</Link>
-            <Link href="/apply" className="px-4 sm:px-5 py-2 text-[8px] sm:text-[9px] uppercase tracking-widest font-extrabold bg-white text-black rounded-lg hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-              Apply For Access
+            <Link href="/signup" className="px-4 sm:px-5 py-2 text-[8px] sm:text-[9px] uppercase tracking-widest font-extrabold bg-white text-black rounded-lg hover:bg-neutral-200 transition-colors shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+              Sign Up
             </Link>
           </div>
         </div>
@@ -188,8 +175,8 @@ export default function Home() {
             A closed-loop platform that forces discipline. Draft your setups, sync your real MT5 executions, and explicitly track the emotional errors costing you money.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 w-full sm:w-auto">
-            <Link href="/apply" className="px-6 py-3.5 sm:py-3 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.15)]">
-              Apply For Founding Cohort
+            <Link href="/signup" className="px-6 py-3.5 sm:py-3 bg-blue-600 text-white rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-blue-500 transition-all w-full sm:w-auto shadow-[0_0_30px_rgba(59,130,246,0.15)]">
+              Sign Up Now
             </Link>
             <Link href="#features" className="px-6 py-3.5 sm:py-3 bg-[#111] text-white border border-neutral-800/60 rounded-xl font-bold uppercase tracking-widest text-[10px] hover:bg-[#1a1a1a] transition-colors w-full sm:w-auto">
               See How It Works
@@ -582,7 +569,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section id="pricing" className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 bg-[#020202] border-t border-neutral-900">
+      {/* <section id="pricing" className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 bg-[#020202] border-t border-neutral-900">
         <div className="text-center mb-8 md:mb-10 max-w-5xl mx-auto">
           <h2 className="text-2xl lg:text-3xl font-extrabold text-white tracking-tight mb-2 sm:mb-3">Terminal Access</h2>
         </div>
@@ -597,7 +584,6 @@ export default function Home() {
         </div>
         
         <div className="grid md:grid-cols-2 gap-5 md:gap-6 items-start max-w-[1000px] mx-auto">
-          {/* DEMO CARD */}
           <div className="bg-[#080808] p-6 sm:p-8 lg:p-10 rounded-3xl border border-neutral-800/60 text-left shadow-lg shadow-black/10 flex flex-col h-full">
             <h3 className="text-[11px] sm:text-xs font-bold text-neutral-500 uppercase tracking-widest mb-2 sm:mb-3 text-center sm:text-left">Terminal Demo</h3>
             <p className="text-3xl sm:text-4xl lg:text-5xl font-black text-white my-4 sm:my-6 text-center sm:text-left">$0</p>
@@ -609,12 +595,11 @@ export default function Home() {
               <li className="flex items-start"><span className="text-neutral-700 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Journaling mechanism preview</li>
             </ul>
 
-            <Link href="/apply" className="block w-full py-3.5 sm:py-4 px-6 bg-[#111] text-neutral-200 font-bold rounded-xl border border-neutral-800 hover:bg-[#1a1a1a] transition-colors uppercase tracking-widest text-[9px] sm:text-[10px] text-center mt-auto">
-              Access Demo
+            <Link href="/signup" className="block w-full py-3.5 sm:py-4 px-6 bg-[#111] text-neutral-200 font-bold rounded-xl border border-neutral-800 hover:bg-[#1a1a1a] transition-colors uppercase tracking-widest text-[9px] sm:text-[10px] text-center mt-auto">
+              Sign Up
             </Link>
           </div>
 
-          {/* PRO CARD */}
           <div className="bg-[#080808] p-6 sm:p-8 lg:p-10 rounded-3xl border border-blue-500/30 relative text-left shadow-lg shadow-blue-900/5 flex flex-col h-full">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-50"></div>
             
@@ -637,12 +622,13 @@ export default function Home() {
               <li className="flex items-start"><span className="text-blue-500 mr-2 sm:mr-3 font-bold text-xs sm:text-sm leading-none">✓</span> Active mentor accountability</li>
             </ul>
 
-            <Link href="/apply" className="block w-full py-3.5 sm:py-4 px-6 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors uppercase tracking-widest text-[9px] sm:text-[10px] text-center mt-auto shadow-[0_0_20px_rgba(59,130,246,0.15)]">
-              Apply For Pro Access
+            <Link href="/signup" className="block w-full py-3.5 sm:py-4 px-6 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-colors uppercase tracking-widest text-[9px] sm:text-[10px] text-center mt-auto shadow-[0_0_20px_rgba(59,130,246,0.15)]">
+              Sign Up
             </Link>
           </div>
         </div>
       </section>
+      */}
       
       <section className="relative z-10 w-full py-16 md:py-24 lg:py-32 px-5 sm:px-6 border-t border-neutral-900 bg-[#050505]">
         <div className="max-w-3xl mx-auto">
@@ -738,59 +724,6 @@ export default function Home() {
           </p>
         </div>
       </footer>
-
-{/* PROFESSIONAL BOOTCAMP NOTIFICATION SYSTEM */}
-{showBootcampPopup && (
-  <div className="fixed bottom-6 right-6 z-[100] w-[calc(100%-3rem)] sm:w-[360px] bg-[#090909] border border-neutral-800 rounded-none p-5 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.8)] font-mono selection:bg-blue-900">
-    
-    {/* Top status indicator header */}
-    <div className="flex items-center justify-between mb-4 pb-2 border-b border-neutral-900 text-[10px] uppercase tracking-widest text-neutral-500">
-      <div className="flex items-center gap-2">
-        <span className="w-1.5 h-1.5 bg-blue-500 rounded-none animate-pulse"></span>
-        <span>SYSTEM_BROADCAST // COHORT_BETA</span>
-      </div>
-      <button 
-        onClick={handleClosePopup}
-        className="text-neutral-600 hover:text-neutral-300 font-sans transition-colors p-1"
-        aria-label="Close Notification"
-      >
-        [X]
-      </button>
-    </div>
-
-    {/* Header info */}
-    <div className="mb-4">
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-neutral-100 font-sans">
-        Trader Bootcamp Intake Active
-      </h3>
-    </div>
-
-    {/* Informational Body text using high-density line heights */}
-    <p className="text-xs text-neutral-400 font-sans leading-relaxed mb-5">
-      A comprehensive operator initialization program targeting mechanical execution, strict multi-timeframe routine development, and raw compliance tracking.
-    </p>
-
-    {/* Grid specifications */}
-    <div className="grid grid-cols-2 gap-4 mb-5 border-y border-neutral-900 py-3 text-[11px]">
-      <div>
-        <span className="block text-neutral-600 uppercase text-[9px] tracking-wider mb-0.5">Parameters:</span>
-        <span className="font-medium text-neutral-300">Limited Seat Capacity</span>
-      </div>
-      <div>
-        <span className="block text-neutral-600 uppercase text-[9px] tracking-wider mb-0.5">Instruction:</span>
-        <span className="font-medium text-neutral-300">Structured Sandbox</span>
-      </div>
-    </div>
-
-    {/* No-nonsense tactical execution button */}
-    <Link
-      href="/program/bootcamp"
-      className="flex items-center justify-center w-full h-10 bg-neutral-200 text-black text-[10px] font-bold uppercase tracking-widest hover:bg-white transition-colors duration-150 rounded-none"
-    >
-      Initialize Program Review
-    </Link>
-  </div>
-)}
     </div>
   )
 }
