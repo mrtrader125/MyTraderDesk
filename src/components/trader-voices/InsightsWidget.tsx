@@ -1,7 +1,6 @@
 import { Activity } from 'lucide-react';
 
 export default function InsightsWidget({ voices = [] }) {
-  // Calculate real percentages based on Supabase data
   const total = voices.length;
   
   const getPercentage = (friction) => {
@@ -11,10 +10,10 @@ export default function InsightsWidget({ voices = [] }) {
   };
 
   const stats = [
+    { label: 'Discipline', value: getPercentage('Lack of discipline') },
     { label: 'Overtrading', value: getPercentage('Overtrading') },
-    { label: 'Revenge Trading', value: getPercentage('Revenge Trading') },
-    { label: 'Hesitation', value: getPercentage('Hesitation') },
-    { label: 'Strategy Hopping', value: getPercentage('Strategy Hopping') },
+    { label: 'FOMO', value: getPercentage('FOMO') },
+    { label: 'Consistency', value: getPercentage('Inconsistent execution') },
   ];
 
   return (
@@ -22,9 +21,9 @@ export default function InsightsWidget({ voices = [] }) {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
         <div className="flex items-center gap-2">
           <Activity size={16} className="text-zinc-400" />
-          <h2 className="text-zinc-200 text-sm font-medium uppercase tracking-wider">Live System Bottlenecks</h2>
+          <h2 className="text-zinc-200 text-sm font-medium uppercase tracking-wider">Most Common Challenges</h2>
         </div>
-        <span className="text-zinc-500 text-xs font-mono">Total Logs: {total}</span>
+        <span className="text-zinc-500 text-xs font-mono">Total Posts: {total}</span>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat) => (

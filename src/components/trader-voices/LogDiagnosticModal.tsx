@@ -11,10 +11,10 @@ const supabase = createClient(
 export default function LogDiagnosticModal({ isOpen, onClose, onRefresh }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    experience_level: '< 6 Months',
+    experience_level: 'Less than 6 months',
     core_friction: 'Overtrading',
     raw_log: '',
-    required_infrastructure: 'Accountability Protocol',
+    required_infrastructure: 'Accountability partner',
     is_anonymous: true
   });
 
@@ -29,12 +29,12 @@ export default function LogDiagnosticModal({ isOpen, onClose, onRefresh }) {
     setIsSubmitting(false);
 
     if (!error) {
-      setFormData({ ...formData, raw_log: '' }); // Reset text
-      onRefresh(); // Trigger feed refresh
-      onClose(); // Close modal
+      setFormData({ ...formData, raw_log: '' });
+      onRefresh();
+      onClose();
     } else {
       console.error("Supabase Error:", error);
-      alert("Failed to log diagnostic. Check console.");
+      alert("Failed to post. Check console.");
     }
   };
 
@@ -42,7 +42,7 @@ export default function LogDiagnosticModal({ isOpen, onClose, onRefresh }) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
       <div className="bg-zinc-950 border border-zinc-800 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto hide-scrollbar">
         <div className="sticky top-0 bg-zinc-950/90 backdrop-blur border-b border-zinc-800 p-4 flex justify-between items-center z-10">
-          <h2 className="text-zinc-100 font-medium">Log Your Diagnostics</h2>
+          <h2 className="text-zinc-100 font-medium">Share Your Voice</h2>
           <button onClick={onClose} className="text-zinc-500 hover:text-zinc-100">
             <X size={20} />
           </button>
@@ -51,9 +51,9 @@ export default function LogDiagnosticModal({ isOpen, onClose, onRefresh }) {
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           {/* Experience */}
           <div>
-            <label className="block text-zinc-400 text-sm mb-3">1. Experience Level</label>
+            <label className="block text-zinc-400 text-sm mb-3">1. How long have you been trading?</label>
             <div className="flex flex-wrap gap-2">
-              {['< 6 Months', '6-12 Months', '1-2 Years', '2-5 Years', '5+ Years'].map(exp => (
+              {['Less than 6 months', '6 months - 1 year', '1-2 years', '2-5 years', '5+ years'].map(exp => (
                 <button 
                   key={exp} type="button" 
                   onClick={() => setFormData({...formData, experience_level: exp})}
@@ -67,9 +67,9 @@ export default function LogDiagnosticModal({ isOpen, onClose, onRefresh }) {
 
           {/* Friction */}
           <div>
-            <label className="block text-zinc-400 text-sm mb-3">2. Core Execution Friction</label>
+            <label className="block text-zinc-400 text-sm mb-3">2. What is currently stopping you from becoming consistently profitable?</label>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {['Overtrading', 'Revenge Trading', 'Hesitation', 'Risk Deviations', 'Strategy Hopping', 'FOMO'].map(friction => (
+              {['Overtrading', 'Revenge trading', 'Fear of taking trades', 'Lack of discipline', 'Risk management', 'Strategy hopping', 'FOMO', 'Emotional decision making', 'Lack of confidence', 'Inconsistent execution', 'Burnout'].map(friction => (
                 <button 
                   key={friction} type="button" 
                   onClick={() => setFormData({...formData, core_friction: friction})}
@@ -83,29 +83,33 @@ export default function LogDiagnosticModal({ isOpen, onClose, onRefresh }) {
 
           {/* Log */}
           <div>
-            <label className="block text-zinc-400 text-sm mb-3">3. The Raw Log</label>
+            <label className="block text-zinc-400 text-sm mb-3">3. Describe your situation</label>
             <textarea 
               required
               value={formData.raw_log}
               onChange={(e) => setFormData({...formData, raw_log: e.target.value})}
               rows={4}
               className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
-              placeholder="Detail the specific deviation from your system..."
+              placeholder="Tell us your story. What do you think is holding you back?"
             />
           </div>
 
           {/* Support */}
           <div>
-            <label className="block text-zinc-400 text-sm mb-3">4. Required Infrastructure</label>
+            <label className="block text-zinc-400 text-sm mb-3">4. What support would help you most right now?</label>
             <select 
               value={formData.required_infrastructure}
               onChange={(e) => setFormData({...formData, required_infrastructure: e.target.value})}
               className="w-full bg-zinc-900 border border-zinc-800 rounded-lg p-3 text-zinc-100 focus:outline-none focus:border-zinc-500"
             >
-              <option>Accountability Protocol</option>
-              <option>Mentorship Alignment</option>
-              <option>System Audit</option>
-              <option>Daily Check-ins</option>
+              <option>Accountability partner</option>
+              <option>Mentor</option>
+              <option>Trading community</option>
+              <option>Psychology coaching</option>
+              <option>Better strategy</option>
+              <option>Risk management help</option>
+              <option>Daily check-ins</option>
+              <option>Trade reviews</option>
             </select>
           </div>
 
@@ -118,7 +122,7 @@ export default function LogDiagnosticModal({ isOpen, onClose, onRefresh }) {
                 onChange={(e) => setFormData({...formData, is_anonymous: e.target.checked})}
                 className="w-4 h-4 rounded bg-zinc-900 border-zinc-800 text-zinc-100 accent-zinc-500" 
               />
-              <span className="text-zinc-400 text-sm">Post as Anonymous Operator</span>
+              <span className="text-zinc-400 text-sm">Post Anonymously</span>
             </label>
             <button 
               type="submit" 
@@ -126,7 +130,7 @@ export default function LogDiagnosticModal({ isOpen, onClose, onRefresh }) {
               className="flex items-center gap-2 bg-zinc-100 text-zinc-950 font-medium px-6 py-2 rounded hover:bg-white transition-colors disabled:opacity-50"
             >
               {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : null}
-              Submit Log
+              Share My Voice
             </button>
           </div>
         </form>
